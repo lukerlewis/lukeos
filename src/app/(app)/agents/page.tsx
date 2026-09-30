@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { activityDays } from "@/components/from-claude/activity-days";
+import { activityDays, dayAndTime } from "@/components/from-claude/activity-days";
 import { ActivityList } from "@/components/from-claude/activity-list";
 import { MarkFromClaudeSeen } from "@/components/from-claude/mark-seen";
 import { MentionList } from "@/components/from-claude/mention-list";
@@ -122,10 +122,7 @@ async function ActivityPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
 /** Everywhere Luke wrote @claude: what's waiting for Claude, and what it's done. */
 async function MentionsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
   const [mentions, timeZone] = await Promise.all([listMentions({ limit: 200 }), getTimeZone()]);
-  const clock = new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit", hour12: true });
-  const when = Object.fromEntries(
-    mentions.map((m) => [m.id, `${editedLabel(m.createdAt, timeZone)}, ${clock.format(m.createdAt).replace(/\s*(AM|PM)$/, (_, x: string) => ` ${x.toLowerCase()}`)}`]),
-  );
+  const when = Object.fromEntries(mentions.map((m) => [m.id, dayAndTime(m.createdAt, timeZone)]));
 
   return (
     <Page title="Agents" newTask={false}>

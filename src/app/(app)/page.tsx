@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Board } from "@/components/board/board";
 import { DashboardControls } from "@/components/dashboard/controls";
-import { activityDays } from "@/components/from-claude/activity-days";
+import { activityDays, dayAndTime } from "@/components/from-claude/activity-days";
 import { ActivityList } from "@/components/from-claude/activity-list";
+import { ForClaude } from "@/components/from-claude/for-claude";
 import { Greeting, TodayDate } from "@/components/greeting";
 import { QuickNote } from "@/components/notes/quick-note";
 import { EmptyState, Page } from "@/components/shell/page";
@@ -11,6 +12,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { listActivity } from "@/core/activity";
 import { boardTasks } from "@/core/board";
 import { getDashboardView } from "@/core/dashboard";
+import { listMentions } from "@/core/mentions";
 import { getTimeZone } from "@/core/settings";
 import { columnOf, compareTasks } from "@/lib/board";
 import type { DashboardView } from "@/lib/dashboard";
@@ -19,15 +21,19 @@ import { statusLabel, type Status } from "@/lib/task-fields";
 export default async function DashboardPage() {
   const view = await getDashboardView();
   const board = view.layout === "board";
-  const [{ date, tasks }, activity, timeZone] = await Promise.all([
+  const [{ date, tasks }, activity, requests, timeZone] = await Promise.all([
     boardTasks("when", undefined, view.show),
     // The board is only the board; the other cards are on the Today tab.
     board ? [] : listActivity({ limit: 8 }),
+    board ? [] : listMentions({ limit: 50 }),
     getTimeZone(),
   ]);
+  const waiting = requests.filter((m) => m.status === "open");
+  const recentlyDone = requests.filter((m) => m.status === "done" && !m.removed).slice(0, 3);
+  const when = Object.fromEntries(requests.map((m) => [m.id, dayAndTime(m.createdAt, timeZone)]));
 
   return (
-    <Page title="Dashboard" eyebrow={<TodayDate />} heading={<Greeting />}>
+    <Page title="Dashboard" eyebrow={<TodayDate />} heading={<Greeting />} addNew>
       <DashboardControls view={view} />
       {board ? (
         <Board tasks={tasks} view="when" today={date} show={view.show} />
@@ -35,6 +41,17 @@ export default async function DashboardPage() {
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <TodayTasks tasks={tasks.filter((t) => columnOf(t, "when", date) === "today")} view={view} today={date} />
           <div className="flex flex-col gap-6">
+            <Card>
+              <CardHeader
+                title="For Claude"
+                aside={
+                  <Link href="/agents?view=claude" className="hover:text-foreground">
+                    See all
+                  </Link>
+                }
+              />
+              <ForClaude open={waiting} done={recentlyDone} when={when} />
+            </Card>
             <Card>
               <CardHeader title="Quick note" />
               <QuickNote />

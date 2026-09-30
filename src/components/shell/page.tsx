@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { NewTaskFab, NewTaskHeaderButton } from "@/components/tasks/new-task-button";
+import { AddNew } from "./add-new";
 
 /**
  * The frame every screen sits in: a slim top bar on computers, and a large
@@ -11,6 +12,7 @@ export function Page({
   heading,
   actions,
   newTask,
+  addNew,
   children,
 }: {
   title: string;
@@ -20,13 +22,15 @@ export function Page({
   actions?: React.ReactNode;
   /** Show the New task buttons, pre-filled with these (false hides them). */
   newTask?: false | { projectId?: string | null; dueDate?: string | null };
+  /** Show "Add new" (task, note, request for Claude, project) instead of the New task buttons. */
+  addNew?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex min-w-0 grow flex-col">
       <header className="hidden h-14 shrink-0 items-center border-b px-6 md:flex">
         <span className="grow font-medium">{title}</span>
-        {newTask !== false && <NewTaskHeaderButton defaults={newTask} />}
+        {addNew ? <AddNew variant="header" /> : newTask !== false && <NewTaskHeaderButton defaults={newTask} />}
       </header>
       <div className="flex flex-col gap-6 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-28 md:px-10 md:pt-8 md:pb-10">
         <div className="flex items-end justify-between gap-4 pt-8 md:pt-0">
@@ -48,7 +52,7 @@ export function Page({
         </div>
         {children}
       </div>
-      {newTask !== false && <NewTaskFab defaults={newTask} />}
+      {addNew ? <AddNew variant="fab" /> : newTask !== false && <NewTaskFab defaults={newTask} />}
     </div>
   );
 }

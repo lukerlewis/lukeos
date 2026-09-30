@@ -7,7 +7,8 @@ import { defineOperation, OperationError, type Actor } from "./define";
 
 const { mentions } = schema;
 
-export const mentionTargets = ["note", "task", "comment"] as const;
+/** Where Luke wrote @claude. "request" is one he left on its own, from the dashboard. */
+export const mentionTargets = ["note", "task", "comment", "request"] as const;
 export type MentionTarget = (typeof mentionTargets)[number];
 
 /** One @claude request, as Claude and the Agents section see it. */
@@ -109,7 +110,8 @@ const where = {
     where ${mentions.targetType} = 'comment' and c.id = ${mentions.targetId})`,
 };
 const live = sql`(
-  (${mentions.targetType} = 'note' and exists (select 1 from notes n where n.id = ${mentions.targetId} and n.deleted_at is null))
+  ${mentions.targetType} = 'request'
+  or (${mentions.targetType} = 'note' and exists (select 1 from notes n where n.id = ${mentions.targetId} and n.deleted_at is null))
   or (${mentions.targetType} = 'task' and exists (select 1 from tasks t where t.id = ${mentions.targetId} and t.deleted_at is null))
   or (${mentions.targetType} = 'comment' and exists (select 1 from comments c
     left join notes n on c.target_type = 'note' and n.id = c.target_id
@@ -158,12 +160,38 @@ export const mentionOperations = {
   list_mentions: defineOperation({
     name: "list_mentions",
     description:
-      'Luke\'s @claude requests: every place he wrote "@claude" (in a note, a task or a comment), newest first. Each has the line he wrote (text), where it is (where; use get_note, get_task or the comment\'s note or artifact to read around it), when, and whether it\'s been dealt with (status "open" or "done", with the reply). open: true shows only what\'s waiting for you.',
+      'Luke\'s @claude requests: every place he wrote "@claude" (in a note, a task or a comment), plus requests and notes he left for you on their own from his dashboard (where.type "request"), newest first. Each has the line he wrote (text), where it is (where; use get_note, get_task or the comment\'s note or artifact to read around it), when, and whether it\'s been dealt with (status "open" or "done", with the reply). open: true shows only what\'s waiting for you.',
     input: z.object({
       open: z.boolean().optional().describe("Only requests not yet dealt with."),
       limit: z.number().int().min(1).max(200).optional(),
     }),
     run: async ({ open, limit }) => listMentions({ open, limit }),
+  }),
+
+  ask_claude: defineOperation({
+    name: "ask_claude",
+    description:
+      "Leave Claude a request or a note on its own, as Luke does from his dashboard. It shows in list_mentions like an @claude anywhere else.",
+    input: z.object({ text: z.string().trim().min(1).max(5000).describe("What Luke is asking or telling Claude.") }),
+    run: async ({ text }) => {
+      const id = crypto.randomUUID();
+      await db.insert(mentions).values({ id, targetType: "request", targetId: id, context: text, anchored: true });
+      return (await listMentions({ ids: [id], limit: 1 }))[0];
+    },
+  }),
+
+  delete_request: defineOperation({
+    name: "delete_request",
+    description: "Delete a request Luke left on its own (from ask_claude). Only when Luke asks.",
+    input: z.object({ id: z.uuid().describe("The request's id.") }),
+    run: async ({ id }) => {
+      const deleted = await db
+        .delete(mentions)
+        .where(and(eq(mentions.id, id), eq(mentions.targetType, "request")))
+        .returning({ id: mentions.id, text: mentions.context });
+      if (!deleted.length) throw new OperationError("That request doesn't exist.", 404);
+      return { deleted: id, text: deleted[0].text };
+    },
   }),
 
   resolve_mention: defineOperation({

@@ -187,12 +187,17 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "delete_comment":
       return { summary: "Deleted a comment" };
     case "resolve_mention": {
-      const m = r as { where?: { type: string; id: string; title: string; on: { type: "note" | "artifact"; id: string; title: string } | null } };
+      const m = r as {
+        text?: string;
+        where?: { type: string; id: string; title: string; on: { type: "note" | "artifact"; id: string; title: string } | null };
+      };
       if (!m.where) return null;
+      const verb = input.resolved === false ? "Reopened" : "Dealt with";
+      if (m.where.type === "request") return { summary: `${verb} your request ${quote(m.text)}` };
       const on = m.where.on ? `a comment on ${quote(m.where.on.title)}` : `${m.where.type} ${quote(m.where.title)}`;
       const item =
         m.where.on ? { type: m.where.on.type, id: m.where.on.id } : m.where.type === "comment" ? undefined : { type: m.where.type as "note" | "task", id: m.where.id };
-      return { summary: `${input.resolved === false ? "Reopened" : "Dealt with"} an @claude request in ${on}`, item };
+      return { summary: `${verb} an @claude request in ${on}`, item };
     }
     case "save_image":
       return { summary: input.alt ? `Saved a photo (${String(input.alt).slice(0, 60)})` : "Saved a photo" };

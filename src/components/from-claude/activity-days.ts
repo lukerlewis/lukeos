@@ -1,4 +1,5 @@
 import type { ActivityEntry } from "@/core/activity";
+import { editedLabel } from "@/components/notes/note-list";
 import { friendlyDay, todayIn } from "@/lib/dates";
 import type { ActivityRow } from "./activity-list";
 
@@ -24,4 +25,10 @@ export function activityDays(entries: ActivityEntry[], timeZone: string) {
     });
   }
   return days;
+}
+
+/** "Today, 9:40 pm" or "3 Oct, 9:40 pm", in Luke's time zone. */
+export function dayAndTime(at: Date, timeZone: string) {
+  const clock = new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit", hour12: true });
+  return `${editedLabel(at, timeZone)}, ${clock.format(at).replace(/\s*(AM|PM)$/, (_, m: string) => ` ${m.toLowerCase()}`)}`;
 }

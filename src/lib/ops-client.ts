@@ -103,6 +103,12 @@ function undoFor(
       const reply = (result as Output<"reply_to_comment">).replies.at(-1);
       return reply ? { label: "replying", run: async () => void (await send("delete_comment", { id: reply.id })) } : null;
     }
+    case "ask_claude":
+      return { label: "asking Claude", run: async () => void (await send("delete_request", { id: r.id })) };
+    case "delete_request": {
+      const text = (result as Output<"delete_request">).text;
+      return { label: "deleting a request", run: async () => void (await send("ask_claude", { text })) };
+    }
     case "resolve_mention": {
       const resolved = input.resolved !== false;
       return {
