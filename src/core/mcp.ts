@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { isLookup, logActivity, titleBefore } from "./activity";
 import type { Actor } from "./define";
 import { operations, runOperation } from "./operations";
 
@@ -17,6 +18,7 @@ const INSTRUCTIONS = `LukeOS is Luke's personal app for projects, tasks and note
 - Notes are Markdown pages, inside a project or on their own. To file a document or report, use create_note (Markdown is best, since Luke can edit it). To save a finished artifact as a web page, use create_note with format "html". For a photo, call save_image first and put the Markdown it returns in the note.
 - Everything you make appears in Luke's From Claude section (list_from_claude). Nothing opens automatically, so you don't need to ask before saving.
 - To find something by name or words in it, use search.
+- Every change you make is written to Luke's activity log automatically (list_activity shows it), so you don't need to log anything yourself.
 - Deleting moves things to Trash, where they're kept for 30 days. list_trash and restore_from_trash bring things back. Only delete_forever or empty_trash when Luke asks.`;
 
 const routineField = z
@@ -89,8 +91,12 @@ async function handleOne(raw: unknown, actor: Actor & { kind: "agent" }) {
       const { routine, ...input } = (msg.params?.arguments ?? {}) as Record<string, unknown>;
       const who = typeof routine === "string" && routine.trim() ? { ...actor, routine: routine.trim() } : actor;
       try {
+        const logged = !isLookup(name);
+        const before = logged ? await titleBefore(name, input) : null;
         const outcome = await runOperation(name, input, who);
         if (!outcome.ok) return result(msg.id, { content: [{ type: "text", text: outcome.error }], isError: true });
+        // Every change Claude makes gets a line in the activity log, automatically.
+        if (logged) await logActivity(who, name, input, outcome.result, before);
         return result(msg.id, {
           content: [{ type: "text", text: JSON.stringify(outcome.result ?? null, null, 2) }],
         });

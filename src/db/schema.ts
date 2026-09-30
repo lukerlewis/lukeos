@@ -151,3 +151,22 @@ export const agentAccessTokens = pgTable(
   },
   (t) => [index("agent_access_tokens_connection_idx").on(t.connectionId)],
 );
+
+/**
+ * A short line for each change Claude made through the connector ("Added task
+ * "Call Mum""), shown as the activity log in the From Claude section.
+ */
+export const activityLog = pgTable(
+  "activity_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    agentName: text("agent_name").notNull(), // e.g. "Claude"
+    routine: text("routine"),
+    tool: text("tool").notNull(),
+    summary: text("summary").notNull(),
+    itemType: text("item_type"), // "task" | "note" | "project", when it's about one thing
+    itemId: uuid("item_id"),
+  },
+  (t) => [index("activity_log_at_idx").on(t.at)],
+);
