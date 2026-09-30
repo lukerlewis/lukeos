@@ -10,7 +10,7 @@ const { tasks, notes, projects, appSettings } = schema;
 
 const SEEN_KEY = "from_claude_seen_at";
 
-/** One thing Claude made, as the From Claude section lists it. */
+/** One thing Claude made, as the Agent log section lists it. */
 export type ClaudeItem = {
   type: "note" | "task" | "project";
   id: string;
@@ -33,7 +33,7 @@ async function seenAt() {
 
 /**
  * Everything Claude made that isn't in Trash, newest first. "New" means made
- * since Luke last looked at the From Claude section.
+ * since Luke last looked at the Agent log section.
  */
 export async function listFromClaude(filter: { routine?: string; type?: ClaudeItem["type"]; limit?: number } = {}) {
   const limit = filter.limit ?? 100;
@@ -176,7 +176,7 @@ export const fromClaudeOperations = {
   list_from_claude: defineOperation({
     name: "list_from_claude",
     description:
-      "What Claude has made in LukeOS (notes, tasks and projects), newest first, as Luke sees it in his From Claude section. isNew marks things made since he last looked. Filter by routine or type.",
+      "What Claude has made in LukeOS (notes, tasks and projects), newest first, as Luke sees it in his Agent log section. isNew marks things made since he last looked. Filter by routine or type.",
     input: z.object({
       routine: z.string().optional().describe("Only things this routine made."),
       type: z.enum(["note", "task", "project"]).optional(),
@@ -187,7 +187,7 @@ export const fromClaudeOperations = {
 
   mark_from_claude_seen: defineOperation({
     name: "mark_from_claude_seen",
-    description: "Clear the New markers in Luke's From Claude section, as if he'd looked at it.",
+    description: "Clear the New markers in Luke's Agent log section, as if he'd looked at it.",
     input: z.object({}),
     run: async () => {
       const now = new Date().toISOString();

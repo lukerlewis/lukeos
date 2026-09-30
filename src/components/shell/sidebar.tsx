@@ -21,14 +21,14 @@ export function Sidebar({ projects, newFromClaude }: { projects: SidebarProject[
     () => /Mac|iPhone|iPad/.test(navigator.platform),
     () => true,
   );
-  // Opening From Claude clears the count straight away, without a reload.
+  // Opening Agent log clears the count straight away, without a reload.
   const [clearedAt, setClearedAt] = useState<number | null>(null);
   useEffect(() => {
     const clear = () => setClearedAt(newFromClaude);
     window.addEventListener(SEEN_EVENT, clear);
     return () => window.removeEventListener(SEEN_EVENT, clear);
   }, [newFromClaude]);
-  const counts: Record<string, number> = { "/from-claude": clearedAt === newFromClaude ? 0 : newFromClaude };
+  const counts: Record<string, number> = { "/agent-log": clearedAt === newFromClaude ? 0 : newFromClaude };
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col gap-[18px] border-r bg-sidebar px-3 py-3.5 md:flex">

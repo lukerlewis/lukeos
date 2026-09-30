@@ -11,7 +11,7 @@ import { claudeRoutines, listFromClaude, type ClaudeItem } from "@/core/from-cla
 import { getTimeZone } from "@/core/settings";
 import { friendlyDay, todayIn } from "@/lib/dates";
 
-export const metadata: Metadata = { title: "From Claude · LukeOS" };
+export const metadata: Metadata = { title: "Agent log · LukeOS" };
 
 const types = [
   { value: undefined, label: "Everything" },
@@ -25,13 +25,13 @@ const views = [
   { value: "activity", label: "Activity log" },
 ] as const;
 
-export default async function FromClaudePage({ searchParams }: PageProps<"/from-claude">) {
+export default async function FromClaudePage({ searchParams }: PageProps<"/agent-log">) {
   const query = await searchParams;
   const viewSwitch = (active: string | undefined) => (
     <SegmentedLinks
       label="View"
       className="self-start"
-      options={views.map((v) => ({ href: v.value ? `/from-claude?view=${v.value}` : "/from-claude", label: v.label, active: active === v.value }))}
+      options={views.map((v) => ({ href: v.value ? `/agent-log?view=${v.value}` : "/agent-log", label: v.label, active: active === v.value }))}
     />
   );
   if (query.view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
@@ -48,12 +48,12 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/from-
     if (next.type) params.set("type", next.type);
     if (next.routine) params.set("routine", next.routine);
     const qs = params.toString();
-    return qs ? `/from-claude?${qs}` : "/from-claude";
+    return qs ? `/agent-log?${qs}` : "/agent-log";
   };
   const when = Object.fromEntries(items.map((i) => [i.id, editedLabel(i.createdAt, timeZone)]));
 
   return (
-    <Page title="From Claude" newTask={false}>
+    <Page title="Agent log" newTask={false}>
       <MarkFromClaudeSeen hasNew={items.some((i) => i.isNew)} />
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch(undefined)}
@@ -113,7 +113,7 @@ async function ActivityPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
   }
 
   return (
-    <Page title="From Claude" newTask={false}>
+    <Page title="Agent log" newTask={false}>
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch}
         <p className="text-[13px] text-muted-foreground">

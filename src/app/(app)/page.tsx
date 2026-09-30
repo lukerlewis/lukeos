@@ -75,9 +75,9 @@ export default async function TodayPage() {
           </Card>
           <Card>
             <CardHeader
-              title="From Claude"
+              title="Agent log"
               aside={
-                <Link href="/from-claude" className="hover:text-foreground">
+                <Link href="/agent-log" className="hover:text-foreground">
                   {newFromClaude > 0 ? `${newFromClaude} new, see all` : "See all"}
                 </Link>
               }

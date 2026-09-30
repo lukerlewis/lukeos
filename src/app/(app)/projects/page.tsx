@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CheckSquare, ChevronRight, Sparkles } from "lucide-react";
+import { Bot, CheckSquare, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { NewProjectButton } from "@/components/projects/project-dialog";
 import { EmptyState, Page } from "@/components/shell/page";
@@ -21,9 +21,9 @@ export default async function ProjectsPage() {
           <span className="grow text-[15px] font-medium">All tasks</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
-        <Link href="/from-claude" className="flex min-h-14 items-center gap-3 border-t px-4 py-3">
-          <Sparkles className="size-[18px] text-muted-foreground" aria-hidden />
-          <span className="grow text-[15px] font-medium">From Claude</span>
+        <Link href="/agent-log" className="flex min-h-14 items-center gap-3 border-t px-4 py-3">
+          <Bot className="size-[18px] text-muted-foreground" aria-hidden />
+          <span className="grow text-[15px] font-medium">Agent log</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
       </Card>

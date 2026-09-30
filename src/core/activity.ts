@@ -163,7 +163,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     }
 
     case "mark_from_claude_seen":
-      return { summary: "Cleared the New markers in From Claude" };
+      return { summary: "Cleared the New markers in the Agent log" };
     case "set_time_zone":
       return { summary: `Set your time zone to ${input.timeZone}` };
     default:
