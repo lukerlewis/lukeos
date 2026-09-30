@@ -16,10 +16,13 @@ import {
   efforts,
   priorities,
   priorityLabel,
+  repeatLabel,
+  repeats,
   statuses,
   statusLabel,
   type Effort,
   type Priority,
+  type Repeat,
   type Status,
 } from "@/lib/task-fields";
 import { MadeByLabel } from "./made-by";
@@ -32,6 +35,7 @@ type Draft = {
   dueDate: string | null;
   priority: Priority | null;
   effort: Effort | null;
+  repeat: Repeat | null;
   notes: string;
   madeBy?: Task["madeBy"];
   createdAt?: Task["createdAt"];
@@ -73,6 +77,7 @@ export function TaskEditorProvider({
       dueDate: t.dueDate,
       priority: t.priority,
       effort: t.effort,
+      repeat: t.repeat,
       notes: t.notes ?? "",
       madeBy: t.madeBy,
       createdAt: t.createdAt,
@@ -87,6 +92,7 @@ export function TaskEditorProvider({
       dueDate: defaults?.dueDate ?? null,
       priority: null,
       effort: null,
+      repeat: null,
       notes: "",
     });
   }, []);
@@ -141,6 +147,7 @@ function TaskDialog({
       dueDate: draft.dueDate,
       priority: draft.priority,
       effort: draft.effort,
+      repeat: draft.repeat,
       notes: draft.notes.trim() || null,
     };
     try {
@@ -224,6 +231,23 @@ function TaskDialog({
               ))}
               {draft.dueDate && <Chip onClick={() => set("dueDate", null)}>No date</Chip>}
             </div>
+          </Field>
+
+          <Field label="Repeat">
+            <Segmented
+              value={draft.repeat ?? "none"}
+              onChange={(v) => set("repeat", v === "none" ? null : v)}
+              options={[
+                { value: "none" as const, label: "Never" },
+                ...repeats.map((r) => ({ value: r, label: { daily: "Daily", weekly: "Weekly", monthly: "Monthly" }[r] })),
+              ]}
+            />
+            {draft.repeat && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {repeatLabel[draft.repeat]}. When you tick it off, the next one is added
+                {draft.dueDate ? "" : ", counting from the day you finish it"}.
+              </p>
+            )}
           </Field>
 
           <Field label="Priority">

@@ -6,7 +6,7 @@ import { op } from "@/lib/ops-client";
 
 export type ActivityRow = {
   id: string;
-  /** "14:05", in Luke's time zone. */
+  /** "2:05 pm", in Luke's time zone. */
   time: string;
   summary: string;
   who: string | null;
@@ -26,7 +26,7 @@ export function ActivityList({ days }: { days: { label: string; rows: ActivityRo
             {day.rows.map((row) => {
               const body = (
                 <>
-                  <span className="w-11 shrink-0 text-xs text-muted-foreground tabular-nums">{row.time}</span>
+                  <span className="w-14 shrink-0 text-xs whitespace-nowrap text-muted-foreground tabular-nums">{row.time}</span>
                   <span className="min-w-0 grow text-[14px] md:text-[13px]">
                     {row.summary}
                     {row.who && <span className="ml-2 text-xs text-muted-foreground">{row.who}</span>}

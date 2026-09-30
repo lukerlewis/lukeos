@@ -37,6 +37,7 @@ const fieldLabel: Record<string, string> = {
   dueDate: "due date",
   priority: "priority",
   effort: "effort",
+  repeat: "repeat",
   notes: "notes",
   content: "text",
   name: "name",

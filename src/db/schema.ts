@@ -64,6 +64,9 @@ export const tasks = pgTable(
     priority: text("priority"), // "low" | "medium" | "high"
     effort: text("effort"), // "small" | "medium" | "large"
     notes: text("notes"),
+    repeat: text("repeat"), // "daily" | "weekly" | "monthly"
+    /** A repeating task that's done: the next one it made, so un-ticking it can take that back. */
+    repeatNextId: uuid("repeat_next_id"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     ...madeBy,
   },

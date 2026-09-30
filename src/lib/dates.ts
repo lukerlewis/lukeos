@@ -24,6 +24,29 @@ export function addDays(day: string, n: number) {
   return d.toISOString().slice(0, 10);
 }
 
+/** The same day of the month, n months on. The 31st becomes the last day of a shorter month. */
+export function addMonths(day: string, n: number) {
+  const d = toUtc(day);
+  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1));
+  const last = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  target.setUTCDate(Math.min(d.getUTCDate(), last));
+  return target.toISOString().slice(0, 10);
+}
+
+/**
+ * When a repeating task is next due, after finishing the one due on `due`
+ * (or today, if it had no date). It keeps its rhythm (the same weekday, or
+ * day of the month) and always lands after today, so finishing a late one
+ * doesn't make another late one.
+ */
+export function nextRepeat(due: string | null, repeat: "daily" | "weekly" | "monthly", today: string) {
+  const start = due ?? today;
+  const step = (n: number) => (repeat === "daily" ? addDays(start, n) : repeat === "weekly" ? addDays(start, 7 * n) : addMonths(start, n));
+  let n = 1;
+  while (step(n) <= today) n++;
+  return step(n);
+}
+
 /** Whole days from `from` to `to` (negative if `to` is earlier). */
 export function daysBetween(from: string, to: string) {
   return Math.round((toUtc(to).getTime() - toUtc(from).getTime()) / 86_400_000);

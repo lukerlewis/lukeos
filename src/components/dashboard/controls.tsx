@@ -1,10 +1,9 @@
 "use client";
 
-import { ChevronDown, Eye, EyeOff, List, SlidersHorizontal, SquareKanban } from "lucide-react";
+import { ChevronDown, List, SlidersHorizontal, SquareKanban } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { StatusIcon } from "@/components/tasks/status-circle";
-import type { BoardView } from "@/lib/board";
 import { defaultDashboardView, type DashboardLayout, type DashboardView } from "@/lib/dashboard";
 import { op } from "@/lib/ops-client";
 import { pushUndo } from "@/lib/undo";
@@ -14,9 +13,8 @@ import { cn } from "@/lib/utils";
 const pill = "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap";
 
 /**
- * The switches at the top of the dashboard: the Today list or the Board, a
- * Filters menu (grouped by when or by status, and which statuses show), and on
- * the board, whether the other cards show. Each change is saved, so the
+ * The switches at the top of the dashboard: the Today list or the Board, and a
+ * Filters menu for which statuses show. Each change is saved, so the
  * dashboard looks the same next time and on other devices.
  */
 export function DashboardControls({ view }: { view: DashboardView }) {
@@ -47,9 +45,7 @@ export function DashboardControls({ view }: { view: DashboardView }) {
     change({ show: statuses.filter((s) => (s === status ? !on : current.show.includes(s))) });
   }
 
-  const changedFilters =
-    (current.by !== defaultDashboardView.by ? 1 : 0) +
-    (current.show.join() !== defaultDashboardView.show.join() ? 1 : 0);
+  const changedFilters = current.show.join() !== defaultDashboardView.show.join() ? 1 : 0;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -63,18 +59,6 @@ export function DashboardControls({ view }: { view: DashboardView }) {
         ]}
       />
       <Filters count={changedFilters}>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">Group by</span>
-          <Choice<BoardView>
-            label="Group by"
-            value={current.by}
-            onChange={(by) => change({ by })}
-            options={[
-              { value: "when", label: "By when" },
-              { value: "status", label: "By status" },
-            ]}
-          />
-        </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-muted-foreground" aria-hidden>
             Show
@@ -99,17 +83,6 @@ export function DashboardControls({ view }: { view: DashboardView }) {
           </div>
         </div>
       </Filters>
-      {current.layout === "board" && (
-        <button
-          type="button"
-          aria-pressed={current.hideCards}
-          onClick={() => change({ hideCards: !current.hideCards })}
-          className={cn(pill, "h-[38px] border bg-card text-muted-foreground hover:text-foreground")}
-        >
-          {current.hideCards ? <Eye className="size-3.5" aria-hidden /> : <EyeOff className="size-3.5" aria-hidden />}
-          {current.hideCards ? "Show other cards" : "Board only"}
-        </button>
-      )}
     </div>
   );
 }

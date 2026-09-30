@@ -39,6 +39,7 @@ const taskFields = (t: TaskSnapshot) => ({
   dueDate: t.dueDate,
   priority: t.priority,
   effort: t.effort,
+  repeat: t.repeat,
   notes: t.notes,
 });
 

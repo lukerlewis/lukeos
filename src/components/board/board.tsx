@@ -16,7 +16,7 @@ import {
   type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { Plus } from "lucide-react";
+import { Plus, Repeat } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useOptimistic, useState, useTransition } from "react";
 import { ClaudeBadge } from "@/components/tasks/made-by";
@@ -26,7 +26,7 @@ import type { Task } from "@/core/tasks";
 import { changesForMove, columnOf, columnsFor, compareTasks, type BoardView, type Column, type ColumnId } from "@/lib/board";
 import { friendlyDay } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
-import { effortLabel, priorityLabel, type Status } from "@/lib/task-fields";
+import { effortLabel, priorityLabel, repeatLabel, type Status } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 
 type Change = { id: string; changes: Partial<Pick<Task, "dueDate" | "status">> };
@@ -277,6 +277,7 @@ function CardBody({
     task.priority === "high",
     task.effort,
     task.notes,
+    task.repeat,
     showProject && task.project,
     due,
   ].some(Boolean);
@@ -316,6 +317,12 @@ function CardBody({
           )}
           {task.priority === "high" && <span className="font-medium text-danger">{priorityLabel.high}</span>}
           {task.effort && <span>{effortLabel[task.effort]}</span>}
+          {task.repeat && (
+            <span className="inline-flex items-center" title={repeatLabel[task.repeat]}>
+              <Repeat className="size-3" aria-hidden />
+              <span className="sr-only">{repeatLabel[task.repeat]}</span>
+            </span>
+          )}
           {task.notes && <span>Notes</span>}
           {showProject && task.project && (
             <span className="inline-flex min-w-0 items-center gap-1.5">

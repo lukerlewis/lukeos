@@ -1,13 +1,14 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus, Repeat } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
 import type { Task } from "@/core/tasks";
-import { friendlyDay } from "@/lib/dates";
+import { friendlyDay, nextRepeat } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
-import { effortLabel, priorityLabel, type Status } from "@/lib/task-fields";
+import { effortLabel, priorityLabel, repeatLabel, type Status } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
+import { showToast } from "@/components/shell/toast";
 import { ClaudeBadge } from "./made-by";
 import { StatusIcon } from "./status-circle";
 import { useTaskEditor } from "./task-editor";
@@ -47,6 +48,10 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
       setOptimisticStatus(next);
       try {
         await op("update_task", { id: task.id, status: next });
+        if (next === "done" && task.repeat) {
+          const label = friendlyDay(nextRepeat(task.dueDate, task.repeat, today), today);
+          showToast(`Done. The next one is due ${label === "Tomorrow" ? "tomorrow" : `on ${label}`}.`);
+        }
       } catch (err) {
         alert((err as Error).message);
       }
@@ -86,6 +91,12 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
           <ClaudeBadge madeBy={task.madeBy} />
           {task.priority === "high" && <span className="font-medium text-danger">{priorityLabel.high} priority</span>}
           {task.effort && <span>{effortLabel[task.effort]}</span>}
+          {task.repeat && (
+            <span className="inline-flex items-center gap-1" title={repeatLabel[task.repeat]}>
+              <Repeat className="size-3" aria-hidden />
+              <span className="sr-only">{repeatLabel[task.repeat]}</span>
+            </span>
+          )}
           {task.notes && <span title="Has notes">Notes</span>}
           {showProject && task.project && (
             <span className="inline-flex items-center gap-1.5">

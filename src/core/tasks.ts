@@ -1,10 +1,10 @@
 import "server-only";
-import { and, asc, eq, gte, isNull, lte, ne, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lte, ne, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
-import { addDays, isoDay } from "@/lib/dates";
+import { addDays, isoDay, nextRepeat } from "@/lib/dates";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
-import { efforts, priorities, statuses, type Effort, type Priority, type Status } from "@/lib/task-fields";
+import { efforts, priorities, repeats, statuses, type Effort, type Priority, type Repeat, type Status } from "@/lib/task-fields";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { assertProject } from "./projects";
 import { today } from "./settings";
@@ -19,6 +19,8 @@ export type Task = {
   priority: Priority | null;
   effort: Effort | null;
   notes: string | null;
+  /** How often it comes back once done: daily, weekly or monthly. */
+  repeat: Repeat | null;
   project: { id: string; name: string; color: ProjectColor; hex: string } | null;
   completedAt: Date | null;
   createdAt: Date;
@@ -38,6 +40,7 @@ function toTask(t: TaskRow, p: ProjectRow | null): Task {
     priority: t.priority as Priority | null,
     effort: t.effort as Effort | null,
     notes: t.notes,
+    repeat: t.repeat as Repeat | null,
     project: p ? { id: p.id, name: p.name, color: p.color as ProjectColor, hex: colorHex(p.color) } : null,
     completedAt: t.completedAt,
     createdAt: t.createdAt,
@@ -104,6 +107,44 @@ export async function getToday() {
   };
 }
 
+/**
+ * Keeps repeating tasks going. When one is done, the next one is made (once),
+ * due on the next day, week or month. If it's un-ticked again, that next one
+ * is taken back, as long as it hasn't been started or changed. Called after
+ * anything that can change a task's status.
+ */
+export async function syncRepeats(ids: string[]) {
+  if (ids.length === 0) return;
+  const rows = await db.select().from(tasks).where(and(inArray(tasks.id, ids), isNull(tasks.deletedAt)));
+  const date = await today();
+  for (const t of rows) {
+    if (t.status === "done" && t.repeat && !t.repeatNextId) {
+      const [next] = await db
+        .insert(tasks)
+        .values({
+          title: t.title,
+          projectId: t.projectId,
+          status: "todo",
+          dueDate: nextRepeat(t.dueDate, t.repeat as Repeat, date),
+          priority: t.priority,
+          effort: t.effort,
+          notes: t.notes,
+          repeat: t.repeat,
+          createdByKind: t.createdByKind,
+          createdByName: t.createdByName,
+          createdByRoutine: t.createdByRoutine,
+        })
+        .returning({ id: tasks.id });
+      await db.update(tasks).set({ repeatNextId: next.id }).where(eq(tasks.id, t.id));
+    } else if (t.status !== "done" && t.repeatNextId) {
+      await db
+        .delete(tasks)
+        .where(and(eq(tasks.id, t.repeatNextId), eq(tasks.status, "todo"), sql`${tasks.updatedAt} = ${tasks.createdAt}`));
+      await db.update(tasks).set({ repeatNextId: null }).where(eq(tasks.id, t.id));
+    }
+  }
+}
+
 // Inputs: every field but the title is optional, and `null` clears a field.
 const id = z.uuid().describe("The task's id.");
 const dueDate = z
@@ -119,6 +160,12 @@ export const fields = {
   priority: z.enum(priorities).nullable().describe("low, medium or high. null clears it."),
   effort: z.enum(efforts).nullable().describe("How big the task is: small, medium or large. null clears it."),
   notes: z.string().max(20_000).nullable().describe("Free text notes. null clears them."),
+  repeat: z
+    .enum(repeats)
+    .nullable()
+    .describe(
+      "daily, weekly or monthly: when it's marked done, the next one is added automatically, due a day, week or month on. null stops it repeating.",
+    ),
 };
 
 export const taskOperations = {
@@ -154,7 +201,8 @@ export const taskOperations = {
 
   create_task: defineOperation({
     name: "create_task",
-    description: "Create a task. Only the title is required; it starts as To do unless a status is given.",
+    description:
+      "Create a task. Only the title is required; it starts as To do unless a status is given. Set repeat for something that comes back every day, week or month.",
     input: z.object({
       title: fields.title,
       projectId: fields.projectId.optional(),
@@ -163,6 +211,7 @@ export const taskOperations = {
       priority: fields.priority.optional(),
       effort: fields.effort.optional(),
       notes: fields.notes.optional(),
+      repeat: fields.repeat.optional(),
     }),
     run: async (input, { actor }) => {
       if (input.projectId) await assertProject(input.projectId);
@@ -177,10 +226,12 @@ export const taskOperations = {
           priority: input.priority ?? null,
           effort: input.effort ?? null,
           notes: input.notes?.trim() || null,
+          repeat: input.repeat ?? null,
           completedAt: status === "done" ? new Date() : null,
           ...madeByColumns(actor),
         })
         .returning({ id: tasks.id });
+      await syncRepeats([row.id]);
       return getTask(row.id);
     },
   }),
@@ -188,7 +239,7 @@ export const taskOperations = {
   update_task: defineOperation({
     name: "update_task",
     description:
-      "Change any fields of a task: title, project, status, due date, priority, effort or notes. Fields left out stay as they are; null clears one.",
+      "Change any fields of a task: title, project, status, due date, priority, effort, notes or how it repeats. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
     input: z.object({
       id,
       title: fields.title.optional(),
@@ -198,6 +249,7 @@ export const taskOperations = {
       priority: fields.priority.optional(),
       effort: fields.effort.optional(),
       notes: fields.notes.optional(),
+      repeat: fields.repeat.optional(),
     }),
     run: async ({ id, ...changes }) => {
       const current = await getTask(id);
@@ -211,6 +263,7 @@ export const taskOperations = {
         set.completedAt = changes.status === "done" ? new Date() : null;
       }
       await db.update(tasks).set(set).where(eq(tasks.id, id));
+      await syncRepeats([id]);
       return getTask(id);
     },
   }),

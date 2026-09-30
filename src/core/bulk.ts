@@ -8,7 +8,7 @@ import type { Status } from "@/lib/task-fields";
 import { defineOperation, OperationError } from "./define";
 import { assertProject } from "./projects";
 import { getTimeZone } from "./settings";
-import { fields } from "./tasks";
+import { fields, syncRepeats } from "./tasks";
 
 /**
  * Doing the same thing to several tasks, notes or artifacts at once, as Luke does when he
@@ -62,6 +62,7 @@ export const bulkOperations = {
         }::timestamptz end`;
       }
       await db.update(tasks).set(set).where(inArray(tasks.id, rows.map((r) => r.id)));
+      if (changes.status) await syncRepeats(rows.map((r) => r.id));
       return { count: rows.length, titles: rows.map((r) => r.title), project };
     },
   }),
@@ -88,6 +89,7 @@ export const bulkOperations = {
           moved.push(task.title);
         }
       });
+      await syncRepeats(rows.map((r) => r.id));
       return { count: moved.length, titles: moved };
     },
   }),

@@ -23,14 +23,14 @@ export const dashboardOperations = {
   get_dashboard: defineOperation({
     name: "get_dashboard",
     description:
-      'Luke\'s dashboard (the app\'s home screen) exactly as he has it set up: open tasks from every project, grouped by when they\'re due (Today including late, This week, This month, Later) or by status (To do, Doing, Done), shown as a list or a board. By default it only shows To do tasks; Luke can switch Doing and Done back on. Pass by or show to look at it differently without changing Luke\'s setup. "view" in the result is his saved setup.',
+      'Luke\'s dashboard (the app\'s home screen) as he has it set up. It has two tabs: Today (layout "list"), which shows only tasks due today or late, and Board, which shows every task in columns by when it\'s due (Today including late, This week, This month, Later). By default it hides Done tasks; Luke can switch them on in Filters. This returns every column, whichever tab he\'s on; pass by or show to look at it differently without changing Luke\'s setup. "view" in the result is his saved setup.',
     input: z.object({
-      by: z.enum(boardViews).optional().describe('"when" or "status". Leave out to use Luke\'s choice.'),
+      by: z.enum(boardViews).optional().describe('"when" (the default, as on the dashboard) or "status".'),
       show: showField.optional().describe("Only tasks with these statuses. Leave out to use Luke's choice."),
     }),
     run: async ({ by, show }) => {
       const view = await getDashboardView();
-      const board = await getBoard(by ?? view.by, undefined, show ?? view.show);
+      const board = await getBoard(by ?? "when", undefined, show ?? view.show);
       return { view, today: board.today, groups: board.columns };
     },
   }),
@@ -38,12 +38,10 @@ export const dashboardOperations = {
   set_dashboard_view: defineOperation({
     name: "set_dashboard_view",
     description:
-      "Change how Luke's dashboard looks, just like the switches at the top of it: the Today list or the Board, grouped by when or by status, which statuses show, and whether the board hides the other cards. Only change this when Luke asks. Fields left out stay as they are.",
+      "Change how Luke's dashboard looks, just like the switches at the top of it: the Today tab or the Board, and which statuses show. Only change this when Luke asks. Fields left out stay as they are.",
     input: z.object({
       layout: z.enum(dashboardLayouts).optional().describe('"list" (the Today tab) or "board".'),
-      by: z.enum(boardViews).optional().describe('"when" or "status".'),
       show: showField.optional().describe("Which statuses to show, e.g. [\"todo\"] or [\"todo\", \"doing\"]."),
-      hideCards: z.boolean().optional().describe("On the board, true hides the other cards so only the board shows."),
     }),
     run: async (changes) => {
       const current = await getDashboardView();
