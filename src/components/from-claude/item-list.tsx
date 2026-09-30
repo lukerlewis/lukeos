@@ -15,34 +15,7 @@ export function ClaudeItemList({ items, when }: { items: ClaudeItem[]; when: Rec
   return (
     <ul>
       {items.map((item) => {
-        const Icon = item.type === "task" ? CheckSquare : item.type === "project" ? Folder : item.format === "html" ? Globe : FileText;
-        const body = (
-          <>
-            <span className="relative mt-0.5 shrink-0">
-              <Icon className="size-[18px] text-muted-foreground md:size-4" aria-hidden />
-              {item.isNew && (
-                <span className="absolute -top-1 -right-1 size-2 rounded-full bg-doing ring-2 ring-card" aria-label="New" />
-              )}
-            </span>
-            <span className="flex min-w-0 grow flex-col gap-0.5 text-left">
-              <span className="flex items-baseline gap-3">
-                <span className="min-w-0 grow truncate text-[15px] font-medium md:text-sm">{item.title || "Untitled"}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{when[item.id]}</span>
-              </span>
-              {item.excerpt && <span className="line-clamp-2 text-[13px] text-muted-foreground">{item.excerpt}</span>}
-              <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-                <span>{item.format === "html" ? "Saved page" : kindLabel[item.type]}</span>
-                <span>{item.routine ? `${item.name}, ${item.routine}` : item.name}</span>
-                {item.project && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-[3px]" style={{ background: item.project.hex }} aria-hidden />
-                    {item.project.name}
-                  </span>
-                )}
-              </span>
-            </span>
-          </>
-        );
+        const body = <ItemBody item={item} when={when[item.id]} />;
         const row = "flex w-full items-start gap-3 px-4 py-3 hover:bg-muted/50";
         return (
           <li key={`${item.type}-${item.id}`} className="border-b last:border-b-0">
@@ -69,5 +42,37 @@ export function ClaudeItemList({ items, when }: { items: ClaudeItem[]; when: Rec
         );
       })}
     </ul>
+  );
+}
+
+/** The inside of a row: icon (with a dot if new), title, time, excerpt and who made it. */
+export function ItemBody({ item, when }: { item: ClaudeItem; when: string }) {
+  const Icon = item.type === "task" ? CheckSquare : item.type === "project" ? Folder : item.format === "html" ? Globe : FileText;
+  return (
+    <>
+      <span className="relative mt-0.5 shrink-0">
+        <Icon className="size-[18px] text-muted-foreground md:size-4" aria-hidden />
+        {item.isNew && (
+          <span className="absolute -top-1 -right-1 size-2 rounded-full bg-doing ring-2 ring-card" aria-label="New" />
+        )}
+      </span>
+      <span className="flex min-w-0 grow flex-col gap-0.5 text-left">
+        <span className="flex items-baseline gap-3">
+          <span className="min-w-0 grow truncate text-[15px] font-medium md:text-sm">{item.title || "Untitled"}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">{when}</span>
+        </span>
+        {item.excerpt && <span className="line-clamp-2 text-[13px] text-muted-foreground">{item.excerpt}</span>}
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+          <span>{item.format === "html" ? "Saved page" : kindLabel[item.type]}</span>
+          <span>{item.routine ? `${item.name}, ${item.routine}` : item.name}</span>
+          {item.project && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2 rounded-[3px]" style={{ background: item.project.hex }} aria-hidden />
+              {item.project.name}
+            </span>
+          )}
+        </span>
+      </span>
+    </>
   );
 }

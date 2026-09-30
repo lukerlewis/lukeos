@@ -1,23 +1,22 @@
 import type { Metadata } from "next";
 import { ActivityList, type ActivityRow } from "@/components/from-claude/activity-list";
-import { ClaudeItemList } from "@/components/from-claude/item-list";
 import { MarkFromClaudeSeen } from "@/components/from-claude/mark-seen";
+import { SelectableClaudeList } from "@/components/from-claude/selectable-list";
 import { editedLabel } from "@/components/notes/note-list";
 import { EmptyState, Page } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
 import { SegmentedLinks } from "@/components/ui/segmented-links";
 import { listActivity } from "@/core/activity";
-import { claudeRoutines, listFromClaude, type ClaudeItem } from "@/core/from-claude";
+import { claudeRoutines, listFromClaude } from "@/core/from-claude";
+import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { friendlyDay, todayIn } from "@/lib/dates";
 
-export const metadata: Metadata = { title: "Agent log · LukeOS" };
+export const metadata: Metadata = { title: "Agents · LukeOS" };
 
 const types = [
-  { value: undefined, label: "Everything" },
-  { value: "note", label: "Notes" },
   { value: "task", label: "Tasks" },
-  { value: "project", label: "Projects" },
+  { value: "note", label: "Notes" },
 ] as const;
 
 const views = [
@@ -25,40 +24,42 @@ const views = [
   { value: "activity", label: "Activity log" },
 ] as const;
 
-export default async function FromClaudePage({ searchParams }: PageProps<"/agent-log">) {
+export default async function FromClaudePage({ searchParams }: PageProps<"/agents">) {
   const query = await searchParams;
   const viewSwitch = (active: string | undefined) => (
     <SegmentedLinks
       label="View"
       className="self-start"
-      options={views.map((v) => ({ href: v.value ? `/agent-log?view=${v.value}` : "/agent-log", label: v.label, active: active === v.value }))}
+      options={views.map((v) => ({ href: v.value ? `/agents?view=${v.value}` : "/agents", label: v.label, active: active === v.value }))}
     />
   );
   if (query.view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
 
-  const type = types.find((t) => t.value && t.value === query.type)?.value as ClaudeItem["type"] | undefined;
+  const type: "task" | "note" = query.type === "note" ? "note" : "task";
   const routine = typeof query.routine === "string" && query.routine ? query.routine : undefined;
-  const [items, routines, timeZone] = await Promise.all([
+  const [items, routines, timeZone, projects] = await Promise.all([
     listFromClaude({ type, routine, limit: 200 }),
     claudeRoutines(),
     getTimeZone(),
+    listProjects(),
   ]);
   const href = (next: { type?: string; routine?: string }) => {
     const params = new URLSearchParams();
-    if (next.type) params.set("type", next.type);
+    if (next.type === "note") params.set("type", next.type);
     if (next.routine) params.set("routine", next.routine);
     const qs = params.toString();
-    return qs ? `/agent-log?${qs}` : "/agent-log";
+    return qs ? `/agents?${qs}` : "/agents";
   };
   const when = Object.fromEntries(items.map((i) => [i.id, editedLabel(i.createdAt, timeZone)]));
 
   return (
-    <Page title="Agent log" newTask={false}>
+    <Page title="Agents" newTask={false}>
       <MarkFromClaudeSeen hasNew={items.some((i) => i.isNew)} />
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch(undefined)}
         <p className="text-[13px] text-muted-foreground">
-          Everything Claude has made for you, newest first. Blue dots are new since you last looked.
+          Tasks and notes Claude has made for you, newest first. Blue dots are new since you last looked. Tap Select to change
+          several at once.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <SegmentedLinks
@@ -76,15 +77,14 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
             />
           )}
         </div>
-        <Card>
-          {items.length === 0 ? (
-            <EmptyState>
-              Nothing here yet. When Claude or one of your routines saves something to LukeOS, it lands here.
-            </EmptyState>
-          ) : (
-            <ClaudeItemList items={items} when={when} />
-          )}
-        </Card>
+        <SelectableClaudeList
+          key={`${type}-${routine ?? ""}`}
+          items={items}
+          when={when}
+          kind={type}
+          projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+          empty={`No ${type}s from Claude yet. When Claude or one of your routines makes one, it lands here.`}
+        />
       </div>
     </Page>
   );
@@ -113,7 +113,7 @@ async function ActivityPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
   }
 
   return (
-    <Page title="Agent log" newTask={false}>
+    <Page title="Agents" newTask={false}>
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch}
         <p className="text-[13px] text-muted-foreground">

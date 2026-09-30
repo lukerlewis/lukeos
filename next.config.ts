@@ -7,8 +7,9 @@ const nextConfig: NextConfig = {
     staleTimes: { dynamic: 30 },
   },
   redirects: async () => [
-    // The Agent log used to be called From Claude.
-    { source: "/from-claude", destination: "/agent-log", permanent: true },
+    // Agents used to be called From Claude, then Agent log.
+    { source: "/from-claude", destination: "/agents", permanent: true },
+    { source: "/agent-log", destination: "/agents", permanent: true },
     // The board is now a layout on the dashboard.
     { source: "/board", destination: "/", permanent: true },
   ],

@@ -111,7 +111,7 @@ const dueDate = z
   .regex(isoDay, "Use a date like 2026-10-02.")
   .nullable()
   .describe("Due date as YYYY-MM-DD in Luke's time zone (get_today tells you today's date). null clears it.");
-const fields = {
+export const fields = {
   title: z.string().trim().min(1).max(500),
   projectId: z.uuid().nullable().describe("The project to put it in. null means no project."),
   status: z.enum(statuses).describe("todo, doing or done."),

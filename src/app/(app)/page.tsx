@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   const [{ date, tasks }, projects, notes, fromClaude, timeZone] = await Promise.all([
     boardTasks(view.by, undefined, view.show),
     listProjects(),
-    listNotes({ limit: 5 }),
+    listNotes({ madeBy: "luke", limit: 5 }),
     listFromClaude({ limit: 5 }),
     getTimeZone(),
   ]);
@@ -65,9 +65,9 @@ export default async function DashboardPage() {
       </Card>
       <Card>
         <CardHeader
-          title="Agent log"
+          title="Agents"
           aside={
-            <Link href="/agent-log" className="hover:text-foreground">
+            <Link href="/agents" className="hover:text-foreground">
               {newFromClaude > 0 ? `${newFromClaude} new, see all` : "See all"}
             </Link>
           }

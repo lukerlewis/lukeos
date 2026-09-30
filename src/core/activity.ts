@@ -163,9 +163,38 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     }
 
     case "mark_from_claude_seen":
-      return { summary: "Cleared the New markers in the Agent log" };
+      return { summary: "Cleared the New markers in Agents" };
     case "set_time_zone":
       return { summary: `Set your time zone to ${input.timeZone}` };
+    case "update_tasks":
+    case "move_tasks":
+    case "delete_tasks":
+    case "update_notes":
+    case "delete_notes": {
+      const out = r as { count?: number; titles?: string[]; project?: string | null };
+      const n = out.count ?? 0;
+      if (n === 0) return null;
+      const kind = tool.endsWith("tasks") ? "task" : "note";
+      const things = `${n} ${kind}${n === 1 ? "" : "s"}`;
+      const names = (out.titles ?? []).slice(0, 3).map(quote).join(", ") + (n > 3 ? ", …" : "");
+      let action: string;
+      if (tool.startsWith("delete_")) action = `Moved ${things} to Trash`;
+      else if (tool === "move_tasks") {
+        const to = String(input.to);
+        action = `Moved ${things} to ${columnLabel[to] ?? statusLabel[to as Status] ?? to}`;
+      } else {
+        const fields = changed(input);
+        action =
+          fields.length === 1 && fields[0] === "project"
+            ? out.project
+              ? `Moved ${things} to ${out.project}`
+              : `Took ${things} out of their project`
+            : fields.length === 1 && fields[0] === "status"
+              ? `Marked ${things} as ${statusLabel[input.status as Status] ?? input.status}`
+              : `Edited ${things} (${fields.join(", ")})`;
+      }
+      return { summary: `${action}: ${names}` };
+    }
     case "set_dashboard_view":
       return { summary: "Changed how your dashboard looks" };
     default:

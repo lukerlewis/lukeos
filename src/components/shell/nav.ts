@@ -4,7 +4,7 @@ export const mainNav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tasks", label: "All tasks", icon: CheckSquare },
   { href: "/notes", label: "Notes", icon: FileText },
-  { href: "/agent-log", label: "Agent log", icon: Bot },
+  { href: "/agents", label: "Agents", icon: Bot },
 ] as const;
 
 export const phoneTabs = [

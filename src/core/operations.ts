@@ -3,6 +3,7 @@ import { z } from "zod";
 import { passkeyCount } from "@/lib/auth/passkeys";
 import { activityOperations } from "./activity";
 import { boardOperations } from "./board";
+import { bulkOperations } from "./bulk";
 import { dashboardOperations } from "./dashboard";
 import { defineOperation, OperationError, type Actor, type Operation } from "./define";
 import { fromClaudeOperations } from "./from-claude";
@@ -38,6 +39,7 @@ export const operations = {
   ...dashboardOperations,
   ...projectOperations,
   ...noteOperations,
+  ...bulkOperations,
   ...fromClaudeOperations,
   ...activityOperations,
   ...searchOperations,

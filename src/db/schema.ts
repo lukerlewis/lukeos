@@ -154,7 +154,7 @@ export const agentAccessTokens = pgTable(
 
 /**
  * A short line for each change Claude made through the connector ("Added task
- * "Call Mum""), shown as the activity log in the Agent log section.
+ * "Call Mum""), shown as the activity log in the Agents section.
  */
 export const activityLog = pgTable(
   "activity_log",

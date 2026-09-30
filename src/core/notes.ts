@@ -171,7 +171,7 @@ export const noteOperations = {
   create_note: defineOperation({
     name: "create_note",
     description:
-      'Create a note, on its own or inside a project. Write it in Markdown. To save a finished document or artifact as a web page, pass format "html" and a complete HTML page as content; Luke sees it exactly as written but can\'t edit it in the app. Notes you make show up in Luke\'s Agent log section; nothing opens automatically.',
+      'Create a note, on its own or inside a project. Write it in Markdown. To save a finished document or artifact as a web page, pass format "html" and a complete HTML page as content; Luke sees it exactly as written but can\'t edit it in the app. Notes you make show up in Luke\'s Agents section; nothing opens automatically.',
     input: z.object({
       title: title.optional(),
       content: content.optional(),

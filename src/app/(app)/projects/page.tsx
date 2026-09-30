@@ -21,9 +21,9 @@ export default async function ProjectsPage() {
           <span className="grow text-[15px] font-medium">All tasks</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
-        <Link href="/agent-log" className="flex min-h-14 items-center gap-3 border-t px-4 py-3">
+        <Link href="/agents" className="flex min-h-14 items-center gap-3 border-t px-4 py-3">
           <Bot className="size-[18px] text-muted-foreground" aria-hidden />
-          <span className="grow text-[15px] font-medium">Agent log</span>
+          <span className="grow text-[15px] font-medium">Agents</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
       </Card>
