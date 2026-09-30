@@ -16,7 +16,7 @@ export default async function SettingsPage() {
   const passkeys = await db.select().from(schema.passkeys).orderBy(asc(schema.passkeys.createdAt));
 
   return (
-    <Page title="Settings">
+    <Page title="Settings" newTask={false}>
       <div className="flex max-w-2xl flex-col gap-6">
         <Card>
           <CardHeader title="Appearance" />

@@ -17,6 +17,13 @@ the app, Claude can do too, through a connector (roadmap step 3).
   exposes the same list as tools, so new features reach Claude automatically.
   Each operation receives an `actor` (Luke, or Claude and which routine) so
   everything can record who made it.
+  Operations live in `src/core/` (`tasks.ts`, `projects.ts`, `settings.ts`)
+  and are gathered in `operations.ts`. Screens read with the same core
+  functions and change things by calling `/api/ops/<name>` (`src/lib/ops-client.ts`).
+- **Dates**: due dates are plain days (`YYYY-MM-DD`). "Today" uses Luke's time
+  zone, which the app saves from his device (`set_time_zone`).
+- **Deleting** only sets `deleted_at` (Trash, kept 30 days); deleting a
+  project trashes its tasks too.
 
 ## Running locally
 

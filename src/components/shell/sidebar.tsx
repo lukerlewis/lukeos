@@ -1,12 +1,15 @@
 "use client";
 
-import { Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NewProjectIconButton } from "@/components/projects/project-dialog";
 import { cn } from "@/lib/utils";
 import { isActive, mainNav } from "./nav";
 
-export function Sidebar() {
+type SidebarProject = { id: string; name: string; hex: string; open: number };
+
+export function Sidebar({ projects }: { projects: SidebarProject[] }) {
   const pathname = usePathname();
 
   return (
@@ -33,20 +36,33 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="flex flex-col gap-0.5">
+      <div className="-mx-1 flex min-h-0 flex-col gap-0.5 overflow-y-auto px-1">
         <div className="flex items-center justify-between px-2.5 pb-1.5 text-xs font-medium text-muted-foreground">
-          <span>Projects</span>
-          <button
-            type="button"
-            disabled
-            aria-label="New project (coming in step 2)"
-            title="Coming in step 2"
-            className="flex text-muted-foreground disabled:opacity-60"
-          >
-            <Plus className="size-[15px]" aria-hidden />
-          </button>
+          <Link href="/projects" className="hover:text-foreground">
+            Projects
+          </Link>
+          <NewProjectIconButton />
         </div>
-        <p className="px-2.5 text-[13px] text-muted-foreground">No projects yet</p>
+        {projects.length === 0 && <p className="px-2.5 text-[13px] text-muted-foreground">No projects yet</p>}
+        {projects.map((p) => {
+          const href = `/projects/${p.id}`;
+          const active = pathname === href;
+          return (
+            <Link
+              key={p.id}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-subtle-foreground hover:bg-muted",
+                active && "bg-muted font-medium text-foreground",
+              )}
+            >
+              <span className="size-2.5 shrink-0 rounded-[3px]" style={{ background: p.hex }} aria-hidden />
+              <span className="grow truncate">{p.name}</span>
+              {p.open > 0 && <span className="text-xs text-muted-foreground">{p.open}</span>}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="grow" />
