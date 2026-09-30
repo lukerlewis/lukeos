@@ -11,8 +11,8 @@ export const metadata: Metadata = { title: "All tasks · LukeOS" };
 const sections: { when: When; title: string }[] = [
   { when: "overdue", title: "Late" },
   { when: "today", title: "Today" },
+  { when: "tomorrow", title: "Tomorrow" },
   { when: "week", title: "This week" },
-  { when: "month", title: "This month" },
   { when: "later", title: "Later" },
   { when: "none", title: "No date" },
 ];

@@ -19,8 +19,8 @@ type ProjectChoice = { id: string; name: string };
 
 const dueChoices = [
   { value: "today", label: "Today" },
+  { value: "tomorrow", label: "Tomorrow" },
   { value: "this_week", label: "This week" },
-  { value: "this_month", label: "This month" },
   { value: "later", label: "Later" },
 ] as const;
 

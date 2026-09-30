@@ -4,14 +4,14 @@
  * app and a move by Claude do exactly the same thing.
  */
 import type { Task } from "@/core/tasks";
-import { addDays, dayAndMonth, weekdayDayAndMonth, whenOf, whenWindows } from "./dates";
+import { addDays, weekdayDayAndMonth, whenOf, whenWindows } from "./dates";
 import { statuses, statusLabel, type Status } from "./task-fields";
 
 /** "when" sorts cards by due date (Today, This week...); "status" by To do, Doing, Done. */
 export const boardViews = ["when", "status"] as const;
 export type BoardView = (typeof boardViews)[number];
 
-export const whenColumns = ["today", "this_week", "this_month", "later"] as const;
+export const whenColumns = ["today", "tomorrow", "this_week", "later"] as const;
 export type WhenColumn = (typeof whenColumns)[number];
 export type ColumnId = WhenColumn | Status;
 export const columnIds = [...whenColumns, ...statuses] as const;
@@ -21,12 +21,12 @@ export type Column = { id: ColumnId; title: string; hint?: string };
 /** The columns for a view. When grouping by status, only the statuses in `show` get a column. */
 export function columnsFor(view: BoardView, today: string, show: readonly Status[] = statuses): Column[] {
   if (view === "status") return statuses.filter((s) => show.includes(s)).map((s) => ({ id: s, title: statusLabel[s] }));
-  const { weekEnd, monthEnd } = whenWindows(today);
+  const { tomorrow, weekEnd } = whenWindows(today);
   return [
     { id: "today", title: "Today", hint: "And anything late" },
-    { id: "this_week", title: "This week", hint: `Until ${weekdayDayAndMonth(weekEnd)}` },
-    { id: "this_month", title: "This month", hint: `${dayAndMonth(addDays(weekEnd, 1))} to ${dayAndMonth(monthEnd)}` },
-    { id: "later", title: "Later", hint: `After ${dayAndMonth(monthEnd)}, or no date` },
+    { id: "tomorrow", title: "Tomorrow", hint: weekdayDayAndMonth(tomorrow) },
+    { id: "this_week", title: "This week", hint: `${weekdayDayAndMonth(addDays(tomorrow, 1))} to ${weekdayDayAndMonth(weekEnd)}` },
+    { id: "later", title: "Later", hint: `After ${weekdayDayAndMonth(weekEnd)}, or no date` },
   ];
 }
 
@@ -39,10 +39,10 @@ export function columnOf(task: Placeable, view: BoardView, today: string): Colum
     case "overdue":
     case "today":
       return "today";
+    case "tomorrow":
+      return "tomorrow";
     case "week":
       return "this_week";
-    case "month":
-      return "this_month";
     default:
       return "later";
   }
@@ -50,8 +50,8 @@ export function columnOf(task: Placeable, view: BoardView, today: string): Colum
 
 /**
  * What changes when a task moves to a column, or null if it's already there.
- * Today sets the due date to today; This week and This month set it to the
- * last day of that stretch; Later clears it. Status columns set the status.
+ * Today and Tomorrow set the due date to that day; This week sets it to the
+ * last day of the week; Later clears it. Status columns set the status.
  */
 export function changesForMove(
   task: Placeable,
@@ -62,8 +62,8 @@ export function changesForMove(
     return task.status === to ? null : { status: to as Status };
   }
   if (columnOf(task, "when", today) === to) return null;
-  const { weekEnd, monthEnd } = whenWindows(today);
-  const dueDate = { today, this_week: weekEnd, this_month: monthEnd, later: null }[to as WhenColumn];
+  const { tomorrow, weekEnd } = whenWindows(today);
+  const dueDate = { today, tomorrow, this_week: weekEnd, later: null }[to as WhenColumn];
   return { dueDate };
 }
 

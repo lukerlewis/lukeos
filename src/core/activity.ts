@@ -25,6 +25,7 @@ export const isLookup = (tool: string) => /^(get|list)_/.test(tool) || tool === 
 
 const columnLabel: Record<string, string> = {
   today: "Today",
+  tomorrow: "Tomorrow",
   this_week: "This week",
   this_month: "This month",
   later: "Later",

@@ -87,27 +87,30 @@ export function friendlyDay(day: string, today: string) {
 }
 
 /**
- * Where "This week" and "This month" end, as seen from `today`. On a Sunday
- * the week has nothing left after today, so "This week" means the coming
- * week; and when the week runs past the end of the month, "This month" means
- * the rest of next month.
+ * Tomorrow, and where "This week" ends, as seen from `today`. This week is
+ * the days after tomorrow up to Sunday. On a Saturday or Sunday that leaves
+ * nothing, so "This week" means the coming week instead.
  */
 export function whenWindows(today: string) {
-  const weekEnd = endOfWeek(today) === today ? addDays(today, 7) : endOfWeek(today);
-  const monthEnd = endOfMonth(today) > weekEnd ? endOfMonth(today) : endOfMonth(addDays(weekEnd, 1));
-  return { weekEnd, monthEnd };
+  const tomorrow = addDays(today, 1);
+  const weekEnd = endOfWeek(today) > tomorrow ? endOfWeek(today) : endOfWeek(addDays(today, 2));
+  return { tomorrow, weekEnd };
 }
 
-/** Which "when" bucket a due date falls in, matching the board's columns. */
-export type When = "overdue" | "today" | "week" | "month" | "later" | "none";
+/**
+ * Which "when" bucket a due date falls in, matching the board's columns.
+ * It's worked out from the date each time, so at midnight tomorrow's tasks
+ * become today's on their own.
+ */
+export type When = "overdue" | "today" | "tomorrow" | "week" | "later" | "none";
 
 export function whenOf(dueDate: string | null, today: string): When {
   if (!dueDate) return "none";
   if (dueDate < today) return "overdue";
   if (dueDate === today) return "today";
-  const { weekEnd, monthEnd } = whenWindows(today);
+  const { tomorrow, weekEnd } = whenWindows(today);
+  if (dueDate === tomorrow) return "tomorrow";
   if (dueDate <= weekEnd) return "week";
-  if (dueDate <= monthEnd) return "month";
   return "later";
 }
 

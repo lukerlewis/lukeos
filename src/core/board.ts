@@ -46,7 +46,7 @@ export const boardOperations = {
   get_board: defineOperation({
     name: "get_board",
     description:
-      'Luke\'s task board, column by column. view "when" (the default) has columns Today (including late tasks), This week, This month and Later (after this month, or no due date). view "status" has To do, Doing and Done. Done tasks only show while fresh: finished today, or the 30 most recent in the Done column. Use show to leave out some statuses.',
+      'Luke\'s task board, column by column. view "when" (the default) has columns Today (including late tasks), Tomorrow, This week (after tomorrow, to Sunday) and Later (after this week, or no due date). Tomorrow\'s tasks move into Today on their own at midnight. view "status" has To do, Doing and Done. Done tasks only show while fresh: finished today, or the 30 most recent in the Done column. Use show to leave out some statuses.',
     input: z.object({
       view: z.enum(boardViews).optional().describe('"when" (default) or "status".'),
       projectId: z.uuid().optional().describe("Only this project's tasks. Leave out for every project."),
@@ -60,7 +60,7 @@ export const boardOperations = {
 
   move_task: defineOperation({
     name: "move_task",
-    description: `Move a task to a board column, just like dragging its card. One of: ${moveTargets}. today sets the due date to today; this_week to the last day of this week; this_month to the last day of the month; later clears the due date. todo, doing and done set the status. Moving to the column it's already in changes nothing. To pick an exact due date instead, use update_task.`,
+    description: `Move a task to a board column, just like dragging its card. One of: ${moveTargets}. today sets the due date to today; tomorrow to tomorrow; this_week to the last day of this week; later clears the due date. todo, doing and done set the status. Moving to the column it's already in changes nothing. To pick an exact due date instead, use update_task.`,
     input: z.object({
       id: z.uuid().describe("The task's id."),
       to: z.enum(columnIds),

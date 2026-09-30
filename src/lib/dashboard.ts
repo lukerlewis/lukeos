@@ -11,7 +11,7 @@ export type DashboardLayout = (typeof dashboardLayouts)[number];
 export type DashboardView = {
   /**
    * "list" is the Today tab: just the tasks due today (or late).
-   * "board" is every task in columns by when it's due (Today, This week, This month, Later).
+   * "board" is every task in columns by when it's due (Today, Tomorrow, This week, Later).
    */
   layout: DashboardLayout;
   /** Which statuses to show. Starts with To do and Doing, so finished tasks are hidden. */

@@ -70,7 +70,7 @@ export const bulkOperations = {
   move_tasks: defineOperation({
     name: "move_tasks",
     description:
-      "Move several tasks to a board column at once, just like move_task does for one. today, this_week, this_month and later set the due date; todo, doing and done set the status. Tasks already in that column are left alone.",
+      "Move several tasks to a board column at once, just like move_task does for one. today, tomorrow, this_week and later set the due date; todo, doing and done set the status. Tasks already in that column are left alone.",
     input: z.object({ ids: ids("tasks"), to: z.enum(columnIds) }),
     run: async ({ ids, to }): Promise<Outcome> => {
       const rows = await db
