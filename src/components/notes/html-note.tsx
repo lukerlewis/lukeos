@@ -10,8 +10,8 @@ import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 
 /**
- * A finished page Claude saved (an artifact). It's shown exactly as Claude
- * wrote it, walled off in a sandbox so its code can't reach the rest of the
+ * A note that is a finished web page. It's shown exactly as it was
+ * written, walled off in a sandbox so its code can't reach the rest of the
  * app. Luke can move or delete it, but not edit the page itself.
  */
 export function HtmlNote({ note, projects }: { note: Note; projects: { id: string; name: string }[] }) {

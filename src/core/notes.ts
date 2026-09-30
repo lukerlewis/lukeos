@@ -8,8 +8,9 @@ import { assertProject } from "./projects";
 
 const { notes, projects, images } = schema;
 
-export const noteFormats = ["markdown", "html"] as const;
-export type NoteFormat = (typeof noteFormats)[number];
+import { noteFormats, type NoteFormat } from "@/lib/note-formats";
+
+export { noteFormats, type NoteFormat };
 
 export type NoteSummary = {
   id: string;
@@ -44,6 +45,8 @@ export function plainTextOf(content: string, format: string) {
           .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // photos
           .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // links keep their text
           .replace(/^\s*(#{1,6}|[-*+]\s+\[[ xX]\]|[-*+]|\d+\.|>)\s*/gm, "")
+          .replace(/^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/gm, "") // table dividers
+          .replace(/\|/g, " ")
           .replace(/[*_`~]/g, "");
   return text.replace(/\s+/g, " ").trim();
 }
@@ -171,7 +174,7 @@ export const noteOperations = {
   create_note: defineOperation({
     name: "create_note",
     description:
-      'Create a note, on its own or inside a project. Write it in Markdown. To save a finished document or artifact as a web page, pass format "html" and a complete HTML page as content; Luke sees it exactly as written but can\'t edit it in the app. Notes you make show up in Luke\'s Agents section; nothing opens automatically.',
+      "Create a note in Luke's Notes, on its own or inside a project, written in Markdown. Notes are Luke's own writing, so only do this when he explicitly asks for a note. For anything else you write for him (reports, pages, research), use create_artifact.",
     input: z.object({
       title: title.optional(),
       content: content.optional(),
@@ -197,7 +200,7 @@ export const noteOperations = {
   update_note: defineOperation({
     name: "update_note",
     description:
-      "Change a note: its title, its whole text, or its project. To add to the end without rewriting it (a running log, say), use append instead of content. Fields left out stay as they are.",
+      "Change one of Luke's notes: its title, its whole text, or its project. Only when Luke explicitly asks you to change his note. To add to the end without rewriting it (a running log, say), use append instead of content. Fields left out stay as they are.",
     input: z.object({
       id,
       title: title.optional(),
@@ -240,7 +243,7 @@ export const noteOperations = {
   save_image: defineOperation({
     name: "save_image",
     description:
-      "Save a photo (JPEG, PNG, WebP or GIF, up to 3 MB) so it can go in a note. Returns a url and a ready-made Markdown line to put in the note's text.",
+      "Save a photo (JPEG, PNG, WebP or GIF, up to 3 MB) so it can go in an artifact or a note. Returns a url, and a ready-made Markdown line to put in the text (in an HTML part, use <img src=\"url\">).",
     input: z.object({
       data: z.base64().describe("The image file, base64 encoded."),
       mimeType: z.enum(imageTypes),

@@ -15,8 +15,8 @@ import { getTimeZone } from "@/core/settings";
 export const metadata: Metadata = { title: "Agents · LukeOS" };
 
 const types = [
+  { value: "artifact", label: "Artifacts" },
   { value: "task", label: "Tasks" },
-  { value: "note", label: "Notes" },
 ] as const;
 
 const views = [
@@ -35,7 +35,7 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
   );
   if (query.view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
 
-  const type: "task" | "note" = query.type === "note" ? "note" : "task";
+  const type: "task" | "artifact" = query.type === "task" ? "task" : "artifact";
   const routine = typeof query.routine === "string" && query.routine ? query.routine : undefined;
   const [items, routines, timeZone, projects] = await Promise.all([
     listFromClaude({ type, routine, limit: 200 }),
@@ -45,7 +45,7 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
   ]);
   const href = (next: { type?: string; routine?: string }) => {
     const params = new URLSearchParams();
-    if (next.type === "note") params.set("type", next.type);
+    if (next.type === "task") params.set("type", next.type);
     if (next.routine) params.set("routine", next.routine);
     const qs = params.toString();
     return qs ? `/agents?${qs}` : "/agents";
@@ -58,8 +58,9 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch(undefined)}
         <p className="text-[13px] text-muted-foreground">
-          Tasks and notes Claude has made for you, newest first. Blue dots are new since you last looked. Tap Select to change
-          several at once.
+          What Claude has made for you, newest first. Artifacts are the reports, pages and other things Claude writes; open one
+          to read it, see its versions and leave comments. Blue dots are new or updated since you last looked. Tap Select to
+          change several at once.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <SegmentedLinks

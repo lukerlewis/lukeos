@@ -11,22 +11,22 @@ import { getTimeZone } from "./settings";
 import { fields } from "./tasks";
 
 /**
- * Doing the same thing to several tasks or notes at once, as Luke does when he
+ * Doing the same thing to several tasks, notes or artifacts at once, as Luke does when he
  * selects a few in the app. Each returns how many it changed and their titles.
  */
 
-const { tasks, notes, projects } = schema;
+const { tasks, notes, artifacts, projects } = schema;
 
 const ids = (what: string) => z.array(z.uuid()).min(1).max(200).describe(`The ${what}' ids.`);
 
 type Outcome = { count: number; titles: string[]; project?: string | null };
 
-async function liveTitles(table: typeof tasks | typeof notes, list: string[]) {
+async function liveTitles(table: typeof tasks | typeof notes | typeof artifacts, list: string[]) {
   const rows = await db
     .select({ id: table.id, title: table.title })
     .from(table)
     .where(and(inArray(table.id, list), isNull(table.deletedAt)));
-  if (rows.length === 0) throw new OperationError(`None of those ${table === tasks ? "tasks" : "notes"} exist, or they're in Trash.`, 404);
+  if (rows.length === 0) throw new OperationError(`None of those ${table === tasks ? "tasks" : table === notes ? "notes" : "artifacts"} exist, or they're in Trash.`, 404);
   return rows;
 }
 
@@ -128,6 +128,35 @@ export const bulkOperations = {
     run: async ({ ids }): Promise<Outcome> => {
       const rows = await liveTitles(notes, ids);
       await db.update(notes).set({ deletedAt: new Date() }).where(inArray(notes.id, rows.map((r) => r.id)));
+      return { count: rows.length, titles: rows.map((r) => r.title) };
+    },
+  }),
+
+  update_artifacts: defineOperation({
+    name: "update_artifacts",
+    description: "Move several artifacts into a project at once, or out of their project (projectId null).",
+    input: z.object({
+      ids: ids("artifacts"),
+      projectId: z.uuid().nullable().describe("The project to put them in. null means they stand on their own."),
+    }),
+    run: async ({ ids, projectId }): Promise<Outcome> => {
+      const rows = await liveTitles(artifacts, ids);
+      const project = await projectName(projectId);
+      await db
+        .update(artifacts)
+        .set({ projectId, updatedAt: new Date() })
+        .where(inArray(artifacts.id, rows.map((r) => r.id)));
+      return { count: rows.length, titles: rows.map((r) => r.title), project };
+    },
+  }),
+
+  delete_artifacts: defineOperation({
+    name: "delete_artifacts",
+    description: "Move several artifacts to Trash at once. They're kept there for 30 days.",
+    input: z.object({ ids: ids("artifacts") }),
+    run: async ({ ids }): Promise<Outcome> => {
+      const rows = await liveTitles(artifacts, ids);
+      await db.update(artifacts).set({ deletedAt: new Date() }).where(inArray(artifacts.id, rows.map((r) => r.id)));
       return { count: rows.length, titles: rows.map((r) => r.title) };
     },
   }),

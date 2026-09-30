@@ -7,11 +7,11 @@ import type { Status } from "@/lib/task-fields";
 import { defineOperation, madeByOf, type MadeBy } from "./define";
 import { excerptOf, plainTextOf } from "./notes";
 
-const { tasks, notes, projects } = schema;
+const { tasks, notes, artifacts, projects } = schema;
 
 /** One thing that matched a search. */
 export type SearchResult = {
-  type: "task" | "note" | "project";
+  type: "task" | "note" | "artifact" | "project";
   id: string;
   title: string;
   /** A bit of the text around the first match, when it matched below the title. */
@@ -19,7 +19,7 @@ export type SearchResult = {
   /** Tasks only. */
   status: Status | null;
   dueDate: string | null;
-  /** Notes only: "html" for a saved page. */
+  /** Notes and artifacts: "html" for a web page. */
   format: string | null;
   project: { id: string; name: string; hex: string } | null;
   madeBy: MadeBy;
@@ -70,7 +70,12 @@ export async function search(query: string, filter: { type?: SearchResult["type"
   const limit = filter.limit ?? 30;
   const want = (type: SearchResult["type"]) => !filter.type || filter.type === type;
 
-  const [taskRows, noteRows, projectRows] = await Promise.all([
+  // An artifact's words: every part of its latest version, web pages without their code.
+  const artifactText = sql<string>`coalesce((select string_agg(case when p.format = 'html' then regexp_replace(p.content, '<[^>]*>', ' ', 'g') else p.content end, ' ' order by p.position)
+    from artifact_parts p join artifact_versions v on v.id = p.version_id
+    where v.artifact_id = ${artifacts.id} and v.number = ${artifacts.version}), '')`;
+
+  const [taskRows, noteRows, artifactRows, projectRows] = await Promise.all([
     want("task")
       ? db
           .select({ task: tasks, project: projects })
@@ -94,6 +99,15 @@ export async function search(query: string, filter: { type?: SearchResult["type"
                 sql`case when ${notes.format} = 'html' then regexp_replace(${notes.content}, '<[^>]*>', ' ', 'g') else ${notes.content} end`,
               )))
           .orderBy(desc(notes.updatedAt))
+          .limit(limit)
+      : [],
+    want("artifact")
+      ? db
+          .select({ artifact: artifacts, project: projects, text: artifactText })
+          .from(artifacts)
+          .leftJoin(projects, eq(projects.id, artifacts.projectId))
+          .where(and(isNull(artifacts.deletedAt), liveProject, matchesAll(words, sql`${artifacts.title}`, artifactText)))
+          .orderBy(desc(artifacts.updatedAt))
           .limit(limit)
       : [],
     want("project")
@@ -148,6 +162,21 @@ export async function search(query: string, filter: { type?: SearchResult["type"
         updatedAt: note.updatedAt,
       };
     }),
+    ...artifactRows.map(({ artifact, project, text }) => {
+      const title = artifact.title || "Untitled";
+      return {
+        type: "artifact" as const,
+        id: artifact.id,
+        title,
+        snippet: titleHasAll(title, words) ? excerptOf(text, "markdown") || null : snippetAround(plainTextOf(text, "markdown"), words),
+        status: null,
+        dueDate: null,
+        format: null,
+        project: projectOf(project),
+        madeBy: madeByOf(artifact),
+        updatedAt: artifact.updatedAt,
+      };
+    }),
   ];
 
   results.sort((a, b) => {
@@ -162,10 +191,10 @@ export const searchOperations = {
   search: defineOperation({
     name: "search",
     description:
-      "Search everything in LukeOS (not Trash): task titles and task notes, note titles and text, and project names. Every word must match. Results whose title matches come first, then the most recently changed. Done tasks are included.",
+      "Search everything in LukeOS (not Trash): task titles and task notes, note titles and text, artifact titles and text (latest version), and project names. Every word must match. Results whose title matches come first, then the most recently changed. Done tasks are included.",
     input: z.object({
       query: z.string().min(1).max(200).describe("The words to look for."),
-      type: z.enum(["task", "note", "project"]).optional().describe("Only this kind of thing."),
+      type: z.enum(["task", "note", "artifact", "project"]).optional().describe("Only this kind of thing."),
       limit: z.number().int().min(1).max(100).optional(),
     }),
     run: async ({ query, type, limit }) => search(query, { type, limit }),

@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   const cards = !(board && view.hideCards);
   const [{ date, tasks }, notes, activity, timeZone] = await Promise.all([
     boardTasks(view.by, undefined, view.show),
-    cards ? listNotes({ madeBy: "luke", limit: 5 }) : [],
+    cards ? listNotes({ limit: 5 }) : [],
     cards ? listActivity({ limit: 8 }) : [],
     getTimeZone(),
   ]);

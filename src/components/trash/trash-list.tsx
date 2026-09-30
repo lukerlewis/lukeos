@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, FileText, Folder, Globe, RotateCcw, Trash2 } from "lucide-react";
+import { CheckSquare, FileText, Folder, Globe, Package, RotateCcw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { showToast } from "@/components/shell/toast";
@@ -37,8 +37,16 @@ export function TrashList({ items, timeZone }: { items: TrashItem[]; timeZone: s
 function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const Icon = item.type === "project" ? Folder : item.type === "task" ? CheckSquare : item.format === "html" ? Globe : FileText;
-  const kind = item.type === "project" ? "Project" : item.type === "task" ? "Task" : "Note";
+  const Icon =
+    item.type === "project" ? Folder : item.type === "task" ? CheckSquare : item.type === "artifact" ? Package : item.format === "html" ? Globe : FileText;
+  const kind = { project: "Project", task: "Task", note: "Note", artifact: "Artifact" }[item.type];
+  const containsText =
+    item.contains &&
+    [
+      item.contains.tasks && plural(item.contains.tasks, "task"),
+      item.contains.notes && plural(item.contains.notes, "note"),
+      item.contains.artifacts && plural(item.contains.artifacts, "artifact"),
+    ].filter(Boolean);
 
   async function restore() {
     setBusy(true);
@@ -58,9 +66,7 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
 
   async function removeForever() {
     const extra =
-      item.contains && item.contains.tasks + item.contains.notes > 0
-        ? ` and the ${[item.contains.tasks && plural(item.contains.tasks, "task"), item.contains.notes && plural(item.contains.notes, "note")].filter(Boolean).join(" and ")} in it`
-        : "";
+      containsText && containsText.length > 0 ? ` and the ${containsText.join(" and ")} in it` : "";
     if (!confirm(`Delete "${item.title}"${extra} for good? This can't be undone.`)) return;
     setBusy(true);
     try {
@@ -73,11 +79,7 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
     }
   }
 
-  const contains =
-    item.contains &&
-    [item.contains.tasks && plural(item.contains.tasks, "task"), item.contains.notes && plural(item.contains.notes, "note")]
-      .filter(Boolean)
-      .join(", ");
+  const contains = containsText?.join(", ");
 
   return (
     <li className="flex flex-col gap-2 border-b px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:gap-3">

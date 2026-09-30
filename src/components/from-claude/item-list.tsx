@@ -1,12 +1,12 @@
 "use client";
 
-import { CheckSquare, FileText, Folder, Globe } from "lucide-react";
+import { CheckSquare, Folder, Globe, MessageSquare, Package } from "lucide-react";
 import Link from "next/link";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import type { ClaudeItem } from "@/core/from-claude";
 import { op } from "@/lib/ops-client";
 
-const kindLabel = { note: "Note", task: "Task", project: "Project" } as const;
+const kindLabel = { artifact: "Artifact", task: "Task", project: "Project" } as const;
 
 /** Things Claude made, newest first, with a dot on the ones Luke hasn't seen. */
 export function ClaudeItemList({ items, when }: { items: ClaudeItem[]; when: Record<string, string> }) {
@@ -34,7 +34,7 @@ export function ClaudeItemList({ items, when }: { items: ClaudeItem[]; when: Rec
                 {body}
               </button>
             ) : (
-              <Link href={item.type === "note" ? `/notes/${item.id}` : `/projects/${item.id}`} className={row}>
+              <Link href={`/${item.type}s/${item.id}`} className={row}>
                 {body}
               </Link>
             )}
@@ -47,7 +47,7 @@ export function ClaudeItemList({ items, when }: { items: ClaudeItem[]; when: Rec
 
 /** The inside of a row: icon (with a dot if new), title, time, excerpt and who made it. */
 export function ItemBody({ item, when }: { item: ClaudeItem; when: string }) {
-  const Icon = item.type === "task" ? CheckSquare : item.type === "project" ? Folder : item.format === "html" ? Globe : FileText;
+  const Icon = item.type === "task" ? CheckSquare : item.type === "project" ? Folder : item.format === "html" ? Globe : Package;
   return (
     <>
       <span className="relative mt-0.5 shrink-0">
@@ -63,7 +63,14 @@ export function ItemBody({ item, when }: { item: ClaudeItem; when: string }) {
         </span>
         {item.excerpt && <span className="line-clamp-2 text-[13px] text-muted-foreground">{item.excerpt}</span>}
         <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-          <span>{item.format === "html" ? "Saved page" : kindLabel[item.type]}</span>
+          <span>{item.type === "artifact" && item.format === "html" ? "Web page" : kindLabel[item.type]}</span>
+          {item.version !== null && item.version > 1 && <span>Version {item.version}</span>}
+          {item.openComments > 0 && (
+            <span className="inline-flex items-center gap-1">
+              <MessageSquare className="size-3" aria-hidden />
+              {item.openComments} open
+            </span>
+          )}
           <span>{item.routine ? `${item.name}, ${item.routine}` : item.name}</span>
           {item.project && (
             <span className="inline-flex items-center gap-1.5">

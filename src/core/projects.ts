@@ -4,10 +4,11 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { projectColorNames, type ProjectColor } from "@/lib/project-colors";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
+import { listArtifacts } from "./artifacts";
 import { listNotes } from "./notes";
 import { listTasks } from "./tasks";
 
-const { projects, tasks, notes } = schema;
+const { projects, tasks, notes, artifacts } = schema;
 
 export type Project = {
   id: string;
@@ -79,12 +80,13 @@ export const projectOperations = {
   get_project: defineOperation({
     name: "get_project",
     description:
-      "Get one project with all of its tasks (including done ones) and its notes (titles and excerpts; use get_note for the full text).",
+      "Get one project with all of its tasks (including done ones), its notes and its artifacts (titles and excerpts; use get_note or get_artifact for the full text).",
     input: z.object({ id }),
     run: async ({ id }) => ({
       ...(await getProject(id)),
       tasks: await listTasks({ projectId: id, includeDone: true }),
       notes: await listNotes({ projectId: id }),
+      artifacts: await listArtifacts({ projectId: id }),
     }),
   }),
 
@@ -124,7 +126,7 @@ export const projectOperations = {
 
   delete_project: defineOperation({
     name: "delete_project",
-    description: "Move a project and all of its tasks and notes to Trash, where they are kept for 30 days.",
+    description: "Move a project and all of its tasks, notes and artifacts to Trash, where they are kept for 30 days.",
     input: z.object({ id }),
     run: async ({ id }) => {
       await assertProject(id);
@@ -139,6 +141,10 @@ export const projectOperations = {
           .update(notes)
           .set({ deletedAt: now })
           .where(and(eq(notes.projectId, id), isNull(notes.deletedAt)));
+        await tx
+          .update(artifacts)
+          .set({ deletedAt: now })
+          .where(and(eq(artifacts.projectId, id), isNull(artifacts.deletedAt)));
       });
       return { deleted: id };
     },

@@ -61,6 +61,10 @@ async function snapshot(name: OperationName, input: Record<string, unknown>) {
         return await Promise.all((input.ids as string[]).map((id) => send("get_task", { id })));
       case "update_notes":
         return await Promise.all((input.ids as string[]).map((id) => send("get_note", { id })));
+      case "update_artifact":
+        return [await send("get_artifact", { id: input.id as string })];
+      case "update_artifacts":
+        return await Promise.all((input.ids as string[]).map((id) => send("get_artifact", { id })));
       case "update_project":
         return [await send("get_project", { id: input.id as string })];
       default:
@@ -85,10 +89,25 @@ function undoFor(
       return { label: `adding note ${quote(r.title)}`, run: async () => void (await send("delete_note", { id: r.id })) };
     case "create_project":
       return { label: `adding project ${quote(r.name)}`, run: async () => void (await send("delete_project", { id: r.id })) };
+    case "copy_artifact_to_note":
+      return { label: "copying to a note", run: async () => void (await send("delete_note", { id: r.id })) };
     case "restore_from_trash": {
-      const { type, id } = input as { type: "task" | "note" | "project"; id: string };
-      const del = type === "task" ? "delete_task" : type === "note" ? "delete_note" : "delete_project";
+      const { type, id } = input as { type: "task" | "note" | "artifact" | "project"; id: string };
+      const del = ({ task: "delete_task", note: "delete_note", artifact: "delete_artifact", project: "delete_project" } as const)[type];
       return { label: `bringing back a ${type}`, run: async () => void (await send(del, { id })) };
+    }
+    case "add_comment":
+      return { label: "adding a comment", run: async () => void (await send("delete_comment", { id: r.id })) };
+    case "reply_to_comment": {
+      const reply = (result as Output<"reply_to_comment">).replies.at(-1);
+      return reply ? { label: "replying", run: async () => void (await send("delete_comment", { id: reply.id })) } : null;
+    }
+    case "resolve_comment": {
+      const resolved = input.resolved !== false;
+      return {
+        label: resolved ? "resolving a comment" : "reopening a comment",
+        run: async () => void (await send("resolve_comment", { id: r.id, resolved: !resolved })),
+      };
     }
   }
   if (!before?.length) return null;
@@ -113,6 +132,21 @@ function undoFor(
         label: `moving ${plural(notes.length, "note")}`,
         run: async () =>
           void (await Promise.all(notes.map((n) => send("update_note", { id: n.id, projectId: n.project?.id ?? null })))),
+      };
+    }
+    case "update_artifact": {
+      const a = before[0] as Output<"get_artifact">;
+      return {
+        label: `editing ${quote(a.title)}`,
+        run: async () => void (await send("update_artifact", { id: a.id, title: a.title, projectId: a.project?.id ?? null })),
+      };
+    }
+    case "update_artifacts": {
+      const list = before as Output<"get_artifact">[];
+      return {
+        label: `moving ${plural(list.length, "artifact")}`,
+        run: async () =>
+          void (await Promise.all(list.map((a) => send("update_artifact", { id: a.id, projectId: a.project?.id ?? null })))),
       };
     }
     case "update_project": {

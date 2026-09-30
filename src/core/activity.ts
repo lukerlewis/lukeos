@@ -5,9 +5,9 @@ import { db, schema } from "@/db";
 import { statusLabel, type Status } from "@/lib/task-fields";
 import { defineOperation, type Actor } from "./define";
 
-const { activityLog, tasks, notes, projects } = schema;
+const { activityLog, tasks, notes, artifacts, projects } = schema;
 
-type ItemType = "task" | "note" | "project";
+type ItemType = "task" | "note" | "artifact" | "project";
 
 /** One line of the activity log. */
 export type ActivityEntry = {
@@ -60,7 +60,7 @@ async function titleOf(type: ItemType, id: unknown) {
       const [row] = await db.select({ t: projects.name }).from(projects).where(eq(projects.id, id)).limit(1);
       return row?.t ?? null;
     }
-    const table = type === "task" ? tasks : notes;
+    const table = type === "task" ? tasks : type === "note" ? notes : artifacts;
     const [row] = await db.select({ t: table.title }).from(table).where(eq(table.id, id)).limit(1);
     return row?.t ?? null;
   } catch {
@@ -80,6 +80,8 @@ export async function titleBefore(tool: string, input: Record<string, unknown>) 
       return titleOf("note", input.id);
     case "delete_project":
       return titleOf("project", input.id);
+    case "delete_artifact":
+      return titleOf("artifact", input.id);
     case "restore_from_trash":
     case "delete_forever":
       return titleOf(input.type as ItemType, input.id);
@@ -147,6 +149,41 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     }
     case "delete_note":
       return { summary: `Moved note ${quote(before)} to Trash`, item: { type: "note", id: String(input.id) } };
+    case "create_artifact": {
+      const a = r as unknown as Named & { parts?: number };
+      return { summary: `Made ${a.format === "html" ? "page" : "artifact"} ${quote(a.title)}${inProject(a)}`, item: { type: "artifact", id: a.id } };
+    }
+    case "update_artifact": {
+      const a = r as unknown as Named & { version: number; shown?: { note: string | null } };
+      const newVersion = input.content !== undefined || input.parts !== undefined;
+      const fields = changed(input).filter((f) => f !== "text");
+      const summary = newVersion
+        ? `Updated artifact ${quote(a.title)} to version ${a.version}${a.shown?.note ? ` (${a.shown.note.slice(0, 80)})` : ""}`
+        : `Edited artifact ${quote(a.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`;
+      return { summary, item: { type: "artifact", id: a.id } };
+    }
+    case "delete_artifact":
+      return { summary: `Moved artifact ${quote(before)} to Trash`, item: { type: "artifact", id: String(input.id) } };
+    case "copy_artifact_to_note":
+      return { summary: `Copied an artifact into note ${quote(task.title)}`, item: { type: "note", id: task.id } };
+    case "add_comment":
+    case "reply_to_comment":
+    case "resolve_comment": {
+      const c = r as { target?: { type: "note" | "artifact"; id: string; title: string } };
+      if (!c.target) return null;
+      const on = `${c.target.type} ${quote(c.target.title)}`;
+      const summary =
+        tool === "add_comment"
+          ? `Commented on ${on}`
+          : tool === "reply_to_comment"
+            ? `Replied to a comment on ${on}`
+            : input.resolved === false
+              ? `Reopened a comment on ${on}`
+              : `Resolved a comment on ${on}`;
+      return { summary, item: { type: c.target.type, id: c.target.id } };
+    }
+    case "delete_comment":
+      return { summary: "Deleted a comment" };
     case "save_image":
       return { summary: input.alt ? `Saved a photo (${String(input.alt).slice(0, 60)})` : "Saved a photo" };
 
@@ -158,7 +195,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: `Deleted ${input.type} ${quote(before)} forever` };
     case "empty_trash": {
       const c = (r.deletedForever ?? {}) as Record<string, number>;
-      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.projects ?? 0);
+      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0);
       return { summary: `Emptied Trash (${n} ${n === 1 ? "item" : "items"})` };
     }
 
@@ -170,11 +207,13 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "move_tasks":
     case "delete_tasks":
     case "update_notes":
-    case "delete_notes": {
+    case "delete_notes":
+    case "update_artifacts":
+    case "delete_artifacts": {
       const out = r as { count?: number; titles?: string[]; project?: string | null };
       const n = out.count ?? 0;
       if (n === 0) return null;
-      const kind = tool.endsWith("tasks") ? "task" : "note";
+      const kind = tool.endsWith("tasks") ? "task" : tool.endsWith("notes") ? "note" : "artifact";
       const things = `${n} ${kind}${n === 1 ? "" : "s"}`;
       const names = (out.titles ?? []).slice(0, 3).map(quote).join(", ") + (n > 3 ? ", …" : "");
       let action: string;

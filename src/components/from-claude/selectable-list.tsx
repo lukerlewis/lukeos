@@ -25,7 +25,7 @@ const dueChoices = [
 ] as const;
 
 /**
- * Claude's tasks or notes, with Select to pick several and change them all at
+ * Claude's tasks or artifacts, with Select to pick several and change them all at
  * once: move to Trash, put in a project, and for tasks status, due, priority
  * and effort.
  */
@@ -38,7 +38,7 @@ export function SelectableClaudeList({
 }: {
   items: ClaudeItem[];
   when: Record<string, string>;
-  kind: "task" | "note";
+  kind: "task" | "artifact";
   projects: ProjectChoice[];
   empty: React.ReactNode;
 }) {
@@ -82,7 +82,7 @@ export function SelectableClaudeList({
   const trash = () => {
     const chosen = ids;
     return run(
-      () => (kind === "task" ? op("delete_tasks", { ids: chosen }) : op("delete_notes", { ids: chosen })),
+      () => (kind === "task" ? op("delete_tasks", { ids: chosen }) : op("delete_artifacts", { ids: chosen })),
       (n) => `${noun(n)} moved to Trash`.replace(/^./, (c) => c.toUpperCase()),
       async () => {
         for (const id of chosen) await op("restore_from_trash", { type: kind, id });
@@ -95,7 +95,7 @@ export function SelectableClaudeList({
     const projectId = value === "none" ? null : value;
     const name = projects.find((p) => p.id === projectId)?.name;
     return run(
-      () => (kind === "task" ? op("update_tasks", { ids, projectId }) : op("update_notes", { ids, projectId })),
+      () => (kind === "task" ? op("update_tasks", { ids, projectId }) : op("update_artifacts", { ids, projectId })),
       (n) => (name ? `Moved ${noun(n)} to ${name}` : `Took ${noun(n)} out of their project`),
     );
   };
@@ -177,7 +177,7 @@ export function SelectableClaudeList({
                     {body}
                   </button>
                 ) : (
-                  <Link href={`/notes/${item.id}`} className={row}>
+                  <Link href={`/artifacts/${item.id}`} className={row}>
                     {body}
                   </Link>
                 )}

@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
+import { Comments } from "@/components/comments/comments";
 import { HtmlNote } from "@/components/notes/html-note";
 import { NoteEditor } from "@/components/notes/note-editor";
 import { OperationError } from "@/core/define";
 import { getNote } from "@/core/notes";
+import { listComments } from "@/core/comments";
 import { listProjects } from "@/core/projects";
+import { getTimeZone } from "@/core/settings";
+import { COMMENTABLE } from "@/lib/comments";
 
 async function load(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -25,7 +29,12 @@ export async function generateMetadata({ params }: PageProps<"/notes/[id]">): Pr
 
 export default async function NotePage({ params, searchParams }: PageProps<"/notes/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const [note, projects] = await Promise.all([load(id), listProjects()]);
+  const [note, projects, threads, timeZone] = await Promise.all([
+    load(id),
+    listProjects(),
+    listComments({ targetType: "note", targetId: id }),
+    getTimeZone(),
+  ]);
   const back = note.project
     ? { href: `/projects/${note.project.id}?view=notes`, label: note.project.name }
     : { href: "/notes", label: "Notes" };
@@ -46,17 +55,22 @@ export default async function NotePage({ params, searchParams }: PageProps<"/not
           <ChevronLeft className="size-4" aria-hidden />
           {back.label}
         </Link>
-        <div className={note.format === "html" ? "w-full" : "w-full max-w-3xl"}>
-          {note.format === "html" ? (
-            <HtmlNote note={note} projects={projects.map((p) => ({ id: p.id, name: p.name }))} />
-          ) : (
-            <NoteEditor
-              key={note.id}
-              note={note}
-              projects={projects.map((p) => ({ id: p.id, name: p.name }))}
-              autoFocus={query.new === "1"}
-            />
-          )}
+        <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className={note.format === "html" ? "min-w-0" : "min-w-0 max-w-3xl"} {...{ [COMMENTABLE]: "" }}>
+            {note.format === "html" ? (
+              <HtmlNote note={note} projects={projects.map((p) => ({ id: p.id, name: p.name }))} />
+            ) : (
+              <NoteEditor
+                key={note.id}
+                note={note}
+                projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+                autoFocus={query.new === "1"}
+              />
+            )}
+          </div>
+          <aside className="xl:sticky xl:top-6">
+            <Comments target={{ type: "note", id: note.id }} threads={threads} timeZone={timeZone} />
+          </aside>
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ export type ActivityRow = {
   time: string;
   summary: string;
   who: string | null;
-  item: { type: "task" | "note" | "project"; id: string } | null;
+  item: { type: "task" | "note" | "artifact" | "project"; id: string } | null;
 };
 
 /** The activity log, one day at a time: a time and a short line for each thing Claude did. */
@@ -52,7 +52,7 @@ export function ActivityList({ days }: { days: { label: string; rows: ActivityRo
                       {body}
                     </button>
                   ) : row.item ? (
-                    <Link href={row.item.type === "note" ? `/notes/${row.item.id}` : `/projects/${row.item.id}`} className={link}>
+                    <Link href={`/${row.item.type}s/${row.item.id}`} className={link}>
                       {body}
                     </Link>
                   ) : (

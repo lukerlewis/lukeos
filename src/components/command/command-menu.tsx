@@ -8,6 +8,7 @@ import {
   Folder,
   FolderPlus,
   Globe,
+  Package,
   Monitor,
   Moon,
   Plus,
@@ -381,7 +382,7 @@ function Kbd({ children }: { children: React.ReactNode }) {
   return <kbd className="rounded-[5px] border bg-muted px-1.5 font-mono text-[11px]">{children}</kbd>;
 }
 
-/** A task or note found by searching, as a row. */
+/** A task, note or artifact found by searching, as a row. */
 function resultItem(
   r: SearchResult,
   today: string,
@@ -419,6 +420,16 @@ function resultItem(
         actions.onDone?.();
         actions.openTask(task);
       },
+    };
+  }
+  if (r.type === "artifact") {
+    return {
+      key: `artifact-${r.id}`,
+      group: "Artifacts",
+      label: r.title,
+      icon: Package,
+      detail,
+      run: () => actions.go(`/artifacts/${r.id}`),
     };
   }
   const Icon = r.format === "html" ? Globe : FileText;

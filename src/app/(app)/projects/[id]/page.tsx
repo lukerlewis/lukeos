@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, FileText, List, SquareKanban } from "lucide-react";
+import { ArtifactList } from "@/components/artifacts/artifact-list";
 import { Board } from "@/components/board/board";
 import { BoardViewSwitch } from "@/components/board/view-switch";
 import { NewNoteButton } from "@/components/notes/new-note-button";
@@ -12,6 +13,7 @@ import { StatusIcon } from "@/components/tasks/status-circle";
 import { QuickAdd, TaskList } from "@/components/tasks/task-list";
 import { Card } from "@/components/ui/card";
 import { SegmentedLinks } from "@/components/ui/segmented-links";
+import { listArtifacts } from "@/core/artifacts";
 import { boardTasks } from "@/core/board";
 import { OperationError } from "@/core/define";
 import { listNotes } from "@/core/notes";
@@ -46,12 +48,13 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const notesView = query.view === "notes";
   const listView = !boardView && !notesView;
 
-  const [project, tasks, timeZone, board, notes] = await Promise.all([
+  const [project, tasks, timeZone, board, notes, artifacts] = await Promise.all([
     load(id),
     listView ? listTasks({ projectId: id, includeDone: true }) : [],
     getTimeZone(),
     boardView ? boardTasks(boardView, id) : null,
     notesView ? listNotes({ projectId: id }) : [],
+    notesView ? listArtifacts({ projectId: id }) : [],
   ]);
   const date = todayIn(timeZone);
   const groups = (["doing", "todo", "done"] as Status[]).map((status) => ({
@@ -93,14 +96,24 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
       </div>
 
       {notesView ? (
-        <Card className="max-w-3xl">
-          <NoteList
-            notes={notes}
-            timeZone={timeZone}
-            showProject={false}
-            empty={<EmptyState>No notes in this project yet.</EmptyState>}
-          />
-        </Card>
+        <div className="flex max-w-3xl flex-col gap-5">
+          <Card>
+            <NoteList
+              notes={notes}
+              timeZone={timeZone}
+              showProject={false}
+              empty={<EmptyState>No notes in this project yet.</EmptyState>}
+            />
+          </Card>
+          {artifacts.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h2 className="px-1 text-sm font-semibold">From Claude</h2>
+              <Card>
+                <ArtifactList artifacts={artifacts} timeZone={timeZone} />
+              </Card>
+            </section>
+          )}
+        </div>
       ) : board && boardView ? (
         <Board tasks={board.tasks} view={boardView} today={board.date} projectId={project.id} showProject={false} />
       ) : (

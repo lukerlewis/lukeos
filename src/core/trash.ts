@@ -4,9 +4,13 @@ import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { colorHex } from "@/lib/project-colors";
+import { deleteOrphanComments } from "./artifacts";
 import { defineOperation, madeByOf, OperationError, type MadeBy } from "./define";
 
-const { tasks, notes, projects } = schema;
+const { tasks, notes, artifacts, projects } = schema;
+
+type Kind = "task" | "note" | "artifact" | "project";
+const tableOf = (type: Exclude<Kind, "project">) => (type === "task" ? tasks : type === "note" ? notes : artifacts);
 
 /** How long things stay in Trash before they're deleted for good. */
 export const TRASH_DAYS = 30;
@@ -14,13 +18,13 @@ const DAY_MS = 86_400_000;
 
 /** One thing in Trash. */
 export type TrashItem = {
-  type: "task" | "note" | "project";
+  type: Kind;
   id: string;
   title: string;
-  /** Tasks and notes: the project they were in, if any. */
+  /** Tasks, notes and artifacts: the project they were in, if any. */
   project: { id: string; name: string; hex: string; inTrash: boolean } | null;
-  /** Projects: how many tasks and notes went to Trash with it (and come back with it). */
-  contains: { tasks: number; notes: number } | null;
+  /** Projects: how many tasks, notes and artifacts went to Trash with it (and come back with it). */
+  contains: { tasks: number; notes: number; artifacts: number } | null;
   /** Notes only: "html" for a saved page. */
   format: string | null;
   madeBy: MadeBy;
@@ -29,7 +33,7 @@ export type TrashItem = {
   deletesOn: Date;
 };
 
-const itemType = z.enum(["task", "note", "project"]).describe("task, note or project.");
+const itemType = z.enum(["task", "note", "artifact", "project"]).describe("task, note, artifact or project.");
 
 function deletesOn(deletedAt: Date) {
   return new Date(deletedAt.getTime() + TRASH_DAYS * DAY_MS);
@@ -49,13 +53,15 @@ export async function purgeExpiredTrash({ force = false } = {}) {
   await db.transaction(async (tx) => {
     await tx.delete(tasks).where(lt(tasks.deletedAt, cutoff));
     await tx.delete(notes).where(lt(notes.deletedAt, cutoff));
+    await tx.delete(artifacts).where(lt(artifacts.deletedAt, cutoff));
     await tx.delete(projects).where(lt(projects.deletedAt, cutoff));
   });
+  await deleteOrphanComments();
   await deleteUnusedImages();
 }
 
 /**
- * Photos that no note or task mentions any more. Only ones over a day old,
+ * Photos that no note, artifact or task mentions any more. Only ones over a day old,
  * so a photo being pasted into a note right now isn't touched.
  */
 async function deleteUnusedImages() {
@@ -63,6 +69,7 @@ async function deleteUnusedImages() {
     delete from images i
     where i.created_at < now() - interval '1 day'
       and not exists (select 1 from notes n where position(i.id::text in n.content) > 0)
+      and not exists (select 1 from artifact_parts p where position(i.id::text in p.content) > 0)
       and not exists (select 1 from tasks t where position(i.id::text in coalesce(t.notes, '')) > 0)`);
 }
 
@@ -79,7 +86,7 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
   const onItsOwn = (deletedAt: AnyColumn) =>
     sql`(${parent.id} is null or ${parent.deletedAt} is null or ${parent.deletedAt} <> ${deletedAt})`;
 
-  const [taskRows, noteRows, projectRows] = await Promise.all([
+  const [taskRows, noteRows, artifactRows, projectRows] = await Promise.all([
     want("task")
       ? db
           .select({ task: tasks, parent })
@@ -105,6 +112,23 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
           .leftJoin(parent, eq(parent.id, notes.projectId))
           .where(and(isNotNull(notes.deletedAt), onItsOwn(notes.deletedAt)))
       : [],
+    want("artifact")
+      ? db
+          .select({
+            artifact: {
+              id: artifacts.id,
+              title: artifacts.title,
+              deletedAt: artifacts.deletedAt,
+              createdByKind: artifacts.createdByKind,
+              createdByName: artifacts.createdByName,
+              createdByRoutine: artifacts.createdByRoutine,
+            },
+            parent,
+          })
+          .from(artifacts)
+          .leftJoin(parent, eq(parent.id, artifacts.projectId))
+          .where(and(isNotNull(artifacts.deletedAt), onItsOwn(artifacts.deletedAt)))
+      : [],
     want("project")
       ? db
           .select({
@@ -113,6 +137,9 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
               Number,
             ),
             notes: sql<number>`(select count(*) from notes n where n.project_id = projects.id and n.deleted_at = projects.deleted_at)`.mapWith(
+              Number,
+            ),
+            artifacts: sql<number>`(select count(*) from artifacts a where a.project_id = projects.id and a.deleted_at = projects.deleted_at)`.mapWith(
               Number,
             ),
           })
@@ -147,12 +174,23 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
       deletedAt: note.deletedAt!,
       deletesOn: deletesOn(note.deletedAt!),
     })),
-    ...projectRows.map(({ project, tasks, notes }) => ({
+    ...artifactRows.map(({ artifact, parent }) => ({
+      type: "artifact" as const,
+      id: artifact.id,
+      title: artifact.title || "Untitled",
+      project: parentOf(parent),
+      contains: null,
+      format: null,
+      madeBy: madeByOf(artifact),
+      deletedAt: artifact.deletedAt!,
+      deletesOn: deletesOn(artifact.deletedAt!),
+    })),
+    ...projectRows.map(({ project, tasks, notes, artifacts }) => ({
       type: "project" as const,
       id: project.id,
       title: project.name,
       project: null,
-      contains: { tasks, notes },
+      contains: { tasks, notes, artifacts },
       format: null,
       madeBy: madeByOf(project),
       deletedAt: project.deletedAt!,
@@ -164,7 +202,7 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
 }
 
 async function trashedRow(type: TrashItem["type"], id: string) {
-  const table = type === "task" ? tasks : type === "note" ? notes : projects;
+  const table = type === "project" ? projects : tableOf(type);
   const [row] = await db
     .select({ deletedAt: table.deletedAt })
     .from(table)
@@ -191,13 +229,17 @@ export async function restoreFromTrash(type: TrashItem["type"], id: string) {
         .update(notes)
         .set({ deletedAt: null })
         .where(and(eq(notes.projectId, id), eq(notes.deletedAt, deletedAt)));
+      await tx
+        .update(artifacts)
+        .set({ deletedAt: null })
+        .where(and(eq(artifacts.projectId, id), eq(artifacts.deletedAt, deletedAt)));
     });
     return { restored: { type, id }, movedOutOfProject: false };
   }
 
-  // A task or note whose project is still in Trash comes back on its own,
-  // outside the project, so it doesn't stay hidden.
-  const table = type === "task" ? tasks : notes;
+  // A task, note or artifact whose project is still in Trash comes back on
+  // its own, outside the project, so it doesn't stay hidden.
+  const table = tableOf(type);
   const [row] = await db
     .select({ projectId: table.projectId, projectDeletedAt: projects.deletedAt })
     .from(table)
@@ -218,12 +260,14 @@ export async function deleteForever(type: TrashItem["type"], id: string) {
     await db.transaction(async (tx) => {
       await tx.delete(tasks).where(and(eq(tasks.projectId, id), eq(tasks.deletedAt, deletedAt)));
       await tx.delete(notes).where(and(eq(notes.projectId, id), eq(notes.deletedAt, deletedAt)));
+      await tx.delete(artifacts).where(and(eq(artifacts.projectId, id), eq(artifacts.deletedAt, deletedAt)));
       await tx.delete(projects).where(eq(projects.id, id));
     });
   } else {
-    const table = type === "task" ? tasks : notes;
+    const table = tableOf(type);
     await db.delete(table).where(eq(table.id, id));
   }
+  await deleteOrphanComments();
   return { deletedForever: { type, id } };
 }
 
@@ -231,9 +275,11 @@ export async function emptyTrash() {
   const counts = await db.transaction(async (tx) => {
     const t = await tx.delete(tasks).where(isNotNull(tasks.deletedAt)).returning({ id: tasks.id });
     const n = await tx.delete(notes).where(isNotNull(notes.deletedAt)).returning({ id: notes.id });
+    const a = await tx.delete(artifacts).where(isNotNull(artifacts.deletedAt)).returning({ id: artifacts.id });
     const p = await tx.delete(projects).where(isNotNull(projects.deletedAt)).returning({ id: projects.id });
-    return { tasks: t.length, notes: n.length, projects: p.length };
+    return { tasks: t.length, notes: n.length, artifacts: a.length, projects: p.length };
   });
+  await deleteOrphanComments();
   return { deletedForever: counts };
 }
 
@@ -241,6 +287,7 @@ export async function trashCount() {
   const [row] = await db.execute<{ n: number }>(sql`
     select (select count(*) from tasks where deleted_at is not null)
          + (select count(*) from notes where deleted_at is not null)
+         + (select count(*) from artifacts where deleted_at is not null)
          + (select count(*) from projects where deleted_at is not null) as n`).then((r) => r.rows);
   return Number(row.n);
 }
@@ -250,7 +297,7 @@ const id = z.uuid().describe("The item's id, from list_trash.");
 export const trashOperations = {
   list_trash: defineOperation({
     name: "list_trash",
-    description: `What's in Trash, most recently deleted first. Things stay in Trash for ${TRASH_DAYS} days, then are deleted for good (deletesOn says when). A project's tasks and notes that went to Trash with it are counted on the project, not listed separately.`,
+    description: `What's in Trash, most recently deleted first. Things stay in Trash for ${TRASH_DAYS} days, then are deleted for good (deletesOn says when). A project's tasks, notes and artifacts that went to Trash with it are counted on the project, not listed separately.`,
     input: z.object({ type: itemType.optional().describe("Only this kind of thing.") }),
     run: async ({ type }) => listTrash({ type }),
   }),
@@ -258,7 +305,7 @@ export const trashOperations = {
   restore_from_trash: defineOperation({
     name: "restore_from_trash",
     description:
-      "Bring a task, note or project back from Trash. Restoring a project also brings back the tasks and notes that went to Trash with it. A task or note whose project is still in Trash comes back on its own, outside the project.",
+      "Bring a task, note, artifact or project back from Trash. Restoring a project also brings back the tasks, notes and artifacts that went to Trash with it. A task, note or artifact whose project is still in Trash comes back on its own, outside the project.",
     input: z.object({ type: itemType, id }),
     run: async ({ type, id }) => restoreFromTrash(type, id),
   }),
@@ -266,7 +313,7 @@ export const trashOperations = {
   delete_forever: defineOperation({
     name: "delete_forever",
     description:
-      "Permanently delete something that's already in Trash. This can't be undone, so only do it when Luke asks. A project takes the tasks and notes that went to Trash with it.",
+      "Permanently delete something that's already in Trash. This can't be undone, so only do it when Luke asks. A project takes the tasks, notes and artifacts that went to Trash with it.",
     input: z.object({ type: itemType, id }),
     run: async ({ type, id }) => deleteForever(type, id),
   }),

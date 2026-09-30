@@ -11,13 +11,16 @@ import { operations, runOperation } from "./operations";
 
 const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 
-const INSTRUCTIONS = `LukeOS is Luke's personal app for projects, tasks and notes.
+const INSTRUCTIONS = `LukeOS is Luke's personal app for projects, tasks, notes and the artifacts agents make for him.
 - Call get_today first to learn today's date in Luke's time zone and what's due. Due dates are plain days (YYYY-MM-DD); work out "Friday" or "next week" from that date.
 - Everything you create is labelled in the app as made by Claude. If you are running as a scheduled routine, pass the routine's name as "routine" so Luke can see which one did it.
 - Luke's home screen is his dashboard: his tasks as a list or a board, grouped by when (Today, This week, This month, Later) or by status (To do, Doing, Done). By default it hides Doing and Done tasks. get_dashboard shows it exactly as he sees it; get_board shows every column; move_task moves a task between columns just like dragging its card. Only use set_dashboard_view when Luke asks to change how it looks.
-- Notes are Markdown pages, inside a project or on their own. To file a document or report, use create_note (Markdown is best, since Luke can edit it). To save a finished artifact as a web page, use create_note with format "html". For a photo, call save_image first and put the Markdown it returns in the note.
-- Everything you make appears in Luke's Agents section (list_from_claude). Notes you write live there rather than in his Notes list (they still show inside their project). Nothing opens automatically, so you don't need to ask before saving.
-- To change several tasks or notes the same way at once, use update_tasks, move_tasks, delete_tasks, update_notes or delete_notes.
+- Anything you write for Luke (a report, research, a plan, a web page, a summary) is an artifact: use create_artifact, not create_note. An artifact is one bundle: it can hold several parts (each shown as a tab, e.g. a report and its data) in Markdown or HTML, with photos inside them (call save_image first and use the url it returns). Luke reads artifacts; he doesn't edit them.
+- Artifacts keep versions. update_artifact with new content adds a version and keeps the old ones, so say what changed in its note. For a routine, make a new artifact each run unless its instructions say to keep one artifact up to date.
+- Notes are Luke's own writing. Read them freely, but only create or change a note when Luke explicitly asks you to.
+- Luke can comment on his notes and artifacts, and quote the words a comment is about. list_comments with open: true shows what's waiting for you. To act on a comment on an artifact: update_artifact, then reply_to_comment to say what you did, then resolve_comment. Don't resolve a comment you haven't dealt with.
+- Everything you make appears in Luke's Agents section (list_from_claude). Nothing opens automatically, so you don't need to ask before saving.
+- To change several tasks, notes or artifacts the same way at once, use update_tasks, move_tasks, delete_tasks, update_notes, delete_notes, update_artifacts or delete_artifacts.
 - To find something by name or words in it, use search.
 - Every change you make is written to Luke's activity log automatically (list_activity shows it), so you don't need to log anything yourself.
 - Deleting moves things to Trash, where they're kept for 30 days. list_trash and restore_from_trash bring things back. Only delete_forever or empty_trash when Luke asks.`;

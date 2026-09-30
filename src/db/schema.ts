@@ -1,4 +1,4 @@
-import { customType, date, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { customType, date, index, integer, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
@@ -71,9 +71,9 @@ export const tasks = pgTable(
 );
 
 /**
- * A note: a page of writing, inside a project or on its own. Luke's notes
- * are Markdown (headings, lists, checklists, links, photos). Claude can also
- * save a finished HTML page (an artifact), which the app shows as it is.
+ * A note: Luke's own page of writing, inside a project or on its own.
+ * Markdown (headings, lists, checklists, links, photos), or occasionally a
+ * finished HTML page. What Claude makes on its own goes in artifacts instead.
  */
 export const notes = pgTable(
   "notes",
@@ -86,6 +86,83 @@ export const notes = pgTable(
     ...madeBy,
   },
   (t) => [index("notes_project_idx").on(t.projectId), index("notes_updated_idx").on(t.updatedAt)],
+);
+
+/**
+ * An artifact: something an agent made for Luke, such as a report or a web
+ * page. It's a bundle of parts (a report, its data, a page...) with photos
+ * inside them, and it keeps every version: an update adds a version rather
+ * than overwriting. Luke reads and comments; he doesn't edit it.
+ */
+export const artifacts = pgTable(
+  "artifacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    title: text("title").notNull().default(""),
+    /** The latest version's number. */
+    version: integer("version").notNull().default(1),
+    ...madeBy,
+  },
+  (t) => [index("artifacts_project_idx").on(t.projectId), index("artifacts_updated_idx").on(t.updatedAt)],
+);
+
+/** One version of an artifact. Versions are never changed once made. */
+export const artifactVersions = pgTable(
+  "artifact_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    artifactId: uuid("artifact_id")
+      .notNull()
+      .references(() => artifacts.id, { onDelete: "cascade" }),
+    number: integer("number").notNull(),
+    /** What changed from the version before, e.g. "Charts now weekly, as Luke asked". */
+    note: text("note"),
+    createdByKind: text("created_by_kind").notNull().default("agent"),
+    createdByName: text("created_by_name"),
+    createdByRoutine: text("created_by_routine"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("artifact_versions_number_unique").on(t.artifactId, t.number)],
+);
+
+/** A part of one version: a Markdown document or an HTML page, shown as a tab when there are several. */
+export const artifactParts = pgTable(
+  "artifact_parts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    versionId: uuid("version_id")
+      .notNull()
+      .references(() => artifactVersions.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    name: text("name").notNull().default(""),
+    format: text("format").notNull().default("markdown"), // "markdown" | "html"
+    content: text("content").notNull().default(""),
+  },
+  (t) => [index("artifact_parts_version_idx").on(t.versionId)],
+);
+
+/**
+ * A comment on a note or an artifact, by Luke or Claude. It can quote the
+ * words it's about, and on an artifact it records which version it was
+ * made on. Replies point at the comment they answer. Resolving closes it.
+ */
+export const comments = pgTable(
+  "comments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    targetType: text("target_type").notNull(), // "note" | "artifact"
+    targetId: uuid("target_id").notNull(),
+    parentId: uuid("parent_id").references((): AnyPgColumn => comments.id, { onDelete: "cascade" }),
+    /** Artifacts only: the version number it was made on. */
+    version: integer("version"),
+    /** The words it's about, if Luke picked some. */
+    quote: text("quote"),
+    body: text("body").notNull(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    ...madeBy,
+  },
+  (t) => [index("comments_target_idx").on(t.targetType, t.targetId)],
 );
 
 /** A photo pasted into a note, kept in the database and shown at /api/images/<id>. */
@@ -165,7 +242,7 @@ export const activityLog = pgTable(
     routine: text("routine"),
     tool: text("tool").notNull(),
     summary: text("summary").notNull(),
-    itemType: text("item_type"), // "task" | "note" | "project", when it's about one thing
+    itemType: text("item_type"), // "task" | "note" | "artifact" | "project", when it's about one thing
     itemId: uuid("item_id"),
   },
   (t) => [index("activity_log_at_idx").on(t.at)],

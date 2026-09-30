@@ -186,6 +186,29 @@
   border-top: 1px solid var(--border);
   margin: 1.5em 0;
 }
+.note-body .tableWrapper {
+  overflow-x: auto;
+}
+.note-body table {
+  border-collapse: collapse;
+  font-size: 0.9em;
+  min-width: 100%;
+}
+.note-body th,
+.note-body td {
+  border: 1px solid var(--color-border);
+  padding: 0.4em 0.7em;
+  text-align: left;
+  vertical-align: top;
+}
+.note-body th {
+  background: var(--color-muted);
+  font-weight: 600;
+}
+.note-body td > p,
+.note-body th > p {
+  margin: 0;
+}
 .note-body img {
   display: block;
   max-width: 100%;

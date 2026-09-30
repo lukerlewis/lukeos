@@ -6,24 +6,38 @@ import { colorHex } from "@/lib/project-colors";
 import { defineOperation } from "./define";
 import { excerptOf } from "./notes";
 
-const { tasks, notes, projects, appSettings } = schema;
+const { tasks, artifacts, projects, appSettings } = schema;
+
+// Facts about an artifact's latest version.
+const latest = sql`(select v.id from artifact_versions v where v.artifact_id = ${artifacts.id} and v.number = ${artifacts.version})`;
+const firstPart = (column: "content" | "format") =>
+  sql<string | null>`(select ${sql.raw(column === "content" ? "left(p.content, 2000)" : "p.format")} from artifact_parts p where p.version_id = ${latest} order by p.position limit 1)`;
+const changedAt = sql<Date | null>`(select v.created_at from artifact_versions v where v.id = ${latest})`.mapWith(artifacts.createdAt);
+const openComments = sql<number>`(select count(*) from comments c where c.target_type = 'artifact' and c.target_id = ${artifacts.id} and c.parent_id is null and c.resolved_at is null)`.mapWith(
+  Number,
+);
 
 const SEEN_KEY = "from_claude_seen_at";
 
 /** One thing Claude made, as the Agents section lists it. */
 export type ClaudeItem = {
-  type: "note" | "task" | "project";
+  type: "artifact" | "task" | "project";
   id: string;
   title: string;
-  /** Notes: the start of the text. Tasks: nothing. */
+  /** Artifacts: the start of the text. Tasks: nothing. */
   excerpt: string | null;
-  /** Notes only: "html" for a saved page. */
+  /** Artifacts only: "html" for a web page. */
   format: string | null;
   project: { id: string; name: string; hex: string } | null;
   name: string;
   routine: string | null;
+  /** For artifacts, when the latest version was made. */
   createdAt: Date;
   isNew: boolean;
+  /** Artifacts only: the latest version's number. */
+  version: number | null;
+  /** Artifacts only: comments not yet resolved. */
+  openComments: number;
 };
 
 async function seenAt() {
@@ -33,7 +47,7 @@ async function seenAt() {
 
 /**
  * Everything Claude made that isn't in Trash, newest first. "New" means made
- * since Luke last looked at the Agents section.
+ * (or, for an artifact, given a new version) since Luke last looked at the Agents section.
  */
 export async function listFromClaude(filter: { routine?: string; type?: ClaudeItem["type"]; limit?: number } = {}) {
   const limit = filter.limit ?? 100;
@@ -42,32 +56,35 @@ export async function listFromClaude(filter: { routine?: string; type?: ClaudeIt
     filter.routine ? eq(col, filter.routine) : undefined;
   const want = (type: ClaudeItem["type"]) => !filter.type || filter.type === type;
 
-  const [noteRows, taskRows, projectRows] = await Promise.all([
-    want("note")
+  const [artifactRows, taskRows, projectRows] = await Promise.all([
+    want("artifact")
       ? db
           .select({
             row: {
-              id: notes.id,
-              title: notes.title,
-              format: notes.format,
-              start: sql<string>`left(${notes.content}, 2000)`,
-              name: notes.createdByName,
-              routine: notes.createdByRoutine,
-              createdAt: notes.createdAt,
+              id: artifacts.id,
+              title: artifacts.title,
+              version: artifacts.version,
+              name: artifacts.createdByName,
+              routine: artifacts.createdByRoutine,
+              createdAt: artifacts.createdAt,
             },
+            start: firstPart("content"),
+            format: firstPart("format"),
+            changedAt: changedAt,
+            openComments: openComments,
             project: projects,
           })
-          .from(notes)
-          .leftJoin(projects, eq(projects.id, notes.projectId))
+          .from(artifacts)
+          .leftJoin(projects, eq(projects.id, artifacts.projectId))
           .where(
             and(
-              eq(notes.createdByKind, "agent"),
-              isNull(notes.deletedAt),
+              eq(artifacts.createdByKind, "agent"),
+              isNull(artifacts.deletedAt),
               sql`(${projects.id} is null or ${projects.deletedAt} is null)`,
-              byRoutine(notes.createdByRoutine),
+              byRoutine(artifacts.createdByRoutine),
             ),
           )
-          .orderBy(desc(notes.createdAt))
+          .orderBy(desc(changedAt))
           .limit(limit)
       : [],
     want("task")
@@ -107,17 +124,19 @@ export async function listFromClaude(filter: { routine?: string; type?: ClaudeIt
 
   const projectOf = (p: typeof projects.$inferSelect | null) => (p ? { id: p.id, name: p.name, hex: colorHex(p.color) } : null);
   const items: ClaudeItem[] = [
-    ...noteRows.map(({ row, project }) => ({
-      type: "note" as const,
+    ...artifactRows.map(({ row, project, start, format, changedAt, openComments }) => ({
+      type: "artifact" as const,
       id: row.id,
       title: row.title,
-      excerpt: excerptOf(row.start, row.format),
-      format: row.format,
+      excerpt: excerptOf(start ?? "", format ?? "markdown"),
+      format: format ?? "markdown",
       project: projectOf(project),
       name: row.name ?? "Claude",
       routine: row.routine,
-      createdAt: row.createdAt,
-      isNew: row.createdAt > seen,
+      createdAt: changedAt ?? row.createdAt,
+      isNew: (changedAt ?? row.createdAt) > seen,
+      version: row.version,
+      openComments,
     })),
     ...taskRows.map(({ row, project }) => ({
       type: "task" as const,
@@ -130,6 +149,8 @@ export async function listFromClaude(filter: { routine?: string; type?: ClaudeIt
       routine: row.routine,
       createdAt: row.createdAt,
       isNew: row.createdAt > seen,
+      version: null,
+      openComments: 0,
     })),
     ...projectRows.map((p) => ({
       type: "project" as const,
@@ -142,30 +163,30 @@ export async function listFromClaude(filter: { routine?: string; type?: ClaudeIt
       routine: p.createdByRoutine,
       createdAt: p.createdAt,
       isNew: p.createdAt > seen,
+      version: null,
+      openComments: 0,
     })),
   ];
   items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   return items.slice(0, limit);
 }
 
-/** How many things Claude made since Luke last looked, for the sidebar. */
+/** How many things Claude made (or artifacts it updated) since Luke last looked, for the sidebar. */
 export async function newFromClaudeCount() {
   const seen = await seenAt();
-  const count = (table: typeof notes | typeof tasks | typeof projects) =>
-    db
-      .select({ n: sql<number>`count(*)`.mapWith(Number) })
-      .from(table)
-      .where(and(eq(table.createdByKind, "agent"), isNull(table.deletedAt), sql`${table.createdAt} > ${seen}`))
-      .then(([r]) => r.n);
-  const counts = await Promise.all([count(notes), count(tasks), count(projects)]);
-  return counts.reduce((a, b) => a + b, 0);
+  const rows = await db.execute<{ n: number }>(sql`
+    select (select count(*) from tasks where created_by_kind = 'agent' and deleted_at is null and created_at > ${seen})
+         + (select count(*) from projects where created_by_kind = 'agent' and deleted_at is null and created_at > ${seen})
+         + (select count(*) from artifacts a join artifact_versions v on v.artifact_id = a.id and v.number = a.version
+            where a.created_by_kind = 'agent' and a.deleted_at is null and v.created_at > ${seen}) as n`);
+  return Number(rows.rows[0].n);
 }
 
 /** The routine names that have made something, for the filter. */
 export async function claudeRoutines() {
   const rows = await db.execute<{ routine: string }>(sql`
     select distinct created_by_routine as routine from (
-      select created_by_routine from notes where created_by_kind = 'agent' and deleted_at is null
+      select created_by_routine from artifacts where created_by_kind = 'agent' and deleted_at is null
       union select created_by_routine from tasks where created_by_kind = 'agent' and deleted_at is null
       union select created_by_routine from projects where created_by_kind = 'agent' and deleted_at is null
     ) r where created_by_routine is not null order by 1`);
@@ -176,10 +197,10 @@ export const fromClaudeOperations = {
   list_from_claude: defineOperation({
     name: "list_from_claude",
     description:
-      "What Claude has made in LukeOS (notes, tasks and projects), newest first, as Luke sees it in his Agents section. isNew marks things made since he last looked. Filter by routine or type.",
+      "What Claude has made in LukeOS (artifacts, tasks and projects), newest first, as Luke sees it in his Agents section. isNew marks things made (or artifacts updated) since he last looked. Filter by routine or type.",
     input: z.object({
       routine: z.string().optional().describe("Only things this routine made."),
-      type: z.enum(["note", "task", "project"]).optional(),
+      type: z.enum(["artifact", "task", "project"]).optional(),
       limit: z.number().int().min(1).max(200).optional(),
     }),
     run: async (filter) => listFromClaude(filter),
