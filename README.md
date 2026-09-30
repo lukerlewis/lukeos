@@ -20,6 +20,14 @@ the app, Claude can do too, through a connector (roadmap step 3).
   Operations live in `src/core/` (`tasks.ts`, `projects.ts`, `settings.ts`)
   and are gathered in `operations.ts`. Screens read with the same core
   functions and change things by calling `/api/ops/<name>` (`src/lib/ops-client.ts`).
+- **Claude connector** (`/api/mcp`): a remote MCP server whose tools are the
+  operations list (`src/core/mcp.ts`). Claude signs in with standard OAuth
+  (`src/lib/auth/oauth.ts`): it registers itself, Luke approves it on
+  `/oauth/authorize` while signed in, and it gets its own key for that
+  connection. Settings lists connections and can disconnect them. Only
+  claude.ai / claude.com and local (Claude Code) return addresses are
+  accepted. Anything Claude creates records `Claude` plus the routine name
+  if the tool call passed one.
 - **Dates**: due dates are plain days (`YYYY-MM-DD`). "Today" uses Luke's time
   zone, which the app saves from his device (`set_time_zone`).
 - **Deleting** only sets `deleted_at` (Trash, kept 30 days); deleting a

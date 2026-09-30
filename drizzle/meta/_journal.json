@@ -15,6 +15,13 @@
       "when": 1790770431640,
       "tag": "0001_projects_and_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790771737776,
+      "tag": "0002_claude_connections",
+      "breakpoints": true
     }
   ]
 }

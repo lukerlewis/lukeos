@@ -6,8 +6,14 @@ import { SignInForm } from "./sign-in-form";
 
 export const metadata: Metadata = { title: "Sign in · LukeOS" };
 
-export default async function SignInPage() {
-  if (await getSession()) redirect("/");
+/** Only same-site paths, so a link can't send Luke elsewhere after signing in. */
+function safeNext(next: string | string[] | undefined) {
+  return typeof next === "string" && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
+}
+
+export default async function SignInPage({ searchParams }: PageProps<"/sign-in">) {
+  const next = safeNext((await searchParams).next);
+  if (await getSession()) redirect(next);
   const setUp = await isSetUp();
 
   return (
@@ -24,7 +30,7 @@ export default async function SignInPage() {
               : "Create a passkey on this device. From then on, only you can get in."}
           </p>
         </div>
-        <SignInForm mode={setUp ? "sign-in" : "set-up"} />
+        <SignInForm mode={setUp ? "sign-in" : "set-up"} next={next} />
       </div>
     </main>
   );

@@ -1,9 +1,11 @@
-import { asc } from "drizzle-orm";
+import { asc, isNull } from "drizzle-orm";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Page } from "@/components/shell/page";
 import { Card, CardHeader } from "@/components/ui/card";
 import { db, schema } from "@/db";
 import { requireSession } from "@/lib/auth/session";
+import { CopyAddress, DisconnectButton } from "./claude";
 import { AddDeviceButton, RemoveDeviceButton, SignOutButton } from "./devices";
 import { ThemeSwitch } from "./theme-switch";
 
@@ -14,6 +16,15 @@ const dateFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short
 export default async function SettingsPage() {
   const session = await requireSession();
   const passkeys = await db.select().from(schema.passkeys).orderBy(asc(schema.passkeys.createdAt));
+  const connections = await db
+    .select()
+    .from(schema.agentConnections)
+    .where(isNull(schema.agentConnections.revokedAt))
+    .orderBy(asc(schema.agentConnections.createdAt));
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+  const connectorAddress = `${proto}://${host}/api/mcp`;
 
   return (
     <Page title="Settings" newTask={false}>
@@ -55,6 +66,33 @@ export default async function SettingsPage() {
             </p>
             <AddDeviceButton />
           </div>
+        </Card>
+
+        <Card>
+          <CardHeader title="Claude" aside={connections.length ? `${connections.length} connected` : undefined} />
+          <div className="flex flex-col gap-3 px-4 py-4">
+            <p className="text-[13px] text-muted-foreground">
+              Add this address as a custom connector in Claude&apos;s settings, under Connectors. Claude can then do
+              anything you can here, and whatever it adds is labelled.
+            </p>
+            <CopyAddress address={connectorAddress} />
+          </div>
+          {connections.length > 0 && (
+            <ul className="border-t">
+              {connections.map((c) => (
+                <li key={c.id} className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0">
+                  <div className="flex grow flex-col gap-0.5">
+                    <span className="font-medium">{c.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Connected {dateFmt.format(c.createdAt)}
+                      {c.lastUsedAt && ` · last used ${dateFmt.format(c.lastUsedAt)}`}
+                    </span>
+                  </div>
+                  <DisconnectButton id={c.id} name={c.name} />
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
 
         <Card>

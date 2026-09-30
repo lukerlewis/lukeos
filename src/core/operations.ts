@@ -35,7 +35,7 @@ export type Operations = typeof operations;
 export type OperationName = keyof Operations;
 
 export async function runOperation(name: string, rawInput: unknown, actor: Actor) {
-  const op = (operations as Record<string, Operation>)[name];
+  const op = Object.hasOwn(operations, name) ? (operations as Record<string, Operation>)[name] : undefined;
   if (!op) return { ok: false as const, status: 404, error: `Unknown operation "${name}".` };
   const parsed = op.input.safeParse(rawInput ?? {});
   if (!parsed.success) return { ok: false as const, status: 400, error: z.prettifyError(parsed.error) };

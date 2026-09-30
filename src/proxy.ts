@@ -4,14 +4,17 @@ import { NextResponse, type NextRequest } from "next/server";
 // verify the session properly against the database.
 export function proxy(request: NextRequest) {
   if (!request.cookies.has("lukeos_session")) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
+    const signIn = new URL("/sign-in", request.url);
+    const { pathname, search } = request.nextUrl;
+    if (pathname !== "/") signIn.searchParams.set("next", pathname + search);
+    return NextResponse.redirect(signIn);
   }
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    // Everything except sign-in, auth/ops APIs, app icons and Next's own files.
-    "/((?!sign-in|api/|_next/|manifest.webmanifest|icon|apple-icon|favicon.ico).*)",
+    // Everything except sign-in, APIs, Claude's connector discovery, app icons and Next's own files.
+    "/((?!sign-in|api/|\\.well-known/|_next/|manifest.webmanifest|icon|apple-icon|favicon.ico).*)",
   ],
 };

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { friendlyPasskeyError, registerPasskey, signInWithPasskey } from "@/lib/passkey-client";
 
-export function SignInForm({ mode }: { mode: "sign-in" | "set-up" }) {
+export function SignInForm({ mode, next = "/" }: { mode: "sign-in" | "set-up"; next?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +16,7 @@ export function SignInForm({ mode }: { mode: "sign-in" | "set-up" }) {
     setError(null);
     try {
       await (mode === "set-up" ? registerPasskey() : signInWithPasskey());
-      router.replace("/");
+      router.replace(next);
       router.refresh();
     } catch (err) {
       setError(friendlyPasskeyError(err));

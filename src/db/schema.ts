@@ -73,3 +73,52 @@ export const appSettings = pgTable("app_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
 });
+
+/**
+ * An app that registered itself to connect to LukeOS (Claude on the web,
+ * Claude Code...). Registering alone grants nothing: Luke still has to
+ * approve a connection while signed in.
+ */
+export const oauthClients = pgTable("oauth_clients", {
+  id: text("id").primaryKey(), // client_id
+  name: text("name").notNull(),
+  redirectUris: text("redirect_uris").notNull(), // JSON array
+  secretHash: text("secret_hash"), // only for clients that asked for a secret
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One-time codes handed back to Claude after Luke approves, valid for a few minutes. */
+export const oauthCodes = pgTable("oauth_codes", {
+  id: text("id").primaryKey(), // sha256(code), hex
+  clientId: text("client_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+/**
+ * A Claude connection Luke approved: Claude's own key into LukeOS. Luke can
+ * disconnect it from Settings, which stops it working straight away.
+ */
+export const agentConnections = pgTable("agent_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientId: text("client_id").notNull(),
+  name: text("name").notNull(), // e.g. "Claude" or "Claude Code"
+  refreshTokenHash: text("refresh_token_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
+/** Short-lived keys Claude sends with each request, renewed with the connection's refresh token. */
+export const agentAccessTokens = pgTable(
+  "agent_access_tokens",
+  {
+    id: text("id").primaryKey(), // sha256(token), hex
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => agentConnections.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("agent_access_tokens_connection_idx").on(t.connectionId)],
+);
