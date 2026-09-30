@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { isLookup, logActivity, titleBefore } from "./activity";
 import type { Actor } from "./define";
@@ -51,6 +52,17 @@ function toolList() {
   });
 }
 
+/**
+ * The server's version is a fingerprint of its tools, so it changes whenever a
+ * tool is added or changed. Claude apps save the tool list; a new version tells
+ * them to fetch it again rather than keep using an old one.
+ */
+let fingerprint: string | undefined;
+function serverVersion() {
+  fingerprint ??= createHash("sha256").update(JSON.stringify([INSTRUCTIONS, toolList()])).digest("hex").slice(0, 12);
+  return `1.0.0+${fingerprint}`;
+}
+
 type Message = { jsonrpc?: string; id?: string | number | null; method?: string; params?: Record<string, unknown> };
 
 const result = (id: Message["id"], value: unknown) => ({ jsonrpc: "2.0", id: id ?? null, result: value });
@@ -81,7 +93,7 @@ async function handleOne(raw: unknown, actor: Actor & { kind: "agent" }) {
       return result(msg.id, {
         protocolVersion: SUPPORTED_VERSIONS.includes(asked) ? asked : SUPPORTED_VERSIONS[0],
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "lukeos", title: "LukeOS", version: "1.0.0" },
+        serverInfo: { name: "lukeos", title: "LukeOS", version: serverVersion() },
         instructions: INSTRUCTIONS,
       });
     }
