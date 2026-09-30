@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { colorHex } from "@/lib/project-colors";
 import { deleteOrphanComments } from "./artifacts";
+import { deleteOrphanMentions } from "./mentions";
 import { defineOperation, madeByOf, OperationError, type MadeBy } from "./define";
 
 const { tasks, notes, artifacts, projects } = schema;
@@ -57,6 +58,7 @@ export async function purgeExpiredTrash({ force = false } = {}) {
     await tx.delete(projects).where(lt(projects.deletedAt, cutoff));
   });
   await deleteOrphanComments();
+  await deleteOrphanMentions();
   await deleteUnusedImages();
 }
 
@@ -268,6 +270,7 @@ export async function deleteForever(type: TrashItem["type"], id: string) {
     await db.delete(table).where(eq(table.id, id));
   }
   await deleteOrphanComments();
+  await deleteOrphanMentions();
   return { deletedForever: { type, id } };
 }
 
@@ -280,6 +283,7 @@ export async function emptyTrash() {
     return { tasks: t.length, notes: n.length, artifacts: a.length, projects: p.length };
   });
   await deleteOrphanComments();
+  await deleteOrphanMentions();
   return { deletedForever: counts };
 }
 

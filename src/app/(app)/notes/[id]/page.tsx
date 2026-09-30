@@ -8,6 +8,7 @@ import { NoteEditor } from "@/components/notes/note-editor";
 import { OperationError } from "@/core/define";
 import { getNote } from "@/core/notes";
 import { listComments } from "@/core/comments";
+import { doneMentionIds } from "@/core/mentions";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { COMMENTABLE } from "@/lib/comments";
@@ -29,11 +30,12 @@ export async function generateMetadata({ params }: PageProps<"/notes/[id]">): Pr
 
 export default async function NotePage({ params, searchParams }: PageProps<"/notes/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const [note, projects, threads, timeZone] = await Promise.all([
+  const [note, projects, threads, timeZone, done] = await Promise.all([
     load(id),
     listProjects(),
     listComments({ targetType: "note", targetId: id }),
     getTimeZone(),
+    doneMentionIds("note", id),
   ]);
   const back = note.project
     ? { href: `/projects/${note.project.id}?view=notes`, label: note.project.name }
@@ -41,6 +43,12 @@ export default async function NotePage({ params, searchParams }: PageProps<"/not
 
   return (
     <div className="flex min-w-0 grow flex-col">
+      {done.length > 0 && (
+        // @claude tags Claude has dealt with show green with a tick.
+        <style>{`${done.map((d) => `.note-body a[href="/claude/${d}"]`).join(",")}{background:color-mix(in oklab,var(--done) 14%,transparent);color:var(--done)}${done
+          .map((d) => `.note-body a[href="/claude/${d}"]::after`)
+          .join(",")}{content:" ✓"}`}</style>
+      )}
       <header className="hidden h-14 shrink-0 items-center gap-2 border-b px-6 md:flex">
         <Link href={back.href} className="inline-flex items-center text-muted-foreground hover:text-foreground">
           <ChevronLeft className="size-4" aria-hidden />

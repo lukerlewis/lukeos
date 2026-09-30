@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { assertArtifact } from "./artifacts";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type MadeBy } from "./define";
+import { deleteOrphanMentions, syncMentions } from "./mentions";
 
 const { comments, notes, artifacts } = schema;
 
@@ -143,6 +144,7 @@ export const commentOperations = {
         .insert(comments)
         .values({ targetType, targetId, body, quote: quote || null, version, ...madeByColumns(actor) })
         .returning({ id: comments.id });
+      await syncMentions("comment", row.id, [body], actor);
       return getThread(row.id);
     },
   }),
@@ -155,14 +157,15 @@ export const commentOperations = {
     run: async ({ id, body }, { actor }) => {
       const thread = await getThread(id);
       const version = thread.target.type === "artifact" ? (await assertArtifact(thread.target.id)).version : null;
-      await db.insert(comments).values({
+      const [reply] = await db.insert(comments).values({
         targetType: thread.target.type,
         targetId: thread.target.id,
         parentId: thread.id,
         body,
         version,
         ...madeByColumns(actor),
-      });
+      }).returning({ id: comments.id });
+      await syncMentions("comment", reply.id, [body], actor);
       await db.update(comments).set({ updatedAt: new Date() }).where(eq(comments.id, thread.id));
       return getThread(thread.id);
     },
@@ -189,6 +192,7 @@ export const commentOperations = {
     run: async ({ id }) => {
       const thread = await getThread(id);
       await db.delete(comments).where(eq(comments.id, id));
+      await deleteOrphanMentions();
       return { deleted: id, thread: thread.id };
     },
   }),

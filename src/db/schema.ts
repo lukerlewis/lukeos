@@ -1,4 +1,4 @@
-import { customType, date, index, integer, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { boolean, customType, date, index, integer, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
@@ -166,6 +166,34 @@ export const comments = pgTable(
     ...madeBy,
   },
   (t) => [index("comments_target_idx").on(t.targetType, t.targetId)],
+);
+
+/**
+ * An @claude request: somewhere Luke wrote "@claude" (a note, a task, a
+ * comment), so Claude knows what he asked, where and when, and whether it's
+ * been dealt with. In a note the tag carries this row's id, so editing the
+ * words around it doesn't make a new request; elsewhere it's matched by the
+ * line it's on.
+ */
+export const mentions = pgTable(
+  "mentions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    targetType: text("target_type").notNull(), // "note" | "task" | "comment"
+    targetId: uuid("target_id").notNull(),
+    /** The line the tag is on: what Luke is asking. */
+    context: text("context").notNull(),
+    /** True when the tag in the text carries this row's id (notes). */
+    anchored: boolean("anchored").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    resolvedBy: text("resolved_by"), // e.g. "Claude", or null for Luke
+    /** What Claude says it did. */
+    reply: text("reply"),
+    /** Set when a request that was already dealt with is taken out of the text; kept as history. */
+    removedAt: timestamp("removed_at", { withTimezone: true }),
+  },
+  (t) => [index("mentions_target_idx").on(t.targetType, t.targetId)],
 );
 
 /** A photo pasted into a note, kept in the database and shown at /api/images/<id>. */

@@ -9,6 +9,7 @@ import { commentOperations } from "./comments";
 import { dashboardOperations } from "./dashboard";
 import { defineOperation, OperationError, type Actor, type Operation } from "./define";
 import { fromClaudeOperations } from "./from-claude";
+import { mentionOperations } from "./mentions";
 import { noteOperations } from "./notes";
 import { projectOperations } from "./projects";
 import { searchOperations } from "./search";
@@ -43,6 +44,7 @@ export const operations = {
   ...noteOperations,
   ...artifactOperations,
   ...commentOperations,
+  ...mentionOperations,
   ...bulkOperations,
   ...fromClaudeOperations,
   ...activityOperations,

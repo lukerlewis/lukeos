@@ -6,6 +6,7 @@ import { addDays, isoDay, nextRepeat } from "@/lib/dates";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
 import { efforts, priorities, repeats, statuses, type Effort, type Priority, type Repeat, type Status } from "@/lib/task-fields";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
+import { syncMentions } from "./mentions";
 import { assertProject } from "./projects";
 import { today } from "./settings";
 
@@ -232,6 +233,7 @@ export const taskOperations = {
         })
         .returning({ id: tasks.id });
       await syncRepeats([row.id]);
+      await syncMentions("task", row.id, [input.title, input.notes], actor);
       return getTask(row.id);
     },
   }),
@@ -251,7 +253,7 @@ export const taskOperations = {
       notes: fields.notes.optional(),
       repeat: fields.repeat.optional(),
     }),
-    run: async ({ id, ...changes }) => {
+    run: async ({ id, ...changes }, { actor }) => {
       const current = await getTask(id);
       if (changes.projectId) await assertProject(changes.projectId);
       const set: Partial<TaskRow> = { updatedAt: new Date() };
@@ -264,7 +266,9 @@ export const taskOperations = {
       }
       await db.update(tasks).set(set).where(eq(tasks.id, id));
       await syncRepeats([id]);
-      return getTask(id);
+      const task = await getTask(id);
+      if (changes.title !== undefined || changes.notes !== undefined) await syncMentions("task", id, [task.title, task.notes], actor);
+      return task;
     },
   }),
 

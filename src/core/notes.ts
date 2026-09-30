@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
+import { tagMentions } from "@/lib/mentions";
+import { syncMentions } from "./mentions";
 import { assertProject } from "./projects";
 
 const { notes, projects, images } = schema;
@@ -187,13 +189,16 @@ export const noteOperations = {
         .insert(notes)
         .values({
           title: input.title ?? "",
-          content: input.content ?? "",
+          // Luke's @claude tags each get an id, so they stay the same request as he edits.
+          content: actor.kind === "user" ? tagMentions(input.content ?? "", () => crypto.randomUUID()) : (input.content ?? ""),
           format: input.format ?? "markdown",
           projectId: input.projectId ?? null,
           ...madeByColumns(actor),
         })
         .returning({ id: notes.id });
-      return getNote(row.id);
+      const note = await getNote(row.id);
+      await syncMentions("note", note.id, [note.title, note.content], actor);
+      return note;
     },
   }),
 
@@ -208,7 +213,7 @@ export const noteOperations = {
       append: z.string().max(200_000).optional().describe("Text to add to the end of the note, as a new paragraph."),
       projectId: projectId.optional(),
     }),
-    run: async ({ id, title, content, append, projectId }) => {
+    run: async ({ id, title, content, append, projectId }, { actor }) => {
       const current = await getNote(id);
       if (projectId) await assertProject(projectId);
       let body = content;
@@ -225,7 +230,9 @@ export const noteOperations = {
           updatedAt: new Date(),
         })
         .where(eq(notes.id, id));
-      return getNote(id);
+      const note = await getNote(id);
+      await syncMentions("note", id, [note.title, note.content], actor);
+      return note;
     },
   }),
 

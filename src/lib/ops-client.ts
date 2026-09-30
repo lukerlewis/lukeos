@@ -103,6 +103,13 @@ function undoFor(
       const reply = (result as Output<"reply_to_comment">).replies.at(-1);
       return reply ? { label: "replying", run: async () => void (await send("delete_comment", { id: reply.id })) } : null;
     }
+    case "resolve_mention": {
+      const resolved = input.resolved !== false;
+      return {
+        label: resolved ? "marking an @claude request done" : "reopening an @claude request",
+        run: async () => void (await send("resolve_mention", { id: input.id as string, resolved: !resolved })),
+      };
+    }
     case "resolve_comment": {
       const resolved = input.resolved !== false;
       return {

@@ -27,6 +27,7 @@ import type { Note } from "@/core/notes";
 import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
+import { ClaudeTag } from "./claude-tag";
 import { shrinkPhoto } from "./photos";
 
 type SaveState = "saved" | "saving" | "error";
@@ -158,8 +159,9 @@ export function NoteEditor({
       TaskList,
       TaskItem.configure({ nested: true }),
       Image,
-      Placeholder.configure({ placeholder: "Start writing..." }),
+      Placeholder.configure({ placeholder: "Start writing... Type @claude to ask Claude something." }),
       Markdown,
+      ClaudeTag,
     ],
     content: note.content,
     contentType: "markdown",

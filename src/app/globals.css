@@ -209,6 +209,22 @@
 .note-body th > p {
   margin: 0;
 }
+/* An @claude tag. Once Claude has dealt with it, the note page marks it done. */
+.note-body a[href^="/claude/"],
+.claude-tag {
+  display: inline-block;
+  padding: 0 0.35em;
+  border-radius: 0.4em;
+  background: color-mix(in oklab, var(--doing) 14%, transparent);
+  color: var(--doing);
+  font-weight: 600;
+  text-decoration: none;
+}
+.note-body a[href^="/claude/"].is-done,
+.claude-tag.is-done {
+  background: color-mix(in oklab, var(--done) 14%, transparent);
+  color: var(--done);
+}
 .note-body img {
   display: block;
   max-width: 100%;

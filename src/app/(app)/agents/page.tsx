@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { activityDays } from "@/components/from-claude/activity-days";
 import { ActivityList } from "@/components/from-claude/activity-list";
 import { MarkFromClaudeSeen } from "@/components/from-claude/mark-seen";
+import { MentionList } from "@/components/from-claude/mention-list";
 import { SelectableClaudeList } from "@/components/from-claude/selectable-list";
 import { editedLabel } from "@/components/notes/note-list";
 import { EmptyState, Page } from "@/components/shell/page";
@@ -9,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { SegmentedLinks } from "@/components/ui/segmented-links";
 import { listActivity } from "@/core/activity";
 import { claudeRoutines, listFromClaude } from "@/core/from-claude";
+import { listMentions } from "@/core/mentions";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 
@@ -21,6 +23,7 @@ const types = [
 
 const views = [
   { value: undefined, label: "Made by Claude" },
+  { value: "claude", label: "@claude" },
   { value: "activity", label: "Activity log" },
 ] as const;
 
@@ -34,6 +37,7 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
     />
   );
   if (query.view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
+  if (query.view === "claude") return <MentionsPage viewSwitch={viewSwitch("claude")} />;
 
   const type: "task" | "artifact" = query.type === "task" ? "task" : "artifact";
   const routine = typeof query.routine === "string" && query.routine ? query.routine : undefined;
@@ -110,6 +114,28 @@ async function ActivityPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
             <ActivityList days={days} />
           )}
         </Card>
+      </div>
+    </Page>
+  );
+}
+
+/** Everywhere Luke wrote @claude: what's waiting for Claude, and what it's done. */
+async function MentionsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
+  const [mentions, timeZone] = await Promise.all([listMentions({ limit: 200 }), getTimeZone()]);
+  const clock = new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit", hour12: true });
+  const when = Object.fromEntries(
+    mentions.map((m) => [m.id, `${editedLabel(m.createdAt, timeZone)}, ${clock.format(m.createdAt).replace(/\s*(AM|PM)$/, (_, x: string) => ` ${x.toLowerCase()}`)}`]),
+  );
+
+  return (
+    <Page title="Agents" newTask={false}>
+      <div className="flex max-w-3xl flex-col gap-4">
+        {viewSwitch}
+        <p className="text-[13px] text-muted-foreground">
+          Type @claude anywhere (a note, a task, a comment) to ask Claude something. Each one shows here with where and when you
+          wrote it. Claude picks them up the next time it runs, and marks each one done with a note of what it did.
+        </p>
+        <MentionList mentions={mentions} when={when} />
       </div>
     </Page>
   );
