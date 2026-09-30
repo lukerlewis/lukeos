@@ -8,7 +8,8 @@ import * as schema from "./schema";
 const globalForDb = globalThis as unknown as { lukeosPool?: Pool };
 const pool = (globalForDb.lukeosPool ??= new Pool({
   connectionString: process.env.DATABASE_URL ?? process.env.POSTGRES_URL,
-  max: 3,
+  // Enough for a screen's lookups to run side by side rather than queue.
+  max: 10,
 }));
 
 export const db = drizzle({ client: pool, schema });

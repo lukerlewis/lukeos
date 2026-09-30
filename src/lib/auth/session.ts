@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt, lt } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/db";
 
@@ -31,8 +32,8 @@ export async function createSession(opts: { passkeyId: string; userAgent: string
   });
 }
 
-/** The current session, or null if this browser isn't signed in. */
-export async function getSession() {
+/** The current session, or null if this browser isn't signed in. Checked once per page. */
+export const getSession = cache(async () => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const [session] = await db
@@ -41,7 +42,7 @@ export async function getSession() {
     .where(and(eq(schema.sessions.id, hash(token)), gt(schema.sessions.expiresAt, new Date())))
     .limit(1);
   return session ?? null;
-}
+});
 
 /** For pages: send signed-out visitors to the sign-in screen. */
 export async function requireSession() {

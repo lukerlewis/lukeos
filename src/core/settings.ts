@@ -1,5 +1,6 @@
 import "server-only";
 import { eq } from "drizzle-orm";
+import { cache } from "react";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { todayIn } from "@/lib/dates";
@@ -7,10 +8,11 @@ import { defineOperation, OperationError } from "./define";
 
 const DEFAULT_TIME_ZONE = "UTC";
 
-export async function getTimeZone() {
+/** Luke's time zone. Looked up once per page, however many parts ask. */
+export const getTimeZone = cache(async () => {
   const [row] = await db.select().from(schema.appSettings).where(eq(schema.appSettings.key, "timezone")).limit(1);
   return row?.value ?? DEFAULT_TIME_ZONE;
-}
+});
 
 /** Luke's "today", in his own time zone. */
 export async function today() {
