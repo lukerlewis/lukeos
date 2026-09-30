@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { ActivityList, type ActivityRow } from "@/components/from-claude/activity-list";
+import { activityDays } from "@/components/from-claude/activity-days";
+import { ActivityList } from "@/components/from-claude/activity-list";
 import { MarkFromClaudeSeen } from "@/components/from-claude/mark-seen";
 import { SelectableClaudeList } from "@/components/from-claude/selectable-list";
 import { editedLabel } from "@/components/notes/note-list";
@@ -10,7 +11,6 @@ import { listActivity } from "@/core/activity";
 import { claudeRoutines, listFromClaude } from "@/core/from-claude";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
-import { friendlyDay, todayIn } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Agents · LukeOS" };
 
@@ -93,24 +93,7 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
 /** Every change Claude made through the connector, newest first, grouped by day. */
 async function ActivityPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
   const [entries, timeZone] = await Promise.all([listActivity({ limit: 200 }), getTimeZone()]);
-  const today = todayIn(timeZone);
-  const clock = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit" });
-  const days: { label: string; rows: ActivityRow[] }[] = [];
-  let current = "";
-  for (const e of entries) {
-    const day = todayIn(timeZone, e.at);
-    if (day !== current) {
-      current = day;
-      days.push({ label: friendlyDay(day, today), rows: [] });
-    }
-    days.at(-1)!.rows.push({
-      id: e.id,
-      time: clock.format(e.at),
-      summary: e.summary,
-      who: e.routine ?? (e.name !== "Claude" ? e.name : null),
-      item: e.item,
-    });
-  }
+  const days = activityDays(entries, timeZone);
 
   return (
     <Page title="Agents" newTask={false}>

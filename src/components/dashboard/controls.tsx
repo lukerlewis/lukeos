@@ -1,21 +1,23 @@
 "use client";
 
-import { List, SquareKanban } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, List, SlidersHorizontal, SquareKanban } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useOptimistic, useTransition } from "react";
+import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { StatusIcon } from "@/components/tasks/status-circle";
 import type { BoardView } from "@/lib/board";
-import type { DashboardLayout, DashboardView } from "@/lib/dashboard";
+import { defaultDashboardView, type DashboardLayout, type DashboardView } from "@/lib/dashboard";
 import { op } from "@/lib/ops-client";
+import { pushUndo } from "@/lib/undo";
 import { statuses, statusLabel, type Status } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 
 const pill = "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap";
 
 /**
- * The switches at the top of the dashboard: list or board, grouped by when or
- * by status, and which statuses show. Each change is saved, so the dashboard
- * looks the same next time and on other devices.
+ * The switches at the top of the dashboard: the Today list or the Board, a
+ * Filters menu (grouped by when or by status, and which statuses show), and on
+ * the board, whether the other cards show. Each change is saved, so the
+ * dashboard looks the same next time and on other devices.
  */
 export function DashboardControls({ view }: { view: DashboardView }) {
   const router = useRouter();
@@ -23,11 +25,14 @@ export function DashboardControls({ view }: { view: DashboardView }) {
   const [current, setCurrent] = useOptimistic(view);
 
   function change(changes: Partial<DashboardView>) {
-    const next = { ...current, ...changes };
+    const previous = Object.fromEntries(Object.keys(changes).map((k) => [k, current[k as keyof DashboardView]]));
     startTransition(async () => {
-      setCurrent(next);
+      setCurrent({ ...current, ...changes });
       try {
         await op("set_dashboard_view", changes);
+        pushUndo("changing the dashboard", async () => {
+          await op("set_dashboard_view", previous);
+        });
       } catch (err) {
         alert((err as Error).message);
       }
@@ -42,49 +47,110 @@ export function DashboardControls({ view }: { view: DashboardView }) {
     change({ show: statuses.filter((s) => (s === status ? !on : current.show.includes(s))) });
   }
 
+  const changedFilters =
+    (current.by !== defaultDashboardView.by ? 1 : 0) +
+    (current.show.join() !== defaultDashboardView.show.join() ? 1 : 0);
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Choice<DashboardLayout>
-        label="Layout"
+        label="View"
         value={current.layout}
         onChange={(layout) => change({ layout })}
         options={[
-          { value: "list", label: "List", icon: List },
+          { value: "list", label: "Today", icon: List },
           { value: "board", label: "Board", icon: SquareKanban },
         ]}
       />
-      <Choice<BoardView>
-        label="Group by"
-        value={current.by}
-        onChange={(by) => change({ by })}
-        options={[
-          { value: "when", label: "By when" },
-          { value: "status", label: "By status" },
-        ]}
-      />
-      <div className="flex items-center gap-2">
-      <span className="pl-1 text-[13px] text-muted-foreground" aria-hidden>
-        Show
-      </span>
-      <div role="group" aria-label="Show tasks that are" className="inline-flex gap-0.5 rounded-[10px] bg-muted p-[3px]">
-        {statuses.map((s) => {
-          const on = current.show.includes(s);
-          return (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggle(s)}
-              title={on ? `Hide ${statusLabel[s]}` : `Show ${statusLabel[s]}`}
-              className={cn(pill, "text-muted-foreground", on && "bg-card text-foreground shadow-xs dark:bg-background")}
-            >
-              <StatusIcon status={s} className={cn("size-3.5", !on && "opacity-50")} />
-              {statusLabel[s]}
-            </button>
-          );
-        })}
-      </div>
-      </div>
+      <Filters count={changedFilters}>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">Group by</span>
+          <Choice<BoardView>
+            label="Group by"
+            value={current.by}
+            onChange={(by) => change({ by })}
+            options={[
+              { value: "when", label: "By when" },
+              { value: "status", label: "By status" },
+            ]}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground" aria-hidden>
+            Show
+          </span>
+          <div role="group" aria-label="Show tasks that are" className="inline-flex gap-0.5 self-start rounded-[10px] bg-muted p-[3px]">
+            {statuses.map((s) => {
+              const on = current.show.includes(s);
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggle(s)}
+                  title={on ? `Hide ${statusLabel[s]}` : `Show ${statusLabel[s]}`}
+                  className={cn(pill, "text-muted-foreground", on && "bg-card text-foreground shadow-xs dark:bg-background")}
+                >
+                  <StatusIcon status={s} className={cn("size-3.5", !on && "opacity-50")} />
+                  {statusLabel[s]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </Filters>
+      {current.layout === "board" && (
+        <button
+          type="button"
+          aria-pressed={current.hideCards}
+          onClick={() => change({ hideCards: !current.hideCards })}
+          className={cn(pill, "h-[38px] border bg-card text-muted-foreground hover:text-foreground")}
+        >
+          {current.hideCards ? <Eye className="size-3.5" aria-hidden /> : <EyeOff className="size-3.5" aria-hidden />}
+          {current.hideCards ? "Show other cards" : "Board only"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** A "Filters" button that opens a small panel below it. Closes on a click outside or Escape. */
+function Filters({ count, children }: { count: number; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const click = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", click);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("pointerdown", click);
+      document.removeEventListener("keydown", key);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(pill, "h-[38px] border bg-card text-foreground hover:bg-muted/50")}
+      >
+        <SlidersHorizontal className="size-3.5" aria-hidden />
+        Filters
+        {count > 0 && (
+          <span className="rounded-full bg-foreground px-1.5 text-[11px] leading-4 text-background tabular-nums">{count}</span>
+        )}
+        <ChevronDown className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+      {open && (
+        <div className="absolute right-0 z-30 mt-2 sm:right-auto sm:left-0 flex w-max flex-col gap-4 rounded-xl border bg-card p-4 shadow-lg">{children}</div>
+      )}
     </div>
   );
 }

@@ -1,84 +1,54 @@
 import Link from "next/link";
 import { Board } from "@/components/board/board";
 import { DashboardControls } from "@/components/dashboard/controls";
-import { ClaudeItemList } from "@/components/from-claude/item-list";
+import { activityDays } from "@/components/from-claude/activity-days";
+import { ActivityList } from "@/components/from-claude/activity-list";
 import { Greeting, TodayDate } from "@/components/greeting";
-import { editedLabel, NoteList } from "@/components/notes/note-list";
+import { NoteList } from "@/components/notes/note-list";
+import { QuickNote } from "@/components/notes/quick-note";
 import { EmptyState, Page } from "@/components/shell/page";
 import { StatusIcon } from "@/components/tasks/status-circle";
 import { QuickAdd, TaskList } from "@/components/tasks/task-list";
 import { Card, CardHeader } from "@/components/ui/card";
+import { listActivity } from "@/core/activity";
 import { boardTasks } from "@/core/board";
 import { getDashboardView } from "@/core/dashboard";
-import { listFromClaude } from "@/core/from-claude";
 import { listNotes } from "@/core/notes";
-import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { columnOf, columnsFor, compareTasks } from "@/lib/board";
 import type { DashboardView } from "@/lib/dashboard";
-import { colorHex } from "@/lib/project-colors";
 import { statusLabel, type Status } from "@/lib/task-fields";
 
 export default async function DashboardPage() {
   const view = await getDashboardView();
-  const [{ date, tasks }, projects, notes, fromClaude, timeZone] = await Promise.all([
+  const board = view.layout === "board";
+  const cards = !(board && view.hideCards);
+  const [{ date, tasks }, notes, activity, timeZone] = await Promise.all([
     boardTasks(view.by, undefined, view.show),
-    listProjects(),
-    listNotes({ madeBy: "luke", limit: 5 }),
-    listFromClaude({ limit: 5 }),
+    cards ? listNotes({ madeBy: "luke", limit: 5 }) : [],
+    cards ? listActivity({ limit: 8 }) : [],
     getTimeZone(),
   ]);
-  const newFromClaude = fromClaude.filter((i) => i.isNew).length;
-  const board = view.layout === "board";
 
-  const side = (
+  const side = cards && (
     <>
       <Card>
-        <CardHeader title="Projects" />
-        {projects.length === 0 ? (
-          <EmptyState>
-            No projects yet. <Link href="/projects" className="underline underline-offset-2">Create one</Link>
-          </EmptyState>
-        ) : (
-          <ul>
-            {projects.map((p) => {
-              const total = p.openTasks + p.doneTasks;
-              const pct = total === 0 ? 0 : Math.round((p.doneTasks / total) * 100);
-              return (
-                <li key={p.id} className="border-b last:border-b-0">
-                  <Link href={`/projects/${p.id}`} className="flex flex-col gap-2 px-4 py-3 hover:bg-muted/50">
-                    <span className="flex justify-between gap-3">
-                      <span className="truncate font-medium">{p.name}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {total === 0 ? "No tasks" : `${p.doneTasks} of ${total} done`}
-                      </span>
-                    </span>
-                    <span className="h-1.5 rounded-full bg-muted">
-                      <span className="block h-1.5 rounded-full" style={{ width: `${pct}%`, background: colorHex(p.color) }} />
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <CardHeader title="Quick note" />
+        <QuickNote />
       </Card>
       <Card>
         <CardHeader
           title="Agents"
           aside={
-            <Link href="/agents" className="hover:text-foreground">
-              {newFromClaude > 0 ? `${newFromClaude} new, see all` : "See all"}
+            <Link href="/agents?view=activity" className="hover:text-foreground">
+              See all
             </Link>
           }
         />
-        {fromClaude.length === 0 ? (
-          <EmptyState>Things Claude saves for you will show here.</EmptyState>
+        {activity.length === 0 ? (
+          <EmptyState>When Claude adds, edits or moves something, it shows up here.</EmptyState>
         ) : (
-          <ClaudeItemList
-            items={fromClaude}
-            when={Object.fromEntries(fromClaude.map((i) => [i.id, editedLabel(i.createdAt, timeZone)]))}
-          />
+          <ActivityList days={activityDays(activity, timeZone)} />
         )}
       </Card>
       <Card>
@@ -101,7 +71,7 @@ export default async function DashboardPage() {
       {board ? (
         <>
           <Board tasks={tasks} view={view.by} today={date} show={view.show} />
-          <div className="grid items-start gap-6 md:grid-cols-2 xl:grid-cols-3">{side}</div>
+          {side && <div className="grid items-start gap-6 md:grid-cols-2 xl:grid-cols-3">{side}</div>}
         </>
       ) : (
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -159,7 +129,7 @@ function TaskSections({
       })}
       {hidden.length > 0 && (
         <p className="px-1 text-xs text-muted-foreground">
-          {hidden.map((s) => statusLabel[s]).join(" and ")} tasks are hidden. Switch them on above to see them.
+          {hidden.map((s) => statusLabel[s]).join(" and ")} tasks are hidden. Turn them on in Filters to see them.
         </p>
       )}
     </>

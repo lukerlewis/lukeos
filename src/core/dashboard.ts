@@ -38,11 +38,12 @@ export const dashboardOperations = {
   set_dashboard_view: defineOperation({
     name: "set_dashboard_view",
     description:
-      "Change how Luke's dashboard looks, just like the switches at the top of it: list or board layout, grouped by when or by status, and which statuses show. Only change this when Luke asks. Fields left out stay as they are.",
+      "Change how Luke's dashboard looks, just like the switches at the top of it: the Today list or the Board, grouped by when or by status, which statuses show, and whether the board hides the other cards. Only change this when Luke asks. Fields left out stay as they are.",
     input: z.object({
-      layout: z.enum(dashboardLayouts).optional().describe('"list" or "board".'),
+      layout: z.enum(dashboardLayouts).optional().describe('"list" (the Today tab) or "board".'),
       by: z.enum(boardViews).optional().describe('"when" or "status".'),
       show: showField.optional().describe("Which statuses to show, e.g. [\"todo\"] or [\"todo\", \"doing\"]."),
+      hideCards: z.boolean().optional().describe("On the board, true hides the other cards so only the board shows."),
     }),
     run: async (changes) => {
       const current = await getDashboardView();

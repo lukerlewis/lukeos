@@ -16,9 +16,11 @@ export type DashboardView = {
   by: BoardView;
   /** Which statuses to show. Starts with just To do. */
   show: Status[];
+  /** On the board, hide the other cards (Agents, Quick note, Recent notes) so only the board shows. */
+  hideCards: boolean;
 };
 
-export const defaultDashboardView: DashboardView = { layout: "list", by: "when", show: ["todo"] };
+export const defaultDashboardView: DashboardView = { layout: "list", by: "when", show: ["todo"], hideCards: false };
 
 /** Reads a saved view, falling back to the default for anything missing or unknown. */
 export function parseDashboardView(raw: unknown): DashboardView {
@@ -26,5 +28,6 @@ export function parseDashboardView(raw: unknown): DashboardView {
   const layout = dashboardLayouts.find((l) => l === v.layout) ?? defaultDashboardView.layout;
   const by = boardViews.find((b) => b === v.by) ?? defaultDashboardView.by;
   const show = Array.isArray(v.show) ? statuses.filter((s) => v.show && (v.show as unknown[]).includes(s)) : [];
-  return { layout, by, show: show.length ? show : defaultDashboardView.show };
+  const hideCards = typeof v.hideCards === "boolean" ? v.hideCards : defaultDashboardView.hideCards;
+  return { layout, by, show: show.length ? show : defaultDashboardView.show, hideCards };
 }
