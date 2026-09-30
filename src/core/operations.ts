@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { passkeyCount } from "@/lib/auth/passkeys";
+import { boardOperations } from "./board";
 import { defineOperation, OperationError, type Actor, type Operation } from "./define";
 import { projectOperations } from "./projects";
 import { getTimeZone, settingsOperations, today } from "./settings";
@@ -27,6 +28,7 @@ export const operations = {
     }),
   }),
   ...taskOperations,
+  ...boardOperations,
   ...projectOperations,
   ...settingsOperations,
 } satisfies Record<string, Operation>;

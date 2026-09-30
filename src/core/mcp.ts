@@ -13,6 +13,7 @@ const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-0
 const INSTRUCTIONS = `LukeOS is Luke's personal app for projects and tasks (notes are coming later).
 - Call get_today first to learn today's date in Luke's time zone and what's due. Due dates are plain days (YYYY-MM-DD); work out "Friday" or "next week" from that date.
 - Everything you create is labelled in the app as made by Claude. If you are running as a scheduled routine, pass the routine's name as "routine" so Luke can see which one did it.
+- Luke's board has columns by when (Today, This week, This month, Later) or by status (To do, Doing, Done). get_board shows it; move_task moves a card between columns just like dragging it.
 - Deleting moves things to Trash, where they're kept for 30 days.`;
 
 const routineField = z

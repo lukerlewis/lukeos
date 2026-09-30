@@ -63,6 +63,18 @@ export function friendlyDay(day: string, today: string) {
   return shortDate(day);
 }
 
+/**
+ * Where "This week" and "This month" end, as seen from `today`. On a Sunday
+ * the week has nothing left after today, so "This week" means the coming
+ * week; and when the week runs past the end of the month, "This month" means
+ * the rest of next month.
+ */
+export function whenWindows(today: string) {
+  const weekEnd = endOfWeek(today) === today ? addDays(today, 7) : endOfWeek(today);
+  const monthEnd = endOfMonth(today) > weekEnd ? endOfMonth(today) : endOfMonth(addDays(weekEnd, 1));
+  return { weekEnd, monthEnd };
+}
+
 /** Which "when" bucket a due date falls in, matching the board's columns. */
 export type When = "overdue" | "today" | "week" | "month" | "later" | "none";
 
@@ -70,7 +82,19 @@ export function whenOf(dueDate: string | null, today: string): When {
   if (!dueDate) return "none";
   if (dueDate < today) return "overdue";
   if (dueDate === today) return "today";
-  if (dueDate <= endOfWeek(today)) return "week";
-  if (dueDate <= endOfMonth(today)) return "month";
+  const { weekEnd, monthEnd } = whenWindows(today);
+  if (dueDate <= weekEnd) return "week";
+  if (dueDate <= monthEnd) return "month";
   return "later";
+}
+
+/** "4 Oct" */
+export function dayAndMonth(day: string) {
+  const d = toUtc(day);
+  return `${d.getUTCDate()} ${months[d.getUTCMonth()]}`;
+}
+
+/** "Sun 4 Oct" */
+export function weekdayDayAndMonth(day: string) {
+  return `${weekdays[toUtc(day).getUTCDay()]} ${dayAndMonth(day)}`;
 }

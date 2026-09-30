@@ -28,6 +28,12 @@ the app, Claude can do too, through a connector (roadmap step 3).
   claude.ai / claude.com and local (Claude Code) return addresses are
   accepted. Anything Claude creates records `Claude` plus the routine name
   if the tool call passed one.
+- **Board** (`/board`, and a Board layout on each project): cards in columns
+  by when (Today, This week, This month, Later) or by status (To do, Doing,
+  Done), with drag and drop from `@dnd-kit/core`. What each column covers
+  and what a move changes live in `src/lib/board.ts`, shared by the screen
+  and the `get_board` / `move_task` operations (`src/core/board.ts`), so a
+  drag and a move by Claude do the same thing.
 - **Dates**: due dates are plain days (`YYYY-MM-DD`). "Today" uses Luke's time
   zone, which the app saves from his device (`set_time_zone`).
 - **Deleting** only sets `deleted_at` (Trash, kept 30 days); deleting a
