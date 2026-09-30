@@ -6,6 +6,7 @@ import { useState } from "react";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Note } from "@/core/notes";
+import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 
 /**
@@ -30,9 +31,9 @@ export function HtmlNote({ note, projects }: { note: Note; projects: { id: strin
   }
 
   async function remove() {
-    if (!confirm(`Move "${note.title || "Untitled"}" to Trash? You can get it back within 30 days.`)) return;
     try {
       await op("delete_note", { id: note.id });
+      showTrashedToast("note", note.id, () => router.push(`/notes/${note.id}`));
       router.push(projectId ? `/projects/${projectId}?view=notes` : "/notes");
       router.refresh();
     } catch (err) {

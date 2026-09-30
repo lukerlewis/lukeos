@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
 import { addDays, endOfWeek } from "@/lib/dates";
+import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 import {
   effortLabel,
@@ -40,7 +41,7 @@ type Editor = {
   /** Open an existing task to view and change it. */
   openTask: (task: Task) => void;
   /** Start a new task, optionally in a project or due on a day. */
-  newTask: (defaults?: Partial<Pick<Draft, "projectId" | "dueDate" | "status">>) => void;
+  newTask: (defaults?: Partial<Pick<Draft, "title" | "projectId" | "dueDate" | "status">>) => void;
 };
 
 const EditorContext = createContext<Editor | null>(null);
@@ -80,7 +81,7 @@ export function TaskEditorProvider({
 
   const newTask = useCallback<Editor["newTask"]>((defaults) => {
     setDraft({
-      title: "",
+      title: defaults?.title ?? "",
       projectId: defaults?.projectId ?? null,
       status: defaults?.status ?? "todo",
       dueDate: defaults?.dueDate ?? null,
@@ -154,10 +155,11 @@ function TaskDialog({
   }
 
   async function remove() {
-    if (!draft.id || !confirm("Move this task to Trash? You can get it back within 30 days.")) return;
+    if (!draft.id) return;
     setBusy(true);
     try {
       await op("delete_task", { id: draft.id });
+      showTrashedToast("task", draft.id);
       router.refresh();
       onClose();
     } catch (err) {

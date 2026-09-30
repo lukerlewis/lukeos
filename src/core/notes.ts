@@ -31,8 +31,8 @@ function projectOf(p: ProjectRow | null) {
   return p ? { id: p.id, name: p.name, color: p.color as ProjectColor, hex: colorHex(p.color) } : null;
 }
 
-/** Plain text from the start of a note, without Markdown symbols or HTML tags. */
-export function excerptOf(content: string, format: string) {
+/** A note's words, without Markdown symbols or HTML tags. */
+export function plainTextOf(content: string, format: string) {
   const text =
     format === "html"
       ? content
@@ -45,7 +45,13 @@ export function excerptOf(content: string, format: string) {
           .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // links keep their text
           .replace(/^\s*(#{1,6}|[-*+]\s+\[[ xX]\]|[-*+]|\d+\.|>)\s*/gm, "")
           .replace(/[*_`~]/g, "");
-  const clean = text.replace(/\s+/g, " ").trim();
+  return text.replace(/\s+/g, " ").trim();
+}
+
+/** Plain text from the start of a note, for lists. Headings are skipped if there's other text. */
+export function excerptOf(content: string, format: string) {
+  const withoutHeadings = format === "markdown" ? content.replace(/^\s*#{1,6}\s.*$/gm, "") : content;
+  const clean = plainTextOf(withoutHeadings, format) || plainTextOf(content, format);
   return clean.length > 160 ? `${clean.slice(0, 157).trimEnd()}...` : clean;
 }
 

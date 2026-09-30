@@ -24,6 +24,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Note } from "@/core/notes";
+import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { shrinkPhoto } from "./photos";
@@ -126,7 +127,8 @@ export function NoteEditor({
   }, []);
 
   // A note left completely empty (New note, then straight back out) isn't
-  // worth keeping, so it goes to Trash when Luke leaves it. The short wait
+  // worth keeping, so it's deleted when Luke leaves it (for good, so Trash
+  // doesn't fill up with empty notes). The short wait
   // skips React's practice unmount in development.
   const hasText = useRef({ title: !!note.title.trim(), content: !!note.content.trim() });
   const mounted = useRef(false);
@@ -136,7 +138,10 @@ export function NoteEditor({
     return () => {
       mounted.current = false;
       setTimeout(() => {
-        if (!mounted.current && !text.title && !text.content) op("delete_note", { id: note.id }).catch(() => {});
+        if (!mounted.current && !text.title && !text.content)
+          op("delete_note", { id: note.id })
+            .then(() => op("delete_forever", { type: "note", id: note.id }))
+            .catch(() => {});
       }, 0);
     };
   }, [note.id]);
@@ -190,10 +195,10 @@ export function NoteEditor({
   }, [autoFocus]);
 
   async function remove() {
-    if (!confirm(`Move "${title || "Untitled"}" to Trash? You can get it back within 30 days.`)) return;
     await flush();
     try {
       await op("delete_note", { id: note.id });
+      showTrashedToast("note", note.id, () => router.push(`/notes/${note.id}`));
       router.push(projectId ? `/projects/${projectId}?view=notes` : "/notes");
       router.refresh();
     } catch (err) {

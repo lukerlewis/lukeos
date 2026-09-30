@@ -45,10 +45,21 @@ the app, Claude can do too, through a connector (roadmap step 3).
 - **From Claude** (`/from-claude`): everything Claude made (notes, tasks,
   projects), filterable by routine, with a New count since Luke last looked
   (`src/core/from-claude.ts`).
+- **Search and commands**: the sidebar's search bar, or ⌘K / Ctrl+K anywhere,
+  opens one box (`src/components/command/command-menu.tsx`) that finds tasks,
+  notes and projects (the `search` operation, `src/core/search.ts`) and runs
+  quick commands: new task / note / project (typing first fills in the
+  title), go to any screen or project, light or dark mode. On phones the
+  Search tab shows the same box as a page.
 - **Dates**: due dates are plain days (`YYYY-MM-DD`). "Today" uses Luke's time
   zone, which the app saves from his device (`set_time_zone`).
-- **Deleting** only sets `deleted_at` (Trash, kept 30 days); deleting a
-  project trashes its tasks and notes too.
+- **Deleting** only sets `deleted_at`, and shows a message with Undo. Deleting
+  a project trashes its tasks and notes too, with the same time, which is how
+  Trash knows they belong together (`src/core/trash.ts`). The Trash screen
+  (`/trash`, also in Settings) restores or deletes for good. Anything over
+  30 days in Trash is deleted for good as the app is used (from the app
+  layout, at most every few hours), along with photos no note or task uses
+  any more, so no scheduled job is needed.
 
 ## Running locally
 

@@ -1,8 +1,11 @@
 import { asc, isNull } from "drizzle-orm";
 import type { Metadata } from "next";
+import { ChevronRight, Trash2 } from "lucide-react";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { Page } from "@/components/shell/page";
 import { Card, CardHeader } from "@/components/ui/card";
+import { trashCount, TRASH_DAYS } from "@/core/trash";
 import { db, schema } from "@/db";
 import { requireSession } from "@/lib/auth/session";
 import { CopyAddress, DisconnectButton } from "./claude";
@@ -25,6 +28,7 @@ export default async function SettingsPage() {
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
   const connectorAddress = `${proto}://${host}/api/mcp`;
+  const inTrash = await trashCount();
 
   return (
     <Page title="Settings" newTask={false}>
@@ -93,6 +97,20 @@ export default async function SettingsPage() {
               ))}
             </ul>
           )}
+        </Card>
+
+        <Card>
+          <Link href="/trash" className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50">
+            <Trash2 className="size-[18px] text-muted-foreground" aria-hidden />
+            <span className="flex grow flex-col gap-0.5">
+              <span className="font-medium">Trash</span>
+              <span className="text-xs text-muted-foreground">
+                {inTrash === 0 ? "Empty" : `${inTrash} ${inTrash === 1 ? "item" : "items"}`} · deleted things are kept{" "}
+                {TRASH_DAYS} days
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+          </Link>
         </Card>
 
         <Card>

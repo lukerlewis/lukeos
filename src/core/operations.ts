@@ -6,8 +6,10 @@ import { defineOperation, OperationError, type Actor, type Operation } from "./d
 import { fromClaudeOperations } from "./from-claude";
 import { noteOperations } from "./notes";
 import { projectOperations } from "./projects";
+import { searchOperations } from "./search";
 import { getTimeZone, settingsOperations, today } from "./settings";
 import { taskOperations } from "./tasks";
+import { trashOperations } from "./trash";
 
 export type { Actor, Operation } from "./define";
 
@@ -34,6 +36,8 @@ export const operations = {
   ...projectOperations,
   ...noteOperations,
   ...fromClaudeOperations,
+  ...searchOperations,
+  ...trashOperations,
   ...settingsOperations,
 } satisfies Record<string, Operation>;
 

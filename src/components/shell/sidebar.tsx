@@ -1,9 +1,10 @@
 "use client";
 
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCommandMenu } from "@/components/command/command-menu";
 import { SEEN_EVENT } from "@/components/from-claude/mark-seen";
 import { NewProjectIconButton } from "@/components/projects/project-dialog";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,13 @@ type SidebarProject = { id: string; name: string; hex: string; open: number };
 
 export function Sidebar({ projects, newFromClaude }: { projects: SidebarProject[]; newFromClaude: number }) {
   const pathname = usePathname();
+  const { openMenu } = useCommandMenu();
+  // Macs use ⌘K; Windows and others Ctrl+K. Only known in the browser.
+  const isMac = useSyncExternalStore(
+    noSubscribe,
+    () => /Mac|iPhone|iPad/.test(navigator.platform),
+    () => true,
+  );
   // Opening From Claude clears the count straight away, without a reload.
   const [clearedAt, setClearedAt] = useState<number | null>(null);
   useEffect(() => {
@@ -31,14 +39,16 @@ export function Sidebar({ projects, newFromClaude }: { projects: SidebarProject[
         <span className="font-semibold">Luke&apos;s space</span>
       </div>
 
-      <div
-        className="flex h-9 items-center gap-2 rounded-lg border bg-card px-2.5 whitespace-nowrap text-muted-foreground shadow-xs"
-        title="Search arrives in a later step"
+      <button
+        type="button"
+        onClick={openMenu}
+        aria-keyshortcuts={isMac ? "Meta+K" : "Control+K"}
+        className="flex h-9 items-center gap-2 rounded-lg border bg-card px-2.5 text-left whitespace-nowrap text-muted-foreground shadow-xs hover:text-foreground"
       >
         <Search className="size-[15px]" aria-hidden />
-        <span className="grow truncate">Search or run a command</span>
-        <kbd className="rounded-[5px] border bg-sidebar px-1.5 font-mono text-[11px]">⌘K</kbd>
-      </div>
+        <span className="grow truncate">Search</span>
+        <kbd className="rounded-[5px] border bg-sidebar px-1.5 font-mono text-[11px]">{isMac ? "⌘K" : "Ctrl K"}</kbd>
+      </button>
 
       <nav className="flex flex-col gap-0.5" aria-label="Main">
         {mainNav.map((item) => (
@@ -76,10 +86,15 @@ export function Sidebar({ projects, newFromClaude }: { projects: SidebarProject[
       </div>
 
       <div className="grow" />
-      <NavLink href="/settings" label="Settings" icon={SlidersHorizontal} active={isActive(pathname, "/settings")} />
+      <div className="flex flex-col gap-0.5">
+        <NavLink href="/trash" label="Trash" icon={Trash2} active={isActive(pathname, "/trash")} />
+        <NavLink href="/settings" label="Settings" icon={SlidersHorizontal} active={isActive(pathname, "/settings")} />
+      </div>
     </aside>
   );
 }
+
+const noSubscribe = () => () => {};
 
 function NavLink({
   href,

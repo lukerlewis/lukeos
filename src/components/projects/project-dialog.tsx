@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 import { projectColorNames, projectColors, type ProjectColor } from "@/lib/project-colors";
 import { cn } from "@/lib/utils";
 
 type Existing = { id: string; name: string; color: ProjectColor };
 
-function ProjectDialog({ project, onClose }: { project?: Existing; onClose: () => void }) {
+export function ProjectDialog({ project, onClose }: { project?: Existing; onClose: () => void }) {
   const router = useRouter();
   const [name, setName] = useState(project?.name ?? "");
   const [color, setColor] = useState<ProjectColor | undefined>(project?.color);
@@ -41,10 +42,11 @@ function ProjectDialog({ project, onClose }: { project?: Existing; onClose: () =
 
   async function remove() {
     if (!project) return;
-    if (!confirm(`Move "${project.name}" and all its tasks to Trash? You can get them back within 30 days.`)) return;
+    if (!confirm(`Move "${project.name}" and all its tasks and notes to Trash? You can get them back within 30 days.`)) return;
     setBusy(true);
     try {
       await op("delete_project", { id: project.id });
+      showTrashedToast("project", project.id, () => router.push(`/projects/${project.id}`));
       router.push("/projects");
       router.refresh();
       onClose();
