@@ -1,4 +1,6 @@
-import { date, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { customType, date, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+
+const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
 /** A passkey (Face ID, Touch ID, Windows Hello...) that can sign in to LukeOS. */
 export const passkeys = pgTable("passkeys", {
@@ -42,7 +44,7 @@ const madeBy = {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 };
 
-/** A piece of work that holds tasks (and, from step 5, notes). */
+/** A piece of work that holds tasks and notes. */
 export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -67,6 +69,33 @@ export const tasks = pgTable(
   },
   (t) => [index("tasks_project_idx").on(t.projectId), index("tasks_due_idx").on(t.dueDate)],
 );
+
+/**
+ * A note: a page of writing, inside a project or on its own. Luke's notes
+ * are Markdown (headings, lists, checklists, links, photos). Claude can also
+ * save a finished HTML page (an artifact), which the app shows as it is.
+ */
+export const notes = pgTable(
+  "notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    title: text("title").notNull().default(""),
+    content: text("content").notNull().default(""),
+    format: text("format").notNull().default("markdown"), // "markdown" | "html"
+    ...madeBy,
+  },
+  (t) => [index("notes_project_idx").on(t.projectId), index("notes_updated_idx").on(t.updatedAt)],
+);
+
+/** A photo pasted into a note, kept in the database and shown at /api/images/<id>. */
+export const images = pgTable("images", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mimeType: text("mime_type").notNull(),
+  bytes: integer("bytes").notNull(),
+  data: bytea("data").notNull(),
+  ...madeBy,
+});
 
 /** Small app-wide settings, such as Luke's time zone (so "today" is his today). */
 export const appSettings = pgTable("app_settings", {

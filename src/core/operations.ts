@@ -3,6 +3,8 @@ import { z } from "zod";
 import { passkeyCount } from "@/lib/auth/passkeys";
 import { boardOperations } from "./board";
 import { defineOperation, OperationError, type Actor, type Operation } from "./define";
+import { fromClaudeOperations } from "./from-claude";
+import { noteOperations } from "./notes";
 import { projectOperations } from "./projects";
 import { getTimeZone, settingsOperations, today } from "./settings";
 import { taskOperations } from "./tasks";
@@ -30,6 +32,8 @@ export const operations = {
   ...taskOperations,
   ...boardOperations,
   ...projectOperations,
+  ...noteOperations,
+  ...fromClaudeOperations,
   ...settingsOperations,
 } satisfies Record<string, Operation>;
 

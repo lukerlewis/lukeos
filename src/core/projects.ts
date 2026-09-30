@@ -4,9 +4,10 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { projectColorNames, type ProjectColor } from "@/lib/project-colors";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
+import { listNotes } from "./notes";
 import { listTasks } from "./tasks";
 
-const { projects, tasks } = schema;
+const { projects, tasks, notes } = schema;
 
 export type Project = {
   id: string;
@@ -77,11 +78,13 @@ export const projectOperations = {
 
   get_project: defineOperation({
     name: "get_project",
-    description: "Get one project and all of its tasks, including done ones.",
+    description:
+      "Get one project with all of its tasks (including done ones) and its notes (titles and excerpts; use get_note for the full text).",
     input: z.object({ id }),
     run: async ({ id }) => ({
       ...(await getProject(id)),
       tasks: await listTasks({ projectId: id, includeDone: true }),
+      notes: await listNotes({ projectId: id }),
     }),
   }),
 
@@ -121,7 +124,7 @@ export const projectOperations = {
 
   delete_project: defineOperation({
     name: "delete_project",
-    description: "Move a project and all of its tasks to Trash, where they are kept for 30 days.",
+    description: "Move a project and all of its tasks and notes to Trash, where they are kept for 30 days.",
     input: z.object({ id }),
     run: async ({ id }) => {
       await assertProject(id);
@@ -132,6 +135,10 @@ export const projectOperations = {
           .update(tasks)
           .set({ deletedAt: now })
           .where(and(eq(tasks.projectId, id), isNull(tasks.deletedAt)));
+        await tx
+          .update(notes)
+          .set({ deletedAt: now })
+          .where(and(eq(notes.projectId, id), isNull(notes.deletedAt)));
       });
       return { deleted: id };
     },

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, List, SquareKanban } from "lucide-react";
+import { ChevronLeft, FileText, List, SquareKanban } from "lucide-react";
 import { Board } from "@/components/board/board";
 import { BoardViewSwitch } from "@/components/board/view-switch";
+import { NewNoteButton } from "@/components/notes/new-note-button";
+import { NoteList } from "@/components/notes/note-list";
 import { EditProjectButton } from "@/components/projects/project-dialog";
 import { EmptyState, Page } from "@/components/shell/page";
 import { StatusIcon } from "@/components/tasks/status-circle";
@@ -12,9 +14,11 @@ import { Card } from "@/components/ui/card";
 import { SegmentedLinks } from "@/components/ui/segmented-links";
 import { boardTasks } from "@/core/board";
 import { OperationError } from "@/core/define";
+import { listNotes } from "@/core/notes";
 import { getProject } from "@/core/projects";
-import { today } from "@/core/settings";
+import { getTimeZone } from "@/core/settings";
 import { listTasks } from "@/core/tasks";
+import { todayIn } from "@/lib/dates";
 import { colorHex } from "@/lib/project-colors";
 import { statusLabel, type Status } from "@/lib/task-fields";
 
@@ -39,13 +43,17 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const page = `/projects/${id}`;
   // A project's board starts with To do / Doing / Done columns.
   const boardView = query.view === "board" ? (query.by === "when" ? "when" : "status") : null;
+  const notesView = query.view === "notes";
+  const listView = !boardView && !notesView;
 
-  const [project, tasks, date, board] = await Promise.all([
+  const [project, tasks, timeZone, board, notes] = await Promise.all([
     load(id),
-    boardView ? [] : listTasks({ projectId: id, includeDone: true }),
-    today(),
+    listView ? listTasks({ projectId: id, includeDone: true }) : [],
+    getTimeZone(),
     boardView ? boardTasks(boardView, id) : null,
+    notesView ? listNotes({ projectId: id }) : [],
   ]);
+  const date = todayIn(timeZone);
   const groups = (["doing", "todo", "done"] as Status[]).map((status) => ({
     status,
     tasks: tasks.filter((t) => t.status === status),
@@ -73,16 +81,27 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         <SegmentedLinks
           label="Layout"
           options={[
-            { href: page, label: "List", icon: List, active: !boardView },
+            { href: page, label: "List", icon: List, active: listView },
             { href: `${page}?view=board`, label: "Board", icon: SquareKanban, active: !!boardView },
+            { href: `${page}?view=notes`, label: "Notes", icon: FileText, active: notesView },
           ]}
         />
+        {notesView && <NewNoteButton projectId={project.id} variant="outline" />}
         {boardView && (
           <BoardViewSwitch view={boardView} href={(by) => `${page}?view=board${by === "when" ? "&by=when" : ""}`} />
         )}
       </div>
 
-      {board && boardView ? (
+      {notesView ? (
+        <Card className="max-w-3xl">
+          <NoteList
+            notes={notes}
+            timeZone={timeZone}
+            showProject={false}
+            empty={<EmptyState>No notes in this project yet.</EmptyState>}
+          />
+        </Card>
+      ) : board && boardView ? (
         <Board tasks={board.tasks} view={boardView} today={board.date} projectId={project.id} showProject={false} />
       ) : (
         <div className="flex max-w-3xl flex-col gap-5">

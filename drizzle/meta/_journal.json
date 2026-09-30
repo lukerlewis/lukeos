@@ -22,6 +22,13 @@
       "when": 1790771737776,
       "tag": "0002_claude_connections",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790783814610,
+      "tag": "0003_notes_and_images",
+      "breakpoints": true
     }
   ]
 }

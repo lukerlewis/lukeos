@@ -3,14 +3,24 @@
 import { Search, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { SEEN_EVENT } from "@/components/from-claude/mark-seen";
 import { NewProjectIconButton } from "@/components/projects/project-dialog";
 import { cn } from "@/lib/utils";
 import { isActive, mainNav } from "./nav";
 
 type SidebarProject = { id: string; name: string; hex: string; open: number };
 
-export function Sidebar({ projects }: { projects: SidebarProject[] }) {
+export function Sidebar({ projects, newFromClaude }: { projects: SidebarProject[]; newFromClaude: number }) {
   const pathname = usePathname();
+  // Opening From Claude clears the count straight away, without a reload.
+  const [clearedAt, setClearedAt] = useState<number | null>(null);
+  useEffect(() => {
+    const clear = () => setClearedAt(newFromClaude);
+    window.addEventListener(SEEN_EVENT, clear);
+    return () => window.removeEventListener(SEEN_EVENT, clear);
+  }, [newFromClaude]);
+  const counts: Record<string, number> = { "/from-claude": clearedAt === newFromClaude ? 0 : newFromClaude };
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col gap-[18px] border-r bg-sidebar px-3 py-3.5 md:flex">
@@ -32,7 +42,7 @@ export function Sidebar({ projects }: { projects: SidebarProject[] }) {
 
       <nav className="flex flex-col gap-0.5" aria-label="Main">
         {mainNav.map((item) => (
-          <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} />
+          <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]} />
         ))}
       </nav>
 
@@ -76,11 +86,13 @@ function NavLink({
   label,
   icon: Icon,
   active,
+  count,
 }: {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   active: boolean;
+  count?: number;
 }) {
   return (
     <Link
@@ -93,6 +105,12 @@ function NavLink({
     >
       <Icon className="size-4" />
       <span className="grow">{label}</span>
+      {!!count && (
+        <span className="min-w-5 rounded-full bg-doing px-1.5 text-center text-[11px] leading-5 font-semibold text-white dark:text-background">
+          {count}
+          <span className="sr-only"> new</span>
+        </span>
+      )}
     </Link>
   );
 }

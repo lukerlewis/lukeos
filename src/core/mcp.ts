@@ -10,10 +10,12 @@ import { operations, runOperation } from "./operations";
 
 const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 
-const INSTRUCTIONS = `LukeOS is Luke's personal app for projects and tasks (notes are coming later).
+const INSTRUCTIONS = `LukeOS is Luke's personal app for projects, tasks and notes.
 - Call get_today first to learn today's date in Luke's time zone and what's due. Due dates are plain days (YYYY-MM-DD); work out "Friday" or "next week" from that date.
 - Everything you create is labelled in the app as made by Claude. If you are running as a scheduled routine, pass the routine's name as "routine" so Luke can see which one did it.
 - Luke's board has columns by when (Today, This week, This month, Later) or by status (To do, Doing, Done). get_board shows it; move_task moves a card between columns just like dragging it.
+- Notes are Markdown pages, inside a project or on their own. To file a document or report, use create_note (Markdown is best, since Luke can edit it). To save a finished artifact as a web page, use create_note with format "html". For a photo, call save_image first and put the Markdown it returns in the note.
+- Everything you make appears in Luke's From Claude section (list_from_claude). Nothing opens automatically, so you don't need to ask before saving.
 - Deleting moves things to Trash, where they're kept for 30 days.`;
 
 const routineField = z

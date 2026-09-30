@@ -21,7 +21,7 @@ export function SegmentedLinks({
           scroll={false}
           aria-current={active ? "page" : undefined}
           className={cn(
-            "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium text-muted-foreground",
+            "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap text-muted-foreground",
             active && "bg-card text-foreground shadow-xs dark:bg-background",
           )}
         >

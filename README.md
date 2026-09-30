@@ -34,10 +34,21 @@ the app, Claude can do too, through a connector (roadmap step 3).
   and what a move changes live in `src/lib/board.ts`, shared by the screen
   and the `get_board` / `move_task` operations (`src/core/board.ts`), so a
   drag and a move by Claude do the same thing.
+- **Notes** (`/notes`, and a Notes tab on each project): Markdown pages,
+  edited with Tiptap (`src/components/notes/note-editor.tsx`), saved as
+  Markdown so Claude reads and writes the same text. Changes save a moment
+  after typing stops. Photos are shrunk in the browser (1600px, WebP) and
+  stored in the database (`images` table), served to the signed-in owner at
+  `/api/images/<id>`. Claude can also save a finished HTML page (format
+  `html`), shown read-only in a sandboxed frame. Operations in
+  `src/core/notes.ts`.
+- **From Claude** (`/from-claude`): everything Claude made (notes, tasks,
+  projects), filterable by routine, with a New count since Luke last looked
+  (`src/core/from-claude.ts`).
 - **Dates**: due dates are plain days (`YYYY-MM-DD`). "Today" uses Luke's time
   zone, which the app saves from his device (`set_time_zone`).
 - **Deleting** only sets `deleted_at` (Trash, kept 30 days); deleting a
-  project trashes its tasks too.
+  project trashes its tasks and notes too.
 
 ## Running locally
 

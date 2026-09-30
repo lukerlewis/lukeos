@@ -1,17 +1,29 @@
 import Link from "next/link";
+import { ClaudeItemList } from "@/components/from-claude/item-list";
 import { Greeting, TodayDate } from "@/components/greeting";
+import { editedLabel, NoteList } from "@/components/notes/note-list";
 import { EmptyState, Page } from "@/components/shell/page";
 import { QuickAdd, TaskList } from "@/components/tasks/task-list";
 import { Card, CardHeader } from "@/components/ui/card";
+import { listFromClaude } from "@/core/from-claude";
+import { listNotes } from "@/core/notes";
 import { listProjects } from "@/core/projects";
+import { getTimeZone } from "@/core/settings";
 import { getToday } from "@/core/tasks";
 import { colorHex } from "@/lib/project-colors";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 export default async function TodayPage() {
-  const [{ date, overdue, today, upcoming }, projects] = await Promise.all([getToday(), listProjects()]);
+  const [{ date, overdue, today, upcoming }, projects, notes, fromClaude, timeZone] = await Promise.all([
+    getToday(),
+    listProjects(),
+    listNotes({ limit: 5 }),
+    listFromClaude({ limit: 5 }),
+    getTimeZone(),
+  ]);
   const dueNow = [...overdue, ...today];
+  const newFromClaude = fromClaude.filter((i) => i.isNew).length;
 
   return (
     <Page title="Today" eyebrow={<TodayDate />} heading={<Greeting />} newTask={{ dueDate: date }}>
@@ -62,8 +74,33 @@ export default async function TodayPage() {
             )}
           </Card>
           <Card>
-            <CardHeader title="Recent notes" />
-            <EmptyState>Notes arrive in a later step.</EmptyState>
+            <CardHeader
+              title="From Claude"
+              aside={
+                <Link href="/from-claude" className="hover:text-foreground">
+                  {newFromClaude > 0 ? `${newFromClaude} new, see all` : "See all"}
+                </Link>
+              }
+            />
+            {fromClaude.length === 0 ? (
+              <EmptyState>Things Claude saves for you will show here.</EmptyState>
+            ) : (
+              <ClaudeItemList
+                items={fromClaude}
+                when={Object.fromEntries(fromClaude.map((i) => [i.id, editedLabel(i.createdAt, timeZone)]))}
+              />
+            )}
+          </Card>
+          <Card>
+            <CardHeader
+              title="Recent notes"
+              aside={
+                <Link href="/notes" className="hover:text-foreground">
+                  All notes
+                </Link>
+              }
+            />
+            <NoteList notes={notes} timeZone={timeZone} empty={<EmptyState>No notes yet.</EmptyState>} />
           </Card>
         </div>
       </div>

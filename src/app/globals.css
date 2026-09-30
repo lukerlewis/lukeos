@@ -78,3 +78,129 @@
     outline-offset: 2px;
   }
 }
+
+/* The note editor's text. Kept close to the rest of the app: calm, readable,
+   a little roomier than lists. */
+.note-body {
+  outline: none;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--foreground);
+  min-height: 12rem;
+  overflow-wrap: anywhere;
+}
+.note-body > * + * {
+  margin-top: 0.6em;
+}
+.note-body h1 {
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  margin-top: 1.2em;
+}
+.note-body h2 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 1.1em;
+}
+.note-body h3 {
+  font-size: 1.05em;
+  font-weight: 600;
+  margin-top: 1em;
+}
+.note-body > :first-child {
+  margin-top: 0;
+}
+.note-body a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--ring);
+}
+.note-body ul,
+.note-body ol {
+  padding-left: 1.4em;
+}
+.note-body ul {
+  list-style: disc;
+}
+.note-body ol {
+  list-style: decimal;
+}
+.note-body li > p {
+  margin: 0.15em 0;
+}
+.note-body ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.1em;
+}
+.note-body ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6em;
+}
+.note-body ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.3em;
+  user-select: none;
+}
+.note-body ul[data-type="taskList"] li > label input {
+  width: 1.05em;
+  height: 1.05em;
+  accent-color: var(--done);
+  cursor: pointer;
+}
+.note-body ul[data-type="taskList"] li > div {
+  flex-grow: 1;
+  min-width: 0;
+}
+.note-body ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+.note-body blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  color: var(--subtle-foreground);
+}
+.note-body code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--muted);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+.note-body pre {
+  background: var(--muted);
+  border-radius: 8px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+}
+.note-body pre code {
+  background: none;
+  padding: 0;
+}
+.note-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5em 0;
+}
+.note-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.note-body img.ProseMirror-selectednode {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.note-body p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
