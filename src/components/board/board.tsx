@@ -51,12 +51,15 @@ export function Board({
   today,
   projectId,
   showProject = true,
+  show,
 }: {
   tasks: Task[];
   view: BoardView;
   today: string;
   projectId?: string;
   showProject?: boolean;
+  /** Only these statuses get a column when grouping by status. */
+  show?: Status[];
 }) {
   const router = useRouter();
   // A fixed id keeps dnd-kit's screen reader ids the same on the server and in the browser.
@@ -67,7 +70,7 @@ export function Board({
     state.map((t) => (t.id === id ? { ...t, ...changes } : t)),
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const columns = columnsFor(view, today);
+  const columns = columnsFor(view, today, show);
   const dragging = items.find((t) => t.id === draggingId);
 
   const sensors = useSensors(
@@ -141,7 +144,7 @@ export function Board({
           // Phones and small windows: columns side by side that you swipe through.
           "-mx-5 flex scroll-px-5 gap-3 overflow-x-auto px-5 pb-2 md:-mx-10 md:scroll-px-10 md:px-10",
           "lg:mx-0 lg:grid lg:overflow-visible lg:px-0",
-          view === "when" ? "lg:grid-cols-4" : "lg:grid-cols-3",
+          ["lg:grid-cols-1", "lg:grid-cols-2", "lg:grid-cols-3", "lg:grid-cols-4"][columns.length - 1],
           !draggingId && "snap-x snap-mandatory",
         )}
       >

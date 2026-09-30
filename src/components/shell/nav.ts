@@ -1,16 +1,15 @@
-import { Bot, CheckSquare, FileText, Folder, Search, SquareKanban, Sun } from "lucide-react";
+import { Bot, CheckSquare, FileText, Folder, LayoutDashboard, Search } from "lucide-react";
 
 export const mainNav = [
-  { href: "/", label: "Today", icon: Sun },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tasks", label: "All tasks", icon: CheckSquare },
-  { href: "/board", label: "Board", icon: SquareKanban },
   { href: "/notes", label: "Notes", icon: FileText },
   { href: "/agent-log", label: "Agent log", icon: Bot },
 ] as const;
 
 export const phoneTabs = [
-  { href: "/", label: "Today", icon: Sun },
-  { href: "/board", label: "Board", icon: SquareKanban },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/projects", label: "Projects", icon: Folder },
   { href: "/notes", label: "Notes", icon: FileText },
   { href: "/search", label: "Search", icon: Search },

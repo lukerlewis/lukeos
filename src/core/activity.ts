@@ -166,6 +166,8 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Cleared the New markers in the Agent log" };
     case "set_time_zone":
       return { summary: `Set your time zone to ${input.timeZone}` };
+    case "set_dashboard_view":
+      return { summary: "Changed how your dashboard looks" };
     default:
       return { summary: `Used ${tool.replace(/_/g, " ")}` };
   }

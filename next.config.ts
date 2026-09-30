@@ -6,8 +6,12 @@ const nextConfig: NextConfig = {
     // is instant. Any change you make refreshes them straight away.
     staleTimes: { dynamic: 30 },
   },
-  // The Agent log used to be called From Claude.
-  redirects: async () => [{ source: "/from-claude", destination: "/agent-log", permanent: true }],
+  redirects: async () => [
+    // The Agent log used to be called From Claude.
+    { source: "/from-claude", destination: "/agent-log", permanent: true },
+    // The board is now a layout on the dashboard.
+    { source: "/board", destination: "/", permanent: true },
+  ],
 };
 
 export default nextConfig;

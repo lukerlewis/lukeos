@@ -6,7 +6,7 @@ import { op } from "@/lib/ops-client";
 
 /**
  * Keeps LukeOS's idea of "today" in step with this device's time zone, so
- * due dates and the Today screen match Luke's clock (and Claude's view too).
+ * due dates and the dashboard match Luke's clock (and Claude's view too).
  */
 export function TimeZoneSync({ saved }: { saved: string }) {
   const router = useRouter();

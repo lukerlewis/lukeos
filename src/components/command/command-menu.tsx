@@ -14,7 +14,7 @@ import {
   Search,
   SlidersHorizontal,
   Bot,
-  SquareKanban,
+  LayoutDashboard,
   Sun,
   Trash2,
   type LucideIcon,
@@ -115,9 +115,8 @@ type Item = {
 };
 
 const pages: { href: string; label: string; icon: LucideIcon; keywords?: string }[] = [
-  { href: "/", label: "Today", icon: Sun, keywords: "home due" },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, keywords: "home today due board kanban" },
   { href: "/tasks", label: "All tasks", icon: CheckSquare, keywords: "list" },
-  { href: "/board", label: "Board", icon: SquareKanban, keywords: "kanban columns week" },
   { href: "/notes", label: "Notes", icon: FileText, keywords: "pages documents" },
   { href: "/agent-log", label: "Agent log", icon: Bot, keywords: "ai claude routines made activity from" },
   { href: "/projects", label: "Projects", icon: Folder },

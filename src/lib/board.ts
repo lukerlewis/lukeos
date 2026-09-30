@@ -18,8 +18,9 @@ export const columnIds = [...whenColumns, ...statuses] as const;
 
 export type Column = { id: ColumnId; title: string; hint?: string };
 
-export function columnsFor(view: BoardView, today: string): Column[] {
-  if (view === "status") return statuses.map((s) => ({ id: s, title: statusLabel[s] }));
+/** The columns for a view. When grouping by status, only the statuses in `show` get a column. */
+export function columnsFor(view: BoardView, today: string, show: readonly Status[] = statuses): Column[] {
+  if (view === "status") return statuses.filter((s) => show.includes(s)).map((s) => ({ id: s, title: statusLabel[s] }));
   const { weekEnd, monthEnd } = whenWindows(today);
   return [
     { id: "today", title: "Today", hint: "And anything late" },

@@ -2,23 +2,25 @@ import "server-only";
 import { z } from "zod";
 import { boardViews, changesForMove, columnIds, columnOf, columnsFor, compareTasks, type BoardView } from "@/lib/board";
 import { todayIn } from "@/lib/dates";
+import { statuses, type Status } from "@/lib/task-fields";
 import { defineOperation } from "./define";
 import { assertProject } from "./projects";
 import { getTimeZone } from "./settings";
 import { getTask, listTasks, taskOperations, type Task } from "./tasks";
 
 /**
- * The tasks a board shows. Open tasks always; done ones only while they're
- * fresh: finished today on the "when" board, the 30 most recent in the Done
- * column of the status board.
+ * The tasks a board shows, limited to the statuses in `show` (all of them if
+ * left out). Done ones only while they're fresh: finished today when grouped
+ * by when, the 30 most recent when grouped by status.
  */
-export async function boardTasks(view: BoardView, projectId?: string) {
+export async function boardTasks(view: BoardView, projectId?: string, show: readonly Status[] = statuses) {
   const timeZone = await getTimeZone();
   const date = todayIn(timeZone);
-  const [open, done] = await Promise.all([
-    listTasks({ projectId }),
-    listTasks({ projectId, status: "done", limit: 200 }),
+  const [allOpen, done] = await Promise.all([
+    show.includes("todo") || show.includes("doing") ? listTasks({ projectId }) : [],
+    show.includes("done") ? listTasks({ projectId, status: "done", limit: 200 }) : [],
   ]);
+  const open = allOpen.filter((t) => show.includes(t.status));
   const recentDone = done
     .filter((t) => t.completedAt)
     .sort((a, b) => b.completedAt!.getTime() - a.completedAt!.getTime());
@@ -27,14 +29,16 @@ export async function boardTasks(view: BoardView, projectId?: string) {
   return { date, tasks: [...open, ...shownDone] };
 }
 
-export async function getBoard(view: BoardView, projectId?: string) {
-  const { date, tasks } = await boardTasks(view, projectId);
-  const columns = columnsFor(view, date).map((c) => ({
+export async function getBoard(view: BoardView, projectId?: string, show: readonly Status[] = statuses) {
+  const { date, tasks } = await boardTasks(view, projectId, show);
+  const columns = columnsFor(view, date, show).map((c) => ({
     ...c,
     tasks: tasks.filter((t) => columnOf(t, view, date) === c.id).sort(compareTasks),
   }));
   return { today: date, view, columns };
 }
+
+export const showField = z.array(z.enum(statuses)).min(1, "Show at least one status.");
 
 const moveTargets = columnIds.map((id) => `"${id}"`).join(", ");
 
@@ -42,14 +46,15 @@ export const boardOperations = {
   get_board: defineOperation({
     name: "get_board",
     description:
-      'Luke\'s task board, column by column. view "when" (the default) has columns Today (including late tasks), This week, This month and Later (after this month, or no due date). view "status" has To do, Doing and Done. Done tasks only show while fresh: finished today, or the 30 most recent in the Done column.',
+      'Luke\'s task board, column by column. view "when" (the default) has columns Today (including late tasks), This week, This month and Later (after this month, or no due date). view "status" has To do, Doing and Done. Done tasks only show while fresh: finished today, or the 30 most recent in the Done column. Use show to leave out some statuses.',
     input: z.object({
       view: z.enum(boardViews).optional().describe('"when" (default) or "status".'),
       projectId: z.uuid().optional().describe("Only this project's tasks. Leave out for every project."),
+      show: showField.optional().describe("Only tasks with these statuses. Leave out for all of them."),
     }),
-    run: async ({ view, projectId }) => {
+    run: async ({ view, projectId, show }) => {
       if (projectId) await assertProject(projectId);
-      return getBoard(view ?? "when", projectId);
+      return getBoard(view ?? "when", projectId, show);
     },
   }),
 
