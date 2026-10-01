@@ -6,7 +6,6 @@ import { ActivityList } from "@/components/from-claude/activity-list";
 import { DoneTags } from "@/components/notes/done-tags";
 import { ScratchPad } from "@/components/notes/scratch-pad";
 import { Greeting, TodayDate } from "@/components/greeting";
-import { QuickNote } from "@/components/notes/quick-note";
 import { EmptyState, Page } from "@/components/shell/page";
 import { QuickAdd, TaskList } from "@/components/tasks/task-list";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -55,10 +54,6 @@ export default async function DashboardPage() {
                 <ScratchPad id={scratch.id} content={scratch.content} />
               </Card>
             )}
-            <Card>
-              <CardHeader title="Quick note" />
-              <QuickNote />
-            </Card>
             <Card>
               <CardHeader
                 title="Agents"

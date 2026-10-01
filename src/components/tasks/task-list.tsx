@@ -78,7 +78,7 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
         aria-label={done ? `Mark "${task.title}" as not done` : `Mark "${task.title}" as done`}
         className="-mx-2 flex size-11 shrink-0 items-center justify-center md:size-10"
       >
-        <StatusIcon key={taps} status={status} className={cn("size-[22px] md:size-[18px]", taps > 0 && "motion-tick")} />
+        <StatusIcon key={taps} status={status} className={cn("size-[26px] md:size-[18px]", taps > 0 && "motion-tick")} />
       </button>
       <button
         type="button"

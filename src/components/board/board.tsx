@@ -307,9 +307,9 @@ function CardBody({
           }}
           onKeyDown={(e) => e.stopPropagation()}
           aria-label={`"${task.title}" is ${task.status === "todo" ? "to do" : task.status}. Tap to move it along.`}
-          className="-m-2 flex size-9 shrink-0 items-center justify-center"
+          className="-m-2 flex size-10 shrink-0 items-center justify-center md:size-9"
         >
-          <StatusIcon key={taps} status={task.status} className={cn("size-[18px]", taps > 0 && "motion-tick")} />
+          <StatusIcon key={taps} status={task.status} className={cn("size-[22px] md:size-[18px]", taps > 0 && "motion-tick")} />
         </button>
         <span className={cn("min-w-0 grow pt-px font-medium break-words", done && "text-muted-foreground line-through")}>
           {task.title}
