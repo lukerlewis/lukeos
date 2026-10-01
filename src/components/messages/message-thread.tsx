@@ -110,7 +110,7 @@ export function MessageThread({
                     title={time(at)}
                     className={cn(
                       "max-w-[80%] rounded-[20px] px-3.5 py-2 text-[16px] leading-snug break-words whitespace-pre-wrap md:max-w-[70%] md:text-[15px]",
-                      mine ? "bg-bubble text-white" : "bg-muted text-foreground",
+                      mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
                       pending && "opacity-60",
                     )}
                   >
@@ -212,7 +212,7 @@ function Composer({
           type="submit"
           disabled={!text.trim()}
           aria-label="Send"
-          className="mb-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-bubble text-white disabled:opacity-40"
+          className="mb-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
         >
           <ArrowUp className="size-[18px]" strokeWidth={2.5} aria-hidden />
         </button>
@@ -228,7 +228,7 @@ function Linkified({ text, mine }: { text: string; mine: boolean }) {
     <>
       {parts.map((part, i) =>
         i % 2 === 1 ? (
-          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={cn("underline", mine ? "text-white" : "text-doing")}>
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={cn("underline", mine ? "text-primary-foreground" : "text-doing")}>
             {part}
           </a>
         ) : (

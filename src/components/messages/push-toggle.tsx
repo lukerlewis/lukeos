@@ -45,7 +45,7 @@ export function PushPrompt() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl items-start gap-3 rounded-xl border bg-card px-4 py-3 shadow-xs">
-      <Bell className="mt-0.5 size-[18px] shrink-0 text-bubble" aria-hidden />
+      <Bell className="mt-0.5 size-[18px] shrink-0 text-foreground" aria-hidden />
       <div className="flex grow flex-col gap-2">
         <p className="text-[14px]">
           {state === "needs-install"
