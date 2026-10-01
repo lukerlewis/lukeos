@@ -23,13 +23,8 @@ import { SopList } from "@/components/sops/sop-list";
 
 export const metadata: Metadata = { title: "Agents · LukeOS" };
 
-const types = [
-  { value: "artifact", label: "Artifacts" },
-  { value: "task", label: "Tasks" },
-] as const;
-
 const views = [
-  { value: undefined, label: "Made by Claude" },
+  { value: undefined, label: "Artifacts" },
   { value: "claude", label: "@claude" },
   { value: "sops", label: "SOPs" },
   { value: "routines", label: "Routines" },
@@ -50,21 +45,15 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
   if (query.view === "sops") return <SopsPage viewSwitch={viewSwitch("sops")} />;
   if (query.view === "routines") return <RoutinesPage viewSwitch={viewSwitch("routines")} />;
 
-  const type: "task" | "artifact" = query.type === "task" ? "task" : "artifact";
   const routine = typeof query.routine === "string" && query.routine ? query.routine : undefined;
   const [items, routines, timeZone, projects] = await Promise.all([
-    listFromClaude({ type, routine, limit: 200 }),
+    listFromClaude({ type: "artifact", routine, limit: 200 }),
     claudeRoutines(),
     getTimeZone(),
     listProjects(),
   ]);
-  const href = (next: { type?: string; routine?: string }) => {
-    const params = new URLSearchParams();
-    if (next.type === "task") params.set("type", next.type);
-    if (next.routine) params.set("routine", next.routine);
-    const qs = params.toString();
-    return qs ? `/agents?${qs}` : "/agents";
-  };
+  const href = (next: { routine?: string }) =>
+    next.routine ? `/agents?${new URLSearchParams({ routine: next.routine })}` : "/agents";
   const when = Object.fromEntries(items.map((i) => [i.id, editedLabel(i.createdAt, timeZone)]));
 
   return (
@@ -73,33 +62,26 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch(undefined)}
         <p className="text-[13px] text-muted-foreground">
-          What Claude has made for you, newest first. Artifacts are the reports, pages and other things Claude writes; open one
-          to read it, see its versions and leave comments. Blue dots are new or updated since you last looked. Tap Select to
-          change several at once.
+          The reports, pages and other things Claude has written for you, newest first. Open one to read it, see its versions
+          and leave comments. Blue dots are new or updated since you last looked. Tap Select to change several at once.
         </p>
-        <div className="flex flex-wrap items-center gap-2">
+        {routines.length > 0 && (
           <SegmentedLinks
-            label="Type"
-            options={types.map((t) => ({ href: href({ type: t.value, routine }), label: t.label, active: type === t.value }))}
+            label="Routine"
+            className="max-w-full self-start overflow-x-auto"
+            options={[
+              { href: href({}), label: "Any routine", active: !routine },
+              ...routines.map((r) => ({ href: href({ routine: r }), label: r, active: routine === r })),
+            ]}
           />
-          {routines.length > 0 && (
-            <SegmentedLinks
-              label="Routine"
-              className="max-w-full overflow-x-auto"
-              options={[
-                { href: href({ type }), label: "Any routine", active: !routine },
-                ...routines.map((r) => ({ href: href({ type, routine: r }), label: r, active: routine === r })),
-              ]}
-            />
-          )}
-        </div>
+        )}
         <SelectableClaudeList
-          key={`${type}-${routine ?? ""}`}
+          key={routine ?? ""}
           items={items}
           when={when}
-          kind={type}
+          kind="artifact"
           projects={projects.map((p) => ({ id: p.id, name: p.name }))}
-          empty={`No ${type}s from Claude yet. When Claude or one of your routines makes one, it lands here.`}
+          empty="No artifacts from Claude yet. When Claude or one of your routines makes one, it lands here."
         />
       </div>
     </Page>

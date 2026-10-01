@@ -171,25 +171,20 @@ export async function listFromClaude(filter: { routine?: string; type?: ClaudeIt
   return items.slice(0, limit);
 }
 
-/** How many things Claude made (or artifacts it updated) since Luke last looked, for the sidebar. */
+/** How many artifacts Claude made or updated since Luke last looked, for the sidebar. */
 export async function newFromClaudeCount() {
   const seen = await seenAt();
   const rows = await db.execute<{ n: number }>(sql`
-    select (select count(*) from tasks where created_by_kind = 'agent' and deleted_at is null and created_at > ${seen})
-         + (select count(*) from projects where created_by_kind = 'agent' and deleted_at is null and created_at > ${seen})
-         + (select count(*) from artifacts a join artifact_versions v on v.artifact_id = a.id and v.number = a.version
-            where a.created_by_kind = 'agent' and a.deleted_at is null and v.created_at > ${seen}) as n`);
+    select count(*) as n from artifacts a join artifact_versions v on v.artifact_id = a.id and v.number = a.version
+    where a.created_by_kind = 'agent' and a.deleted_at is null and v.created_at > ${seen}`);
   return Number(rows.rows[0].n);
 }
 
-/** The routine names that have made something, for the filter. */
+/** The routine names that have made an artifact, for the filter. */
 export async function claudeRoutines() {
   const rows = await db.execute<{ routine: string }>(sql`
-    select distinct created_by_routine as routine from (
-      select created_by_routine from artifacts where created_by_kind = 'agent' and deleted_at is null
-      union select created_by_routine from tasks where created_by_kind = 'agent' and deleted_at is null
-      union select created_by_routine from projects where created_by_kind = 'agent' and deleted_at is null
-    ) r where created_by_routine is not null order by 1`);
+    select distinct created_by_routine as routine from artifacts
+    where created_by_kind = 'agent' and deleted_at is null and created_by_routine is not null order by 1`);
   return rows.rows.map((r) => r.routine);
 }
 
@@ -197,7 +192,7 @@ export const fromClaudeOperations = {
   list_from_claude: defineOperation({
     name: "list_from_claude",
     description:
-      "What Claude has made in LukeOS (artifacts, tasks and projects), newest first, as Luke sees it in his Agents section. isNew marks things made (or artifacts updated) since he last looked. Filter by routine or type.",
+      "What Claude has made in LukeOS (artifacts, tasks and projects), newest first, (his Agents section's Artifacts tab lists only the artifacts). isNew marks things made (or artifacts updated) since he last looked. Filter by routine or type.",
     input: z.object({
       routine: z.string().optional().describe("Only things this routine made."),
       type: z.enum(["artifact", "task", "project"]).optional(),
