@@ -110,7 +110,7 @@ export function Comments({
           placeholder={target.type === "artifact" ? "Leave a comment for Claude…" : "Leave a comment…"}
           aria-label="New comment"
           rows={2}
-          className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-lg border bg-background px-3 py-2 text-[14px] outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40 md:text-[13px]"
+          className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-lg border bg-background px-3 py-2 text-[16px] outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40 md:text-[13px]"
         />
         <Button type="submit" size="sm" className="self-end" disabled={busy || !text.trim()}>
           {busy ? "Saving…" : "Comment"}
@@ -185,7 +185,7 @@ function Thread({ thread, timeZone, currentVersion }: { thread: Comment; timeZon
           placeholder="Reply…"
           aria-label="Reply"
           rows={2}
-          className="field-sizing-content min-h-14 w-full resize-none rounded-lg border bg-background px-3 py-2 text-[14px] outline-none focus:ring-2 focus:ring-ring/40 md:text-[13px]"
+          className="field-sizing-content min-h-14 w-full resize-none rounded-lg border bg-background px-3 py-2 text-[16px] outline-none focus:ring-2 focus:ring-ring/40 md:text-[13px]"
         />
       )}
       <div className="flex flex-wrap items-center gap-1">

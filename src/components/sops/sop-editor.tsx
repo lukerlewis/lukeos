@@ -163,7 +163,7 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
           }}
           placeholder="e.g. How to write my weekly review. Use when I ask for a weekly review, week summary or Friday wrap-up."
           aria-label="Description: when to use it"
-          className="field-sizing-content min-h-12 resize-none bg-transparent text-[15px] outline-none placeholder:text-muted-foreground md:text-sm"
+          className="field-sizing-content min-h-12 resize-none bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:text-sm"
         />
         <span className="text-xs text-muted-foreground">{descriptionHint}</span>
       </label>

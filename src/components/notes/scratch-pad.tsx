@@ -26,7 +26,7 @@ export function ScratchPad({ id, content }: { id: string; content: string }) {
     ],
     content,
     contentType: "markdown",
-    editorProps: { attributes: { class: "note-body min-h-28! text-[15px]! md:text-[14px]!", "aria-label": "Scratch pad" } },
+    editorProps: { attributes: { class: "note-body min-h-28! text-[16px]! md:text-[14px]!", "aria-label": "Scratch pad" } },
     onUpdate: ({ editor }) => queue({ content: editor.getMarkdown() }),
   });
 

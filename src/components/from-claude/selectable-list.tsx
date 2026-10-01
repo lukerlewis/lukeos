@@ -278,7 +278,7 @@ function Picker({
       value=""
       disabled={disabled}
       onChange={(e) => e.target.value && onPick(e.target.value)}
-      className="h-8 rounded-lg border bg-card px-2.5 text-[13px] font-medium shadow-xs disabled:opacity-50"
+      className="h-8 rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] font-medium shadow-xs disabled:opacity-50"
     >
       <option value="" disabled>
         {label}

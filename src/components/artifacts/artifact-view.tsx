@@ -68,7 +68,7 @@ export function ArtifactView({ artifact, projects }: { artifact: Artifact; proje
           value={projectId ?? ""}
           onChange={(e) => move(e.target.value || null)}
           aria-label="Project"
-          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[13px] text-foreground shadow-xs"
+          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[16px] text-foreground md:text-[13px] shadow-xs"
         >
           <option value="">No project</option>
           {projects.map((p) => (
@@ -85,7 +85,7 @@ export function ArtifactView({ artifact, projects }: { artifact: Artifact; proje
               router.push(n === artifact.version ? base : `${base}?v=${n}`);
             }}
             aria-label="Version"
-            className="h-8 rounded-lg border bg-card px-2 text-[13px] text-foreground shadow-xs"
+            className="h-8 rounded-lg border bg-card px-2 text-[16px] text-foreground md:text-[13px] shadow-xs"
           >
             {artifact.versions.map((v) => (
               <option key={v.number} value={v.number}>

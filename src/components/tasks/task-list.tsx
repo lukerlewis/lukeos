@@ -167,7 +167,7 @@ export function QuickAdd({
         aria-label={placeholder}
         aria-busy={pending}
         enterKeyHint="done"
-        className="h-12 min-w-0 grow bg-transparent text-[15px] outline-none placeholder:text-muted-foreground md:h-11 md:text-sm"
+        className="h-12 min-w-0 grow bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:h-11 md:text-sm"
       />
     </form>
   );

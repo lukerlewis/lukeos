@@ -241,7 +241,7 @@ export function NoteEditor({
             queue({ projectId: next }, 0);
           }}
           aria-label="Project"
-          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[13px] text-foreground shadow-xs"
+          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[16px] text-foreground md:text-[13px] shadow-xs"
         >
           <option value="">No project</option>
           {projects.map((p) => (

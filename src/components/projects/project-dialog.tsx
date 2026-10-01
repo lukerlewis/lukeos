@@ -67,7 +67,7 @@ export function ProjectDialog({ project, onClose }: { project?: Existing; onClos
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Kitchen renovation"
-            className="h-10 rounded-lg border bg-card px-3 text-[15px] shadow-xs outline-none focus-visible:border-ring"
+            className="h-10 rounded-lg border bg-card px-3 text-[16px] shadow-xs outline-none md:text-[15px] focus-visible:border-ring"
           />
         </label>
         <fieldset className="flex flex-col gap-1.5">

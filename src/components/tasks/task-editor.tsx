@@ -222,7 +222,7 @@ function TaskDialog({
                 value={draft.dueDate ?? ""}
                 onChange={(e) => set("dueDate", e.target.value || null)}
                 aria-label="Due date"
-                className="h-9 rounded-lg border bg-card px-2.5 text-[13px] shadow-xs"
+                className="h-9 rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs"
               />
               {dueChoices.map((c) => (
                 <Chip key={c.label} active={draft.dueDate === c.value} onClick={() => set("dueDate", c.value)}>
@@ -271,7 +271,7 @@ function TaskDialog({
               value={draft.projectId ?? ""}
               onChange={(e) => set("projectId", e.target.value || null)}
               aria-label="Project"
-              className="h-9 w-full rounded-lg border bg-card px-2.5 text-[13px] shadow-xs sm:w-auto sm:min-w-56"
+              className="h-9 w-full rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs sm:w-auto sm:min-w-56"
             >
               <option value="">No project</option>
               {projects.map((p) => (
@@ -289,7 +289,7 @@ function TaskDialog({
               placeholder="Add details, links or a checklist…"
               aria-label="Notes"
               rows={4}
-              className="field-sizing-content min-h-24 w-full resize-none rounded-lg border bg-card px-3 py-2 text-[14px] shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring"
+              className="field-sizing-content min-h-24 w-full resize-none rounded-lg border bg-card px-3 py-2 text-[16px] md:text-[14px] shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring"
             />
           </Field>
 

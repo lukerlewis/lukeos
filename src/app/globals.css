@@ -79,6 +79,19 @@
   }
 }
 
+/* iPhones zoom the page in when you tap a text box whose text is smaller than
+   16px. On phones, typing fields default to 16px so that never happens; fields
+   that set their own size do the same with a 16px phone size. */
+@layer base {
+  @media (width < 48rem) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+}
+
 /* Interaction polish. Things you tap press in slightly, as if they were real
    buttons, and a few things ease in when they appear. Movement is switched off
    for anyone who asks their device to reduce motion; colour fades stay. */
