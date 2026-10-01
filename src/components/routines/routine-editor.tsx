@@ -75,7 +75,7 @@ export function RoutineEditor({
       TaskItem.configure({ nested: true }),
       TableKit.configure({ table: { resizable: false } }),
       Placeholder.configure({
-        placeholder: "What should happen each time? e.g. Look at what I finished today and what's due tomorrow, and write me a short recap.",
+        placeholder: "What should happen each time?",
       }),
       Markdown,
     ],

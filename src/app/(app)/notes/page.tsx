@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { NewNoteButton } from "@/components/notes/new-note-button";
 import { NoteList } from "@/components/notes/note-list";
 import { EmptyState, Page } from "@/components/shell/page";
@@ -16,20 +15,11 @@ export default async function NotesPage() {
   return (
     <Page title="Notes" actions={<NewNoteButton />} newTask={false}>
       <div className="flex max-w-3xl flex-col gap-5">
-        <p className="text-[13px] text-muted-foreground">
-          Your notes. Reports and pages Claude makes for you are artifacts, in{" "}
-          <Link href="/agents" className="underline underline-offset-2">
-            Agents
-          </Link>
-          .
-        </p>
         <Card>
           <NoteList
             notes={notes}
             timeZone={timeZone}
-            empty={
-              <EmptyState>No notes yet. A note can stand on its own or sit inside a project.</EmptyState>
-            }
+            empty={<EmptyState>No notes yet.</EmptyState>}
           />
         </Card>
       </div>

@@ -45,7 +45,7 @@ export default async function ProjectsPage() {
       <h2 className="-mb-3 px-1 text-sm font-semibold text-muted-foreground md:hidden">Projects</h2>
       <Card>
         {projects.length === 0 ? (
-          <EmptyState>No projects yet. A project holds the tasks and notes for one piece of work.</EmptyState>
+          <EmptyState>No projects yet.</EmptyState>
         ) : (
           <ul>
             {projects.map((p) => (

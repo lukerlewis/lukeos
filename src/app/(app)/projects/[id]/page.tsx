@@ -120,7 +120,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         <div className="flex max-w-3xl flex-col gap-5">
           {tasks.length === 0 && (
             <Card>
-              <EmptyState>No tasks yet. Add the first one below.</EmptyState>
+              <EmptyState>No tasks yet.</EmptyState>
               <QuickAdd projectId={project.id} />
             </Card>
           )}

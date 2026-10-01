@@ -16,7 +16,6 @@ import {
   efforts,
   priorities,
   priorityLabel,
-  repeatLabel,
   repeats,
   statuses,
   statusLabel,
@@ -242,12 +241,6 @@ function TaskDialog({
                 ...repeats.map((r) => ({ value: r, label: { daily: "Daily", weekly: "Weekly", monthly: "Monthly" }[r] })),
               ]}
             />
-            {draft.repeat && (
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                {repeatLabel[draft.repeat]}. When you tick it off, the next one is added
-                {draft.dueDate ? "" : ", counting from the day you finish it"}.
-              </p>
-            )}
           </Field>
 
           <Field label="Priority">

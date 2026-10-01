@@ -81,10 +81,6 @@ export function MessageThread({
             <Sparkles className="size-5 text-muted-foreground" aria-hidden />
           </span>
           <p className="font-medium">Text Claude anything</p>
-          <p className="text-[13px] text-muted-foreground">
-            Ask for a task to be added, something to be looked into, or a reminder. Claude reads new messages at each check-in and
-            texts you back here.
-          </p>
         </div>
       ) : (
         <ol className="mx-auto flex w-full max-w-2xl flex-col gap-1 pb-2" aria-label="Messages">

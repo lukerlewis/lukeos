@@ -17,7 +17,6 @@ import { getScratchPad } from "@/core/notes";
 import { getTimeZone } from "@/core/settings";
 import { columnOf, compareTasks } from "@/lib/board";
 import type { DashboardView } from "@/lib/dashboard";
-import { statusLabel, type Status } from "@/lib/task-fields";
 
 export default async function DashboardPage() {
   const view = await getDashboardView();
@@ -64,7 +63,7 @@ export default async function DashboardPage() {
                 }
               />
               {activity.length === 0 ? (
-                <EmptyState>When Claude adds, edits or moves something, it shows up here.</EmptyState>
+                <EmptyState>Nothing yet.</EmptyState>
               ) : (
                 <ActivityList days={activityDays(activity, timeZone)} />
               )}
@@ -86,24 +85,17 @@ function TodayTasks({
   view: DashboardView;
   today: string;
 }) {
-  const hidden = (["todo", "doing", "done"] as Status[]).filter((s) => !view.show.includes(s));
   return (
     <div className="flex flex-col gap-3">
       <Card>
         <div className="flex items-center gap-2 border-b px-4 py-3.5">
           <h2 className="text-sm font-semibold">Today</h2>
           <span className="text-xs text-muted-foreground">{tasks.length}</span>
-          <span className="ml-auto truncate text-xs text-muted-foreground">And anything late</span>
         </div>
         <TaskList tasks={[...tasks].sort(compareTasks)} today={today} empty={<EmptyState>Nothing due today.</EmptyState>} />
         {/* "Add a task" makes a To do task, so it only shows while To do tasks do. */}
         {view.show.includes("todo") && <QuickAdd dueDate={today} placeholder="Add a task for today" />}
       </Card>
-      {hidden.length > 0 && (
-        <p className="px-1 text-xs text-muted-foreground">
-          {hidden.map((s) => statusLabel[s]).join(" and ")} tasks are hidden. Turn them on in Filters to see them.
-        </p>
-      )}
     </div>
   );
 }

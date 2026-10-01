@@ -7,7 +7,7 @@ import { PushSettings } from "@/components/messages/push-toggle";
 import { Page } from "@/components/shell/page";
 import { Card, CardHeader } from "@/components/ui/card";
 import { pushDeviceCount } from "@/core/push";
-import { trashCount, TRASH_DAYS } from "@/core/trash";
+import { trashCount } from "@/core/trash";
 import { db, schema } from "@/db";
 import { requireSession } from "@/lib/auth/session";
 import { CopyAddress, DisconnectButton } from "./claude";
@@ -38,9 +38,6 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader title="Appearance" />
           <div className="flex flex-col gap-3 px-4 py-4">
-            <p className="text-[13px] text-muted-foreground">
-              Automatic matches your device&apos;s light or dark mode.
-            </p>
             <ThemeSwitch />
           </div>
         </Card>
@@ -72,9 +69,6 @@ export default async function SettingsPage() {
             ))}
           </ul>
           <div className="flex flex-col gap-2 border-t px-4 py-4">
-            <p className="text-[13px] text-muted-foreground">
-              Signed in on a new computer using your phone? Add it here so it can use its own Touch ID or Windows Hello next time.
-            </p>
             <AddDeviceButton />
           </div>
         </Card>
@@ -83,8 +77,7 @@ export default async function SettingsPage() {
           <CardHeader title="Claude" aside={connections.length ? `${connections.length} connected` : undefined} />
           <div className="flex flex-col gap-3 px-4 py-4">
             <p className="text-[13px] text-muted-foreground">
-              Add this address as a custom connector in Claude&apos;s settings, under Connectors. Claude can then do
-              anything you can here, and whatever it adds is labelled.
+              Add as a custom connector in Claude&apos;s settings.
             </p>
             <CopyAddress address={connectorAddress} />
           </div>
@@ -112,8 +105,7 @@ export default async function SettingsPage() {
             <span className="flex grow flex-col gap-0.5">
               <span className="font-medium">Trash</span>
               <span className="text-xs text-muted-foreground">
-                {inTrash === 0 ? "Empty" : `${inTrash} ${inTrash === 1 ? "item" : "items"}`} · deleted things are kept{" "}
-                {TRASH_DAYS} days
+                {inTrash === 0 ? "Empty" : `${inTrash} ${inTrash === 1 ? "item" : "items"}`}
               </span>
             </span>
             <ChevronRight className="size-4 text-muted-foreground" aria-hidden />

@@ -90,7 +90,6 @@ export function ProjectDialog({ project, onClose }: { project?: Existing; onClos
               </button>
             ))}
           </div>
-          {!project && !color && <p className="text-xs text-muted-foreground">Leave it and one is picked for you.</p>}
         </fieldset>
         {error && (
           <p role="alert" className="text-[13px] text-danger">

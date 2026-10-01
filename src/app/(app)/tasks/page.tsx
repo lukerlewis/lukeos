@@ -28,7 +28,7 @@ export default async function TasksPage() {
       <div className="flex max-w-3xl flex-col gap-5">
         {open.length === 0 && (
           <Card>
-            <EmptyState>Nothing open. Add a task below, or use New task.</EmptyState>
+            <EmptyState>Nothing open.</EmptyState>
             <QuickAdd />
           </Card>
         )}

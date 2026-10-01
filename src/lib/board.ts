@@ -23,10 +23,10 @@ export function columnsFor(view: BoardView, today: string, show: readonly Status
   if (view === "status") return statuses.filter((s) => show.includes(s)).map((s) => ({ id: s, title: statusLabel[s] }));
   const { tomorrow, weekEnd } = whenWindows(today);
   return [
-    { id: "today", title: "Today", hint: "And anything late" },
+    { id: "today", title: "Today" },
     { id: "tomorrow", title: "Tomorrow", hint: weekdayDayAndMonth(tomorrow) },
     { id: "this_week", title: "This week", hint: `${weekdayDayAndMonth(addDays(tomorrow, 1))} to ${weekdayDayAndMonth(weekEnd)}` },
-    { id: "later", title: "Later", hint: `After ${weekdayDayAndMonth(weekEnd)}, or no date` },
+    { id: "later", title: "Later", hint: `After ${weekdayDayAndMonth(weekEnd)}` },
   ];
 }
 

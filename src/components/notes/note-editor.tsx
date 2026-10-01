@@ -175,7 +175,7 @@ export function NoteEditor({
       TaskList,
       TaskItem.configure({ nested: true }),
       Image,
-      Placeholder.configure({ placeholder: "Start writing... Type @claude to ask Claude something." }),
+      Placeholder.configure({ placeholder: "Start writing…" }),
       Markdown,
       ClaudeTag,
     ],

@@ -25,7 +25,6 @@ const DESCRIPTION_LONG = 300;
 const BODY_LONG_TOKENS = 5000;
 
 const tokens = (text: string) => Math.ceil(text.trim().length / 4);
-const roughly = (n: number) => (n < 1000 ? `${n}` : `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}k`);
 
 export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean }) {
   const router = useRouter();
@@ -63,7 +62,7 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
       TaskItem.configure({ nested: true }),
       TableKit.configure({ table: { resizable: false } }),
       Placeholder.configure({
-        placeholder: "The steps, rules and examples Claude should follow...",
+        placeholder: "Instructions…",
       }),
       Markdown,
     ],
@@ -93,13 +92,6 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
       alert((err as Error).message);
     }
   }
-
-  const alwaysTokens = tokens(title) + tokens(description);
-  const descriptionHint = !description.trim()
-    ? "Add one so Claude knows when to use this SOP. Without it, Claude only has the title to go on."
-    : description.length > DESCRIPTION_LONG
-      ? "Claude reads this on every request, so shorter is better. Move detail into the instructions below."
-      : "Say what it's for and when to use it, in the words you'd use when asking.";
 
   return (
     <div className="flex flex-col gap-3">
@@ -161,24 +153,15 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
             hasText.current.description = !!next.trim();
             queue({ description: next });
           }}
-          placeholder="e.g. How to write my weekly review. Use when I ask for a weekly review, week summary or Friday wrap-up."
+          placeholder="When should Claude use this?"
           aria-label="Description: when to use it"
           className="field-sizing-content min-h-12 resize-none bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:text-sm"
         />
-        <span className="text-xs text-muted-foreground">{descriptionHint}</span>
       </label>
 
-      <p className="text-xs text-muted-foreground">
-        Claude always sees the title and description (about {roughly(alwaysTokens)} tokens). It reads the instructions below
-        only when a request fits (about {roughly(bodyTokens)} tokens).
-        {bodyTokens > BODY_LONG_TOKENS && (
-          <span className="text-amber-700 dark:text-amber-400">
-            {" "}
-            These are long. Consider moving detail Claude rarely needs into a separate SOP and naming it here, so Claude only
-            reads it when it has to.
-          </span>
-        )}
-      </p>
+      {bodyTokens > BODY_LONG_TOKENS && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">Long instructions. Consider splitting rarely needed detail into another SOP.</p>
+      )}
 
       <Toolbar editor={editor} />
 

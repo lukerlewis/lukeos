@@ -13,7 +13,7 @@ export function RunHistory({ runs, timeZone }: { runs: RoutineRun[]; timeZone: s
       <h2 className="text-[13px] font-medium text-muted-foreground">History</h2>
       <Card>
         {runs.length === 0 ? (
-          <EmptyState>Nothing yet. Each time this routine runs (or is missed), it shows up here.</EmptyState>
+          <EmptyState>No runs yet.</EmptyState>
         ) : (
           <ul>
             {runs.map((run) => (

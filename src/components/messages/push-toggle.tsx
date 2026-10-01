@@ -98,7 +98,7 @@ export function PushSettings({ devices }: { devices: number }) {
   }
 
   const explain: Record<PushState, string> = {
-    on: "On for this device. You'll get a notification when Claude texts you.",
+    on: "On for this device.",
     off: "Off for this device.",
     denied: "Notifications are blocked for LukeOS. Turn them on in this device's settings (on iPhone: Settings, Notifications, LukeOS).",
     "needs-install": "On iPhone and iPad, add LukeOS to your Home Screen (Share, then Add to Home Screen) and open it from there to turn these on.",

@@ -41,7 +41,7 @@ export function MentionList({ mentions, when }: { mentions: Mention[]; when: Rec
         <ul className="overflow-hidden rounded-xl border bg-card shadow-xs">
           {open.length === 0 ? (
             <li className="px-4 py-6 text-center text-[13px] text-muted-foreground">
-              Nothing waiting. Type @claude in a note, a task or a comment to ask Claude something.
+              Nothing waiting.
             </li>
           ) : (
             open.map((m) => <Row key={m.id} mention={m} when={when[m.id]} />)

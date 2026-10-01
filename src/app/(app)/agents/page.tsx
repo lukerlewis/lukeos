@@ -61,10 +61,6 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
       <MarkFromClaudeSeen hasNew={items.some((i) => i.isNew)} />
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch(undefined)}
-        <p className="text-[13px] text-muted-foreground">
-          The reports, pages and other things Claude has written for you, newest first. Open one to read it, see its versions
-          and leave comments. Blue dots are new or updated since you last looked. Tap Select to change several at once.
-        </p>
         {routines.length > 0 && (
           <SegmentedLinks
             label="Routine"
@@ -81,7 +77,7 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
           when={when}
           kind="artifact"
           projects={projects.map((p) => ({ id: p.id, name: p.name }))}
-          empty="No artifacts from Claude yet. When Claude or one of your routines makes one, it lands here."
+          empty="No artifacts yet."
         />
       </div>
     </Page>
@@ -97,12 +93,9 @@ async function ActivityPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
     <Page title="Agents" newTask={false}>
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch}
-        <p className="text-[13px] text-muted-foreground">
-          Each change Claude makes in LukeOS, and when. Things Claude only looked at aren&apos;t listed.
-        </p>
         <Card>
           {days.length === 0 ? (
-            <EmptyState>Nothing yet. The next time Claude adds, edits or moves something, it shows up here.</EmptyState>
+            <EmptyState>Nothing yet.</EmptyState>
           ) : (
             <ActivityList days={days} />
           )}
@@ -121,10 +114,6 @@ async function MentionsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
     <Page title="Agents" newTask={false}>
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch}
-        <p className="text-[13px] text-muted-foreground">
-          Type @claude anywhere (a note, a task, a comment) to ask Claude something. Each one shows here with where and when you
-          wrote it. Claude picks them up the next time it runs, and marks each one done with a note of what it did.
-        </p>
         <MentionList mentions={mentions} when={when} />
       </div>
     </Page>
@@ -140,16 +129,9 @@ async function SopsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
     <Page title="Agents" newTask={false} actions={<NewSopButton />}>
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch}
-        <p className="text-[13px] text-muted-foreground">
-          Your instructions for how Claude should do things, like skills. Claude always sees each SOP&apos;s title and
-          description, and reads the full instructions only when a request fits, so you can keep as many as you like without
-          slowing it down. A clear description of when to use it is what makes an SOP get picked up.
-        </p>
         <Card>
           {sops.length === 0 ? (
-            <EmptyState>
-              No SOPs yet. Tap New SOP to write one, or ask Claude to save how it did something as an SOP.
-            </EmptyState>
+            <EmptyState>No SOPs yet.</EmptyState>
           ) : (
             <SopList sops={sops} when={when} />
           )}
@@ -167,13 +149,10 @@ async function RoutinesPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
     <Page title="Agents" newTask={false} actions={<NewRoutineButton />}>
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch}
-        <p className="text-[13px] text-muted-foreground">
-          Things you want done on a schedule, like an end of day recap. Claude checks in at {checkInsLabel(checkIns)}, and
-          does any routine that&apos;s due, along with your @claude requests. Each routine keeps a history of what was done.
-        </p>
+        <p className="text-[13px] text-muted-foreground">Check-ins at {checkInsLabel(checkIns)}.</p>
         <Card>
           {routines.length === 0 ? (
-            <EmptyState>No routines yet. Tap New routine to add one, or ask Claude to set one up.</EmptyState>
+            <EmptyState>No routines yet.</EmptyState>
           ) : (
             <RoutineList routines={routines} timeZone={timeZone} />
           )}

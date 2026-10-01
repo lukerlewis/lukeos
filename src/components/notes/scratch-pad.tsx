@@ -20,7 +20,7 @@ export function ScratchPad({ id, content }: { id: string; content: string }) {
       StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: { openOnClick: false, autolink: true, defaultProtocol: "https" } }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      Placeholder.configure({ placeholder: "Jot things down. Type @claude to ask Claude to do something." }),
+      Placeholder.configure({ placeholder: "Jot things down…" }),
       Markdown,
       ClaudeTag,
     ],

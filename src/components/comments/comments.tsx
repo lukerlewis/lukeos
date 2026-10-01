@@ -95,9 +95,7 @@ export function Comments({
               <X className="size-3.5" aria-hidden />
             </button>
           </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">Select some words above to comment on them.</p>
-        )}
+        ) : null}
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
