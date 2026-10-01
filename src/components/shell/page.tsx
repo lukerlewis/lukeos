@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { NewTaskFab, NewTaskHeaderButton } from "@/components/tasks/new-task-button";
 import { AddNew } from "./add-new";
 
@@ -13,6 +14,7 @@ export function Page({
   actions,
   newTask,
   addNew,
+  fill,
   children,
 }: {
   title: string;
@@ -24,6 +26,8 @@ export function Page({
   newTask?: false | { projectId?: string | null; dueDate?: string | null };
   /** Show "Add new" (task, note, project) instead of the New task buttons. */
   addNew?: boolean;
+  /** The content fills the screen down to the tab bar, for screens with a box pinned to the bottom (Messages). */
+  fill?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -32,7 +36,12 @@ export function Page({
         <span className="grow font-medium">{title}</span>
         {addNew ? <AddNew variant="header" /> : newTask !== false && <NewTaskHeaderButton defaults={newTask} />}
       </header>
-      <div className="flex flex-col gap-6 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-28 md:px-10 md:pt-8 md:pb-10">
+      <div
+        className={cn(
+          "flex flex-col gap-6 px-5 pt-[max(env(safe-area-inset-top),1rem)] md:px-10 md:pt-8",
+          fill ? "grow pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0" : "pb-28 md:pb-10",
+        )}
+      >
         <div className="flex items-end justify-between gap-4 pt-8 md:pt-0">
           <div className="min-w-0">
             {eyebrow && <div className="text-[13px] text-muted-foreground">{eyebrow}</div>}

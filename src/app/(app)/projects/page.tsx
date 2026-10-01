@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bot, CheckSquare, ChevronRight } from "lucide-react";
+import { Bot, CheckSquare, ChevronRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { NewProjectButton } from "@/components/projects/project-dialog";
 import { EmptyState, Page } from "@/components/shell/page";
@@ -14,7 +14,17 @@ export default async function ProjectsPage() {
   const projects = await listProjects();
 
   return (
-    <Page title="Projects" actions={<span className="hidden md:block"><NewProjectButton /></span>}>
+    // On phones this is the More tab: All tasks, Agents and Trash, then the projects.
+    <Page
+      title="Projects"
+      heading={
+        <>
+          <span className="md:hidden">More</span>
+          <span className="hidden md:inline">Projects</span>
+        </>
+      }
+      actions={<span className="hidden md:block"><NewProjectButton /></span>}
+    >
       <Card className="md:hidden">
         <Link href="/tasks" className="press-tint flex min-h-14 items-center gap-3 px-4 py-3">
           <CheckSquare className="size-[18px] text-muted-foreground" aria-hidden />
@@ -26,7 +36,13 @@ export default async function ProjectsPage() {
           <span className="grow text-[15px] font-medium">Agents</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
+        <Link href="/trash" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
+          <Trash2 className="size-[18px] text-muted-foreground" aria-hidden />
+          <span className="grow text-[15px] font-medium">Trash</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
       </Card>
+      <h2 className="-mb-3 px-1 text-sm font-semibold text-muted-foreground md:hidden">Projects</h2>
       <Card>
         {projects.length === 0 ? (
           <EmptyState>No projects yet. A project holds the tasks and notes for one piece of work.</EmptyState>

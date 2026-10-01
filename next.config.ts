@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
     // is instant. Any change you make refreshes them straight away.
     staleTimes: { dynamic: 30 },
   },
+  headers: async () => [
+    // Always check for a newer service worker, rather than keep an old one.
+    { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache" }] },
+  ],
   redirects: async () => [
     // Agents used to be called From Claude, then Agent log.
     { source: "/from-claude", destination: "/agents", permanent: true },

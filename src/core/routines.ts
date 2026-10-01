@@ -20,6 +20,7 @@ import {
 import { listComments } from "./comments";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type MadeBy } from "./define";
 import { listMentions } from "./mentions";
+import { listMessages } from "./messages";
 import { getTimeZone } from "./settings";
 import { listSops } from "./sops";
 
@@ -83,6 +84,13 @@ export async function getCheckIns(): Promise<CheckIns> {
   } catch {
     return DEFAULT_CHECK_INS;
   }
+}
+
+/** The next time an agent will check in, or null if no check-in times are set. */
+export async function nextCheckIn(now = new Date()) {
+  const [checkIns, timeZone] = await Promise.all([getCheckIns(), getTimeZone()]);
+  const day = todayIn(timeZone, now);
+  return checkInTimes(checkIns, day, addDays(day, 8), timeZone).find((t) => t > now) ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -341,23 +349,26 @@ export const routineOperations = {
   get_inbox: defineOperation({
     name: "get_inbox",
     description:
-      "Everything waiting for an agent right now: Luke's open @claude requests, comments waiting for a reply, and routines that are due. Call this first when you check in. If nothingToDo is true, stop: there's nothing to do. For each routine, call start_routine_run before doing it (it gives you the instructions), then finish_routine_run.",
+      "Everything waiting for an agent right now: Luke's messages waiting for an answer, his open @claude requests, comments waiting for a reply, and routines that are due. Call this first when you check in. If nothingToDo is true, stop: there's nothing to do. For each routine, call start_routine_run before doing it (it gives you the instructions), then finish_routine_run.",
     input: z.object({}),
     run: async () => {
       const now = new Date();
-      const [timeZone, checkIns, due, mentions, comments] = await Promise.all([
+      const [timeZone, checkIns, due, mentions, comments, waitingMessages] = await Promise.all([
         getTimeZone(),
         getCheckIns(),
         dueRoutines(now),
         listMentions({ open: true, limit: 50 }),
         listComments({ open: true, limit: 50 }),
+        listMessages({ waiting: true, limit: 50 }),
       ]);
       const waitingComments = comments.filter((c) => (c.replies.at(-1) ?? c).madeBy.kind === "user");
-      const nothingToDo = due.length === 0 && mentions.length === 0 && waitingComments.length === 0;
+      const nothingToDo =
+        due.length === 0 && mentions.length === 0 && waitingComments.length === 0 && waitingMessages.length === 0;
       return {
         now: new Intl.DateTimeFormat("en-GB", { timeZone, dateStyle: "full", timeStyle: "short" }).format(now),
         timeZone,
         nothingToDo,
+        messages: waitingMessages.map((m) => ({ id: m.id, text: m.text, link: m.link, sentAt: m.createdAt })),
         routines: due.map((d) => ({
           id: d.routine.id,
           title: d.routine.title,

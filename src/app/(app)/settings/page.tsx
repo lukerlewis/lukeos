@@ -3,8 +3,10 @@ import type { Metadata } from "next";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { PushSettings } from "@/components/messages/push-toggle";
 import { Page } from "@/components/shell/page";
 import { Card, CardHeader } from "@/components/ui/card";
+import { pushDeviceCount } from "@/core/push";
 import { trashCount, TRASH_DAYS } from "@/core/trash";
 import { db, schema } from "@/db";
 import { requireSession } from "@/lib/auth/session";
@@ -28,7 +30,7 @@ export default async function SettingsPage() {
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
   const connectorAddress = `${proto}://${host}/api/mcp`;
-  const inTrash = await trashCount();
+  const [inTrash, pushDevices] = await Promise.all([trashCount(), pushDeviceCount()]);
 
   return (
     <Page title="Settings" newTask={false}>
@@ -41,6 +43,11 @@ export default async function SettingsPage() {
             </p>
             <ThemeSwitch />
           </div>
+        </Card>
+
+        <Card>
+          <CardHeader title="Notifications" />
+          <PushSettings devices={pushDevices} />
         </Card>
 
         <Card>

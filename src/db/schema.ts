@@ -348,3 +348,40 @@ export const activityLog = pgTable(
   },
   (t) => [index("activity_log_at_idx").on(t.at)],
 );
+
+/**
+ * One text in the Messages chain between Luke and Claude. Luke's messages
+ * wait until Claude answers them at a check-in; Claude's messages are unread
+ * until Luke opens Messages.
+ */
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    body: text("body").notNull(),
+    /** Something in LukeOS the message is about, shown as a card under it. */
+    linkType: text("link_type"), // "task" | "note" | "artifact" | "project" | "routine"
+    linkId: uuid("link_id"),
+    /** Claude's messages: when Luke saw it. */
+    readAt: timestamp("read_at", { withTimezone: true }),
+    /** Luke's messages: when Claude dealt with it, and the reply that did. */
+    answeredAt: timestamp("answered_at", { withTimezone: true }),
+    answeredBy: uuid("answered_by"),
+    createdByKind: text("created_by_kind").notNull().default("user"), // "user" | "agent"
+    createdByName: text("created_by_name"),
+    createdByRoutine: text("created_by_routine"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("messages_created_idx").on(t.createdAt)],
+);
+
+/** A browser or phone that has said yes to notifications. */
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  deviceName: text("device_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
+});

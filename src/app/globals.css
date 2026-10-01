@@ -19,6 +19,7 @@
   --danger: #dc2626;
   --doing: #2563eb;
   --done: #15803d;
+  --bubble: #007aff;
   --ring: #a1a1aa;
 }
 
@@ -37,6 +38,7 @@
   --danger: #f87171;
   --doing: #60a5fa;
   --done: #4ade80;
+  --bubble: #0a84ff;
   --ring: #52525b;
 }
 
@@ -55,6 +57,7 @@
   --color-danger: var(--danger);
   --color-doing: var(--doing);
   --color-done: var(--done);
+  --color-bubble: var(--bubble);
   --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;

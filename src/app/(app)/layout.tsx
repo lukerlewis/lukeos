@@ -1,12 +1,14 @@
 import { after } from "next/server";
 import { Suspense } from "react";
 import { CommandMenuProvider } from "@/components/command/command-menu";
+import { PushListener } from "@/components/shell/push-listener";
 import { Sidebar } from "@/components/shell/sidebar";
 import { TabBar } from "@/components/shell/tab-bar";
 import { Toaster } from "@/components/shell/toast";
 import { TaskEditorProvider } from "@/components/tasks/task-editor";
 import { TimeZoneSync } from "@/components/time-zone-sync";
 import { newFromClaudeCount } from "@/core/from-claude";
+import { unreadMessageCount } from "@/core/messages";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { purgeExpiredTrash } from "@/core/trash";
@@ -31,7 +33,12 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 
 async function AppShell({ children }: { children: React.ReactNode }) {
   await requireSession();
-  const [projects, timeZone, newFromClaude] = await Promise.all([listProjects(), getTimeZone(), newFromClaudeCount()]);
+  const [projects, timeZone, newFromClaude, unreadMessages] = await Promise.all([
+    listProjects(),
+    getTimeZone(),
+    newFromClaudeCount(),
+    unreadMessageCount(),
+  ]);
   // Things over 30 days in Trash are deleted for good as the app is used.
   after(() => purgeExpiredTrash().catch((err) => console.error("[trash] purge failed", err)));
   const today = todayIn(timeZone);
@@ -41,13 +48,15 @@ async function AppShell({ children }: { children: React.ReactNode }) {
     <TaskEditorProvider projects={projects} today={today}>
       <CommandMenuProvider projects={menuProjects} today={today}>
         <TimeZoneSync saved={timeZone} />
+        <PushListener />
         <div className="flex min-h-dvh md:h-dvh">
           <Sidebar
             projects={projects.map((p) => ({ id: p.id, name: p.name, hex: colorHex(p.color), open: p.openTasks }))}
             newFromClaude={newFromClaude}
+            unreadMessages={unreadMessages}
           />
           <main className="flex min-w-0 grow md:overflow-y-auto">{children}</main>
-          <TabBar />
+          <TabBar unreadMessages={unreadMessages} />
         </div>
         <Toaster />
       </CommandMenuProvider>

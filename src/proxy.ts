@@ -14,7 +14,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except sign-in, APIs, Claude's connector discovery, app icons and Next's own files.
-    "/((?!sign-in|api/|\\.well-known/|_next/|manifest.webmanifest|icon|apple-icon|favicon.ico).*)",
+    // Everything except sign-in, APIs, Claude's connector discovery, the service worker, app icons and Next's own files.
+    "/((?!sign-in|api/|\\.well-known/|_next/|manifest.webmanifest|sw.js|icon|apple-icon|favicon.ico).*)",
   ],
 };

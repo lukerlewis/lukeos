@@ -85,6 +85,13 @@
       "when": 1790866334835,
       "tag": "0011_note_pins",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790874379528,
+      "tag": "0012_messages",
+      "breakpoints": true
     }
   ]
 }

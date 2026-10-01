@@ -298,6 +298,10 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       }
       return { summary: `${action}: ${names}` };
     }
+    case "send_message":
+      return { summary: `Sent you a message: ${quote(String(input.text ?? "").replace(/\s+/g, " "))}` };
+    case "mark_messages_read":
+      return null;
     case "set_dashboard_view":
       return { summary: "Changed how your dashboard looks" };
     default:

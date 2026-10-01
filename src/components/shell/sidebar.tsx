@@ -6,13 +6,22 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useCommandMenu } from "@/components/command/command-menu";
 import { SEEN_EVENT } from "@/components/from-claude/mark-seen";
+import { useUnreadMessages } from "@/components/messages/unread";
 import { NewProjectIconButton } from "@/components/projects/project-dialog";
 import { cn } from "@/lib/utils";
 import { isActive, mainNav } from "./nav";
 
 type SidebarProject = { id: string; name: string; hex: string; open: number };
 
-export function Sidebar({ projects, newFromClaude }: { projects: SidebarProject[]; newFromClaude: number }) {
+export function Sidebar({
+  projects,
+  newFromClaude,
+  unreadMessages,
+}: {
+  projects: SidebarProject[];
+  newFromClaude: number;
+  unreadMessages: number;
+}) {
   const pathname = usePathname();
   const { openMenu } = useCommandMenu();
   // Macs use ⌘K; Windows and others Ctrl+K. Only known in the browser.
@@ -28,7 +37,11 @@ export function Sidebar({ projects, newFromClaude }: { projects: SidebarProject[
     window.addEventListener(SEEN_EVENT, clear);
     return () => window.removeEventListener(SEEN_EVENT, clear);
   }, [newFromClaude]);
-  const counts: Record<string, number> = { "/agents": clearedAt === newFromClaude ? 0 : newFromClaude };
+  const unread = useUnreadMessages(unreadMessages);
+  const counts: Record<string, number> = {
+    "/agents": clearedAt === newFromClaude ? 0 : newFromClaude,
+    "/messages": unread,
+  };
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col gap-[18px] border-r bg-sidebar px-3 py-3.5 md:flex">
