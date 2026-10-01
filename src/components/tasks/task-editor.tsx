@@ -17,6 +17,7 @@ import {
   efforts,
   priorities,
   priorityLabel,
+  repeatLabel,
   repeats,
   statuses,
   statusLabel,
@@ -26,6 +27,7 @@ import {
   type Status,
 } from "@/lib/task-fields";
 import { MadeByLabel } from "./made-by";
+import { HighlightedText, SmartChips, useSmartEntry } from "./smart-chips";
 
 type Draft = {
   id?: string;
@@ -129,6 +131,24 @@ function TaskDialog({
   const [more, setMore] = useState(!!initial.id);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const isNew = !initial.id;
+  // A new task's name is read for dates and repeats ("laundry tomorrow"); picking a day by hand wins over it.
+  const smart = useSmartEntry(draft.title, today, isNew);
+  const [dueTouched, setDueTouched] = useState(false);
+  const { parsed } = smart;
+  const dueDate = dueTouched ? draft.dueDate : (parsed.dueDate ?? (parsed.repeat ? (draft.dueDate ?? today) : draft.dueDate));
+  const repeat = parsed.repeat ?? draft.repeat;
+  const highlight = isNew && parsed.matches.length > 0;
+
+  function pickDue(value: string | null) {
+    if (parsed.matches.some((m) => m.kind === "date")) smart.dismiss("date");
+    setDueTouched(true);
+    set("dueDate", value);
+  }
+
+  function pickRepeat(value: Repeat | null) {
+    smart.dismiss("repeat");
+    set("repeat", value);
+  }
 
   useEffect(() => {
     if (isNew) titleRef.current?.focus();
@@ -138,7 +158,7 @@ function TaskDialog({
 
   async function save(e?: React.FormEvent) {
     e?.preventDefault();
-    if (!draft.title.trim()) {
+    if (!parsed.title) {
       setError("Give the task a name.");
       titleRef.current?.focus();
       return;
@@ -146,13 +166,13 @@ function TaskDialog({
     setBusy(true);
     setError(null);
     const fields = {
-      title: draft.title.trim(),
+      title: parsed.title,
       projectId: draft.projectId,
       status: draft.status,
-      dueDate: draft.dueDate,
+      dueDate,
       priority: draft.priority,
       effort: draft.effort,
-      repeat: draft.repeat,
+      repeat,
       notes: draft.notes.trim() || null,
     };
     try {
@@ -191,25 +211,47 @@ function TaskDialog({
     <Dialog label={isNew ? "New task" : "Task"} onClose={onClose}>
       <form onSubmit={save} className="flex flex-col">
         <div className="flex items-start gap-2 px-5 pt-4">
-          <textarea
-            ref={titleRef}
-            value={draft.title}
-            onChange={(e) => set("title", e.target.value.replace(/\n/g, " "))}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void save();
-              }
-            }}
-            placeholder="What needs doing?"
-            aria-label="Task name"
-            rows={1}
-            className="field-sizing-content min-h-9 grow resize-none bg-transparent py-1 text-lg font-semibold outline-none placeholder:text-muted-foreground"
-          />
+          <div className="grid min-w-0 grow">
+            {highlight && (
+              <div
+                aria-hidden
+                className="pointer-events-none col-start-1 row-start-1 py-1 text-lg font-semibold break-words whitespace-pre-wrap"
+              >
+                <HighlightedText text={draft.title} matches={parsed.matches} />
+              </div>
+            )}
+            <textarea
+              ref={titleRef}
+              value={draft.title}
+              onChange={(e) => set("title", e.target.value.replace(/\n/g, " "))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void save();
+                }
+              }}
+              placeholder="What needs doing?"
+              aria-label="Task name"
+              rows={1}
+              className={cn(
+                "col-start-1 row-start-1 field-sizing-content min-h-9 resize-none bg-transparent py-1 text-lg font-semibold break-words outline-none placeholder:text-muted-foreground",
+                highlight && "text-transparent caret-foreground",
+              )}
+            />
+          </div>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="-mr-2 shrink-0">
             <X className="size-5" aria-hidden />
           </Button>
         </div>
+
+        <SmartChips
+          parsed={parsed}
+          dueDate={dueDate}
+          repeat={repeat}
+          today={today}
+          onDismiss={smart.dismiss}
+          className="mx-5 mt-2"
+        />
 
         {!more && (
           <button
@@ -236,29 +278,34 @@ function TaskDialog({
               <div className="flex flex-wrap items-center gap-2">
                 <input
                   type="date"
-                  value={draft.dueDate ?? ""}
-                  onChange={(e) => set("dueDate", e.target.value || null)}
+                  value={dueDate ?? ""}
+                  onChange={(e) => pickDue(e.target.value || null)}
                   aria-label="Due date"
                   className="h-9 rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs"
                 />
                 {dueChoices.map((c) => (
-                  <Chip key={c.label} active={draft.dueDate === c.value} onClick={() => set("dueDate", c.value)}>
+                  <Chip key={c.label} active={dueDate === c.value} onClick={() => pickDue(c.value)}>
                     {c.label}
                   </Chip>
                 ))}
-                {draft.dueDate && <Chip onClick={() => set("dueDate", null)}>No date</Chip>}
+                {dueDate && <Chip onClick={() => pickDue(null)}>No date</Chip>}
               </div>
             </Field>
 
             <Field label="Repeat">
-              <Segmented
-                value={draft.repeat ?? "none"}
-                onChange={(v) => set("repeat", v === "none" ? null : v)}
-                options={[
-                  { value: "none" as const, label: "Never" },
-                  ...repeats.map((r) => ({ value: r, label: { daily: "Daily", weekly: "Weekly", monthly: "Monthly" }[r] })),
-                ]}
-              />
+              <select
+                value={repeat ?? ""}
+                onChange={(e) => pickRepeat((e.target.value || null) as Repeat | null)}
+                aria-label="Repeat"
+                className="h-9 w-full rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs sm:w-auto sm:min-w-56"
+              >
+                <option value="">Never</option>
+                {repeats.map((r) => (
+                  <option key={r} value={r}>
+                    {repeatLabel[r]}
+                  </option>
+                ))}
+              </select>
             </Field>
 
             <Field label="Priority">

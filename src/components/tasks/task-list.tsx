@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
 import type { Task } from "@/core/tasks";
 import { friendlyDay, nextRepeat } from "@/lib/dates";
+import { SmartChips, useSmartEntry } from "./smart-chips";
 import { op } from "@/lib/ops-client";
 import { effortLabel, priorityLabel, repeatLabel, type Status } from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
@@ -132,26 +133,35 @@ export function QuickAdd({
   projectId,
   dueDate,
   placeholder = "Add a task",
+  today,
 }: {
   projectId?: string | null;
   dueDate?: string | null;
   placeholder?: string;
+  /** Today in Luke's time zone, for reading "tomorrow" or "every monday" out of the name. */
+  today: string;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [pending, startTransition] = useTransition();
+  const smart = useSmartEntry(title, today);
+  const { parsed } = smart;
+  const due = parsed.dueDate ?? (parsed.repeat ? (dueDate ?? today) : (dueDate ?? null));
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const clean = title.trim();
+    const typed = title;
+    const clean = parsed.title;
     if (!clean) return;
+    const fields = { title: clean, projectId: projectId ?? null, dueDate: due, repeat: parsed.repeat };
     setTitle("");
+    smart.reset();
     startTransition(async () => {
       try {
-        await op("create_task", { title: clean, projectId: projectId ?? null, dueDate: dueDate ?? null });
+        await op("create_task", fields);
         router.refresh();
       } catch (err) {
-        setTitle(clean);
+        setTitle(typed);
         alert((err as Error).message);
       }
     });
@@ -167,8 +177,9 @@ export function QuickAdd({
         aria-label={placeholder}
         aria-busy={pending}
         enterKeyHint="done"
-        className="h-12 min-w-0 grow bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:h-11 md:text-sm"
+        className="h-12 w-0 min-w-0 grow bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:h-11 md:text-sm"
       />
+      <SmartChips parsed={parsed} dueDate={due} repeat={parsed.repeat} today={today} onDismiss={smart.dismiss} className="flex-nowrap" />
     </form>
   );
 }

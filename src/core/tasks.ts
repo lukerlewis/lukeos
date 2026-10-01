@@ -165,7 +165,7 @@ export const fields = {
     .enum(repeats)
     .nullable()
     .describe(
-      "daily, weekly or monthly: when it's marked done, the next one is added automatically, due a day, week or month on. null stops it repeating.",
+      "daily, weekdays (Monday to Friday), weekly, monthly or yearly: when it's marked done, the next one is added automatically, due a day, weekday, week, month or year on. null stops it repeating.",
     ),
 };
 
@@ -203,7 +203,7 @@ export const taskOperations = {
   create_task: defineOperation({
     name: "create_task",
     description:
-      "Create a task. Only the title is required; it starts as To do unless a status is given. Set repeat for something that comes back every day, week or month.",
+      "Create a task. Only the title is required; it starts as To do unless a status is given. Set repeat for something that comes back every day, weekday, week, month or year.",
     input: z.object({
       title: fields.title,
       projectId: fields.projectId.optional(),

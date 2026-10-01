@@ -29,7 +29,7 @@ export default async function TasksPage() {
         {open.length === 0 && (
           <Card>
             <EmptyState>Nothing open.</EmptyState>
-            <QuickAdd />
+            <QuickAdd today={date} />
           </Card>
         )}
         {sections.map(({ when, title }) => {
@@ -39,13 +39,13 @@ export default async function TasksPage() {
             <Card key={when}>
               <CardHeader title={title} aside={group.length} />
               <TaskList tasks={group} today={date} />
-              {when === "none" && <QuickAdd />}
+              {when === "none" && <QuickAdd today={date} />}
             </Card>
           );
         })}
         {open.length > 0 && !open.some((t) => t.dueDate === null) && (
           <Card>
-            <QuickAdd />
+            <QuickAdd today={date} />
           </Card>
         )}
         {recentlyDone.length > 0 && (

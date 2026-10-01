@@ -121,7 +121,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           {tasks.length === 0 && (
             <Card>
               <EmptyState>No tasks yet.</EmptyState>
-              <QuickAdd projectId={project.id} />
+              <QuickAdd projectId={project.id} today={date} />
             </Card>
           )}
           {groups.map(({ status, tasks: group }) =>
@@ -134,7 +134,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
                 </h2>
                 <Card>
                   <TaskList tasks={group} today={date} showProject={false} />
-                  {status === "todo" && <QuickAdd projectId={project.id} />}
+                  {status === "todo" && <QuickAdd projectId={project.id} today={date} />}
                 </Card>
               </section>
             ),

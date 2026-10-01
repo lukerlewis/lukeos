@@ -94,7 +94,7 @@ function TodayTasks({
         </div>
         <TaskList tasks={[...tasks].sort(compareTasks)} today={today} empty={<EmptyState>Nothing due today.</EmptyState>} />
         {/* "Add a task" makes a To do task, so it only shows while To do tasks do. */}
-        {view.show.includes("todo") && <QuickAdd dueDate={today} placeholder="Add a task for today" />}
+        {view.show.includes("todo") && <QuickAdd dueDate={today} today={today} placeholder="Add a task for today" />}
       </Card>
     </div>
   );

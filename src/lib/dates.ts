@@ -39,11 +39,19 @@ export function addMonths(day: string, n: number) {
  * day of the month) and always lands after today, so finishing a late one
  * doesn't make another late one.
  */
-export function nextRepeat(due: string | null, repeat: "daily" | "weekly" | "monthly", today: string) {
+export function nextRepeat(due: string | null, repeat: "daily" | "weekdays" | "weekly" | "monthly" | "yearly", today: string) {
   const start = due ?? today;
-  const step = (n: number) => (repeat === "daily" ? addDays(start, n) : repeat === "weekly" ? addDays(start, 7 * n) : addMonths(start, n));
+  const step = (n: number) =>
+    repeat === "weekly"
+      ? addDays(start, 7 * n)
+      : repeat === "monthly"
+        ? addMonths(start, n)
+        : repeat === "yearly"
+          ? addMonths(start, 12 * n)
+          : addDays(start, n);
   let n = 1;
-  while (step(n) <= today) n++;
+  // Weekdays steps a day at a time, passing over Saturday and Sunday.
+  while (step(n) <= today || (repeat === "weekdays" && [0, 6].includes(toUtc(step(n)).getUTCDay()))) n++;
   return step(n);
 }
 
