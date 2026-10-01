@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { Fab } from "@/components/shell/fab";
 import { Button } from "@/components/ui/button";
 import { useTaskEditor } from "./task-editor";
 
@@ -20,14 +21,5 @@ export function NewTaskHeaderButton({ defaults }: { defaults?: Defaults }) {
 /** The round "+" floating above the tab bar on phones. */
 export function NewTaskFab({ defaults }: { defaults?: Defaults }) {
   const { newTask } = useTaskEditor();
-  return (
-    <button
-      type="button"
-      onClick={() => newTask(defaults)}
-      aria-label="New task"
-      className="fixed right-5 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-10 flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:hidden"
-    >
-      <Plus className="size-6" strokeWidth={2} aria-hidden />
-    </button>
-  );
+  return <Fab label="New task" onClick={() => newTask(defaults)} />;
 }

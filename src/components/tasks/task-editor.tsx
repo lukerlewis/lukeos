@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, X } from "lucide-react";
+import { ChevronDown, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createContext, use, useCallback, useEffect, useRef, useState } from "react";
 import type { Project } from "@/core/projects";
@@ -11,6 +11,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { addDays, endOfWeek } from "@/lib/dates";
 import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
+import { cn } from "@/lib/utils";
 import {
   effortLabel,
   efforts,
@@ -84,17 +85,20 @@ export function TaskEditorProvider({
   }, []);
 
   const newTask = useCallback<Editor["newTask"]>((defaults) => {
+    // On phones a new task is due today unless the screen picked a day (or no day).
+    const dueDate =
+      defaults && "dueDate" in defaults ? (defaults.dueDate ?? null) : isPhone() ? today : null;
     setDraft({
       title: defaults?.title ?? "",
       projectId: defaults?.projectId ?? null,
       status: defaults?.status ?? "todo",
-      dueDate: defaults?.dueDate ?? null,
+      dueDate,
       priority: null,
       effort: null,
       repeat: null,
       notes: "",
     });
-  }, []);
+  }, [today]);
 
   return (
     <EditorContext value={{ openTask, newTask }}>
@@ -121,6 +125,8 @@ function TaskDialog({
   const [draft, setDraft] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Adding a task on a phone shows just the name; the rest is behind "Show more".
+  const [more, setMore] = useState(!!initial.id);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const isNew = !initial.id;
 
@@ -205,92 +211,105 @@ function TaskDialog({
           </Button>
         </div>
 
+        {!more && (
+          <button
+            type="button"
+            onClick={() => setMore(true)}
+            className="mx-5 mt-3 flex items-center gap-1 self-start text-[13px] font-medium text-muted-foreground md:hidden"
+          >
+            Show more
+            <ChevronDown className="size-4" aria-hidden />
+          </button>
+        )}
+
         <div className="flex flex-col gap-4 px-5 py-4">
-          <Field label="Status">
-            <Segmented
-              value={draft.status}
-              onChange={(v) => set("status", v)}
-              options={statuses.map((s) => ({ value: s, label: statusLabel[s] }))}
-            />
-          </Field>
-
-          <Field label="Due">
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="date"
-                value={draft.dueDate ?? ""}
-                onChange={(e) => set("dueDate", e.target.value || null)}
-                aria-label="Due date"
-                className="h-9 rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs"
+          <div className={cn("flex-col gap-4", more ? "flex" : "hidden md:flex")}>
+            <Field label="Status">
+              <Segmented
+                value={draft.status}
+                onChange={(v) => set("status", v)}
+                options={statuses.map((s) => ({ value: s, label: statusLabel[s] }))}
               />
-              {dueChoices.map((c) => (
-                <Chip key={c.label} active={draft.dueDate === c.value} onClick={() => set("dueDate", c.value)}>
-                  {c.label}
-                </Chip>
-              ))}
-              {draft.dueDate && <Chip onClick={() => set("dueDate", null)}>No date</Chip>}
-            </div>
-          </Field>
+            </Field>
 
-          <Field label="Repeat">
-            <Segmented
-              value={draft.repeat ?? "none"}
-              onChange={(v) => set("repeat", v === "none" ? null : v)}
-              options={[
-                { value: "none" as const, label: "Never" },
-                ...repeats.map((r) => ({ value: r, label: { daily: "Daily", weekly: "Weekly", monthly: "Monthly" }[r] })),
-              ]}
-            />
-          </Field>
+            <Field label="Due">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="date"
+                  value={draft.dueDate ?? ""}
+                  onChange={(e) => set("dueDate", e.target.value || null)}
+                  aria-label="Due date"
+                  className="h-9 rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs"
+                />
+                {dueChoices.map((c) => (
+                  <Chip key={c.label} active={draft.dueDate === c.value} onClick={() => set("dueDate", c.value)}>
+                    {c.label}
+                  </Chip>
+                ))}
+                {draft.dueDate && <Chip onClick={() => set("dueDate", null)}>No date</Chip>}
+              </div>
+            </Field>
 
-          <Field label="Priority">
-            <Segmented
-              value={draft.priority ?? "none"}
-              onChange={(v) => set("priority", v === "none" ? null : v)}
-              options={[{ value: "none" as const, label: "None" }, ...priorities.map((p) => ({ value: p, label: priorityLabel[p] }))]}
-            />
-          </Field>
+            <Field label="Repeat">
+              <Segmented
+                value={draft.repeat ?? "none"}
+                onChange={(v) => set("repeat", v === "none" ? null : v)}
+                options={[
+                  { value: "none" as const, label: "Never" },
+                  ...repeats.map((r) => ({ value: r, label: { daily: "Daily", weekly: "Weekly", monthly: "Monthly" }[r] })),
+                ]}
+              />
+            </Field>
 
-          <Field label="Effort">
-            <Segmented
-              value={draft.effort ?? "none"}
-              onChange={(v) => set("effort", v === "none" ? null : v)}
-              options={[{ value: "none" as const, label: "None" }, ...efforts.map((x) => ({ value: x, label: effortLabel[x] }))]}
-            />
-          </Field>
+            <Field label="Priority">
+              <Segmented
+                value={draft.priority ?? "none"}
+                onChange={(v) => set("priority", v === "none" ? null : v)}
+                options={[{ value: "none" as const, label: "None" }, ...priorities.map((p) => ({ value: p, label: priorityLabel[p] }))]}
+              />
+            </Field>
 
-          <Field label="Project">
-            <select
-              value={draft.projectId ?? ""}
-              onChange={(e) => set("projectId", e.target.value || null)}
-              aria-label="Project"
-              className="h-9 w-full rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs sm:w-auto sm:min-w-56"
-            >
-              <option value="">No project</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+            <Field label="Effort">
+              <Segmented
+                value={draft.effort ?? "none"}
+                onChange={(v) => set("effort", v === "none" ? null : v)}
+                options={[{ value: "none" as const, label: "None" }, ...efforts.map((x) => ({ value: x, label: effortLabel[x] }))]}
+              />
+            </Field>
 
-          <Field label="Notes">
-            <textarea
-              value={draft.notes}
-              onChange={(e) => set("notes", e.target.value)}
-              placeholder="Add details, links or a checklist…"
-              aria-label="Notes"
-              rows={4}
-              className="field-sizing-content min-h-24 w-full resize-none rounded-lg border bg-card px-3 py-2 text-[16px] md:text-[14px] shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring"
-            />
-          </Field>
+            <Field label="Project">
+              <select
+                value={draft.projectId ?? ""}
+                onChange={(e) => set("projectId", e.target.value || null)}
+                aria-label="Project"
+                className="h-9 w-full rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs sm:w-auto sm:min-w-56"
+              >
+                <option value="">No project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
 
-          {draft.madeBy && draft.createdAt && (
-            <p className="text-xs text-muted-foreground">
-              <MadeByLabel madeBy={draft.madeBy} createdAt={draft.createdAt} />
-            </p>
-          )}
+            <Field label="Notes">
+              <textarea
+                value={draft.notes}
+                onChange={(e) => set("notes", e.target.value)}
+                placeholder="Add details, links or a checklist…"
+                aria-label="Notes"
+                rows={4}
+                className="field-sizing-content min-h-24 w-full resize-none rounded-lg border bg-card px-3 py-2 text-[16px] md:text-[14px] shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring"
+              />
+            </Field>
+
+            {draft.madeBy && draft.createdAt && (
+              <p className="text-xs text-muted-foreground">
+                <MadeByLabel madeBy={draft.madeBy} createdAt={draft.createdAt} />
+              </p>
+            )}
+          </div>
 
           {error && (
             <p role="alert" className="text-[13px] text-danger">
@@ -318,6 +337,8 @@ function TaskDialog({
     </Dialog>
   );
 }
+
+const isPhone = () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

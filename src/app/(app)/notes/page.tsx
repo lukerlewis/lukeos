@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { NewNoteButton } from "@/components/notes/new-note-button";
+import { NewNoteButton, NewNoteFab } from "@/components/notes/new-note-button";
 import { NoteList } from "@/components/notes/note-list";
 import { EmptyState, Page } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,7 @@ export default async function NotesPage() {
   const [notes, timeZone] = await Promise.all([listNotes(), getTimeZone()]);
 
   return (
-    <Page title="Notes" actions={<NewNoteButton />} newTask={false}>
+    <Page title="Notes" actions={<NewNoteButton className="max-md:hidden" />} newTask={false}>
       <div className="flex max-w-3xl flex-col gap-5">
         <Card>
           <NoteList
@@ -23,6 +23,7 @@ export default async function NotesPage() {
           />
         </Card>
       </div>
+      <NewNoteFab />
     </Page>
   );
 }

@@ -24,7 +24,7 @@ export function Page({
   actions?: React.ReactNode;
   /** Show the New task buttons, pre-filled with these (false hides them). */
   newTask?: false | { projectId?: string | null; dueDate?: string | null };
-  /** Show "Add new" (task, note, project) instead of the New task buttons. */
+  /** On computers, show "Add new" (task, note, project) instead of New task. */
   addNew?: boolean;
   /** The content fills the screen down to the tab bar, for screens with a box pinned to the bottom (Messages). */
   fill?: boolean;
@@ -34,7 +34,7 @@ export function Page({
     <div className="flex min-w-0 grow flex-col">
       <header className="hidden h-14 shrink-0 items-center border-b px-6 md:flex">
         <span className="grow font-medium">{title}</span>
-        {addNew ? <AddNew variant="header" /> : newTask !== false && <NewTaskHeaderButton defaults={newTask} />}
+        {addNew ? <AddNew /> : newTask !== false && <NewTaskHeaderButton defaults={newTask} />}
       </header>
       <div
         className={cn(
@@ -61,7 +61,8 @@ export function Page({
         </div>
         {children}
       </div>
-      {addNew ? <AddNew variant="fab" /> : newTask !== false && <NewTaskFab defaults={newTask} />}
+      {/* Phones have no menu: the "+" always adds a task. */}
+      {newTask !== false && <NewTaskFab defaults={newTask} />}
     </div>
   );
 }
