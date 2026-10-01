@@ -43,7 +43,7 @@ export function Sidebar({ projects, newFromClaude }: { projects: SidebarProject[
         type="button"
         onClick={openMenu}
         aria-keyshortcuts={isMac ? "Meta+K" : "Control+K"}
-        className="flex h-9 items-center gap-2 rounded-lg border bg-card px-2.5 text-left whitespace-nowrap text-muted-foreground shadow-xs hover:text-foreground"
+        className="pressable flex h-9 items-center gap-2 rounded-lg border bg-card px-2.5 text-left whitespace-nowrap text-muted-foreground shadow-xs hover:text-foreground"
       >
         <Search className="size-[15px]" aria-hidden />
         <span className="grow truncate">Search</span>
@@ -73,7 +73,7 @@ export function Sidebar({ projects, newFromClaude }: { projects: SidebarProject[
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-subtle-foreground hover:bg-muted",
+                "pressable flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-subtle-foreground hover:bg-muted",
                 active && "bg-muted font-medium text-foreground",
               )}
             >
@@ -114,7 +114,7 @@ function NavLink({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex h-[34px] items-center gap-2.5 rounded-lg px-2.5 font-medium text-subtle-foreground hover:bg-muted",
+        "pressable flex h-[34px] items-center gap-2.5 rounded-lg px-2.5 font-medium text-subtle-foreground hover:bg-muted",
         active && "bg-muted font-semibold text-foreground",
       )}
     >

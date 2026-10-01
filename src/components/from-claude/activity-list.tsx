@@ -34,7 +34,7 @@ export function ActivityList({ days }: { days: { label: string; rows: ActivityRo
                 </>
               );
               const cls = "flex w-full items-baseline gap-3 px-4 py-2 text-left";
-              const link = cls + " hover:bg-muted/50";
+              const link = cls + " press-tint hover:bg-muted/50";
               return (
                 <li key={row.id} className="border-t first:border-t-0">
                   {row.item?.type === "task" ? (

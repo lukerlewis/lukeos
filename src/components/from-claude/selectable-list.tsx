@@ -146,7 +146,7 @@ export function SelectableClaudeList({
           {items.map((item) => {
             const on = picked.has(item.id);
             const body = <ItemBody item={item} when={when[item.id]} />;
-            const row = "flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-muted/50";
+            const row = "press-tint flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-muted/50";
             return (
               <li key={item.id} className={cn("border-b last:border-b-0", on && "bg-muted/60")}>
                 {selecting ? (

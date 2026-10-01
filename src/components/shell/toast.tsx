@@ -85,7 +85,7 @@ export function Toaster() {
       key={toast.id}
       className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-50 flex justify-center px-4 md:bottom-6"
     >
-      <div className="flex min-h-11 items-center gap-3 rounded-xl bg-foreground py-1.5 pr-1.5 pl-4 text-[13px] font-medium text-background shadow-lg">
+      <div className="motion-toast flex min-h-11 items-center gap-3 rounded-xl bg-foreground py-1.5 pr-1.5 pl-4 text-[13px] font-medium text-background shadow-lg">
         <span className="py-1.5">{toast.message}</span>
         {toast.undo !== undefined ? (
           <button

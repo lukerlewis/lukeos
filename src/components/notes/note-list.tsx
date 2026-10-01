@@ -31,7 +31,7 @@ export function NoteList({
         const Icon = n.format === "html" ? Globe : FileText;
         return (
           <li key={n.id} className="border-b last:border-b-0">
-            <Link href={`/notes/${n.id}`} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
+            <Link href={`/notes/${n.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
               <Icon className="mt-0.5 size-[18px] shrink-0 text-muted-foreground md:size-4" aria-hidden />
               <span className="flex min-w-0 grow flex-col gap-0.5">
                 <span className="flex items-baseline gap-3">

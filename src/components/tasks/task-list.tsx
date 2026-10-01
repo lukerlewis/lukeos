@@ -7,11 +7,14 @@ import type { Task } from "@/core/tasks";
 import { friendlyDay, nextRepeat } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
 import { effortLabel, priorityLabel, repeatLabel, type Status } from "@/lib/task-fields";
-import { cn } from "@/lib/utils";
+import { cn, pause } from "@/lib/utils";
 import { showToast } from "@/components/shell/toast";
 import { ClaudeBadge } from "./made-by";
 import { StatusIcon } from "./status-circle";
 import { useTaskEditor } from "./task-editor";
+
+/** How long the tick animation takes to play out. */
+export const TICK_MS = 400;
 
 /** A list of task rows, e.g. inside a Card. */
 export function TaskList({
@@ -40,14 +43,17 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
   const { openTask } = useTaskEditor();
   const [, startTransition] = useTransition();
   const [status, setOptimisticStatus] = useOptimistic(task.status);
+  // Counts taps on the circle, so the tick animates afresh each time.
+  const [taps, setTaps] = useState(0);
 
   // Tapping the circle ticks a task off, or un-ticks a done one.
   function toggle() {
     const next: Status = status === "done" ? "todo" : "done";
+    setTaps((n) => n + 1);
     startTransition(async () => {
       setOptimisticStatus(next);
       try {
-        await op("update_task", { id: task.id, status: next });
+        await Promise.all([op("update_task", { id: task.id, status: next }), pause(TICK_MS)]);
         if (next === "done" && task.repeat) {
           const label = friendlyDay(nextRepeat(task.dueDate, task.repeat, today), today);
           showToast(`Done. The next one is due ${label === "Tomorrow" ? "tomorrow" : `on ${label}`}.`);
@@ -72,12 +78,12 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
         aria-label={done ? `Mark "${task.title}" as not done` : `Mark "${task.title}" as done`}
         className="-mx-2 flex size-11 shrink-0 items-center justify-center md:size-10"
       >
-        <StatusIcon status={status} className="size-[22px] md:size-[18px]" />
+        <StatusIcon key={taps} status={status} className={cn("size-[22px] md:size-[18px]", taps > 0 && "motion-tick")} />
       </button>
       <button
         type="button"
         onClick={() => openTask(task)}
-        className="flex min-w-0 grow flex-col gap-0.5 py-3 text-left md:flex-row md:items-center md:gap-3"
+        className="press-tint -mr-4 flex min-w-0 grow flex-col gap-0.5 py-3 pr-4 text-left md:flex-row md:items-center md:gap-3"
       >
         <span
           className={cn(

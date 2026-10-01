@@ -75,8 +75,8 @@ export function AddNew({ variant }: { variant: "header" | "fab" }) {
         <div
           role="menu"
           className={cn(
-            "absolute right-0 z-30 flex w-56 flex-col rounded-xl border bg-card p-1 shadow-lg",
-            variant === "header" ? "top-full mt-2" : "bottom-full mb-2",
+            "motion-pop absolute right-0 z-30 flex w-56 flex-col rounded-xl border bg-card p-1 shadow-lg",
+            variant === "header" ? "top-full mt-2 origin-top-right" : "bottom-full mb-2 origin-bottom-right",
           )}
         >
           {items.map(({ label, icon: Icon, run }) => (
@@ -88,7 +88,7 @@ export function AddNew({ variant }: { variant: "header" | "fab" }) {
                 setOpen(null);
                 void run();
               }}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[14px] font-medium hover:bg-muted md:py-2 md:text-[13px]"
+              className="press-tint flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[14px] font-medium hover:bg-muted md:py-2 md:text-[13px]"
             >
               <Icon className="size-4 text-muted-foreground" aria-hidden />
               {label}

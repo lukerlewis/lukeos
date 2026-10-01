@@ -21,7 +21,7 @@ export function StatusIcon({ status, className }: { status: Status; className?: 
     >
       <circle cx="12" cy="12" r="8.5" />
       {status === "doing" && <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" />}
-      {status === "done" && <path d="M8.5 12.5l2.4 2.4 4.6-5" />}
+      {status === "done" && <path className="tick-check" pathLength={1} d="M8.5 12.5l2.4 2.4 4.6-5" />}
     </svg>
   );
 }

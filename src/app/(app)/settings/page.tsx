@@ -100,7 +100,7 @@ export default async function SettingsPage() {
         </Card>
 
         <Card>
-          <Link href="/trash" className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50">
+          <Link href="/trash" className="press-tint flex items-center gap-3 px-4 py-3.5 hover:bg-muted/50">
             <Trash2 className="size-[18px] text-muted-foreground" aria-hidden />
             <span className="flex grow flex-col gap-0.5">
               <span className="font-medium">Trash</span>

@@ -79,6 +79,128 @@
   }
 }
 
+/* Interaction polish. Things you tap press in slightly, as if they were real
+   buttons, and a few things ease in when they appear. Movement is switched off
+   for anyone who asks their device to reduce motion; colour fades stay. */
+@layer base {
+  button,
+  a,
+  [role="button"],
+  [role="option"] {
+    transition-property: color, background-color, border-color, box-shadow, opacity, scale;
+    transition-duration: 160ms;
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Buttons (and links marked .press) press in a little; wide things (sidebar links, cards)
+     press in less, so their edges don't visibly jump. */
+  :where(button, [role="button"], .press):not(:disabled, [aria-disabled="true"], .press-tint, .pressable):active {
+    scale: 0.96;
+    transition-duration: 60ms;
+  }
+  .pressable:active {
+    scale: 0.98;
+    transition-duration: 60ms;
+  }
+
+  /* Pop-up panels and menus grow out of the button that opened them. */
+  .motion-pop {
+    animation: pop-in 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  .motion-toast {
+    animation: toast-in 240ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  /* A board card lifts when you pick it up. */
+  .motion-lift {
+    animation: lift 160ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  /* Ticking a task: the circle gives a little bounce and the tick draws in. */
+  .motion-tick {
+    animation: tick-pop 280ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .motion-tick .tick-check {
+    stroke-dasharray: 1;
+    animation: tick-draw 260ms 60ms ease-out both;
+  }
+
+  /* Panels: a sheet slides up on phones, a card settles in on computers. */
+  dialog[open] {
+    animation: sheet-in 280ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  dialog[open]::backdrop {
+    animation: fade-in 200ms ease-out;
+  }
+  @media (min-width: 640px) {
+    dialog[open] {
+      animation: dialog-in 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+  }
+
+  /* Each new screen fades in. Opacity only, so nothing on it shifts. */
+  main > * {
+    animation: fade-in 180ms ease-out;
+  }
+}
+
+/* Wide rows show a tap by shading instead of shrinking. */
+.press-tint:active {
+  background-color: var(--muted);
+  transition-duration: 60ms;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+    scale: 0.97;
+  }
+}
+@keyframes lift {
+  from {
+    scale: 1;
+    rotate: 0deg;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  }
+}
+@keyframes tick-pop {
+  40% {
+    scale: 0.82;
+  }
+}
+@keyframes tick-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes sheet-in {
+  from {
+    translate: 0 100%;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+    translate: 0 8px;
+  }
+}
+
 /* The note editor's text. Kept close to the rest of the app: calm, readable,
    a little roomier than lists. */
 .note-body {

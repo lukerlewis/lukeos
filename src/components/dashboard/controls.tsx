@@ -122,7 +122,7 @@ function Filters({ count, children }: { count: number; children: React.ReactNode
         <ChevronDown className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
-        <div className="absolute right-0 z-30 mt-2 sm:right-auto sm:left-0 flex w-max flex-col gap-4 rounded-xl border bg-card p-4 shadow-lg">{children}</div>
+        <div className="motion-pop absolute right-0 z-30 mt-2 origin-top-right sm:right-auto sm:left-0 sm:origin-top-left flex w-max flex-col gap-4 rounded-xl border bg-card p-4 shadow-lg">{children}</div>
       )}
     </div>
   );

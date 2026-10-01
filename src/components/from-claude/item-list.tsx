@@ -16,7 +16,7 @@ export function ClaudeItemList({ items, when }: { items: ClaudeItem[]; when: Rec
     <ul>
       {items.map((item) => {
         const body = <ItemBody item={item} when={when[item.id]} />;
-        const row = "flex w-full items-start gap-3 px-4 py-3 hover:bg-muted/50";
+        const row = "press-tint flex w-full items-start gap-3 px-4 py-3 hover:bg-muted/50";
         return (
           <li key={`${item.type}-${item.id}`} className="border-b last:border-b-0">
             {item.type === "task" ? (

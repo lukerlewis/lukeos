@@ -16,12 +16,12 @@ export default async function ProjectsPage() {
   return (
     <Page title="Projects" actions={<span className="hidden md:block"><NewProjectButton /></span>}>
       <Card className="md:hidden">
-        <Link href="/tasks" className="flex min-h-14 items-center gap-3 px-4 py-3">
+        <Link href="/tasks" className="press-tint flex min-h-14 items-center gap-3 px-4 py-3">
           <CheckSquare className="size-[18px] text-muted-foreground" aria-hidden />
           <span className="grow text-[15px] font-medium">All tasks</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
-        <Link href="/agents" className="flex min-h-14 items-center gap-3 border-t px-4 py-3">
+        <Link href="/agents" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
           <Bot className="size-[18px] text-muted-foreground" aria-hidden />
           <span className="grow text-[15px] font-medium">Agents</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
@@ -34,7 +34,7 @@ export default async function ProjectsPage() {
           <ul>
             {projects.map((p) => (
               <li key={p.id} className="border-b last:border-b-0">
-                <Link href={`/projects/${p.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-muted/50">
+                <Link href={`/projects/${p.id}`} className="press-tint flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-muted/50">
                   <span className="size-3 shrink-0 rounded-[4px]" style={{ background: colorHex(p.color) }} aria-hidden />
                   <span className="grow truncate text-[15px] font-medium md:text-sm">{p.name}</span>
                   <ClaudeBadge madeBy={p.madeBy} />

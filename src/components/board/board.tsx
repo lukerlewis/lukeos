@@ -21,13 +21,14 @@ import { useRouter } from "next/navigation";
 import { useId, useOptimistic, useState, useTransition } from "react";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import { StatusIcon } from "@/components/tasks/status-circle";
+import { TICK_MS } from "@/components/tasks/task-list";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import type { Task } from "@/core/tasks";
 import { changesForMove, columnOf, columnsFor, compareTasks, type BoardView, type Column, type ColumnId } from "@/lib/board";
 import { friendlyDay } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
 import { effortLabel, priorityLabel, repeatLabel, type Status } from "@/lib/task-fields";
-import { cn } from "@/lib/utils";
+import { cn, pause } from "@/lib/utils";
 
 type Change = { id: string; changes: Partial<Pick<Task, "dueDate" | "status">> };
 
@@ -105,7 +106,10 @@ export function Board({
 
   function cycle(task: Task) {
     const status = nextStatus[task.status];
-    save({ id: task.id, changes: { status } }, () => op("update_task", { id: task.id, status }));
+    // The pause lets the tick play before a filtered board moves the card away.
+    save({ id: task.id, changes: { status } }, () =>
+      Promise.all([op("update_task", { id: task.id, status }), pause(TICK_MS)]),
+    );
   }
 
   function addTo(column: Column) {
@@ -160,7 +164,7 @@ export function Board({
         })}
       </div>
       <DragOverlay dropAnimation={null}>
-        {dragging && <CardBody task={dragging} today={today} showProject={showProject} className="rotate-1 shadow-lg" />}
+        {dragging && <CardBody task={dragging} today={today} showProject={showProject} className="motion-lift scale-[1.03] rotate-1 shadow-lg" />}
       </DragOverlay>
     </DndContext>
   );
@@ -268,6 +272,8 @@ function CardBody({
   showProject: boolean;
   onCycle?: () => void;
 } & React.ComponentProps<"div">) {
+  // Counts taps on the circle, so the tick animates afresh each time.
+  const [taps, setTaps] = useState(0);
   const done = task.status === "done";
   const due = task.dueDate;
   const late = !done && due !== null && due < today;
@@ -286,7 +292,7 @@ function CardBody({
     <div
       {...rest}
       className={cn(
-        "flex cursor-grab touch-manipulation flex-col gap-2 rounded-[10px] border bg-card p-3 text-left shadow-xs select-none [-webkit-touch-callout:none] active:cursor-grabbing",
+        "pressable flex cursor-grab touch-manipulation flex-col gap-2 rounded-[10px] border bg-card p-3 text-left shadow-xs select-none [-webkit-touch-callout:none] active:cursor-grabbing",
         done && "opacity-60",
         className,
       )}
@@ -296,13 +302,14 @@ function CardBody({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            setTaps((n) => n + 1);
             onCycle?.();
           }}
           onKeyDown={(e) => e.stopPropagation()}
           aria-label={`"${task.title}" is ${task.status === "todo" ? "to do" : task.status}. Tap to move it along.`}
           className="-m-2 flex size-9 shrink-0 items-center justify-center"
         >
-          <StatusIcon status={task.status} className="size-[18px]" />
+          <StatusIcon key={taps} status={task.status} className={cn("size-[18px]", taps > 0 && "motion-tick")} />
         </button>
         <span className={cn("min-w-0 grow pt-px font-medium break-words", done && "text-muted-foreground line-through")}>
           {task.title}
