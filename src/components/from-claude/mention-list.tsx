@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CheckSquare, FileText, LayoutDashboard, MessageSquare, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import { Check, CheckSquare, FileText, LayoutDashboard, MessageSquare, RotateCcw, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
@@ -82,12 +82,10 @@ function Row({ mention: m, when }: { mention: Mention; when: string }) {
     }
   }
 
-  const Icon =
-    m.where.type === "task" ? CheckSquare : m.where.type === "comment" ? MessageSquare : m.where.type === "request" ? LayoutDashboard : FileText;
-  const place =
-    m.where.type === "request"
-      ? { label: "Left from your dashboard", href: "/" }
-      : m.where.type === "comment" && m.where.on
+  const Icon = m.where.type === "task" ? CheckSquare : m.where.type === "comment" ? MessageSquare : m.where.scratchPad ? LayoutDashboard : FileText;
+  const place = m.where.scratchPad
+    ? { label: "Scratch pad", href: "/" }
+    : m.where.type === "comment" && m.where.on
       ? { label: `Comment on ${m.where.on.title || "Untitled"}`, href: `/${m.where.on.type}s/${m.where.on.id}` }
       : m.where.type === "note"
         ? { label: m.where.title || "Untitled note", href: `/notes/${m.where.id}` }
@@ -121,27 +119,6 @@ function Row({ mention: m, when }: { mention: Mention; when: string }) {
         <span>{when}</span>
         {m.removed && <span>Tag since removed</span>}
         <span className="grow" />
-        {m.where.type === "request" && !done && (
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Delete request"
-            title="Delete request"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await op("delete_request", { id: m.id });
-                router.refresh();
-              } catch (err) {
-                alert((err as Error).message);
-                setBusy(false);
-              }
-            }}
-          >
-            <Trash2 className="size-3.5" aria-hidden />
-          </Button>
-        )}
         <Button variant="ghost" size="sm" className="-mr-2" disabled={busy} onClick={() => setDone(!done)}>
           {done ? <RotateCcw className="size-3.5" aria-hidden /> : <Check className="size-3.5" aria-hidden />}
           {done ? "Reopen" : "Mark done"}

@@ -25,7 +25,8 @@ async function liveTitles(table: typeof tasks | typeof notes | typeof artifacts,
   const rows = await db
     .select({ id: table.id, title: table.title })
     .from(table)
-    .where(and(inArray(table.id, list), isNull(table.deletedAt)));
+    // The dashboard's scratch pad isn't changed in bulk.
+    .where(and(inArray(table.id, list), isNull(table.deletedAt), table === notes ? eq(notes.kind, "note") : undefined));
   if (rows.length === 0) throw new OperationError(`None of those ${table === tasks ? "tasks" : table === notes ? "notes" : "artifacts"} exist, or they're in Trash.`, 404);
   return rows;
 }

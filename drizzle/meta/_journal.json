@@ -57,6 +57,13 @@
       "when": 1790804086944,
       "tag": "0007_claude_mentions",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790814978718,
+      "tag": "0008_scratch_pad",
+      "breakpoints": true
     }
   ]
 }

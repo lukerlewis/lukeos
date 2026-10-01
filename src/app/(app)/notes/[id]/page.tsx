@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Comments } from "@/components/comments/comments";
+import { DoneTags } from "@/components/notes/done-tags";
 import { HtmlNote } from "@/components/notes/html-note";
 import { NoteEditor } from "@/components/notes/note-editor";
 import { OperationError } from "@/core/define";
@@ -37,18 +38,15 @@ export default async function NotePage({ params, searchParams }: PageProps<"/not
     getTimeZone(),
     doneMentionIds("note", id),
   ]);
+  // The scratch pad lives on the dashboard.
+  if (note.scratchPad) redirect("/");
   const back = note.project
     ? { href: `/projects/${note.project.id}?view=notes`, label: note.project.name }
     : { href: "/notes", label: "Notes" };
 
   return (
     <div className="flex min-w-0 grow flex-col">
-      {done.length > 0 && (
-        // @claude tags Claude has dealt with show green with a tick.
-        <style>{`${done.map((d) => `.note-body a[href="/claude/${d}"]`).join(",")}{background:color-mix(in oklab,var(--done) 14%,transparent);color:var(--done)}${done
-          .map((d) => `.note-body a[href="/claude/${d}"]::after`)
-          .join(",")}{content:" ✓"}`}</style>
-      )}
+      <DoneTags ids={done} />
       <header className="hidden h-14 shrink-0 items-center gap-2 border-b px-6 md:flex">
         <Link href={back.href} className="inline-flex items-center text-muted-foreground hover:text-foreground">
           <ChevronLeft className="size-4" aria-hidden />

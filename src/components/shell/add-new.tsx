@@ -1,21 +1,19 @@
 "use client";
 
-import { CheckSquare, ChevronDown, FilePlus, FolderPlus, Plus, Sparkles, X } from "lucide-react";
+import { CheckSquare, ChevronDown, FilePlus, FolderPlus, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AskClaudeForm } from "@/components/from-claude/for-claude";
 import { ProjectDialog } from "@/components/projects/project-dialog";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import { Button } from "@/components/ui/button";
-import { Dialog } from "@/components/ui/dialog";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
-type Open = null | "menu" | "request" | "project";
+type Open = null | "menu" | "project";
 
 /**
  * "Add new": one button that opens a short menu of what to make (a task, a
- * note, a request for Claude, a project). In the top bar on computers, and as
+ * note or a project). In the top bar on computers, and as
  * the round "+" on phones.
  */
 export function AddNew({ variant }: { variant: "header" | "fab" }) {
@@ -50,7 +48,6 @@ export function AddNew({ variant }: { variant: "header" | "fab" }) {
         }
       },
     },
-    { label: "Request for Claude", icon: Sparkles, run: () => setOpen("request") },
     { label: "Project", icon: FolderPlus, run: () => setOpen("project") },
   ];
 
@@ -100,19 +97,6 @@ export function AddNew({ variant }: { variant: "header" | "fab" }) {
         </div>
       )}
 
-      {open === "request" && (
-        <Dialog label="Request for Claude" onClose={() => setOpen(null)}>
-          <div className="flex flex-col gap-3 px-5 py-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Request for Claude</h2>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(null)} aria-label="Close" className="-mr-2">
-                <X className="size-5" aria-hidden />
-              </Button>
-            </div>
-            <AskClaudeForm autoFocus onDone={() => setOpen(null)} />
-          </div>
-        </Dialog>
-      )}
       {open === "project" && <ProjectDialog onClose={() => setOpen(null)} />}
     </div>
   );

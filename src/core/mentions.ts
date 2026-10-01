@@ -7,8 +7,7 @@ import { defineOperation, OperationError, type Actor } from "./define";
 
 const { mentions } = schema;
 
-/** Where Luke wrote @claude. "request" is one he left on its own, from the dashboard. */
-export const mentionTargets = ["note", "task", "comment", "request"] as const;
+export const mentionTargets = ["note", "task", "comment"] as const;
 export type MentionTarget = (typeof mentionTargets)[number];
 
 /** One @claude request, as Claude and the Agents section see it. */
@@ -22,6 +21,8 @@ export type Mention = {
     id: string;
     title: string;
     on: { type: "note" | "artifact"; id: string; title: string } | null;
+    /** Written in the scratch pad on Luke's dashboard. */
+    scratchPad: boolean;
   };
   createdAt: Date;
   status: "open" | "done";
@@ -102,6 +103,7 @@ const where = {
     (select n.title from notes n where ${mentions.targetType} = 'note' and n.id = ${mentions.targetId}),
     (select t.title from tasks t where ${mentions.targetType} = 'task' and t.id = ${mentions.targetId}),
     (select left(c.body, 80) from comments c where ${mentions.targetType} = 'comment' and c.id = ${mentions.targetId}), '')`,
+  scratchPad: sql<boolean>`exists (select 1 from notes n where ${mentions.targetType} = 'note' and n.id = ${mentions.targetId} and n.kind = 'scratchpad')`,
   onType: sql<string | null>`(select c.target_type from comments c where ${mentions.targetType} = 'comment' and c.id = ${mentions.targetId})`,
   onId: sql<string | null>`(select c.target_id from comments c where ${mentions.targetType} = 'comment' and c.id = ${mentions.targetId})`,
   onTitle: sql<string | null>`(select coalesce(n.title, a.title) from comments c
@@ -110,8 +112,7 @@ const where = {
     where ${mentions.targetType} = 'comment' and c.id = ${mentions.targetId})`,
 };
 const live = sql`(
-  ${mentions.targetType} = 'request'
-  or (${mentions.targetType} = 'note' and exists (select 1 from notes n where n.id = ${mentions.targetId} and n.deleted_at is null))
+  (${mentions.targetType} = 'note' and exists (select 1 from notes n where n.id = ${mentions.targetId} and n.deleted_at is null))
   or (${mentions.targetType} = 'task' and exists (select 1 from tasks t where t.id = ${mentions.targetId} and t.deleted_at is null))
   or (${mentions.targetType} = 'comment' and exists (select 1 from comments c
     left join notes n on c.target_type = 'note' and n.id = c.target_id
@@ -129,7 +130,7 @@ export async function listMentions(filter: { open?: boolean; ids?: string[]; lim
     .where(and(...conditions))
     .orderBy(desc(mentions.createdAt))
     .limit(filter.limit ?? 100);
-  return rows.map(({ mention: m, title, onType, onId, onTitle }) => ({
+  return rows.map(({ mention: m, title, scratchPad, onType, onId, onTitle }) => ({
     id: m.id,
     text: m.context,
     where: {
@@ -137,6 +138,7 @@ export async function listMentions(filter: { open?: boolean; ids?: string[]; lim
       id: m.targetId,
       title,
       on: onType && onId ? { type: onType as "note" | "artifact", id: onId, title: onTitle ?? "" } : null,
+      scratchPad,
     },
     createdAt: m.createdAt,
     status: m.resolvedAt ? "done" : "open",
@@ -160,38 +162,12 @@ export const mentionOperations = {
   list_mentions: defineOperation({
     name: "list_mentions",
     description:
-      'Luke\'s @claude requests: every place he wrote "@claude" (in a note, a task or a comment), plus requests and notes he left for you on their own from his dashboard (where.type "request"), newest first. Each has the line he wrote (text), where it is (where; use get_note, get_task or the comment\'s note or artifact to read around it), when, and whether it\'s been dealt with (status "open" or "done", with the reply). open: true shows only what\'s waiting for you.',
+      'Luke\'s @claude requests: every place he wrote "@claude" (in a note, a task, a comment, or the scratch pad on his dashboard), newest first. Each has the line he wrote (text), where it is (where; use get_note, get_task or the comment\'s note or artifact to read around it), when, and whether it\'s been dealt with (status "open" or "done", with the reply). open: true shows only what\'s waiting for you.',
     input: z.object({
       open: z.boolean().optional().describe("Only requests not yet dealt with."),
       limit: z.number().int().min(1).max(200).optional(),
     }),
     run: async ({ open, limit }) => listMentions({ open, limit }),
-  }),
-
-  ask_claude: defineOperation({
-    name: "ask_claude",
-    description:
-      "Leave Claude a request or a note on its own, as Luke does from his dashboard. It shows in list_mentions like an @claude anywhere else.",
-    input: z.object({ text: z.string().trim().min(1).max(5000).describe("What Luke is asking or telling Claude.") }),
-    run: async ({ text }) => {
-      const id = crypto.randomUUID();
-      await db.insert(mentions).values({ id, targetType: "request", targetId: id, context: text, anchored: true });
-      return (await listMentions({ ids: [id], limit: 1 }))[0];
-    },
-  }),
-
-  delete_request: defineOperation({
-    name: "delete_request",
-    description: "Delete a request Luke left on its own (from ask_claude). Only when Luke asks.",
-    input: z.object({ id: z.uuid().describe("The request's id.") }),
-    run: async ({ id }) => {
-      const deleted = await db
-        .delete(mentions)
-        .where(and(eq(mentions.id, id), eq(mentions.targetType, "request")))
-        .returning({ id: mentions.id, text: mentions.context });
-      if (!deleted.length) throw new OperationError("That request doesn't exist.", 404);
-      return { deleted: id, text: deleted[0].text };
-    },
   }),
 
   resolve_mention: defineOperation({

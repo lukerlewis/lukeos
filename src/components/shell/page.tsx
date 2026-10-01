@@ -22,7 +22,7 @@ export function Page({
   actions?: React.ReactNode;
   /** Show the New task buttons, pre-filled with these (false hides them). */
   newTask?: false | { projectId?: string | null; dueDate?: string | null };
-  /** Show "Add new" (task, note, request for Claude, project) instead of the New task buttons. */
+  /** Show "Add new" (task, note, project) instead of the New task buttons. */
   addNew?: boolean;
   children: React.ReactNode;
 }) {

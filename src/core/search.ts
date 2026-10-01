@@ -92,7 +92,7 @@ export async function search(query: string, filter: { type?: SearchResult["type"
           .select({ note: notes, project: projects })
           .from(notes)
           .leftJoin(projects, eq(projects.id, notes.projectId))
-          .where(and(isNull(notes.deletedAt), liveProject, matchesAll(
+          .where(and(isNull(notes.deletedAt), eq(notes.kind, "note"), liveProject, matchesAll(
                 words,
                 sql`${notes.title}`,
                 // A saved web page is searched by its words, not its code.

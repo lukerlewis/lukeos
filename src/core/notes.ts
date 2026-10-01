@@ -26,7 +26,11 @@ export type NoteSummary = {
   updatedAt: Date;
 };
 
-export type Note = NoteSummary & { content: string };
+export type Note = NoteSummary & {
+  content: string;
+  /** The scratch pad on the dashboard, rather than a note in Notes. */
+  scratchPad: boolean;
+};
 
 type ProjectRow = typeof projects.$inferSelect;
 
@@ -71,7 +75,8 @@ export async function listNotes(
     limit?: number;
   } = {},
 ): Promise<NoteSummary[]> {
-  const where: (SQL | undefined)[] = [live];
+  // The scratch pad lives on the dashboard, not in Notes.
+  const where: (SQL | undefined)[] = [live, eq(notes.kind, "note")];
   if (filter.projectId === null) where.push(isNull(notes.projectId));
   else if (filter.projectId) where.push(eq(notes.projectId, filter.projectId));
   if (filter.madeBy) where.push(eq(notes.createdByKind, filter.madeBy === "claude" ? "agent" : "user"));
@@ -129,11 +134,24 @@ export async function getNote(id: string): Promise<Note> {
     format: note.format as NoteFormat,
     excerpt: excerptOf(note.content, note.format),
     content: note.content,
+    scratchPad: note.kind === "scratchpad",
     project: projectOf(project),
     madeBy: madeByOf(note),
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
   };
+}
+
+/** The dashboard's scratch pad, made the first time it's needed. */
+export async function getScratchPad(): Promise<Note> {
+  const [row] = await db
+    .select({ id: notes.id })
+    .from(notes)
+    .where(and(eq(notes.kind, "scratchpad"), isNull(notes.deletedAt)))
+    .limit(1);
+  if (row) return getNote(row.id);
+  const [created] = await db.insert(notes).values({ title: "Scratch pad", kind: "scratchpad" }).returning({ id: notes.id });
+  return getNote(created.id);
 }
 
 // Photos: kept small by the app (it shrinks them before saving), and capped
@@ -241,7 +259,7 @@ export const noteOperations = {
     description: "Move a note to Trash, where it's kept for 30 days.",
     input: z.object({ id }),
     run: async ({ id }) => {
-      await getNote(id);
+      if ((await getNote(id)).scratchPad) throw new OperationError("That's Luke's scratch pad, which can't be deleted. Change its text instead.");
       await db.update(notes).set({ deletedAt: new Date() }).where(eq(notes.id, id));
       return { deleted: id };
     },

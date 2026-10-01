@@ -37,7 +37,7 @@ type Change = { title?: string; content?: string; projectId?: string | null };
  * Saves changes a moment after typing stops, one save at a time, and makes
  * sure nothing is lost when Luke leaves the page or switches apps.
  */
-function useAutosave(noteId: string) {
+export function useAutosave(noteId: string) {
   const [state, setState] = useState<SaveState>("saved");
   const pending = useRef<Change>({});
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);

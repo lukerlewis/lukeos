@@ -86,6 +86,8 @@ export const notes = pgTable(
     title: text("title").notNull().default(""),
     content: text("content").notNull().default(""),
     format: text("format").notNull().default("markdown"), // "markdown" | "html"
+    /** "note", or "scratchpad" for the one scratch pad on the dashboard, which stays out of Notes. */
+    kind: text("kind").notNull().default("note"),
     ...madeBy,
   },
   (t) => [index("notes_project_idx").on(t.projectId), index("notes_updated_idx").on(t.updatedAt)],
