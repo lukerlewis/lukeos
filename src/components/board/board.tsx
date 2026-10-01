@@ -33,7 +33,6 @@ import { cn, pause } from "@/lib/utils";
 type Change = { id: string; changes: Partial<Pick<Task, "dueDate" | "status">> };
 
 // Tapping a card's circle steps it along: To do, Doing, Done, and back to To do.
-const nextStatus: Record<Status, Status> = { todo: "doing", doing: "done", done: "todo" };
 
 // The column under the pointer or finger wins; failing that, the one the card overlaps most.
 const findColumn: CollisionDetection = (args) => {
@@ -104,8 +103,9 @@ export function Board({
     save({ id: task.id, changes }, () => op("move_task", { id: task.id, to }));
   }
 
-  function cycle(task: Task) {
-    const status = nextStatus[task.status];
+  // Tapping the circle ticks a task off, or un-ticks a done one.
+  function toggle(task: Task) {
+    const status: Status = task.status === "done" ? "todo" : "done";
     // The pause lets the tick play before a filtered board moves the card away.
     save({ id: task.id, changes: { status } }, () =>
       Promise.all([op("update_task", { id: task.id, status }), pause(TICK_MS)]),
@@ -157,7 +157,7 @@ export function Board({
           return (
             <BoardColumn key={column.id} column={column} view={view} count={cards.length} onAdd={() => addTo(column)}>
               {cards.map((t) => (
-                <DraggableCard key={t.id} task={t} today={today} showProject={showProject} onCycle={() => cycle(t)} />
+                <DraggableCard key={t.id} task={t} today={today} showProject={showProject} onCycle={() => toggle(t)} />
               ))}
             </BoardColumn>
           );
@@ -306,7 +306,7 @@ function CardBody({
             onCycle?.();
           }}
           onKeyDown={(e) => e.stopPropagation()}
-          aria-label={`"${task.title}" is ${task.status === "todo" ? "to do" : task.status}. Tap to move it along.`}
+          aria-label={task.status === "done" ? `Mark "${task.title}" as not done` : `Mark "${task.title}" as done`}
           className="-m-2 flex size-10 shrink-0 items-center justify-center md:size-9"
         >
           <StatusIcon key={taps} status={task.status} className={cn("size-[22px] md:size-[18px]", taps > 0 && "motion-tick")} />
