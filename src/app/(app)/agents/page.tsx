@@ -13,6 +13,9 @@ import { claudeRoutines, listFromClaude } from "@/core/from-claude";
 import { listMentions } from "@/core/mentions";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
+import { listSops } from "@/core/sops";
+import { NewSopButton } from "@/components/sops/new-sop-button";
+import { SopList } from "@/components/sops/sop-list";
 
 export const metadata: Metadata = { title: "Agents · LukeOS" };
 
@@ -24,6 +27,7 @@ const types = [
 const views = [
   { value: undefined, label: "Made by Claude" },
   { value: "claude", label: "@claude" },
+  { value: "sops", label: "SOPs" },
   { value: "activity", label: "Activity log" },
 ] as const;
 
@@ -38,6 +42,7 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
   );
   if (query.view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
   if (query.view === "claude") return <MentionsPage viewSwitch={viewSwitch("claude")} />;
+  if (query.view === "sops") return <SopsPage viewSwitch={viewSwitch("sops")} />;
 
   const type: "task" | "artifact" = query.type === "task" ? "task" : "artifact";
   const routine = typeof query.routine === "string" && query.routine ? query.routine : undefined;
@@ -133,6 +138,34 @@ async function MentionsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
           wrote it. Claude picks them up the next time it runs, and marks each one done with a note of what it did.
         </p>
         <MentionList mentions={mentions} when={when} />
+      </div>
+    </Page>
+  );
+}
+
+/** Luke's SOPs: instructions Claude checks before doing what he asks. */
+async function SopsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
+  const [sops, timeZone] = await Promise.all([listSops(), getTimeZone()]);
+  const when = Object.fromEntries(sops.map((s) => [s.id, editedLabel(s.updatedAt, timeZone)]));
+
+  return (
+    <Page title="Agents" newTask={false} actions={<NewSopButton />}>
+      <div className="flex max-w-3xl flex-col gap-4">
+        {viewSwitch}
+        <p className="text-[13px] text-muted-foreground">
+          Your instructions for how Claude should do things, like skills. Claude always sees each SOP&apos;s title and
+          description, and reads the full instructions only when a request fits, so you can keep as many as you like without
+          slowing it down. A clear description of when to use it is what makes an SOP get picked up.
+        </p>
+        <Card>
+          {sops.length === 0 ? (
+            <EmptyState>
+              No SOPs yet. Tap New SOP to write one, or ask Claude to save how it did something as an SOP.
+            </EmptyState>
+          ) : (
+            <SopList sops={sops} when={when} />
+          )}
+        </Card>
       </div>
     </Page>
   );

@@ -198,6 +198,25 @@ export const mentions = pgTable(
   (t) => [index("mentions_target_idx").on(t.targetType, t.targetId)],
 );
 
+/**
+ * An SOP: written instructions telling Claude how Luke wants something done,
+ * like a skill. Only the title and description are shown to Claude up front;
+ * it reads the body when a request matches, which keeps every call cheap.
+ */
+export const sops = pgTable(
+  "sops",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull().default(""),
+    /** What it covers and when to use it. Claude always sees this, so it stays short. */
+    description: text("description").notNull().default(""),
+    /** The full instructions, in Markdown. */
+    body: text("body").notNull().default(""),
+    ...madeBy,
+  },
+  (t) => [index("sops_title_idx").on(t.title)],
+);
+
 /** A photo pasted into a note, kept in the database and shown at /api/images/<id>. */
 export const images = pgTable("images", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -275,7 +294,7 @@ export const activityLog = pgTable(
     routine: text("routine"),
     tool: text("tool").notNull(),
     summary: text("summary").notNull(),
-    itemType: text("item_type"), // "task" | "note" | "artifact" | "project", when it's about one thing
+    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop", when it's about one thing
     itemId: uuid("item_id"),
   },
   (t) => [index("activity_log_at_idx").on(t.at)],

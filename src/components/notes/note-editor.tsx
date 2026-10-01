@@ -31,13 +31,13 @@ import { ClaudeTag } from "./claude-tag";
 import { shrinkPhoto } from "./photos";
 
 type SaveState = "saved" | "saving" | "error";
-type Change = { title?: string; content?: string; projectId?: string | null };
+type Change = { title?: string; content?: string; projectId?: string | null; description?: string; body?: string };
 
 /**
  * Saves changes a moment after typing stops, one save at a time, and makes
  * sure nothing is lost when Luke leaves the page or switches apps.
  */
-export function useAutosave(noteId: string) {
+export function useAutosave(noteId: string, save: "update_note" | "update_sop" = "update_note") {
   const [state, setState] = useState<SaveState>("saved");
   const pending = useRef<Change>({});
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -51,7 +51,7 @@ export function useAutosave(noteId: string) {
         if (Object.keys(change).length === 0) return;
         pending.current = {};
         try {
-          await op("update_note", { id: noteId, ...change });
+          await op(save, { id: noteId, ...change });
           setState(Object.keys(pending.current).length ? "saving" : "saved");
         } catch {
           // Keep the unsaved change (newer edits win) and try again shortly.
@@ -63,7 +63,7 @@ export function useAutosave(noteId: string) {
       return running.current;
     };
     return run();
-  }, [noteId]);
+  }, [noteId, save]);
 
   const queue = useCallback(
     (change: Change, delay = 800) => {
@@ -288,7 +288,7 @@ function imageFiles(list: FileList | null | undefined) {
   return Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
 }
 
-function Toolbar({ editor, onPhoto, uploading }: { editor: Editor | null; onPhoto: () => void; uploading: boolean }) {
+export function Toolbar({ editor, onPhoto, uploading }: { editor: Editor | null; onPhoto?: () => void; uploading?: boolean }) {
   const active = useEditorState({
     editor,
     selector: ({ editor }) =>
@@ -348,8 +348,8 @@ function Toolbar({ editor, onPhoto, uploading }: { editor: Editor | null; onPhot
           <Icon className="size-[18px] md:size-4" aria-hidden />
         </button>
       ))}
-      <span className="mx-0.5 my-2 w-px shrink-0 bg-border" aria-hidden />
-      <button
+      {onPhoto && <span className="mx-0.5 my-2 w-px shrink-0 bg-border" aria-hidden />}
+      {onPhoto && <button
         type="button"
         title="Add a photo"
         aria-label="Add a photo"
@@ -359,7 +359,7 @@ function Toolbar({ editor, onPhoto, uploading }: { editor: Editor | null; onPhot
         className="flex size-9 shrink-0 items-center justify-center rounded-lg text-subtle-foreground hover:bg-muted md:size-8"
       >
         {uploading ? <Loader2 className="size-[18px] animate-spin md:size-4" aria-hidden /> : <ImagePlus className="size-[18px] md:size-4" aria-hidden />}
-      </button>
+      </button>}
     </div>
   );
 }

@@ -88,13 +88,17 @@ function undoFor(
       return { label: `adding task ${quote(r.title)}`, run: async () => void (await send("delete_task", { id: r.id })) };
     case "create_note":
       return { label: `adding note ${quote(r.title)}`, run: async () => void (await send("delete_note", { id: r.id })) };
+    case "create_sop":
+      return { label: `adding SOP ${quote(r.title)}`, run: async () => void (await send("delete_sop", { id: r.id })) };
     case "create_project":
       return { label: `adding project ${quote(r.name)}`, run: async () => void (await send("delete_project", { id: r.id })) };
     case "copy_artifact_to_note":
       return { label: "copying to a note", run: async () => void (await send("delete_note", { id: r.id })) };
     case "restore_from_trash": {
-      const { type, id } = input as { type: "task" | "note" | "artifact" | "project"; id: string };
-      const del = ({ task: "delete_task", note: "delete_note", artifact: "delete_artifact", project: "delete_project" } as const)[type];
+      const { type, id } = input as { type: "task" | "note" | "artifact" | "project" | "sop"; id: string };
+      const del = (
+        { task: "delete_task", note: "delete_note", artifact: "delete_artifact", project: "delete_project", sop: "delete_sop" } as const
+      )[type];
       return { label: `bringing back a ${type}`, run: async () => void (await send(del, { id })) };
     }
     case "add_comment":

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { isLookup, logActivity, titleBefore } from "./activity";
 import type { Actor } from "./define";
 import { operations, runOperation } from "./operations";
+import { sopIndex } from "./sops";
 
 /**
  * The Claude connector speaks MCP (JSON-RPC over HTTP). Its tools are the
@@ -13,6 +14,7 @@ import { operations, runOperation } from "./operations";
 const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 
 const INSTRUCTIONS = `LukeOS is Luke's personal app for projects, tasks, notes and the artifacts agents make for him.
+- Luke keeps SOPs: his instructions for how to do particular things. Before you do anything he asks (an @claude request, or a request in chat), check whether an SOP's description fits it, and if one does, read it with get_sop and follow it. Read only the SOPs that fit. They're listed at the end of these instructions; list_sops has the latest list. Only create, change or delete an SOP when Luke asks.
 - Call get_today first to learn today's date in Luke's time zone and what's due. Due dates are plain days (YYYY-MM-DD); work out "Friday" or "next week" from that date.
 - Everything you create is labelled in the app as made by Claude. If you are running as a scheduled routine, pass the routine's name as "routine" so Luke can see which one did it.
 - Luke's home screen is his dashboard, with two tabs: Today (only tasks due today or late) and Board (every task in columns by when it's due: Today, Tomorrow, This week, Later). By default it hides Done tasks. get_dashboard shows it exactly as he sees it; get_board shows every column; move_task moves a task between columns just like dragging its card. Only use set_dashboard_view when Luke asks to change how it looks.
@@ -65,6 +67,17 @@ function serverVersion() {
   return `1.0.0+${fingerprint}`;
 }
 
+/** The instructions, plus the title and description of each SOP, so Claude knows what's there without a call. */
+async function instructionsWithSops() {
+  try {
+    const index = await sopIndex();
+    return index ? `${INSTRUCTIONS}\n\nLuke's SOPs (title: when to use it):\n${index}` : `${INSTRUCTIONS}\n\nLuke has no SOPs yet.`;
+  } catch (err) {
+    console.error("[mcp] couldn't list SOPs", err);
+    return INSTRUCTIONS;
+  }
+}
+
 type Message = { jsonrpc?: string; id?: string | number | null; method?: string; params?: Record<string, unknown> };
 
 const result = (id: Message["id"], value: unknown) => ({ jsonrpc: "2.0", id: id ?? null, result: value });
@@ -96,7 +109,7 @@ async function handleOne(raw: unknown, actor: Actor & { kind: "agent" }) {
         protocolVersion: SUPPORTED_VERSIONS.includes(asked) ? asked : SUPPORTED_VERSIONS[0],
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "lukeos", title: "LukeOS", version: serverVersion() },
-        instructions: INSTRUCTIONS,
+        instructions: await instructionsWithSops(),
       });
     }
     case "ping":

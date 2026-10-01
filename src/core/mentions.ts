@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { findMentions } from "@/lib/mentions";
+import { listSops } from "./sops";
 import { defineOperation, OperationError, type Actor } from "./define";
 
 const { mentions } = schema;
@@ -162,12 +163,17 @@ export const mentionOperations = {
   list_mentions: defineOperation({
     name: "list_mentions",
     description:
-      'Luke\'s @claude requests: every place he wrote "@claude" (in a note, a task, a comment, or the scratch pad on his dashboard), newest first. Each has the line he wrote (text), where it is (where; use get_note, get_task or the comment\'s note or artifact to read around it), when, and whether it\'s been dealt with (status "open" or "done", with the reply). open: true shows only what\'s waiting for you.',
+      'Luke\'s @claude requests: every place he wrote "@claude" (in a note, a task, a comment, or the scratch pad on his dashboard), newest first. Each has the line he wrote (text), where it is (where; use get_note, get_task or the comment\'s note or artifact to read around it), when, and whether it\'s been dealt with (status "open" or "done", with the reply). open: true shows only what\'s waiting for you, along with the title and description of each of Luke\'s SOPs (sops), so you can get_sop any that fit a request before doing it.',
     input: z.object({
       open: z.boolean().optional().describe("Only requests not yet dealt with."),
       limit: z.number().int().min(1).max(200).optional(),
     }),
-    run: async ({ open, limit }) => listMentions({ open, limit }),
+    run: async ({ open, limit }) => {
+      const requests = await listMentions({ open, limit });
+      if (!open) return { requests };
+      const sops = requests.length ? (await listSops()).map((s) => ({ title: s.title, description: s.description })) : [];
+      return { requests, sops };
+    },
   }),
 
   resolve_mention: defineOperation({

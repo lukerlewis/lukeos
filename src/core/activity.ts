@@ -5,9 +5,9 @@ import { db, schema } from "@/db";
 import { statusLabel, type Status } from "@/lib/task-fields";
 import { defineOperation, type Actor } from "./define";
 
-const { activityLog, tasks, notes, artifacts, projects } = schema;
+const { activityLog, tasks, notes, artifacts, projects, sops } = schema;
 
-type ItemType = "task" | "note" | "artifact" | "project";
+type ItemType = "task" | "note" | "artifact" | "project" | "sop";
 
 /** One line of the activity log. */
 export type ActivityEntry = {
@@ -43,6 +43,8 @@ const fieldLabel: Record<string, string> = {
   content: "text",
   name: "name",
   color: "colour",
+  description: "description",
+  body: "instructions",
 };
 
 const quote = (title: string | null | undefined) => {
@@ -62,7 +64,7 @@ async function titleOf(type: ItemType, id: unknown) {
       const [row] = await db.select({ t: projects.name }).from(projects).where(eq(projects.id, id)).limit(1);
       return row?.t ?? null;
     }
-    const table = type === "task" ? tasks : type === "note" ? notes : artifacts;
+    const table = type === "task" ? tasks : type === "note" ? notes : type === "sop" ? sops : artifacts;
     const [row] = await db.select({ t: table.title }).from(table).where(eq(table.id, id)).limit(1);
     return row?.t ?? null;
   } catch {
@@ -84,6 +86,8 @@ export async function titleBefore(tool: string, input: Record<string, unknown>) 
       return titleOf("project", input.id);
     case "delete_artifact":
       return titleOf("artifact", input.id);
+    case "delete_sop":
+      return titleOf("sop", input.id);
     case "restore_from_trash":
     case "delete_forever":
       return titleOf(input.type as ItemType, input.id);
@@ -166,6 +170,14 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     }
     case "delete_artifact":
       return { summary: `Moved artifact ${quote(before)} to Trash`, item: { type: "artifact", id: String(input.id) } };
+    case "create_sop":
+      return { summary: `Added SOP ${quote(task.title)}`, item: { type: "sop", id: task.id } };
+    case "update_sop": {
+      const fields = changed(input);
+      return { summary: `Edited SOP ${quote(task.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`, item: { type: "sop", id: task.id } };
+    }
+    case "delete_sop":
+      return { summary: `Moved SOP ${quote(before)} to Trash`, item: { type: "sop", id: String(input.id) } };
     case "copy_artifact_to_note":
       return { summary: `Copied an artifact into note ${quote(task.title)}`, item: { type: "note", id: task.id } };
     case "add_comment":
@@ -202,13 +214,13 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
 
     case "restore_from_trash": {
       const type = input.type as ItemType;
-      return { summary: `Brought back ${type} ${quote(before)} from Trash`, item: { type, id: String(input.id) } };
+      return { summary: `Brought back ${type === "sop" ? "SOP" : type} ${quote(before)} from Trash`, item: { type, id: String(input.id) } };
     }
     case "delete_forever":
-      return { summary: `Deleted ${input.type} ${quote(before)} forever` };
+      return { summary: `Deleted ${input.type === "sop" ? "SOP" : input.type} ${quote(before)} forever` };
     case "empty_trash": {
       const c = (r.deletedForever ?? {}) as Record<string, number>;
-      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0);
+      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0);
       return { summary: `Emptied Trash (${n} ${n === 1 ? "item" : "items"})` };
     }
 
