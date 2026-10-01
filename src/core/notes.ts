@@ -21,6 +21,8 @@ export type NoteSummary = {
   /** The first line or two of text, for lists. */
   excerpt: string;
   project: { id: string; name: string; color: ProjectColor; hex: string } | null;
+  /** Pinned notes sit at the top of every list of notes. */
+  pinned: boolean;
   madeBy: ReturnType<typeof madeByOf>;
   createdAt: Date;
   updatedAt: Date;
@@ -96,6 +98,7 @@ export async function listNotes(
         createdByKind: notes.createdByKind,
         createdByName: notes.createdByName,
         createdByRoutine: notes.createdByRoutine,
+        pinnedAt: notes.pinnedAt,
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
       },
@@ -104,7 +107,8 @@ export async function listNotes(
     .from(notes)
     .leftJoin(projects, eq(projects.id, notes.projectId))
     .where(and(...where))
-    .orderBy(desc(notes.updatedAt))
+    // Pinned notes first (the most recently pinned on top), then the rest by when they were changed.
+    .orderBy(sql`${notes.pinnedAt} desc nulls last`, desc(notes.updatedAt))
     .limit(filter.limit ?? 200);
 
   return rows.map(({ note, project }) => ({
@@ -113,6 +117,7 @@ export async function listNotes(
     format: note.format as NoteFormat,
     excerpt: excerptOf(note.start, note.format),
     project: projectOf(project),
+    pinned: note.pinnedAt !== null,
     madeBy: madeByOf(note),
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
@@ -136,6 +141,7 @@ export async function getNote(id: string): Promise<Note> {
     content: note.content,
     scratchPad: note.kind === "scratchpad",
     project: projectOf(project),
+    pinned: note.pinnedAt !== null,
     madeBy: madeByOf(note),
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
@@ -173,7 +179,7 @@ export const noteOperations = {
   list_notes: defineOperation({
     name: "list_notes",
     description:
-      "List notes, most recently changed first, with a short excerpt of each (use get_note for the full text). Filter by project, by who made them, by routine, or search the title and text.",
+      "List notes: pinned ones first, then the most recently changed, with a short excerpt of each (use get_note for the full text). Filter by project, by who made them, by routine, or search the title and text.",
     input: z.object({
       projectId: z.uuid().nullable().optional().describe("Only this project's notes. null means notes with no project."),
       madeBy: z.enum(["luke", "claude"]).optional().describe("Only notes Luke made, or only ones Claude made."),
@@ -223,15 +229,16 @@ export const noteOperations = {
   update_note: defineOperation({
     name: "update_note",
     description:
-      "Change one of Luke's notes: its title, its whole text, or its project. Only when Luke explicitly asks you to change his note. To add to the end without rewriting it (a running log, say), use append instead of content. Fields left out stay as they are.",
+      "Change one of Luke's notes: its title, its whole text, its project, or whether it's pinned to the top of his notes. Only when Luke explicitly asks you to change his note. To add to the end without rewriting it (a running log, say), use append instead of content. Fields left out stay as they are.",
     input: z.object({
       id,
       title: title.optional(),
       content: content.optional(),
       append: z.string().max(200_000).optional().describe("Text to add to the end of the note, as a new paragraph."),
       projectId: projectId.optional(),
+      pinned: z.boolean().optional().describe("true pins the note to the top of Luke's notes; false unpins it."),
     }),
-    run: async ({ id, title, content, append, projectId }, { actor }) => {
+    run: async ({ id, title, content, append, projectId, pinned }, { actor }) => {
       const current = await getNote(id);
       if (projectId) await assertProject(projectId);
       let body = content;
@@ -239,15 +246,15 @@ export const noteOperations = {
         const base = (body ?? current.content).trimEnd();
         body = base ? `${base}\n\n${append.trim()}\n` : `${append.trim()}\n`;
       }
-      await db
-        .update(notes)
-        .set({
-          ...(title !== undefined && { title }),
-          ...(body !== undefined && { content: body }),
-          ...(projectId !== undefined && { projectId }),
-          updatedAt: new Date(),
-        })
-        .where(eq(notes.id, id));
+      const set = {
+        ...(title !== undefined && { title }),
+        ...(body !== undefined && { content: body }),
+        ...(projectId !== undefined && { projectId }),
+        ...(pinned !== undefined && pinned !== current.pinned && { pinnedAt: pinned ? new Date() : null }),
+        // Pinning isn't editing, so it doesn't change when the note was last edited.
+        ...((title !== undefined || body !== undefined || projectId !== undefined) && { updatedAt: new Date() }),
+      };
+      if (Object.keys(set).length) await db.update(notes).set(set).where(eq(notes.id, id));
       const note = await getNote(id);
       await syncMentions("note", id, [note.title, note.content], actor);
       return note;

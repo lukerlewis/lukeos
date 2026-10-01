@@ -143,9 +143,11 @@ function undoFor(
     case "update_notes": {
       const notes = before as Output<"get_note">[];
       return {
-        label: `moving ${plural(notes.length, "note")}`,
+        label: `changing ${plural(notes.length, "note")}`,
         run: async () =>
-          void (await Promise.all(notes.map((n) => send("update_note", { id: n.id, projectId: n.project?.id ?? null })))),
+          void (await Promise.all(
+            notes.map((n) => send("update_note", { id: n.id, projectId: n.project?.id ?? null, pinned: n.pinned })),
+          )),
       };
     }
     case "update_artifact": {

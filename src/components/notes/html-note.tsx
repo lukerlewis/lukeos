@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { Note } from "@/core/notes";
 import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
+import { PinButton } from "./pin-button";
 
 /**
  * A note that is a finished web page. It's shown exactly as it was
@@ -17,6 +18,17 @@ import { op } from "@/lib/ops-client";
 export function HtmlNote({ note, projects }: { note: Note; projects: { id: string; name: string }[] }) {
   const router = useRouter();
   const [projectId, setProjectId] = useState(note.project?.id ?? null);
+  const [pinned, setPinned] = useState(note.pinned);
+
+  async function pin(next: boolean) {
+    setPinned(next);
+    try {
+      await op("update_note", { id: note.id, pinned: next });
+    } catch (err) {
+      setPinned(!next);
+      alert((err as Error).message);
+    }
+  }
 
   async function move(next: string | null) {
     const previous = projectId;
@@ -65,6 +77,7 @@ export function HtmlNote({ note, projects }: { note: Note; projects: { id: strin
         </span>
         <span>Saved page, view only</span>
         <span className="grow" />
+        <PinButton pinned={pinned} onChange={pin} />
         <Button variant="danger" size="sm" onClick={remove} className="-mr-2">
           <Trash2 className="size-4" aria-hidden />
           Delete

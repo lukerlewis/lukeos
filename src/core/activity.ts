@@ -52,6 +52,7 @@ const fieldLabel: Record<string, string> = {
   dayOfMonth: "day of the month",
   sopId: "SOP",
   enabled: "on",
+  pinned: "pin",
 };
 
 const quote = (title: string | null | undefined) => {
@@ -159,7 +160,9 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       const summary =
         typeof input.append === "string" && input.append.trim() && fields.length === 0
           ? `Added to note ${quote(task.title)}`
-          : `Edited note ${quote(task.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`;
+          : fields.length === 1 && fields[0] === "pin"
+            ? `${input.pinned ? "Pinned" : "Unpinned"} note ${quote(task.title)}`
+            : `Edited note ${quote(task.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`;
       return { summary, item: { type: "note", id: task.id } };
     }
     case "delete_note":
@@ -287,7 +290,9 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
             ? out.project
               ? `Moved ${things} to ${out.project}`
               : `Took ${things} out of their project`
-            : fields.length === 1 && fields[0] === "status"
+            : fields.length === 1 && fields[0] === "pin"
+              ? `${input.pinned ? "Pinned" : "Unpinned"} ${things}`
+              : fields.length === 1 && fields[0] === "status"
               ? `Marked ${things} as ${statusLabel[input.status as Status] ?? input.status}`
               : `Edited ${things} (${fields.join(", ")})`;
       }

@@ -88,6 +88,8 @@ export const notes = pgTable(
     format: text("format").notNull().default("markdown"), // "markdown" | "html"
     /** "note", or "scratchpad" for the one scratch pad on the dashboard, which stays out of Notes. */
     kind: text("kind").notNull().default("note"),
+    /** When Luke pinned it to the top of his notes; null when it isn't pinned. */
+    pinnedAt: timestamp("pinned_at", { withTimezone: true }),
     ...madeBy,
   },
   (t) => [index("notes_project_idx").on(t.projectId), index("notes_updated_idx").on(t.updatedAt)],

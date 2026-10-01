@@ -78,6 +78,13 @@
       "when": 1790860866995,
       "tag": "0010_routines",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790866334835,
+      "tag": "0011_note_pins",
+      "breakpoints": true
     }
   ]
 }

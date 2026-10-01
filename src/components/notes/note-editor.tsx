@@ -28,6 +28,7 @@ import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { ClaudeTag } from "./claude-tag";
+import { PinButton } from "./pin-button";
 import { shrinkPhoto } from "./photos";
 
 type SaveState = "saved" | "saving" | "error";
@@ -44,6 +45,7 @@ type Change = {
   dayOfMonth?: number;
   sopId?: string | null;
   enabled?: boolean;
+  pinned?: boolean;
 };
 
 /**
@@ -121,6 +123,7 @@ export function NoteEditor({
   const { state, queue, flush } = useAutosave(note.id);
   const [title, setTitle] = useState(note.title);
   const [projectId, setProjectId] = useState(note.project?.id ?? null);
+  const [pinned, setPinned] = useState(note.pinned);
   const [uploading, setUploading] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -270,6 +273,13 @@ export function NoteEditor({
           {uploading > 0 ? "Adding photo..." : state === "saving" ? "Saving..." : state === "error" ? "Not saved yet, retrying" : "Saved"}
         </span>
         <span className="grow" />
+        <PinButton
+          pinned={pinned}
+          onChange={(next) => {
+            setPinned(next);
+            queue({ pinned: next }, 0);
+          }}
+        />
         <Button variant="danger" size="sm" onClick={remove} className="-mr-2">
           <Trash2 className="size-4" aria-hidden />
           Delete

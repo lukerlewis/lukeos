@@ -1,4 +1,4 @@
-import { FileText, Globe } from "lucide-react";
+import { FileText, Globe, Pin } from "lucide-react";
 import Link from "next/link";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import type { NoteSummary } from "@/core/notes";
@@ -36,6 +36,7 @@ export function NoteList({
               <span className="flex min-w-0 grow flex-col gap-0.5">
                 <span className="flex items-baseline gap-3">
                   <span className="min-w-0 grow truncate text-[15px] font-medium md:text-sm">{n.title || "Untitled"}</span>
+                  {n.pinned && <Pin className="size-3.5 shrink-0 self-center text-muted-foreground" aria-label="Pinned" />}
                   <span className="shrink-0 text-xs text-muted-foreground">{editedLabel(n.updatedAt, timeZone)}</span>
                 </span>
                 {n.excerpt && <span className="line-clamp-2 text-[13px] text-muted-foreground">{n.excerpt}</span>}

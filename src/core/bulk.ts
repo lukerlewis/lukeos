@@ -108,17 +108,25 @@ export const bulkOperations = {
 
   update_notes: defineOperation({
     name: "update_notes",
-    description: "Move several notes into a project at once, or out of their project (projectId null).",
+    description:
+      "Change several notes at once: move them into a project or out of their project (projectId null), or pin or unpin them. Fields left out stay as they are.",
     input: z.object({
       ids: ids("notes"),
-      projectId: z.uuid().nullable().describe("The project to put them in. null means they stand on their own."),
+      projectId: z.uuid().nullable().optional().describe("The project to put them in. null means they stand on their own."),
+      pinned: z.boolean().optional().describe("true pins them to the top of Luke's notes; false unpins them."),
     }),
-    run: async ({ ids, projectId }): Promise<Outcome> => {
+    run: async ({ ids, projectId, pinned }): Promise<Outcome> => {
+      if (projectId === undefined && pinned === undefined) throw new OperationError("Say what to change: projectId or pinned.");
       const rows = await liveTitles(notes, ids);
       const project = await projectName(projectId);
+      const now = new Date();
       await db
         .update(notes)
-        .set({ projectId, updatedAt: new Date() })
+        .set({
+          ...(projectId !== undefined && { projectId, updatedAt: now }),
+          // Notes already pinned keep their place.
+          ...(pinned !== undefined && { pinnedAt: pinned ? sql`coalesce(${notes.pinnedAt}, ${now})` : null }),
+        })
         .where(inArray(notes.id, rows.map((r) => r.id)));
       return { count: rows.length, titles: rows.map((r) => r.title), project };
     },
