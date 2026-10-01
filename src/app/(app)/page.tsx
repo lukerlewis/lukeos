@@ -4,7 +4,7 @@ import { DashboardControls } from "@/components/dashboard/controls";
 import { activityDays } from "@/components/from-claude/activity-days";
 import { ActivityList } from "@/components/from-claude/activity-list";
 import { DoneTags } from "@/components/notes/done-tags";
-import { ScratchPad } from "@/components/notes/scratch-pad";
+import { ScratchPad } from "@/components/notes/scratch-pad-lazy";
 import { Greeting, TodayDate } from "@/components/greeting";
 import { EmptyState, Page } from "@/components/shell/page";
 import { QuickAdd, TaskList } from "@/components/tasks/task-list";
