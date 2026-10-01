@@ -11,9 +11,9 @@ export const mainNav = [
 /** On phones, Projects, All tasks, Agents and Trash live under More. */
 export const phoneTabs = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, also: [] },
-  { href: "/messages", label: "Messages", icon: MessageCircle, also: [] },
-  { href: "/notes", label: "Notes", icon: FileText, also: [] },
   { href: "/search", label: "Search", icon: Search, also: [] },
+  { href: "/notes", label: "Notes", icon: FileText, also: [] },
+  { href: "/messages", label: "Messages", icon: MessageCircle, also: [] },
   { href: "/projects", label: "More", icon: Ellipsis, also: ["/tasks", "/agents", "/trash", "/artifacts", "/claude"] },
 ] as const;
 
