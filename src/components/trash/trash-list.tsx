@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, FileText, Folder, Globe, Package, RotateCcw, ScrollText, Trash2 } from "lucide-react";
+import { CalendarClock, CheckSquare, FileText, Folder, Globe, Package, RotateCcw, ScrollText, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { showToast } from "@/components/shell/toast";
@@ -46,10 +46,12 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
           ? Package
           : item.type === "sop"
             ? ScrollText
-            : item.format === "html"
-              ? Globe
-              : FileText;
-  const kind = { project: "Project", task: "Task", note: "Note", artifact: "Artifact", sop: "SOP" }[item.type];
+            : item.type === "routine"
+              ? CalendarClock
+              : item.format === "html"
+                ? Globe
+                : FileText;
+  const kind = { project: "Project", task: "Task", note: "Note", artifact: "Artifact", sop: "SOP", routine: "Routine" }[item.type];
   const containsText =
     item.contains &&
     [

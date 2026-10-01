@@ -8,9 +8,11 @@ import { deleteOrphanComments } from "./artifacts";
 import { deleteOrphanMentions } from "./mentions";
 import { defineOperation, madeByOf, OperationError, type MadeBy } from "./define";
 
-const { tasks, notes, artifacts, projects, sops } = schema;
+const { tasks, notes, artifacts, projects, sops, routines } = schema;
 
-type Kind = "task" | "note" | "artifact" | "project" | "sop";
+type Kind = "task" | "note" | "artifact" | "project" | "sop" | "routine";
+/** Things that stand alone, outside any project. */
+const ownTable = (type: "sop" | "routine") => (type === "sop" ? sops : routines);
 const tableOf = (type: "task" | "note" | "artifact") => (type === "task" ? tasks : type === "note" ? notes : artifacts);
 
 /** How long things stay in Trash before they're deleted for good. */
@@ -34,7 +36,7 @@ export type TrashItem = {
   deletesOn: Date;
 };
 
-const itemType = z.enum(["task", "note", "artifact", "project", "sop"]).describe("task, note, artifact, project or sop.");
+const itemType = z.enum(["task", "note", "artifact", "project", "sop", "routine"]).describe("task, note, artifact, project, sop or routine.");
 
 function deletesOn(deletedAt: Date) {
   return new Date(deletedAt.getTime() + TRASH_DAYS * DAY_MS);
@@ -57,6 +59,7 @@ export async function purgeExpiredTrash({ force = false } = {}) {
     await tx.delete(artifacts).where(lt(artifacts.deletedAt, cutoff));
     await tx.delete(projects).where(lt(projects.deletedAt, cutoff));
     await tx.delete(sops).where(lt(sops.deletedAt, cutoff));
+    await tx.delete(routines).where(lt(routines.deletedAt, cutoff));
   });
   await deleteOrphanComments();
   await deleteOrphanMentions();
@@ -89,7 +92,7 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
   const onItsOwn = (deletedAt: AnyColumn) =>
     sql`(${parent.id} is null or ${parent.deletedAt} is null or ${parent.deletedAt} <> ${deletedAt})`;
 
-  const [taskRows, noteRows, artifactRows, projectRows, sopRows] = await Promise.all([
+  const [taskRows, noteRows, artifactRows, projectRows, sopRows, routineRows] = await Promise.all([
     want("task")
       ? db
           .select({ task: tasks, parent })
@@ -162,6 +165,19 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
           .from(sops)
           .where(isNotNull(sops.deletedAt))
       : [],
+    want("routine")
+      ? db
+          .select({
+            id: routines.id,
+            title: routines.title,
+            deletedAt: routines.deletedAt,
+            createdByKind: routines.createdByKind,
+            createdByName: routines.createdByName,
+            createdByRoutine: routines.createdByRoutine,
+          })
+          .from(routines)
+          .where(isNotNull(routines.deletedAt))
+      : [],
   ]);
 
   const parentOf = (p: typeof parent.$inferSelect | null) =>
@@ -223,13 +239,24 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
       deletedAt: sop.deletedAt!,
       deletesOn: deletesOn(sop.deletedAt!),
     })),
+    ...routineRows.map((routine) => ({
+      type: "routine" as const,
+      id: routine.id,
+      title: routine.title || "Untitled",
+      project: null,
+      contains: null,
+      format: null,
+      madeBy: madeByOf(routine),
+      deletedAt: routine.deletedAt!,
+      deletesOn: deletesOn(routine.deletedAt!),
+    })),
   ];
   items.sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
   return items;
 }
 
 async function trashedRow(type: TrashItem["type"], id: string) {
-  const table = type === "project" ? projects : type === "sop" ? sops : tableOf(type);
+  const table = type === "project" ? projects : type === "sop" || type === "routine" ? ownTable(type) : tableOf(type);
   const [row] = await db
     .select({ deletedAt: table.deletedAt })
     .from(table)
@@ -263,8 +290,9 @@ export async function restoreFromTrash(type: TrashItem["type"], id: string) {
     });
     return { restored: { type, id }, movedOutOfProject: false };
   }
-  if (type === "sop") {
-    await db.update(sops).set({ deletedAt: null }).where(eq(sops.id, id));
+  if (type === "sop" || type === "routine") {
+    const table = ownTable(type);
+    await db.update(table).set({ deletedAt: null }).where(eq(table.id, id));
     return { restored: { type, id }, movedOutOfProject: false };
   }
 
@@ -294,8 +322,9 @@ export async function deleteForever(type: TrashItem["type"], id: string) {
       await tx.delete(artifacts).where(and(eq(artifacts.projectId, id), eq(artifacts.deletedAt, deletedAt)));
       await tx.delete(projects).where(eq(projects.id, id));
     });
-  } else if (type === "sop") {
-    await db.delete(sops).where(eq(sops.id, id));
+  } else if (type === "sop" || type === "routine") {
+    const table = ownTable(type);
+    await db.delete(table).where(eq(table.id, id));
   } else {
     const table = tableOf(type);
     await db.delete(table).where(eq(table.id, id));
@@ -312,7 +341,8 @@ export async function emptyTrash() {
     const a = await tx.delete(artifacts).where(isNotNull(artifacts.deletedAt)).returning({ id: artifacts.id });
     const p = await tx.delete(projects).where(isNotNull(projects.deletedAt)).returning({ id: projects.id });
     const s = await tx.delete(sops).where(isNotNull(sops.deletedAt)).returning({ id: sops.id });
-    return { tasks: t.length, notes: n.length, artifacts: a.length, projects: p.length, sops: s.length };
+    const r = await tx.delete(routines).where(isNotNull(routines.deletedAt)).returning({ id: routines.id });
+    return { tasks: t.length, notes: n.length, artifacts: a.length, projects: p.length, sops: s.length, routines: r.length };
   });
   await deleteOrphanComments();
   await deleteOrphanMentions();
@@ -325,7 +355,8 @@ export async function trashCount() {
          + (select count(*) from notes where deleted_at is not null)
          + (select count(*) from artifacts where deleted_at is not null)
          + (select count(*) from projects where deleted_at is not null)
-         + (select count(*) from sops where deleted_at is not null) as n`).then((r) => r.rows);
+         + (select count(*) from sops where deleted_at is not null)
+         + (select count(*) from routines where deleted_at is not null) as n`).then((r) => r.rows);
   return Number(row.n);
 }
 
@@ -342,7 +373,7 @@ export const trashOperations = {
   restore_from_trash: defineOperation({
     name: "restore_from_trash",
     description:
-      "Bring a task, note, artifact, project or SOP back from Trash. Restoring a project also brings back the tasks, notes and artifacts that went to Trash with it. A task, note or artifact whose project is still in Trash comes back on its own, outside the project.",
+      "Bring a task, note, artifact, project, SOP or routine back from Trash. Restoring a project also brings back the tasks, notes and artifacts that went to Trash with it. A task, note or artifact whose project is still in Trash comes back on its own, outside the project.",
     input: z.object({ type: itemType, id }),
     run: async ({ type, id }) => restoreFromTrash(type, id),
   }),

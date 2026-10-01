@@ -14,6 +14,10 @@ import { listMentions } from "@/core/mentions";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { listSops } from "@/core/sops";
+import { NewRoutineButton } from "@/components/routines/new-routine-button";
+import { RoutineList } from "@/components/routines/routine-list";
+import { getCheckIns, listRoutines } from "@/core/routines";
+import { checkInsLabel } from "@/lib/schedule";
 import { NewSopButton } from "@/components/sops/new-sop-button";
 import { SopList } from "@/components/sops/sop-list";
 
@@ -28,6 +32,7 @@ const views = [
   { value: undefined, label: "Made by Claude" },
   { value: "claude", label: "@claude" },
   { value: "sops", label: "SOPs" },
+  { value: "routines", label: "Routines" },
   { value: "activity", label: "Activity log" },
 ] as const;
 
@@ -36,13 +41,14 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
   const viewSwitch = (active: string | undefined) => (
     <SegmentedLinks
       label="View"
-      className="self-start"
+      className="max-w-full self-start overflow-x-auto"
       options={views.map((v) => ({ href: v.value ? `/agents?view=${v.value}` : "/agents", label: v.label, active: active === v.value }))}
     />
   );
   if (query.view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
   if (query.view === "claude") return <MentionsPage viewSwitch={viewSwitch("claude")} />;
   if (query.view === "sops") return <SopsPage viewSwitch={viewSwitch("sops")} />;
+  if (query.view === "routines") return <RoutinesPage viewSwitch={viewSwitch("routines")} />;
 
   const type: "task" | "artifact" = query.type === "task" ? "task" : "artifact";
   const routine = typeof query.routine === "string" && query.routine ? query.routine : undefined;
@@ -164,6 +170,30 @@ async function SopsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
             </EmptyState>
           ) : (
             <SopList sops={sops} when={when} />
+          )}
+        </Card>
+      </div>
+    </Page>
+  );
+}
+
+/** Things Luke wants done on a schedule. Claude does whatever's due each time it checks in. */
+async function RoutinesPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
+  const [routines, checkIns, timeZone] = await Promise.all([listRoutines(), getCheckIns(), getTimeZone()]);
+
+  return (
+    <Page title="Agents" newTask={false} actions={<NewRoutineButton />}>
+      <div className="flex max-w-3xl flex-col gap-4">
+        {viewSwitch}
+        <p className="text-[13px] text-muted-foreground">
+          Things you want done on a schedule, like an end of day recap. Claude checks in at {checkInsLabel(checkIns)}, and
+          does any routine that&apos;s due, along with your @claude requests. Each routine keeps a history of what was done.
+        </p>
+        <Card>
+          {routines.length === 0 ? (
+            <EmptyState>No routines yet. Tap New routine to add one, or ask Claude to set one up.</EmptyState>
+          ) : (
+            <RoutineList routines={routines} timeZone={timeZone} />
           )}
         </Card>
       </div>

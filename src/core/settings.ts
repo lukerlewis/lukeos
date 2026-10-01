@@ -1,5 +1,5 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { cache } from "react";
 import { z } from "zod";
 import { db, schema } from "@/db";
@@ -36,6 +36,10 @@ export const settingsOperations = {
     input: z.object({ timeZone: z.string().min(1) }),
     run: async ({ timeZone }) => {
       if (!isTimeZone(timeZone)) throw new OperationError(`"${timeZone}" isn't a time zone name.`);
+      // Routine times are in Luke's time zone. When it changes, start them afresh rather than
+      // counting times in the new zone that have already passed as missed.
+      if (timeZone !== (await getTimeZone()))
+        await db.update(schema.routines).set({ scheduledFrom: new Date() }).where(isNull(schema.routines.deletedAt));
       await db
         .insert(schema.appSettings)
         .values({ key: "timezone", value: timeZone })

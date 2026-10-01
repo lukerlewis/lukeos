@@ -31,13 +31,26 @@ import { ClaudeTag } from "./claude-tag";
 import { shrinkPhoto } from "./photos";
 
 type SaveState = "saved" | "saving" | "error";
-type Change = { title?: string; content?: string; projectId?: string | null; description?: string; body?: string };
+type Change = {
+  title?: string;
+  content?: string;
+  projectId?: string | null;
+  description?: string;
+  body?: string;
+  instructions?: string;
+  frequency?: "daily" | "weekly" | "monthly";
+  time?: string;
+  days?: number[];
+  dayOfMonth?: number;
+  sopId?: string | null;
+  enabled?: boolean;
+};
 
 /**
  * Saves changes a moment after typing stops, one save at a time, and makes
  * sure nothing is lost when Luke leaves the page or switches apps.
  */
-export function useAutosave(noteId: string, save: "update_note" | "update_sop" = "update_note") {
+export function useAutosave(noteId: string, save: "update_note" | "update_sop" | "update_routine" = "update_note") {
   const [state, setState] = useState<SaveState>("saved");
   const pending = useRef<Change>({});
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);

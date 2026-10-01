@@ -217,6 +217,53 @@ export const sops = pgTable(
   (t) => [index("sops_title_idx").on(t.title)],
 );
 
+/**
+ * A routine: something Luke wants an agent to do on a schedule, like an end
+ * of day recap. It lives here rather than in Claude, so any agent that checks
+ * in (get_inbox) can see what's due and do it.
+ */
+export const routines = pgTable("routines", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull().default(""),
+  /** What to do, in Markdown. */
+  instructions: text("instructions").notNull().default(""),
+  /** An SOP to follow while doing it, if any. */
+  sopId: uuid("sop_id"),
+  frequency: text("frequency").notNull().default("daily"), // "daily" | "weekly" | "monthly"
+  /** Time of day in Luke's time zone, "HH:MM". */
+  time: text("time").notNull().default("20:00"),
+  /** Weekly only: which days, 0 = Sunday ... 6 = Saturday. */
+  days: integer("days").array().notNull().default([1, 2, 3, 4, 5]),
+  /** Monthly only: the day of the month. Past the end of a short month, it runs on the last day. */
+  dayOfMonth: integer("day_of_month").notNull().default(1),
+  enabled: boolean("enabled").notNull().default(true),
+  /** When the schedule last changed or it was turned on, so times before then aren't counted as due or missed. */
+  scheduledFrom: timestamp("scheduled_from", { withTimezone: true }).notNull().defaultNow(),
+  ...madeBy,
+});
+
+/** One time a routine was due: who picked it up, and how it went. One row per routine per due time. */
+export const routineRuns = pgTable(
+  "routine_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    routineId: uuid("routine_id")
+      .notNull()
+      .references(() => routines.id, { onDelete: "cascade" }),
+    /** The scheduled time this run is for. */
+    dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+    status: text("status").notNull(), // "running" | "done" | "failed" | "missed"
+    agentName: text("agent_name"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    /** What the agent says it did. */
+    summary: text("summary"),
+    /** What it made, if anything. */
+    artifactId: uuid("artifact_id"),
+  },
+  (t) => [unique("routine_runs_once").on(t.routineId, t.dueAt), index("routine_runs_due_idx").on(t.dueAt)],
+);
+
 /** A photo pasted into a note, kept in the database and shown at /api/images/<id>. */
 export const images = pgTable("images", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -294,7 +341,7 @@ export const activityLog = pgTable(
     routine: text("routine"),
     tool: text("tool").notNull(),
     summary: text("summary").notNull(),
-    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop", when it's about one thing
+    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop" | "routine", when it's about one thing
     itemId: uuid("item_id"),
   },
   (t) => [index("activity_log_at_idx").on(t.at)],

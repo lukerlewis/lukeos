@@ -12,6 +12,7 @@ import { fromClaudeOperations } from "./from-claude";
 import { mentionOperations } from "./mentions";
 import { noteOperations } from "./notes";
 import { projectOperations } from "./projects";
+import { routineOperations } from "./routines";
 import { searchOperations } from "./search";
 import { getTimeZone, settingsOperations, today } from "./settings";
 import { sopOperations } from "./sops";
@@ -49,6 +50,7 @@ export const operations = {
   ...bulkOperations,
   ...fromClaudeOperations,
   ...sopOperations,
+  ...routineOperations,
   ...activityOperations,
   ...searchOperations,
   ...trashOperations,

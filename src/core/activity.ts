@@ -5,9 +5,9 @@ import { db, schema } from "@/db";
 import { statusLabel, type Status } from "@/lib/task-fields";
 import { defineOperation, type Actor } from "./define";
 
-const { activityLog, tasks, notes, artifacts, projects, sops } = schema;
+const { activityLog, tasks, notes, artifacts, projects, sops, routines } = schema;
 
-type ItemType = "task" | "note" | "artifact" | "project" | "sop";
+type ItemType = "task" | "note" | "artifact" | "project" | "sop" | "routine";
 
 /** One line of the activity log. */
 export type ActivityEntry = {
@@ -45,6 +45,13 @@ const fieldLabel: Record<string, string> = {
   color: "colour",
   description: "description",
   body: "instructions",
+  instructions: "instructions",
+  frequency: "schedule",
+  time: "time",
+  days: "days",
+  dayOfMonth: "day of the month",
+  sopId: "SOP",
+  enabled: "on",
 };
 
 const quote = (title: string | null | undefined) => {
@@ -64,7 +71,7 @@ async function titleOf(type: ItemType, id: unknown) {
       const [row] = await db.select({ t: projects.name }).from(projects).where(eq(projects.id, id)).limit(1);
       return row?.t ?? null;
     }
-    const table = type === "task" ? tasks : type === "note" ? notes : type === "sop" ? sops : artifacts;
+    const table = type === "task" ? tasks : type === "note" ? notes : type === "sop" ? sops : type === "routine" ? routines : artifacts;
     const [row] = await db.select({ t: table.title }).from(table).where(eq(table.id, id)).limit(1);
     return row?.t ?? null;
   } catch {
@@ -88,6 +95,8 @@ export async function titleBefore(tool: string, input: Record<string, unknown>) 
       return titleOf("artifact", input.id);
     case "delete_sop":
       return titleOf("sop", input.id);
+    case "delete_routine":
+      return titleOf("routine", input.id);
     case "restore_from_trash":
     case "delete_forever":
       return titleOf(input.type as ItemType, input.id);
@@ -178,6 +187,31 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     }
     case "delete_sop":
       return { summary: `Moved SOP ${quote(before)} to Trash`, item: { type: "sop", id: String(input.id) } };
+    case "create_routine":
+      return { summary: `Added routine ${quote(task.title)}`, item: { type: "routine", id: task.id } };
+    case "update_routine": {
+      const fields = changed(input);
+      const onOff = fields.length === 1 && fields[0] === "on";
+      const summary = onOff
+        ? `Turned routine ${quote(task.title)} ${input.enabled ? "on" : "off"}`
+        : `Edited routine ${quote(task.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`;
+      return { summary, item: { type: "routine", id: task.id } };
+    }
+    case "delete_routine":
+      return { summary: `Moved routine ${quote(before)} to Trash`, item: { type: "routine", id: String(input.id) } };
+    case "start_routine_run": {
+      const run = r as { routine?: { id: string; title: string } };
+      if (!run.routine) return null;
+      return { summary: `Started routine ${quote(run.routine.title)}`, item: { type: "routine", id: run.routine.id } };
+    }
+    case "finish_routine_run": {
+      const run = r as { routine?: { id: string; title: string } | null; status?: string };
+      if (!run.routine) return null;
+      const verb = run.status === "failed" ? "Couldn't finish" : "Finished";
+      return { summary: `${verb} routine ${quote(run.routine.title)}`, item: { type: "routine", id: run.routine.id } };
+    }
+    case "set_check_in_times":
+      return { summary: `Changed check-in times to ${String((r as { checkIns?: string }).checkIns ?? "")}` };
     case "copy_artifact_to_note":
       return { summary: `Copied an artifact into note ${quote(task.title)}`, item: { type: "note", id: task.id } };
     case "add_comment":
@@ -220,7 +254,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: `Deleted ${input.type === "sop" ? "SOP" : input.type} ${quote(before)} forever` };
     case "empty_trash": {
       const c = (r.deletedForever ?? {}) as Record<string, number>;
-      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0);
+      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.routines ?? 0);
       return { summary: `Emptied Trash (${n} ${n === 1 ? "item" : "items"})` };
     }
 
