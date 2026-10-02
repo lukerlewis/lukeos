@@ -11,7 +11,7 @@ import { op } from "@/lib/ops-client";
 const SEND_SIDE = 2000;
 
 /** Shrinks a photo in the browser so it fits in one upload. GIFs go as they are, to keep the animation. */
-async function shrinkForUpload(file: File): Promise<Blob> {
+export async function shrinkForUpload(file: File): Promise<Blob> {
   if (file.type === "image/gif" && file.size <= MAX_UPLOAD_BYTES) return file;
   let bitmap: ImageBitmap;
   try {

@@ -370,7 +370,14 @@ export const routineOperations = {
         now: new Intl.DateTimeFormat("en-GB", { timeZone, dateStyle: "full", timeStyle: "short" }).format(now),
         timeZone,
         nothingToDo,
-        messages: waitingMessages.map((m) => ({ id: m.id, text: m.text, link: m.link, sentAt: m.createdAt })),
+        messages: waitingMessages.map((m) => ({
+          id: m.id,
+          text: m.text,
+          link: m.link,
+          // Look at each with get_message_attachment.
+          ...(m.attachments.length && { attachments: m.attachments.map(({ id, kind, name, mimeType, bytes }) => ({ id, kind, name, mimeType, bytes })) }),
+          sentAt: m.createdAt,
+        })),
         routines: due.map((d) => ({
           id: d.routine.id,
           title: d.routine.title,

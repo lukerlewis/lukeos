@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, customType, date, index, integer, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { boolean, customType, date, index, integer, jsonb, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
@@ -478,6 +478,18 @@ export const activityLog = pgTable(
   (t) => [index("activity_log_at_idx").on(t.at)],
 );
 
+export type MessageAttachmentRow = {
+  fileId: string;
+  /** Photos: a small copy for the chain. */
+  thumbId?: string | null;
+  kind: "image" | "video" | "file";
+  name: string;
+  mimeType: string;
+  bytes: number;
+  width?: number | null;
+  height?: number | null;
+};
+
 /**
  * One text in the Messages chain between Luke and Claude. Luke's messages
  * wait until Claude answers them at a check-in; Claude's messages are unread
@@ -491,6 +503,8 @@ export const messages = pgTable(
     /** Something in LukeOS the message is about, shown as a card under it. */
     linkType: text("link_type"), // "task" | "note" | "artifact" | "project" | "routine" | "entry"
     linkId: uuid("link_id"),
+    /** Photos, videos and files sent with it, kept in stored_files. */
+    attachments: jsonb("attachments").$type<MessageAttachmentRow[]>().notNull().default([]),
     /** Claude's messages: when Luke saw it. */
     readAt: timestamp("read_at", { withTimezone: true }),
     /** Luke's messages: when Claude dealt with it, and the reply that did. */

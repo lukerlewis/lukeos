@@ -1,18 +1,29 @@
 "use client";
 
-import { Archive, ArrowUp, Lightbulb, Bot, CheckSquare, FileText, Folder, Repeat, Sparkles } from "lucide-react";
+import { Archive, ArrowUp, Lightbulb, Bot, CheckSquare, FileText, Folder, Plus, Repeat, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import { friendlyDay, todayIn } from "@/lib/dates";
+import { attachmentKind, MAX_ATTACHMENTS } from "@/lib/message-files";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
+import {
+  asThreadAttachment,
+  MessageAttachments,
+  PendingTray,
+  PhotoViewer,
+  uploadAttachment,
+  type Pending,
+  type ThreadAttachment,
+} from "./attachments";
 import { MESSAGES_READ_EVENT } from "./unread";
 
 export type ThreadMessage = {
   id: string;
   text: string;
+  attachments: ThreadAttachment[];
   from: "luke" | "claude";
   /** "End of day recap", when a routine sent it. */
   routine: string | null;
@@ -25,8 +36,9 @@ export type ThreadMessage = {
 const GAP_MS = 60 * 60_000;
 
 /**
- * The Messages chain: Luke's texts on the right in blue, Claude's on the
- * left in grey, with a box at the bottom to write a new one.
+ * The Messages chain: Luke's texts on the right, Claude's on the left in
+ * grey, with a box at the bottom to write a new one and attach photos,
+ * videos and files.
  */
 export function MessageThread({
   messages,
@@ -44,6 +56,8 @@ export function MessageThread({
   const rootRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const [sending, setSending] = useState<ThreadMessage[]>([]);
+  const [photo, setPhoto] = useState<ThreadAttachment | null>(null);
+  const closePhoto = useCallback(() => setPhoto(null), []);
   const shown = [...messages, ...sending.filter((s) => !messages.some((m) => m.id === s.id))];
 
   // Opening Messages marks Claude's texts as seen and clears the app icon's number.
@@ -128,17 +142,22 @@ export function MessageThread({
                   {!mine && m.routine && (!sameSender || prev.routine !== m.routine) && (
                     <span className="px-3 pb-0.5 text-[11px] text-muted-foreground">{m.routine}</span>
                   )}
-                  <div
-                    title={time(at)}
-                    className={cn(
-                      "max-w-[80%] rounded-[20px] px-3.5 py-2 text-[16px] leading-snug break-words whitespace-pre-wrap md:max-w-[70%] md:text-[15px]",
-                      mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
-                      pending && "opacity-60",
-                    )}
-                  >
-                    <span className="sr-only">{mine ? "You" : "Claude"}, {time(at)}: </span>
-                    <Linkified text={m.text} mine={mine} />
-                  </div>
+                  {m.attachments.length > 0 && (
+                    <MessageAttachments attachments={m.attachments} mine={mine} pending={pending} onOpen={setPhoto} />
+                  )}
+                  {m.text && (
+                    <div
+                      title={time(at)}
+                      className={cn(
+                        "max-w-[80%] rounded-[20px] px-3.5 py-2 text-[16px] leading-snug break-words whitespace-pre-wrap md:max-w-[70%] md:text-[15px]",
+                        mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                        pending && "opacity-60",
+                      )}
+                    >
+                      <span className="sr-only">{mine ? "You" : "Claude"}, {time(at)}: </span>
+                      <Linkified text={m.text} mine={mine} />
+                    </div>
+                  )}
                   {m.link && <LinkCard link={m.link} mine={mine} />}
                 </li>
               </Fragment>
@@ -155,13 +174,15 @@ export function MessageThread({
           )}
         </ol>
       )}
-      <div ref={endRef} />
       <Composer
         onSending={(m) => setSending((s) => [...s, m])}
         onSent={(tempId, real) =>
           setSending((s) => (real ? s.map((x) => (x.id === tempId ? real : x)) : s.filter((x) => x.id !== tempId)))
         }
       />
+      {/* Below the box (and clear of the phone tab bar), so scrolling to it shows the last message above the box, not behind it. */}
+      <div ref={endRef} className="scroll-mb-[calc(3.5rem+env(safe-area-inset-bottom))] md:scroll-mb-0" />
+      <PhotoViewer photo={photo} onClose={closePhoto} />
     </div>
   );
 }
@@ -175,8 +196,10 @@ function Composer({
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
+  const [picked, setPicked] = useState<Pending[]>([]);
   const [, startTransition] = useTransition();
   const box = useRef<HTMLTextAreaElement>(null);
+  const filePicker = useRef<HTMLInputElement>(null);
 
   // The box grows with what's typed, up to a few lines.
   useLayoutEffect(() => {
@@ -186,20 +209,76 @@ function Composer({
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [text]);
 
+  const update = (key: string, change: Partial<Pending>) =>
+    setPicked((list) => list.map((p) => (p.key === key ? { ...p, ...change } : p)));
+
+  /** Starts uploading picked files straight away, so sending is quick. */
+  function add(files: File[]) {
+    const room = MAX_ATTACHMENTS - picked.length;
+    if (files.length > room) alert(`Up to ${MAX_ATTACHMENTS} things per message.`);
+    const fresh = files.slice(0, Math.max(0, room)).map<Pending>((file) => ({
+      key: crypto.randomUUID(),
+      file,
+      preview: attachmentKind(file.type) === "file" ? null : URL.createObjectURL(file),
+      progress: 0,
+      uploaded: null,
+      error: null,
+    }));
+    setPicked((list) => [...list, ...fresh]);
+    for (const p of fresh)
+      uploadAttachment(p.file, (progress) => update(p.key, { progress }))
+        .then((uploaded) => update(p.key, { uploaded, progress: 1 }))
+        .catch((err: Error) => {
+          update(p.key, { error: err.message });
+          alert(err.message);
+        });
+  }
+
+  function remove(key: string) {
+    setPicked((list) => {
+      const gone = list.find((p) => p.key === key);
+      if (gone?.preview) URL.revokeObjectURL(gone.preview);
+      return list.filter((p) => p.key !== key);
+    });
+  }
+
+  const ready = picked.filter((p) => p.uploaded);
+  const uploading = picked.some((p) => !p.uploaded && !p.error);
+  const canSend = !uploading && (text.trim().length > 0 || ready.length > 0);
+
   function send() {
     const clean = text.trim();
-    if (!clean) return;
+    if (!canSend) return;
     const tempId = `sending-${Date.now()}`;
-    onSending({ id: tempId, text: clean, from: "luke", routine: null, link: null, createdAt: new Date().toISOString(), answered: false });
+    const files = ready.map((p) => p.uploaded!);
+    const kept = picked;
+    onSending({
+      id: tempId,
+      text: clean,
+      attachments: files.map(asThreadAttachment),
+      from: "luke",
+      routine: null,
+      link: null,
+      createdAt: new Date().toISOString(),
+      answered: false,
+    });
     setText("");
+    setPicked([]);
     startTransition(async () => {
       try {
-        const sent = await op("send_message", { text: clean });
+        const sent = await op("send_message", {
+          ...(clean && { text: clean }),
+          ...(files.length && {
+            attachments: files.map((f) => ({ fileId: f.fileId, thumbId: f.thumbId, name: f.name, width: f.width, height: f.height })),
+          }),
+        });
         onSent(tempId, { ...sent, routine: null, createdAt: new Date(sent.createdAt).toISOString() });
+        for (const p of kept) if (p.preview) URL.revokeObjectURL(p.preview);
         router.refresh();
       } catch (err) {
         onSent(tempId, null);
         setText(clean);
+        setPicked(kept);
         alert((err as Error).message);
       }
     });
@@ -211,14 +290,46 @@ function Composer({
         e.preventDefault();
         send();
       }}
+      onDragOver={(e) => e.dataTransfer.types.includes("Files") && e.preventDefault()}
+      onDrop={(e) => {
+        if (!e.dataTransfer.files.length) return;
+        e.preventDefault();
+        add([...e.dataTransfer.files]);
+      }}
       className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-[5] -mx-5 mt-auto border-t bg-background/95 px-3 py-2 backdrop-blur md:bottom-0 md:mx-0 md:border-0 md:px-0 md:pb-6"
     >
+      <PendingTray items={picked} onRemove={remove} />
       <div className="mx-auto flex max-w-2xl items-end gap-2">
+        <button
+          type="button"
+          onClick={() => filePicker.current?.click()}
+          aria-label="Add photos or files"
+          className="mb-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
+        >
+          <Plus className="size-[18px]" strokeWidth={2.5} aria-hidden />
+        </button>
+        <input
+          ref={filePicker}
+          type="file"
+          multiple
+          hidden
+          className="text-[16px]"
+          onChange={(e) => {
+            if (e.target.files?.length) add([...e.target.files]);
+            e.target.value = "";
+          }}
+        />
         <textarea
           ref={box}
           rows={1}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onPaste={(e) => {
+            const files = [...e.clipboardData.files];
+            if (!files.length) return;
+            e.preventDefault();
+            add(files);
+          }}
           onKeyDown={(e) => {
             // Enter sends on a computer; Shift+Enter (and the phone's return key) starts a new line.
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(pointer: fine)").matches) {
@@ -232,7 +343,7 @@ function Composer({
         />
         <button
           type="submit"
-          disabled={!text.trim()}
+          disabled={!canSend}
           aria-label="Send"
           className="mb-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
         >

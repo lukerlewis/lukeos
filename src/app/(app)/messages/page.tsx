@@ -27,6 +27,7 @@ export default async function MessagesPage() {
         messages={messages.map((m) => ({
           id: m.id,
           text: m.text,
+          attachments: m.attachments,
           from: m.from,
           routine: m.madeBy.routine,
           link: m.link,

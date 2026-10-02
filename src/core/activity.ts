@@ -379,8 +379,12 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       }
       return { summary: `${action}: ${names}` };
     }
-    case "send_message":
-      return { summary: `Sent you a message: ${quote(String(input.text ?? "").replace(/\s+/g, " "))}` };
+    case "send_message": {
+      const text = String(input.text ?? "").replace(/\s+/g, " ").trim();
+      const n = Array.isArray(input.attachments) ? input.attachments.length : 0;
+      const files = n ? `${n} ${n === 1 ? "attachment" : "attachments"}` : "";
+      return { summary: text ? `Sent you a message: ${quote(text)}${files ? ` (with ${files})` : ""}` : `Sent you ${files}` };
+    }
     case "mark_messages_read":
       return null;
     case "set_dashboard_view":
