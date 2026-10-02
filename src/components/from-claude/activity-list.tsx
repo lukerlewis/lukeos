@@ -10,7 +10,7 @@ export type ActivityRow = {
   time: string;
   summary: string;
   who: string | null;
-  item: { type: "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration"; id: string } | null;
+  item: { type: "task" | "note" | "artifact" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration"; id: string } | null;
 };
 
 /** The activity log, one day at a time: a time and a short line for each thing Claude did. */
@@ -56,6 +56,8 @@ export function ActivityList({ days }: { days: { label: string; rows: ActivityRo
                       href={
                         row.item.type === "sop" || row.item.type === "routine"
                           ? `/agents/${row.item.type}s/${row.item.id}`
+                          : row.item.type === "context"
+                            ? `/agents/context/${row.item.id}`
                           : row.item.type === "entry"
                             ? `/archive/${row.item.id}`
                             : row.item.type === "inspiration"

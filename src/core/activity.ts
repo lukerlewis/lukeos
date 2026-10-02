@@ -6,9 +6,9 @@ import { statusLabel, type Status } from "@/lib/task-fields";
 import { defineOperation, type Actor } from "./define";
 import { inspirationLabel } from "./inspiration";
 
-const { activityLog, tasks, notes, artifacts, projects, sops, routines, archiveEntries, inspirationItems } = schema;
+const { activityLog, tasks, notes, artifacts, projects, sops, contextFiles, routines, archiveEntries, inspirationItems } = schema;
 
-type ItemType = "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration";
+type ItemType = "task" | "note" | "artifact" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration";
 
 /** One line of the activity log. */
 export type ActivityEntry = {
@@ -71,7 +71,7 @@ const quote = (title: string | null | undefined) => {
 };
 
 const kindLabel = (type: ItemType) =>
-  type === "sop" ? "SOP" : type === "entry" ? "Work archive entry" : type === "inspiration" ? "Inspiration item" : type;
+  type === "sop" ? "SOP" : type === "context" ? "context file" : type === "entry" ? "Work archive entry" : type === "inspiration" ? "Inspiration item" : type;
 
 const changed = (input: Record<string, unknown>) =>
   Object.keys(input)
@@ -100,6 +100,8 @@ async function titleOf(type: ItemType, id: unknown) {
           ? notes
           : type === "sop"
             ? sops
+            : type === "context"
+              ? contextFiles
             : type === "routine"
               ? routines
               : type === "entry"
@@ -128,6 +130,8 @@ export async function titleBefore(tool: string, input: Record<string, unknown>) 
       return titleOf("artifact", input.id);
     case "delete_sop":
       return titleOf("sop", input.id);
+    case "delete_context":
+      return titleOf("context", input.id);
     case "delete_routine":
       return titleOf("routine", input.id);
     case "delete_archive_entry":
@@ -230,6 +234,17 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     }
     case "delete_sop":
       return { summary: `Moved SOP ${quote(before)} to Trash`, item: { type: "sop", id: String(input.id) } };
+    case "create_context":
+      return { summary: `Added context file ${quote(task.title)}`, item: { type: "context", id: task.id } };
+    case "update_context": {
+      const fields = changed(input).map((f) => (f === "instructions" ? "text" : f));
+      return {
+        summary: `Edited context file ${quote(task.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`,
+        item: { type: "context", id: task.id },
+      };
+    }
+    case "delete_context":
+      return { summary: `Moved context file ${quote(before)} to Trash`, item: { type: "context", id: String(input.id) } };
     case "create_routine":
       return { summary: `Added routine ${quote(task.title)}`, item: { type: "routine", id: task.id } };
     case "update_routine": {
@@ -338,7 +353,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: `Deleted ${kindLabel(input.type as ItemType)} ${quote(before)} forever` };
     case "empty_trash": {
       const c = (r.deletedForever ?? {}) as Record<string, number>;
-      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.routines ?? 0) + (c.entries ?? 0) + (c.inspiration ?? 0);
+      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.context ?? 0) + (c.routines ?? 0) + (c.entries ?? 0) + (c.inspiration ?? 0);
       return { summary: `Emptied Trash (${n} ${n === 1 ? "item" : "items"})` };
     }
 

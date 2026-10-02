@@ -14,6 +14,34 @@ import { showTrashedToast } from "@/components/shell/toast";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Sop } from "@/core/sops";
+
+/** The editor is shared by SOPs and context files, which work the same way. */
+const kinds = {
+  sop: {
+    type: "sop",
+    update: "update_sop",
+    remove: "delete_sop",
+    href: "/agents/sops",
+    list: "/agents?view=sops",
+    untitled: "Untitled SOP",
+    label: "When to use it",
+    ask: "When should Claude use this?",
+    body: "Instructions…",
+    long: "Long instructions. Consider splitting rarely needed detail into another SOP.",
+  },
+  context: {
+    type: "context",
+    update: "update_context",
+    remove: "delete_context",
+    href: "/agents/context",
+    list: "/agents?view=context",
+    untitled: "Untitled",
+    label: "What it's about",
+    ask: "When is this useful to Claude?",
+    body: "Write the context…",
+    long: "Long file. Consider splitting rarely needed detail into another context file.",
+  },
+} as const;
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +54,10 @@ const BODY_LONG_TOKENS = 5000;
 
 const tokens = (text: string) => Math.ceil(text.trim().length / 4);
 
-export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean }) {
+export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocus?: boolean; kind?: keyof typeof kinds }) {
+  const k = kinds[kind];
   const router = useRouter();
-  const { state, queue, flush } = useAutosave(sop.id, "update_sop");
+  const { state, queue, flush } = useAutosave(sop.id, k.update);
   const [title, setTitle] = useState(sop.title);
   const [description, setDescription] = useState(sop.description);
   const [bodyTokens, setBodyTokens] = useState(tokens(sop.body));
@@ -44,12 +73,12 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
       mounted.current = false;
       setTimeout(() => {
         if (!mounted.current && !text.title && !text.description && !text.body)
-          op("delete_sop", { id: sop.id })
-            .then(() => op("delete_forever", { type: "sop", id: sop.id }))
+          op(k.remove, { id: sop.id })
+            .then(() => op("delete_forever", { type: k.type, id: sop.id }))
             .catch(() => {});
       }, 0);
     };
-  }, [sop.id]);
+  }, [sop.id, k]);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -62,13 +91,13 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
       TaskItem.configure({ nested: true }),
       TableKit.configure({ table: { resizable: false } }),
       Placeholder.configure({
-        placeholder: "Instructions…",
+        placeholder: k.body,
       }),
       Markdown,
     ],
     content: sop.body,
     contentType: "markdown",
-    editorProps: { attributes: { class: "note-body", "aria-label": "Instructions" } },
+    editorProps: { attributes: { class: "note-body", "aria-label": k.body.replace("…", "") } },
     onUpdate: ({ editor }) => {
       const body = editor.getMarkdown();
       hasText.current.body = !editor.isEmpty;
@@ -84,9 +113,9 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
   async function remove() {
     await flush();
     try {
-      await op("delete_sop", { id: sop.id });
-      showTrashedToast("sop", sop.id, () => router.push(`/agents/sops/${sop.id}`));
-      router.push("/agents?view=sops");
+      await op(k.remove, { id: sop.id });
+      showTrashedToast(k.type, sop.id, () => router.push(`${k.href}/${sop.id}`));
+      router.push(k.list);
       router.refresh();
     } catch (err) {
       alert((err as Error).message);
@@ -112,7 +141,7 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
             document.getElementById("sop-description")?.focus();
           }
         }}
-        placeholder="Untitled SOP"
+        placeholder={k.untitled}
         aria-label="Title"
         enterKeyHint="next"
         className="field-sizing-content resize-none bg-transparent text-[30px] leading-tight font-semibold tracking-tight outline-none placeholder:text-muted-foreground md:text-[28px]"
@@ -134,7 +163,7 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
 
       <label className="flex flex-col gap-1.5 rounded-xl border bg-card p-3 shadow-xs">
         <span className="flex items-baseline gap-2 text-[13px] font-medium">
-          When to use it
+          {k.label}
           <span className="grow" />
           <span
             className={cn("text-xs font-normal text-muted-foreground", description.length > DESCRIPTION_LONG && "text-amber-700 dark:text-amber-400")}
@@ -153,14 +182,14 @@ export function SopEditor({ sop, autoFocus }: { sop: Sop; autoFocus?: boolean })
             hasText.current.description = !!next.trim();
             queue({ description: next });
           }}
-          placeholder="When should Claude use this?"
-          aria-label="Description: when to use it"
+          placeholder={k.ask}
+          aria-label={`Description: ${k.label.toLowerCase()}`}
           className="field-sizing-content min-h-12 resize-none bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:text-sm"
         />
       </label>
 
       {bodyTokens > BODY_LONG_TOKENS && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">Long instructions. Consider splitting rarely needed detail into another SOP.</p>
+        <p className="text-xs text-amber-700 dark:text-amber-400">{k.long}</p>
       )}
 
       <Toolbar editor={editor} />

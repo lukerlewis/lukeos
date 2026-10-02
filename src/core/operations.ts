@@ -20,6 +20,7 @@ import { routineOperations } from "./routines";
 import { searchOperations } from "./search";
 import { getTimeZone, settingsOperations, today } from "./settings";
 import { sopOperations } from "./sops";
+import { contextOperations } from "./context";
 import { taskOperations } from "./tasks";
 import { trashOperations } from "./trash";
 
@@ -58,6 +59,7 @@ export const operations = {
   ...bulkOperations,
   ...fromClaudeOperations,
   ...sopOperations,
+  ...contextOperations,
   ...routineOperations,
   ...activityOperations,
   ...searchOperations,

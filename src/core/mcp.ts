@@ -4,6 +4,7 @@ import { z } from "zod";
 import { isLookup, logActivity, titleBefore } from "./activity";
 import type { Actor } from "./define";
 import { operations, runOperation } from "./operations";
+import { contextIndex } from "./context";
 import { sopIndex } from "./sops";
 
 /**
@@ -15,6 +16,7 @@ const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-0
 
 const INSTRUCTIONS = `LukeOS is Luke's personal app for projects, tasks, notes and the artifacts agents make for him.
 - Luke keeps SOPs: his instructions for how to do particular things. Before you do anything he asks (an @claude request, or a request in chat), check whether an SOP's description fits it, and if one does, read it with get_sop and follow it. Read only the SOPs that fit. They're listed at the end of these instructions; list_sops has the latest list. Only create, change or delete an SOP when Luke asks.
+- Luke keeps context files: background he wants you to know, like who he is, who his audience is, or how his work runs. Before you act on anything he asks, check whether a context file's description is relevant (e.g. read his audience before writing anything public) and read it with get_context. Read only the ones that are relevant. They're listed at the end of these instructions; list_context has the latest list. Only create, change or delete a context file when Luke asks.
 - Call get_today first to learn today's date in Luke's time zone, what's in his Today list, and what's due. Due dates are plain days (YYYY-MM-DD); work out "Friday" or "next week" from that date.
 - Every task sits in one of Luke's lists: Today, Tomorrow, This week or Later ("bucket": today, tomorrow, this_week, later). He moves tasks between them by hand. They're separate from due dates: setting a due date never moves a task between lists, and moving it never changes its due date. A new task with a due date starts in the list that date points to (no date: Today) unless you pass a bucket; after that only Luke moves it.
 - Everything you create is labelled in the app as made by Claude. If you are running as a scheduled routine, pass the routine's name as "routine" so Luke can see which one did it.
@@ -73,13 +75,17 @@ function serverVersion() {
   return `1.0.0+${fingerprint}`;
 }
 
-/** The instructions, plus the title and description of each SOP, so Claude knows what's there without a call. */
+/** The instructions, plus the title and description of each SOP and context file, so Claude knows what's there without a call. */
 async function instructionsWithSops() {
   try {
-    const index = await sopIndex();
-    return index ? `${INSTRUCTIONS}\n\nLuke's SOPs (title: when to use it):\n${index}` : `${INSTRUCTIONS}\n\nLuke has no SOPs yet.`;
+    const [sops, context] = await Promise.all([sopIndex(), contextIndex()]);
+    return [
+      INSTRUCTIONS,
+      sops ? `Luke's SOPs (title: when to use it):\n${sops}` : "Luke has no SOPs yet.",
+      context ? `Luke's context files (title: what's in it):\n${context}` : "Luke has no context files yet.",
+    ].join("\n\n");
   } catch (err) {
-    console.error("[mcp] couldn't list SOPs", err);
+    console.error("[mcp] couldn't list SOPs or context files", err);
     return INSTRUCTIONS;
   }
 }

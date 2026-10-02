@@ -242,6 +242,25 @@ export const sops = pgTable(
 );
 
 /**
+ * A context file: background Claude should know, like who Luke is or who his
+ * audience is. Like an SOP, only the title and description are shown up front;
+ * Claude reads the body when it's relevant to what it's doing.
+ */
+export const contextFiles = pgTable(
+  "context_files",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull().default(""),
+    /** What it covers and when it's relevant. Claude always sees this, so it stays short. */
+    description: text("description").notNull().default(""),
+    /** The context itself, in Markdown. */
+    body: text("body").notNull().default(""),
+    ...madeBy,
+  },
+  (t) => [index("context_files_title_idx").on(t.title)],
+);
+
+/**
  * A routine: something Luke wants an agent to do on a schedule, like an end
  * of day recap. It lives here rather than in Claude, so any agent that checks
  * in (get_inbox) can see what's due and do it.
@@ -472,7 +491,7 @@ export const activityLog = pgTable(
     routine: text("routine"),
     tool: text("tool").notNull(),
     summary: text("summary").notNull(),
-    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry", when it's about one thing
+    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration" | "context", when it's about one thing
     itemId: uuid("item_id"),
   },
   (t) => [index("activity_log_at_idx").on(t.at)],

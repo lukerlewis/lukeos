@@ -20,6 +20,9 @@ import { getCheckIns, listRoutines } from "@/core/routines";
 import { checkInsLabel } from "@/lib/schedule";
 import { NewSopButton } from "@/components/sops/new-sop-button";
 import { SopList } from "@/components/sops/sop-list";
+import { ContextList } from "@/components/context/context-list";
+import { NewContextButton } from "@/components/context/new-context-button";
+import { listContext } from "@/core/context";
 
 export const metadata: Metadata = { title: "Agents · LukeOS" };
 
@@ -27,6 +30,7 @@ const views = [
   { value: undefined, label: "Artifacts" },
   { value: "claude", label: "@claude" },
   { value: "sops", label: "SOPs" },
+  { value: "context", label: "Context" },
   { value: "routines", label: "Routines" },
   { value: "activity", label: "Activity log" },
 ] as const;
@@ -43,6 +47,7 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
   if (query.view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
   if (query.view === "claude") return <MentionsPage viewSwitch={viewSwitch("claude")} />;
   if (query.view === "sops") return <SopsPage viewSwitch={viewSwitch("sops")} />;
+  if (query.view === "context") return <ContextPage viewSwitch={viewSwitch("context")} />;
   if (query.view === "routines") return <RoutinesPage viewSwitch={viewSwitch("routines")} />;
 
   const routine = typeof query.routine === "string" && query.routine ? query.routine : undefined;
@@ -135,6 +140,23 @@ async function SopsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
           ) : (
             <SopList sops={sops} when={when} />
           )}
+        </Card>
+      </div>
+    </Page>
+  );
+}
+
+/** Background Luke wants Claude to know: about him, his audience, and so on. */
+async function ContextPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
+  const [files, timeZone] = await Promise.all([listContext(), getTimeZone()]);
+  const when = Object.fromEntries(files.map((f) => [f.id, editedLabel(f.updatedAt, timeZone)]));
+
+  return (
+    <Page title="Agents" newTask={false} actions={<NewContextButton />}>
+      <div className="flex max-w-3xl flex-col gap-4">
+        {viewSwitch}
+        <Card>
+          {files.length === 0 ? <EmptyState>No context yet.</EmptyState> : <ContextList files={files} when={when} />}
         </Card>
       </div>
     </Page>
