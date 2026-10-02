@@ -8,6 +8,7 @@ import type { Task } from "@/core/tasks";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
+import { bucketForDate } from "@/lib/board";
 import { addDays, endOfWeek } from "@/lib/dates";
 import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
@@ -141,6 +142,9 @@ function TaskDialog({
   const { parsed } = smart;
   const dueDate = dueTouched ? draft.dueDate : (parsed.dueDate ?? (parsed.repeat ? (draft.dueDate ?? today) : draft.dueDate));
   const repeat = parsed.repeat ?? draft.repeat;
+  // A new task's list follows its due date until a list is picked by hand.
+  const [bucketTouched, setBucketTouched] = useState(false);
+  const bucket = isNew && !bucketTouched && dueDate ? bucketForDate(dueDate, today) : draft.bucket;
   const highlight = isNew && parsed.matches.length > 0;
 
   function pickDue(value: string | null) {
@@ -173,7 +177,7 @@ function TaskDialog({
       title: parsed.title,
       projectId: draft.projectId,
       status: draft.status,
-      bucket: draft.bucket,
+      bucket,
       dueDate,
       priority: draft.priority,
       effort: draft.effort,
@@ -281,8 +285,11 @@ function TaskDialog({
 
             <Field label="List">
               <Segmented
-                value={draft.bucket}
-                onChange={(v) => set("bucket", v)}
+                value={bucket}
+                onChange={(v) => {
+                  setBucketTouched(true);
+                  set("bucket", v);
+                }}
                 options={buckets.map((b) => ({ value: b, label: bucketLabel[b] }))}
               />
             </Field>

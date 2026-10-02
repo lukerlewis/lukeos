@@ -4,6 +4,7 @@ import { Plus, Repeat } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
 import type { Task } from "@/core/tasks";
+import { bucketForDate } from "@/lib/board";
 import { friendlyDay, nextRepeat } from "@/lib/dates";
 import { SmartChips, useSmartEntry } from "./smart-chips";
 import { op } from "@/lib/ops-client";
@@ -154,7 +155,9 @@ export function QuickAdd({
     const typed = title;
     const clean = parsed.title;
     if (!clean) return;
-    const fields = { title: clean, projectId: projectId ?? null, bucket, dueDate: due, repeat: parsed.repeat };
+    // A date typed in the name picks the list; otherwise it goes in this one.
+    const list = parsed.dueDate ? bucketForDate(parsed.dueDate, today) : bucket;
+    const fields = { title: clean, projectId: projectId ?? null, bucket: list, dueDate: due, repeat: parsed.repeat };
     setTitle("");
     smart.reset();
     startTransition(async () => {

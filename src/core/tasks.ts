@@ -2,7 +2,8 @@ import "server-only";
 import { and, asc, eq, gte, inArray, isNull, lte, ne, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
-import { addDays, isoDay, nextRepeat, whenOf } from "@/lib/dates";
+import { bucketForDate } from "@/lib/board";
+import { addDays, isoDay, nextRepeat } from "@/lib/dates";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
 import { buckets, efforts, priorities, repeats, statuses, type Bucket, type Effort, type Priority, type Repeat, type Status } from "@/lib/task-fields";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
@@ -134,7 +135,7 @@ export async function syncRepeats(ids: string[]) {
           projectId: t.projectId,
           status: "todo",
           // The next one starts in the list its due date points to; after that it stays where Luke puts it.
-          bucket: bucketFor(dueDate, date),
+          bucket: bucketForDate(dueDate, date),
           dueDate,
           priority: t.priority,
           effort: t.effort,
@@ -153,15 +154,6 @@ export async function syncRepeats(ids: string[]) {
       await db.update(tasks).set({ repeatNextId: null }).where(eq(tasks.id, t.id));
     }
   }
-}
-
-/** The list a due date points to, for placing a repeat's next one. */
-function bucketFor(dueDate: string | null, today: string): Bucket {
-  const when = whenOf(dueDate, today);
-  if (when === "overdue" || when === "today") return "today";
-  if (when === "tomorrow") return "tomorrow";
-  if (when === "week") return "this_week";
-  return "later";
 }
 
 // Inputs: every field but the title is optional, and `null` clears a field.
@@ -227,7 +219,7 @@ export const taskOperations = {
   create_task: defineOperation({
     name: "create_task",
     description:
-      "Create a task. Only the title is required; it starts as To do in the Today list unless a status or bucket is given. Set repeat for something that comes back every day, weekday, week, month or year.",
+      "Create a task. Only the title is required; it starts as To do. Leave out bucket and it goes in the list its due date points to (Today if late, today or no date; Tomorrow; This week; Later); pass bucket to choose the list yourself. Set repeat for something that comes back every day, weekday, week, month or year.",
     input: z.object({
       title: fields.title,
       projectId: fields.projectId.optional(),
@@ -248,7 +240,8 @@ export const taskOperations = {
           title: input.title,
           projectId: input.projectId ?? null,
           status,
-          bucket: input.bucket ?? "today",
+          // A new task with a date starts in the list that date points to; after that, only Luke moves it.
+          bucket: input.bucket ?? (input.dueDate ? bucketForDate(input.dueDate, await today()) : "today"),
           dueDate: input.dueDate ?? null,
           priority: input.priority ?? null,
           effort: input.effort ?? null,

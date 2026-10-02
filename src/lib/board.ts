@@ -4,6 +4,7 @@
  * app and a move by Claude do exactly the same thing.
  */
 import type { Task } from "@/core/tasks";
+import { whenOf } from "./dates";
 import { bucketLabel, buckets, statuses, statusLabel, type Bucket, type Status } from "./task-fields";
 
 /** "when" sorts cards into Luke's lists (Today, Tomorrow, This week, Later); "status" by To do, Doing, Done. */
@@ -39,6 +40,18 @@ export function changesForMove(task: Placeable, to: ColumnId): { bucket: Bucket 
     return task.status === to ? null : { status: to as Status };
   }
   return task.bucket === to ? null : { bucket: to as Bucket };
+}
+
+/**
+ * The list a due date points to (Today if there's no date). Only used when a task is first made (or a
+ * repeat's next one); after that the list and the date are separate.
+ */
+export function bucketForDate(dueDate: string | null, today: string): Bucket {
+  const when = whenOf(dueDate, today);
+  if (when === "none" || when === "overdue" || when === "today") return "today";
+  if (when === "tomorrow") return "tomorrow";
+  if (when === "week") return "this_week";
+  return "later";
 }
 
 const statusRank: Record<Status, number> = { doing: 0, todo: 1, done: 2 };
