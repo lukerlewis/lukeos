@@ -205,7 +205,7 @@ const stage = z
 const story = z
   .string()
   .max(1_000_000)
-  .describe("The story in Markdown, in Luke's own words, with photos as ![](url) using a url from save_image. The first photo is the cover.");
+  .describe("The story in Markdown: Luke's own words kept as quotes, and everything you write about him in the third person (\"Luke led the redesign\", never \"I led\"), with photos as ![](url) using a url from save_image. The first photo is the cover.");
 const short = (what: string) => z.string().trim().max(300).nullable().describe(what);
 const company = short("The company or client.");
 const role = short("Luke's role.");
@@ -239,7 +239,7 @@ export const archiveOperations = {
   create_archive_entry: defineOperation({
     name: "create_archive_entry",
     description:
-      "Add an entry to Luke's Work archive. Check list_archive first: if the piece of work is already there, add to that entry with update_archive_entry (append) instead. Keep Luke's own words in the story and never invent numbers, dates or outcomes. New entries start as raw.",
+      "Add an entry to Luke's Work archive. Check list_archive first: if the piece of work is already there, add to that entry with update_archive_entry (append) instead. Keep Luke's own words in the story as quotes, write the rest about him in the third person, and never invent numbers, dates or outcomes. New entries start as raw.",
     input: z.object({
       title: title.optional(),
       size: size.optional().describe('win, story or project (default "win").'),
