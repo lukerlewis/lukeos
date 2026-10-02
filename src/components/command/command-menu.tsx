@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  Lightbulb,
   CheckSquare,
   CornerDownLeft,
   FilePlus,
@@ -120,6 +121,7 @@ const pages: { href: string; label: string; icon: LucideIcon; keywords?: string 
   { href: "/", label: "Dashboard", icon: LayoutDashboard, keywords: "home today due board kanban" },
   { href: "/tasks", label: "All tasks", icon: CheckSquare, keywords: "list" },
   { href: "/notes", label: "Notes", icon: FileText, keywords: "pages documents" },
+  { href: "/inspiration", label: "Inspiration", icon: Lightbulb, keywords: "mymind gallery moodboard pictures images references ideas" },
   { href: "/archive", label: "Work archive", icon: Archive, keywords: "portfolio case studies wins stories career" },
   { href: "/agents", label: "Agents", icon: Bot, keywords: "ai claude routines made activity from" },
   { href: "/projects", label: "Projects", icon: Folder },
@@ -422,6 +424,16 @@ function resultItem(
         actions.onDone?.();
         actions.openTask(task);
       },
+    };
+  }
+  if (r.type === "inspiration") {
+    return {
+      key: `inspiration-${r.id}`,
+      group: "Inspiration",
+      label: r.title,
+      icon: Lightbulb,
+      detail,
+      run: () => actions.go(`/inspiration?item=${r.id}`),
     };
   }
   if (r.type === "entry") {

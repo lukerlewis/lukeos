@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { boolean, customType, date, index, integer, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
@@ -340,6 +341,58 @@ export const archiveFiles = pgTable(
     createdAt: madeBy.createdAt,
   },
   (t) => [index("archive_files_entry_idx").on(t.entryId)],
+);
+
+/**
+ * A file kept in storage: Vercel Blob when it's set up (backend "blob"), or
+ * the database otherwise ("db", bytes in `data`). Shown at /api/stored/<id>.
+ * Used by Inspiration for its pictures and PDFs.
+ */
+export const storedFiles = pgTable("stored_files", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  backend: text("backend").notNull(), // "blob" | "db"
+  /** Blob only: where it lives, and whether the store is "private" or "public". */
+  blobUrl: text("blob_url"),
+  access: text("access"),
+  mimeType: text("mime_type").notNull(),
+  bytes: integer("bytes").notNull(),
+  data: bytea("data"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Something saved to Inspiration: a picture, a link (with its preview), a
+ * video link, a quote or a PDF. Shown in a gallery and tagged by Claude.
+ */
+export const inspirationItems = pgTable(
+  "inspiration_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(), // "image" | "link" | "video" | "text" | "file"
+    title: text("title").notNull().default(""),
+    /** Links and videos: the address. Pictures: where it came from, if known. */
+    url: text("url"),
+    /** Quotes and text snippets. */
+    body: text("body").notNull().default(""),
+    /** Luke's own note about it. */
+    note: text("note").notNull().default(""),
+    /** Claude's short description, so search finds it by what's in it. */
+    summary: text("summary"),
+    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    /** The picture (about 2000px) and its small copy for the gallery. */
+    imageId: uuid("image_id").references(() => storedFiles.id, { onDelete: "set null" }),
+    thumbId: uuid("thumb_id").references(() => storedFiles.id, { onDelete: "set null" }),
+    width: integer("width"),
+    height: integer("height"),
+    /** PDFs and other files. */
+    fileId: uuid("file_id").references(() => storedFiles.id, { onDelete: "set null" }),
+    fileName: text("file_name"),
+    /** When Claude last tagged and described it. Empty means it's waiting for the next check-in. */
+    taggedAt: timestamp("tagged_at", { withTimezone: true }),
+    ...madeBy,
+  },
+  (t) => [index("inspiration_items_created_idx").on(t.createdAt), index("inspiration_items_project_idx").on(t.projectId)],
 );
 
 /** A photo pasted into a note, kept in the database and shown at /api/images/<id>. */

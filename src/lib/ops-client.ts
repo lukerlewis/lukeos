@@ -96,6 +96,8 @@ function undoFor(
         label: `adding ${quote(r.title)} to the Work archive`,
         run: async () => void (await send("delete_archive_entry", { id: r.id })),
       };
+    case "add_inspiration":
+      return { label: "saving to Inspiration", run: async () => void (await send("delete_inspiration", { id: r.id })) };
     case "create_sop":
       return { label: `adding SOP ${quote(r.title)}`, run: async () => void (await send("delete_sop", { id: r.id })) };
     case "create_project":
@@ -103,7 +105,7 @@ function undoFor(
     case "copy_artifact_to_note":
       return { label: "copying to a note", run: async () => void (await send("delete_note", { id: r.id })) };
     case "restore_from_trash": {
-      const { type, id } = input as { type: "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry"; id: string };
+      const { type, id } = input as { type: "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration"; id: string };
       const del = (
         {
           task: "delete_task",
@@ -113,6 +115,7 @@ function undoFor(
           sop: "delete_sop",
           routine: "delete_routine",
           entry: "delete_archive_entry",
+          inspiration: "delete_inspiration",
         } as const
       )[type];
       return { label: `bringing back a ${type}`, run: async () => void (await send(del, { id })) };

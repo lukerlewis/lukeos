@@ -14,7 +14,7 @@ import { sendPush } from "./push";
 
 const { messages } = schema;
 
-export const linkTypes = ["task", "note", "artifact", "project", "routine", "entry"] as const;
+export const linkTypes = ["task", "note", "artifact", "project", "routine", "entry", "inspiration"] as const;
 export type LinkType = (typeof linkTypes)[number];
 
 export type Message = {
@@ -39,6 +39,7 @@ const linkTitle = sql<string | null>`case ${messages.linkType}
   when 'project' then (select p.name from projects p where p.id = ${messages.linkId} and p.deleted_at is null)
   when 'routine' then (select r.title from routines r where r.id = ${messages.linkId} and r.deleted_at is null)
   when 'entry' then (select coalesce(nullif(e.title, ''), 'Untitled entry') from archive_entries e where e.id = ${messages.linkId} and e.deleted_at is null)
+  when 'inspiration' then (select coalesce(nullif(i.title, ''), 'Inspiration') from inspiration_items i where i.id = ${messages.linkId} and i.deleted_at is null)
 end`;
 
 function toMessage(row: typeof messages.$inferSelect & { linkTitle: string | null }): Message {
@@ -81,7 +82,7 @@ export async function unreadMessageCount() {
 }
 
 async function assertLink(type: LinkType, id: string) {
-  const table = { task: schema.tasks, note: schema.notes, artifact: schema.artifacts, project: schema.projects, routine: schema.routines, entry: schema.archiveEntries }[type];
+  const table = { task: schema.tasks, note: schema.notes, artifact: schema.artifacts, project: schema.projects, routine: schema.routines, entry: schema.archiveEntries, inspiration: schema.inspirationItems }[type];
   const [row] = await db.select({ id: table.id }).from(table).where(eq(table.id, id)).limit(1);
   if (!row) throw new OperationError(`That ${type} doesn't exist.`, 404);
 }
@@ -106,7 +107,7 @@ export const messageOperations = {
   send_message: defineOperation({
     name: "send_message",
     description:
-      "Text Luke in his Messages chain. It sends a notification to his phone, so keep it short and worth his attention: one to three plain sentences, like a text from a helpful colleague. Use it to answer his messages (pass their ids as answers, so they stop showing as waiting), to tell him something finished or needs him, or when he asks you to let him know something. Long write-ups go in an artifact (create_artifact); link it here instead of pasting it. link points at one task, note, artifact, project, routine or Work archive entry, shown as a card he can tap.",
+      "Text Luke in his Messages chain. It sends a notification to his phone, so keep it short and worth his attention: one to three plain sentences, like a text from a helpful colleague. Use it to answer his messages (pass their ids as answers, so they stop showing as waiting), to tell him something finished or needs him, or when he asks you to let him know something. Long write-ups go in an artifact (create_artifact); link it here instead of pasting it. link points at one task, note, artifact, project, routine, Work archive entry or Inspiration item, shown as a card he can tap.",
     input: z.object({
       text: z.string().trim().min(1).max(4000).describe("The message. Plain text; short."),
       link: z

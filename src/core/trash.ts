@@ -5,16 +5,19 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { colorHex } from "@/lib/project-colors";
 import { deleteOrphanComments } from "./artifacts";
+import { deleteUnusedStoredFiles } from "@/lib/storage";
+import { inspirationLabel } from "./inspiration";
 import { deleteOrphanMentions } from "./mentions";
 import { defineOperation, madeByOf, OperationError, type MadeBy } from "./define";
 
-const { tasks, notes, artifacts, projects, sops, routines, archiveEntries } = schema;
+const { tasks, notes, artifacts, projects, sops, routines, archiveEntries, inspirationItems } = schema;
 
-type Kind = "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry";
-type OwnKind = "sop" | "routine" | "entry";
+type Kind = "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration";
+type OwnKind = "sop" | "routine" | "entry" | "inspiration";
 /** Things that stand alone, outside any project. */
-const ownTable = (type: OwnKind) => (type === "sop" ? sops : type === "routine" ? routines : archiveEntries);
-const isOwn = (type: Kind): type is OwnKind => type === "sop" || type === "routine" || type === "entry";
+const ownTable = (type: OwnKind) =>
+  type === "sop" ? sops : type === "routine" ? routines : type === "inspiration" ? inspirationItems : archiveEntries;
+const isOwn = (type: Kind): type is OwnKind => type === "sop" || type === "routine" || type === "entry" || type === "inspiration";
 const tableOf = (type: "task" | "note" | "artifact") => (type === "task" ? tasks : type === "note" ? notes : artifacts);
 
 /** How long things stay in Trash before they're deleted for good. */
@@ -39,8 +42,8 @@ export type TrashItem = {
 };
 
 const itemType = z
-  .enum(["task", "note", "artifact", "project", "sop", "routine", "entry"])
-  .describe("task, note, artifact, project, sop, routine or entry (a Work archive entry).");
+  .enum(["task", "note", "artifact", "project", "sop", "routine", "entry", "inspiration"])
+  .describe("task, note, artifact, project, sop, routine, entry (a Work archive entry) or inspiration (an Inspiration item).");
 
 function deletesOn(deletedAt: Date) {
   return new Date(deletedAt.getTime() + TRASH_DAYS * DAY_MS);
@@ -65,10 +68,12 @@ export async function purgeExpiredTrash({ force = false } = {}) {
     await tx.delete(sops).where(lt(sops.deletedAt, cutoff));
     await tx.delete(routines).where(lt(routines.deletedAt, cutoff));
     await tx.delete(archiveEntries).where(lt(archiveEntries.deletedAt, cutoff));
+    await tx.delete(inspirationItems).where(lt(inspirationItems.deletedAt, cutoff));
   });
   await deleteOrphanComments();
   await deleteOrphanMentions();
   await deleteUnusedImages();
+  await deleteUnusedStoredFiles();
 }
 
 /**
@@ -98,7 +103,7 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
   const onItsOwn = (deletedAt: AnyColumn) =>
     sql`(${parent.id} is null or ${parent.deletedAt} is null or ${parent.deletedAt} <> ${deletedAt})`;
 
-  const [taskRows, noteRows, artifactRows, projectRows, sopRows, routineRows, entryRows] = await Promise.all([
+  const [taskRows, noteRows, artifactRows, projectRows, sopRows, routineRows, entryRows, inspirationRows] = await Promise.all([
     want("task")
       ? db
           .select({ task: tasks, parent })
@@ -197,6 +202,22 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
           .from(archiveEntries)
           .where(isNotNull(archiveEntries.deletedAt))
       : [],
+    want("inspiration")
+      ? db
+          .select({
+            id: inspirationItems.id,
+            title: inspirationItems.title,
+            kind: inspirationItems.kind,
+            body: inspirationItems.body,
+            fileName: inspirationItems.fileName,
+            deletedAt: inspirationItems.deletedAt,
+            createdByKind: inspirationItems.createdByKind,
+            createdByName: inspirationItems.createdByName,
+            createdByRoutine: inspirationItems.createdByRoutine,
+          })
+          .from(inspirationItems)
+          .where(isNotNull(inspirationItems.deletedAt))
+      : [],
   ]);
 
   const parentOf = (p: typeof parent.$inferSelect | null) =>
@@ -279,6 +300,17 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
       madeBy: madeByOf(entry),
       deletedAt: entry.deletedAt!,
       deletesOn: deletesOn(entry.deletedAt!),
+    })),
+    ...inspirationRows.map((item) => ({
+      type: "inspiration" as const,
+      id: item.id,
+      title: inspirationLabel(item),
+      project: null,
+      contains: null,
+      format: null,
+      madeBy: madeByOf(item),
+      deletedAt: item.deletedAt!,
+      deletesOn: deletesOn(item.deletedAt!),
     })),
   ];
   items.sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
@@ -373,7 +405,17 @@ export async function emptyTrash() {
     const s = await tx.delete(sops).where(isNotNull(sops.deletedAt)).returning({ id: sops.id });
     const r = await tx.delete(routines).where(isNotNull(routines.deletedAt)).returning({ id: routines.id });
     const e = await tx.delete(archiveEntries).where(isNotNull(archiveEntries.deletedAt)).returning({ id: archiveEntries.id });
-    return { tasks: t.length, notes: n.length, artifacts: a.length, projects: p.length, sops: s.length, routines: r.length, entries: e.length };
+    const i = await tx.delete(inspirationItems).where(isNotNull(inspirationItems.deletedAt)).returning({ id: inspirationItems.id });
+    return {
+      tasks: t.length,
+      notes: n.length,
+      artifacts: a.length,
+      projects: p.length,
+      sops: s.length,
+      routines: r.length,
+      entries: e.length,
+      inspiration: i.length,
+    };
   });
   await deleteOrphanComments();
   await deleteOrphanMentions();
@@ -388,7 +430,8 @@ export async function trashCount() {
          + (select count(*) from projects where deleted_at is not null)
          + (select count(*) from sops where deleted_at is not null)
          + (select count(*) from routines where deleted_at is not null)
-         + (select count(*) from archive_entries where deleted_at is not null) as n`).then((r) => r.rows);
+         + (select count(*) from archive_entries where deleted_at is not null)
+         + (select count(*) from inspiration_items where deleted_at is not null) as n`).then((r) => r.rows);
   return Number(row.n);
 }
 
@@ -405,7 +448,7 @@ export const trashOperations = {
   restore_from_trash: defineOperation({
     name: "restore_from_trash",
     description:
-      "Bring a task, note, artifact, project, SOP, routine or Work archive entry back from Trash. Restoring a project also brings back the tasks, notes and artifacts that went to Trash with it. A task, note or artifact whose project is still in Trash comes back on its own, outside the project.",
+      "Bring a task, note, artifact, project, SOP, routine, Work archive entry or Inspiration item back from Trash. Restoring a project also brings back the tasks, notes and artifacts that went to Trash with it. A task, note or artifact whose project is still in Trash comes back on its own, outside the project.",
     input: z.object({ type: itemType, id }),
     run: async ({ type, id }) => restoreFromTrash(type, id),
   }),

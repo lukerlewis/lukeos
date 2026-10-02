@@ -19,6 +19,7 @@ import {
 } from "@/lib/schedule";
 import { listComments } from "./comments";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type MadeBy } from "./define";
+import { TAGGING_HOW_TO, untaggedInspiration } from "./inspiration";
 import { listMentions } from "./mentions";
 import { listMessages } from "./messages";
 import { getTimeZone } from "./settings";
@@ -349,21 +350,22 @@ export const routineOperations = {
   get_inbox: defineOperation({
     name: "get_inbox",
     description:
-      "Everything waiting for an agent right now: Luke's messages waiting for an answer, his open @claude requests, comments waiting for a reply, and routines that are due. Call this first when you check in. If nothingToDo is true, stop: there's nothing to do. For each routine, call start_routine_run before doing it (it gives you the instructions), then finish_routine_run.",
+      "Everything waiting for an agent right now: Luke's messages waiting for an answer, his open @claude requests, comments waiting for a reply, routines that are due, and new Inspiration items to tag and describe. Call this first when you check in. If nothingToDo is true, stop: there's nothing to do. For each routine, call start_routine_run before doing it (it gives you the instructions), then finish_routine_run.",
     input: z.object({}),
     run: async () => {
       const now = new Date();
-      const [timeZone, checkIns, due, mentions, comments, waitingMessages] = await Promise.all([
+      const [timeZone, checkIns, due, mentions, comments, waitingMessages, toTag] = await Promise.all([
         getTimeZone(),
         getCheckIns(),
         dueRoutines(now),
         listMentions({ open: true, limit: 50 }),
         listComments({ open: true, limit: 50 }),
         listMessages({ waiting: true, limit: 50 }),
+        untaggedInspiration(),
       ]);
       const waitingComments = comments.filter((c) => (c.replies.at(-1) ?? c).madeBy.kind === "user");
       const nothingToDo =
-        due.length === 0 && mentions.length === 0 && waitingComments.length === 0 && waitingMessages.length === 0;
+        due.length === 0 && mentions.length === 0 && waitingComments.length === 0 && waitingMessages.length === 0 && toTag.length === 0;
       return {
         now: new Intl.DateTimeFormat("en-GB", { timeZone, dateStyle: "full", timeStyle: "short" }).format(now),
         timeZone,
@@ -385,6 +387,12 @@ export const routineOperations = {
           replies: c.replies.map((r) => ({ from: r.madeBy.kind === "user" ? "Luke" : (r.madeBy.name ?? "Claude"), text: r.body })),
           createdAt: c.createdAt,
         })),
+        ...(toTag.length && {
+          inspiration: {
+            toTag: toTag.map((i) => ({ id: i.id, kind: i.kind, title: i.title || null })),
+            howTo: TAGGING_HOW_TO,
+          },
+        }),
         ...(nothingToDo
           ? {}
           : { sops: (await listSops()).map((s) => ({ title: s.title, description: s.description })) }),

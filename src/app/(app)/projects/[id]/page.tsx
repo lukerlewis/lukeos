@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, FileText, Folder as FolderIcon, List, SquareKanban } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Folder as FolderIcon, Lightbulb, List, SquareKanban } from "lucide-react";
 import { ArtifactList } from "@/components/artifacts/artifact-list";
+import { AddButton } from "@/components/inspiration/add";
+import { InspirationBoard } from "@/components/inspiration/board";
 import { Board } from "@/components/board/board";
 import { BoardViewSwitch } from "@/components/board/view-switch";
 import { NewFolderButton } from "@/components/notes/folder-dialog";
@@ -18,6 +20,7 @@ import { listArtifacts } from "@/core/artifacts";
 import { boardTasks } from "@/core/board";
 import { OperationError } from "@/core/define";
 import { listFolders } from "@/core/folders";
+import { listInspiration } from "@/core/inspiration";
 import { listNotes } from "@/core/notes";
 import { getProject, listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
@@ -48,9 +51,10 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   // A project's board starts with To do / Doing / Done columns.
   const boardView = query.view === "board" ? (query.by === "when" ? "when" : "status") : null;
   const notesView = query.view === "notes";
-  const listView = !boardView && !notesView;
+  const inspirationView = query.view === "inspiration";
+  const listView = !boardView && !notesView && !inspirationView;
 
-  const [project, tasks, timeZone, board, notes, artifacts, folders, projects] = await Promise.all([
+  const [project, tasks, timeZone, board, notes, artifacts, folders, projects, inspiration] = await Promise.all([
     load(id),
     listView ? listTasks({ projectId: id, includeDone: true }) : [],
     getTimeZone(),
@@ -58,7 +62,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     notesView ? listNotes({ projectId: id }) : [],
     notesView ? listArtifacts({ projectId: id }) : [],
     notesView ? listFolders({ projectId: id }) : [],
-    notesView ? listProjects() : [],
+    notesView || inspirationView ? listProjects() : [],
+    inspirationView ? listInspiration({ projectId: id }) : [],
   ]);
   // Notes in the folders attached to this project show under their folder.
   const folderIds = new Set(folders.map((f) => f.id));
@@ -85,7 +90,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         </span>
       }
       actions={<EditProjectButton project={{ id: project.id, name: project.name, color: project.color }} />}
-      newTask={{ projectId: project.id }}
+      newTask={inspirationView ? false : { projectId: project.id }}
     >
       <div className="flex flex-wrap items-center gap-2">
         <SegmentedLinks
@@ -94,6 +99,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
             { href: page, label: "List", icon: List, active: listView },
             { href: `${page}?view=board`, label: "Board", icon: SquareKanban, active: !!boardView },
             { href: `${page}?view=notes`, label: "Notes", icon: FileText, active: notesView },
+            { href: `${page}?view=inspiration`, label: "Inspiration", icon: Lightbulb, active: inspirationView },
           ]}
         />
         {notesView && <NewNoteButton projectId={project.id} variant="outline" />}
@@ -103,7 +109,20 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         )}
       </div>
 
-      {notesView ? (
+      {inspirationView ? (
+        <InspirationBoard
+          items={inspiration}
+          projects={projects.map((p) => ({ id: p.id, name: p.name, color: p.color }))}
+          projectId={project.id}
+          empty={
+            <Card className="max-w-3xl">
+              <EmptyState>Nothing saved to this project yet.</EmptyState>
+            </Card>
+          }
+        >
+          <AddButton className="self-start max-md:hidden" />
+        </InspirationBoard>
+      ) : notesView ? (
         <div className="flex max-w-3xl flex-col gap-5">
           {folders.map((folder) => {
             const inFolder = notes.filter((n) => n.folder?.id === folder.id);

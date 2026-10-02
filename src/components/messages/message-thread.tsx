@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArrowUp, Bot, CheckSquare, FileText, Folder, Repeat, Sparkles } from "lucide-react";
+import { Archive, ArrowUp, Lightbulb, Bot, CheckSquare, FileText, Folder, Repeat, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
@@ -16,7 +16,7 @@ export type ThreadMessage = {
   from: "luke" | "claude";
   /** "End of day recap", when a routine sent it. */
   routine: string | null;
-  link: { type: "task" | "note" | "artifact" | "project" | "routine" | "entry"; id: string; title: string } | null;
+  link: { type: "task" | "note" | "artifact" | "project" | "routine" | "entry" | "inspiration"; id: string; title: string } | null;
   createdAt: string;
   answered: boolean;
 };
@@ -261,8 +261,8 @@ function Linkified({ text, mine }: { text: string; mine: boolean }) {
   );
 }
 
-const linkIcons = { task: CheckSquare, note: FileText, artifact: Sparkles, project: Folder, routine: Repeat, entry: Archive };
-const linkKinds = { task: "Task", note: "Note", artifact: "Artifact", project: "Project", routine: "Routine", entry: "Work archive" };
+const linkIcons = { task: CheckSquare, note: FileText, artifact: Sparkles, project: Folder, routine: Repeat, entry: Archive, inspiration: Lightbulb };
+const linkKinds = { task: "Task", note: "Note", artifact: "Artifact", project: "Project", routine: "Routine", entry: "Work archive", inspiration: "Inspiration" };
 
 /** A card under a message for the task, artifact or other thing it's about. */
 function LinkCard({ link, mine }: { link: NonNullable<ThreadMessage["link"]>; mine: boolean }) {
@@ -300,7 +300,13 @@ function LinkCard({ link, mine }: { link: NonNullable<ThreadMessage["link"]>; mi
       </button>
     );
   const href =
-    link.type === "routine" ? `/agents/routines/${link.id}` : link.type === "entry" ? `/archive/${link.id}` : `/${link.type}s/${link.id}`;
+    link.type === "routine"
+      ? `/agents/routines/${link.id}`
+      : link.type === "entry"
+        ? `/archive/${link.id}`
+        : link.type === "inspiration"
+          ? `/inspiration?item=${link.id}`
+          : `/${link.type}s/${link.id}`;
   return (
     <Link href={href} className={cls}>
       {body}

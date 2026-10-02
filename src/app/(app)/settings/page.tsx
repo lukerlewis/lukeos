@@ -11,6 +11,10 @@ import { trashCount } from "@/core/trash";
 import { db, schema } from "@/db";
 import { requireSession } from "@/lib/auth/session";
 import { CopyAddress, DisconnectButton } from "./claude";
+import { ShortcutKey } from "./shortcut";
+import { StorageMeter } from "@/components/inspiration/storage-notice";
+import { storageUsage } from "@/lib/storage";
+import { hasShortcutKey } from "@/lib/shortcut-key";
 import { AddDeviceButton, RemoveDeviceButton, SignOutButton } from "./devices";
 import { ThemeSwitch } from "./theme-switch";
 
@@ -30,7 +34,7 @@ export default async function SettingsPage() {
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
   const connectorAddress = `${proto}://${host}/api/mcp`;
-  const [inTrash, pushDevices] = await Promise.all([trashCount(), pushDeviceCount()]);
+  const [inTrash, pushDevices, usage, shortcutKey] = await Promise.all([trashCount(), pushDeviceCount(), storageUsage(), hasShortcutKey()]);
 
   return (
     <Page title="Settings" newTask={false}>
@@ -97,6 +101,21 @@ export default async function SettingsPage() {
               ))}
             </ul>
           )}
+        </Card>
+
+        <Card>
+          <CardHeader title="Inspiration storage" aside={usage.blob ? "Vercel Blob" : "Database"} />
+          <div className="px-4 py-4">
+            <StorageMeter used={usage.used} limit={usage.limit} />
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader title="iPhone Shortcut" />
+          <div className="flex flex-col gap-3 px-4 py-4">
+            <CopyAddress address={`${proto}://${host}/api/inspiration/shortcut`} label="Copy Shortcut address" />
+            <ShortcutKey hasKey={shortcutKey} />
+          </div>
         </Card>
 
         <Card>

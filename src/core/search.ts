@@ -5,13 +5,14 @@ import { db, schema } from "@/db";
 import { colorHex } from "@/lib/project-colors";
 import type { Status } from "@/lib/task-fields";
 import { defineOperation, madeByOf, type MadeBy } from "./define";
+import { inspirationLabel, searchableInspiration } from "./inspiration";
 import { excerptOf, plainTextOf } from "./notes";
 
-const { tasks, notes, artifacts, projects, archiveEntries } = schema;
+const { tasks, notes, artifacts, projects, archiveEntries, inspirationItems } = schema;
 
 /** One thing that matched a search. */
 export type SearchResult = {
-  type: "task" | "note" | "artifact" | "project" | "entry";
+  type: "task" | "note" | "artifact" | "project" | "entry" | "inspiration";
   id: string;
   title: string;
   /** A bit of the text around the first match, when it matched below the title. */
@@ -77,7 +78,7 @@ export async function search(query: string, filter: { type?: SearchResult["type"
 
   const entryText = sql<string>`concat_ws(' ', ${archiveEntries.story}, ${archiveEntries.company}, ${archiveEntries.role}, ${archiveEntries.outcome})`;
 
-  const [taskRows, noteRows, artifactRows, projectRows, entryRows] = await Promise.all([
+  const [taskRows, noteRows, artifactRows, projectRows, entryRows, inspirationRows] = await Promise.all([
     want("task")
       ? db
           .select({ task: tasks, project: projects })
@@ -126,6 +127,14 @@ export async function search(query: string, filter: { type?: SearchResult["type"
           .from(archiveEntries)
           .where(and(isNull(archiveEntries.deletedAt), matchesAll(words, sql`${archiveEntries.title}`, entryText)))
           .orderBy(desc(archiveEntries.updatedAt))
+          .limit(limit)
+      : [],
+    want("inspiration")
+      ? db
+          .select({ item: inspirationItems, text: searchableInspiration })
+          .from(inspirationItems)
+          .where(and(isNull(inspirationItems.deletedAt), matchesAll(words, sql`${searchableInspiration}`)))
+          .orderBy(desc(inspirationItems.createdAt))
           .limit(limit)
       : [],
   ]);
@@ -202,6 +211,21 @@ export async function search(query: string, filter: { type?: SearchResult["type"
         updatedAt: entry.updatedAt,
       };
     }),
+    ...inspirationRows.map(({ item, text }) => {
+      const title = inspirationLabel(item);
+      return {
+        type: "inspiration" as const,
+        id: item.id,
+        title,
+        snippet: titleHasAll(title, words) ? (item.summary ?? null) : snippetAround(String(text), words),
+        status: null,
+        dueDate: null,
+        format: item.kind,
+        project: null,
+        madeBy: madeByOf(item),
+        updatedAt: item.updatedAt,
+      };
+    }),
   ];
 
   results.sort((a, b) => {
@@ -216,10 +240,10 @@ export const searchOperations = {
   search: defineOperation({
     name: "search",
     description:
-      "Search everything in LukeOS (not Trash): task titles and task notes, note titles and text, artifact titles and text (latest version), Work archive entries (title, story and details), and project names. Every word must match. Results whose title matches come first, then the most recently changed. Done tasks are included.",
+      "Search everything in LukeOS (not Trash): task titles and task notes, note titles and text, artifact titles and text (latest version), Work archive entries (title, story and details), Inspiration (titles, text, tags and descriptions), and project names. Every word must match. Results whose title matches come first, then the most recently changed. Done tasks are included.",
     input: z.object({
       query: z.string().min(1).max(200).describe("The words to look for."),
-      type: z.enum(["task", "note", "artifact", "project", "entry"]).optional().describe("Only this kind of thing."),
+      type: z.enum(["task", "note", "artifact", "project", "entry", "inspiration"]).optional().describe("Only this kind of thing."),
       limit: z.number().int().min(1).max(100).optional(),
     }),
     run: async ({ query, type, limit }) => search(query, { type, limit }),

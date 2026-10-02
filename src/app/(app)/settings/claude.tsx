@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
-export function CopyAddress({ address }: { address: string }) {
+export function CopyAddress({ address, label = "Copy connector address" }: { address: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -17,7 +17,7 @@ export function CopyAddress({ address }: { address: string }) {
   return (
     <div className="flex items-center gap-2 rounded-lg border bg-muted px-3 py-2">
       <code className="grow truncate text-[13px] select-all">{address}</code>
-      <Button variant="ghost" size="sm" onClick={copy} aria-label="Copy connector address">
+      <Button variant="ghost" size="sm" onClick={copy} aria-label={label}>
         {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
         {copied ? "Copied" : "Copy"}
       </Button>

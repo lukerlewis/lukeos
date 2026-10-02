@@ -4,10 +4,11 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { statusLabel, type Status } from "@/lib/task-fields";
 import { defineOperation, type Actor } from "./define";
+import { inspirationLabel } from "./inspiration";
 
-const { activityLog, tasks, notes, artifacts, projects, sops, routines, archiveEntries } = schema;
+const { activityLog, tasks, notes, artifacts, projects, sops, routines, archiveEntries, inspirationItems } = schema;
 
-type ItemType = "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry";
+type ItemType = "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration";
 
 /** One line of the activity log. */
 export type ActivityEntry = {
@@ -69,7 +70,8 @@ const quote = (title: string | null | undefined) => {
   return `“${t.length > 60 ? `${t.slice(0, 59)}…` : t}”`;
 };
 
-const kindLabel = (type: ItemType) => (type === "sop" ? "SOP" : type === "entry" ? "Work archive entry" : type);
+const kindLabel = (type: ItemType) =>
+  type === "sop" ? "SOP" : type === "entry" ? "Work archive entry" : type === "inspiration" ? "Inspiration item" : type;
 
 const changed = (input: Record<string, unknown>) =>
   Object.keys(input)
@@ -83,8 +85,26 @@ async function titleOf(type: ItemType, id: unknown) {
       const [row] = await db.select({ t: projects.name }).from(projects).where(eq(projects.id, id)).limit(1);
       return row?.t ?? null;
     }
+    if (type === "inspiration") {
+      const [row] = await db
+        .select({ title: inspirationItems.title, kind: inspirationItems.kind, body: inspirationItems.body, fileName: inspirationItems.fileName })
+        .from(inspirationItems)
+        .where(eq(inspirationItems.id, id))
+        .limit(1);
+      return row ? inspirationLabel(row) : null;
+    }
     const table =
-      type === "task" ? tasks : type === "note" ? notes : type === "sop" ? sops : type === "routine" ? routines : type === "entry" ? archiveEntries : artifacts;
+      type === "task"
+        ? tasks
+        : type === "note"
+          ? notes
+          : type === "sop"
+            ? sops
+            : type === "routine"
+              ? routines
+              : type === "entry"
+                ? archiveEntries
+                : artifacts;
     const [row] = await db.select({ t: table.title }).from(table).where(eq(table.id, id)).limit(1);
     return row?.t ?? null;
   } catch {
@@ -115,6 +135,9 @@ export async function titleBefore(tool: string, input: Record<string, unknown>) 
     case "add_archive_link":
     case "add_archive_file":
       return titleOf("entry", input.entryId);
+    case "update_inspiration":
+    case "delete_inspiration":
+      return titleOf("inspiration", input.id);
     case "restore_from_trash":
     case "delete_forever":
       return titleOf(input.type as ItemType, input.id);
@@ -252,6 +275,25 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       const f = r as { name?: string; entryId?: string };
       return { summary: `Removed ${quote(f.name)} from a Work archive entry`, item: f.entryId ? { type: "entry", id: f.entryId } : undefined };
     }
+    case "add_inspiration": {
+      const i = r as { id: string; title?: string; kind?: string };
+      return { summary: `Saved ${i.title ? quote(i.title) : `a ${i.kind === "text" ? "quote" : (i.kind ?? "thing")}`} to Inspiration`, item: { type: "inspiration", id: i.id } };
+    }
+    case "update_inspiration": {
+      const i = r as { id: string; title?: string; tags?: string[] };
+      const name = quote(i.title || before);
+      const tagging = (input.tags !== undefined || input.addTags !== undefined || input.summary !== undefined) && !input.title && !input.note;
+      return {
+        summary: tagging ? `Tagged ${name} in Inspiration${i.tags?.length ? ` (${i.tags.slice(0, 5).join(", ")})` : ""}` : `Edited ${name} in Inspiration`,
+        item: { type: "inspiration", id: i.id },
+      };
+    }
+    case "update_inspirations": {
+      const n = ((r.updated as unknown[]) ?? []).length;
+      return { summary: `Tagged ${n} ${n === 1 ? "thing" : "things"} in Inspiration` };
+    }
+    case "delete_inspiration":
+      return { summary: `Moved ${quote(before)} from Inspiration to Trash`, item: { type: "inspiration", id: String(input.id) } };
     case "set_check_in_times":
       return { summary: `Changed check-in times to ${String((r as { checkIns?: string }).checkIns ?? "")}` };
     case "copy_artifact_to_note":
@@ -296,7 +338,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: `Deleted ${kindLabel(input.type as ItemType)} ${quote(before)} forever` };
     case "empty_trash": {
       const c = (r.deletedForever ?? {}) as Record<string, number>;
-      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.routines ?? 0) + (c.entries ?? 0);
+      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.routines ?? 0) + (c.entries ?? 0) + (c.inspiration ?? 0);
       return { summary: `Emptied Trash (${n} ${n === 1 ? "item" : "items"})` };
     }
 

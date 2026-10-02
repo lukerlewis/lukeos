@@ -51,6 +51,19 @@ the app, Claude can do too, through a connector (roadmap step 3).
   `/api/files/<id>`, downloading rather than opening unless they're a PDF,
   photo, video or audio); anything bigger goes in as a link. Operations in
   `src/core/archive.ts`.
+- **Inspiration** (`/inspiration`): a gallery like mymind of pictures,
+  links (saved with their preview picture), videos (as links), quotes and
+  PDFs, in uneven-height columns. Add with the Add sheet, by dropping or
+  pasting anywhere on the page on a computer, or from the iPhone share menu
+  through a Shortcut (`/api/inspiration/shortcut`, signed with a key made in
+  Settings). Pictures are shrunk in the browser, then the server (sharp)
+  keeps a 2000px WebP and a small gallery copy. Files live in Vercel Blob when
+  a store is connected (`stored_files`, served at `/api/stored/<id>` to the
+  signed-in owner), otherwise in the database. Settings shows how full the
+  free 1 GB is, and the page warns at 80%. Claude tags and describes new items
+  at check-in (get_inbox lists them; get_inspiration shows Claude the
+  picture). Items can be linked to a project (its Inspiration tab).
+  Operations in `src/core/inspiration.ts`.
 - **From Claude** (`/from-claude`): everything Claude made (notes, tasks,
   projects), filterable by routine, with a New count since Luke last looked
   (`src/core/from-claude.ts`).
