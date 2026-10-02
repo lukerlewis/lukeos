@@ -217,7 +217,7 @@ function TaskDialog({
   ];
 
   return (
-    <Dialog label={isNew ? "New task" : "Task"} onClose={onClose}>
+    <Dialog label={isNew ? "New task" : "Task"} onClose={onClose} focusFirstField={isNew}>
       <form onSubmit={save} className="flex flex-col">
         <div className="flex items-start gap-2 px-5 pt-4">
           <div className="grid min-w-0 grow">
