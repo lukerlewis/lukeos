@@ -130,10 +130,58 @@ async function oEmbed(endpoint: string) {
   try {
     const res = await fetchWithTimeout(endpoint, { headers: { accept: "application/json" } });
     if (!res.ok) return null;
-    return (await res.json()) as { title?: string; author_name?: string; thumbnail_url?: string; provider_name?: string };
+    return (await res.json()) as { title?: string; author_name?: string; thumbnail_url?: string; provider_name?: string; html?: string };
   } catch {
     return null;
   }
+}
+
+/** The post's id and author on X (Twitter): x.com/<user>/status/<id>. */
+export function xPost(url: URL) {
+  const host = url.hostname.replace(/^(www\.|mobile\.)/, "");
+  if (!["x.com", "twitter.com", "fxtwitter.com", "vxtwitter.com", "fixupx.com"].includes(host)) return null;
+  const m = url.pathname.match(/^\/(?:([A-Za-z0-9_]{1,15})|i\/web)\/status(?:es)?\/(\d+)/);
+  return m ? { user: m[1] ?? null, id: m[2] } : null;
+}
+
+/**
+ * X doesn't give its pages a preview, so posts are read through FxTwitter
+ * (the service chat apps use to show X posts), or X's own embed as a fallback.
+ */
+async function xPreview(post: { user: string | null; id: string }, base: LinkPreview): Promise<LinkPreview> {
+  const href = `https://x.com/${post.user ?? "i"}/status/${post.id}`;
+  base = { ...base, url: href, site: "X" };
+  try {
+    const res = await fetchWithTimeout(`https://api.fxtwitter.com/${post.user ?? "i"}/status/${post.id}`, { headers: { accept: "application/json" } });
+    if (res.ok) {
+      const { tweet } = (await res.json()) as {
+        tweet?: {
+          text?: string;
+          author?: { name?: string; screen_name?: string; avatar_url?: string };
+          media?: { photos?: { url: string }[]; videos?: { thumbnail_url?: string }[]; mosaic?: { formats?: { jpeg?: string } } };
+        };
+      };
+      if (tweet) {
+        const who = tweet.author?.name ?? tweet.author?.screen_name ?? null;
+        const video = tweet.media?.videos?.[0];
+        return {
+          ...base,
+          url: tweet.author?.screen_name ? `https://x.com/${tweet.author.screen_name}/status/${post.id}` : href,
+          kind: video && !tweet.media?.photos?.length ? "video" : "link",
+          title: who ? `${who} on X` : null,
+          description: tweet.text?.trim().slice(0, 500) || null,
+          imageUrl: tweet.media?.photos?.[0]?.url ?? video?.thumbnail_url ?? tweet.author?.avatar_url?.replace("_normal.", "_400x400.") ?? null,
+        };
+      }
+    }
+  } catch {}
+  const info = await oEmbed(`https://publish.twitter.com/oembed?omit_script=1&url=${encodeURIComponent(href)}`);
+  const text = info?.html?.match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1];
+  return {
+    ...base,
+    title: info?.author_name ? `${info.author_name} on X` : null,
+    description: text ? decode(text.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "")).slice(0, 500) : null,
+  };
 }
 
 export async function fetchPreview(raw: string): Promise<LinkPreview> {
@@ -142,6 +190,9 @@ export async function fetchPreview(raw: string): Promise<LinkPreview> {
   const href = url.toString();
   const video = isVideoUrl(url);
   const base: LinkPreview = { url: href, kind: video ? "video" : "link", title: null, description: null, site: url.hostname.replace(/^www\./, ""), imageUrl: null };
+
+  const post = xPost(url);
+  if (post) return xPreview(post, base);
 
   const yt = youTubeId(url);
   if (yt) {
