@@ -3,8 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { EntryEditor } from "@/components/archive/entry-editor";
+import { Comments } from "@/components/comments/comments";
 import { getEntry } from "@/core/archive";
+import { listComments } from "@/core/comments";
 import { OperationError } from "@/core/define";
+import { getTimeZone } from "@/core/settings";
+import { COMMENTABLE } from "@/lib/comments";
 
 async function load(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -23,7 +27,11 @@ export async function generateMetadata({ params }: PageProps<"/archive/[id]">): 
 
 export default async function EntryPage({ params, searchParams }: PageProps<"/archive/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const entry = await load(id);
+  const [entry, threads, timeZone] = await Promise.all([
+    load(id),
+    listComments({ targetType: "entry", targetId: id }),
+    getTimeZone(),
+  ]);
   const back = { href: "/archive", label: "Work archive" };
 
   return (
@@ -42,8 +50,13 @@ export default async function EntryPage({ params, searchParams }: PageProps<"/ar
           <ChevronLeft className="size-4" aria-hidden />
           {back.label}
         </Link>
-        <div className="max-w-3xl min-w-0">
-          <EntryEditor key={entry.id} entry={entry} autoFocus={query.new === "1"} />
+        <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="max-w-3xl min-w-0" {...{ [COMMENTABLE]: "" }}>
+            <EntryEditor key={entry.id} entry={entry} autoFocus={query.new === "1"} />
+          </div>
+          <aside className="xl:sticky xl:top-6">
+            <Comments target={{ type: "entry", id: entry.id }} threads={threads} timeZone={timeZone} />
+          </aside>
         </div>
       </div>
     </div>

@@ -357,11 +357,12 @@ export const artifactOperations = {
   }),
 };
 
-/** Deletes comments whose note, artifact or task is gone for good. */
+/** Deletes comments whose note, artifact, task or Work archive entry is gone for good. */
 export async function deleteOrphanComments() {
   await db.execute(sql`
     delete from ${comments} c
     where (c.target_type = 'note' and not exists (select 1 from ${notes} n where n.id = c.target_id))
        or (c.target_type = 'artifact' and not exists (select 1 from ${artifacts} a where a.id = c.target_id))
-       or (c.target_type = 'task' and not exists (select 1 from tasks t where t.id = c.target_id))`);
+       or (c.target_type = 'task' and not exists (select 1 from tasks t where t.id = c.target_id))
+       or (c.target_type = 'entry' and not exists (select 1 from archive_entries e where e.id = c.target_id))`);
 }

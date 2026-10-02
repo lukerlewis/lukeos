@@ -35,7 +35,7 @@ function usePickedWords() {
 const who = (m: MadeBy) => (m.kind === "user" ? "You" : m.routine ? `${m.name ?? "Claude"} (${m.routine})` : (m.name ?? "Claude"));
 
 /**
- * Comments on a note, an artifact or a task. Pick some words first to quote them.
+ * Comments on a note, an artifact, a task or a Work archive entry. Pick some words first to quote them.
  * Claude reads open comments through the connector and can reply and resolve them.
  */
 export function Comments({
@@ -103,7 +103,7 @@ export function Comments({
               void add();
             }
           }}
-          placeholder={target.type === "note" ? "Leave a comment…" : "Leave a comment for Claude…"}
+          placeholder={target.type === "note" || target.type === "entry" ? "Leave a comment…" : "Leave a comment for Claude…"}
           aria-label="New comment"
           rows={2}
           className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-lg border bg-background px-3 py-2 text-[16px] outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40 md:text-[13px]"

@@ -316,9 +316,9 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "add_comment":
     case "reply_to_comment":
     case "resolve_comment": {
-      const c = r as { target?: { type: "note" | "artifact" | "task"; id: string; title: string } };
+      const c = r as { target?: { type: "note" | "artifact" | "task" | "entry"; id: string; title: string } };
       if (!c.target) return null;
-      const on = `${c.target.type} ${quote(c.target.title)}`;
+      const on = `${kindLabel(c.target.type)} ${quote(c.target.title)}`;
       const summary =
         tool === "add_comment"
           ? `Commented on ${on}`
@@ -333,7 +333,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Deleted a comment" };
     case "resolve_mention": {
       const m = r as {
-        where?: { type: string; id: string; title: string; on: { type: "note" | "artifact" | "task"; id: string; title: string } | null };
+        where?: { type: string; id: string; title: string; on: { type: "note" | "artifact" | "task" | "entry"; id: string; title: string } | null };
       };
       if (!m.where) return null;
       const verb = input.resolved === false ? "Reopened" : "Dealt with";

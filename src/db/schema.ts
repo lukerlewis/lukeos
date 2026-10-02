@@ -172,7 +172,7 @@ export const artifactParts = pgTable(
 );
 
 /**
- * A comment on a note, an artifact or a task, by Luke or Claude. It can quote the
+ * A comment on a note, an artifact, a task or a Work archive entry, by Luke or Claude. It can quote the
  * words it's about, and on an artifact it records which version it was
  * made on. Replies point at the comment they answer. Resolving closes it.
  */
@@ -180,7 +180,7 @@ export const comments = pgTable(
   "comments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    targetType: text("target_type").notNull(), // "note" | "artifact" | "task"
+    targetType: text("target_type").notNull(), // "note" | "artifact" | "task" | "entry"
     targetId: uuid("target_id").notNull(),
     parentId: uuid("parent_id").references((): AnyPgColumn => comments.id, { onDelete: "cascade" }),
     /** Artifacts only: the version number it was made on. */
