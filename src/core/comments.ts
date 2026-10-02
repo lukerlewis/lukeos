@@ -7,9 +7,9 @@ import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, t
 import { deleteOrphanMentions, syncMentions } from "./mentions";
 import { sendPush } from "./push";
 
-const { comments, notes, artifacts } = schema;
+const { comments, notes, artifacts, tasks, mentions } = schema;
 
-export const commentTargets = ["note", "artifact"] as const;
+export const commentTargets = ["note", "artifact", "task"] as const;
 export type CommentTarget = (typeof commentTargets)[number];
 
 export type Comment = {
@@ -30,6 +30,15 @@ export type Comment = {
 
 async function targetTitle(type: CommentTarget, id: string) {
   if (type === "artifact") return (await assertArtifact(id)).title;
+  if (type === "task") {
+    const [task] = await db
+      .select({ title: tasks.title })
+      .from(tasks)
+      .where(and(eq(tasks.id, id), isNull(tasks.deletedAt)))
+      .limit(1);
+    if (!task) throw new OperationError("That task doesn't exist, or it's in Trash.", 404);
+    return task.title;
+  }
   const [row] = await db
     .select({ title: notes.title })
     .from(notes)
@@ -53,7 +62,7 @@ const replyOf = (r: Row) => ({
 });
 
 /**
- * Comment threads, oldest first: on one note or artifact, or (with no
+ * Comment threads, oldest first: on one note, artifact or task, or (with no
  * target) across everything, e.g. every open comment Claude hasn't answered.
  */
 export async function listComments(
@@ -66,14 +75,16 @@ export async function listComments(
   // Only on things that aren't in Trash.
   where.push(sql`(
     (${comments.targetType} = 'note' and exists (select 1 from ${notes} n where n.id = ${comments.targetId} and n.deleted_at is null))
-    or (${comments.targetType} = 'artifact' and exists (select 1 from ${artifacts} a where a.id = ${comments.targetId} and a.deleted_at is null)))`);
+    or (${comments.targetType} = 'artifact' and exists (select 1 from ${artifacts} a where a.id = ${comments.targetId} and a.deleted_at is null))
+    or (${comments.targetType} = 'task' and exists (select 1 from ${tasks} t where t.id = ${comments.targetId} and t.deleted_at is null)))`);
 
   const threads = await db
     .select({
       comment: comments,
       title: sql<string>`coalesce(
         (select n.title from ${notes} n where ${comments.targetType} = 'note' and n.id = ${comments.targetId}),
-        (select a.title from ${artifacts} a where ${comments.targetType} = 'artifact' and a.id = ${comments.targetId}), '')`,
+        (select a.title from ${artifacts} a where ${comments.targetType} = 'artifact' and a.id = ${comments.targetId}),
+        (select t.title from ${tasks} t where ${comments.targetType} = 'task' and t.id = ${comments.targetId}), '')`,
     })
     .from(comments)
     .where(and(...where))
@@ -111,30 +122,62 @@ async function getThread(id: string) {
   return thread;
 }
 
+const fallbackTitle = { note: "Note", artifact: "Artifact", task: "Task" } as const;
+
+/** Where a comment's note, artifact or task opens in the app. Tasks open over the dashboard. */
+export const commentTargetUrl = (target: { type: CommentTarget; id: string }) =>
+  target.type === "task" ? `/?task=${target.id}` : `/${target.type}s/${target.id}`;
+
 /** Tells Luke's phone when Claude answers or starts a comment, so he can reply. */
 async function notifyLuke(actor: Actor, target: Comment["target"], text: string) {
   if (actor.kind !== "agent") return;
   const flat = text.replace(/\s+/g, " ").trim();
   await sendPush({
-    title: `${actor.name} · ${target.title || (target.type === "note" ? "Note" : "Artifact")}`,
+    title: `${actor.name} · ${target.title || fallbackTitle[target.type]}`,
     body: flat.length > 180 ? `${flat.slice(0, 179)}…` : flat,
-    url: `/${target.type === "note" ? "notes" : "artifacts"}/${target.id}`,
+    url: commentTargetUrl(target),
     tag: `lukeos-comment-${target.id}`,
   });
 }
 
+/** Claude answering a thread deals with any @claude Luke wrote in it, so it isn't asked twice. */
+async function resolveThreadMentions(threadId: string, actor: Actor, reply: string) {
+  if (actor.kind !== "agent") return;
+  await db
+    .update(mentions)
+    .set({ resolvedAt: new Date(), resolvedBy: actor.name, reply: reply.slice(0, 2000) })
+    .where(
+      and(
+        eq(mentions.targetType, "comment"),
+        isNull(mentions.resolvedAt),
+        sql`${mentions.targetId} in (select c.id from ${comments} c where c.id = ${threadId} or c.parent_id = ${threadId})`,
+      ),
+    );
+}
+
+/**
+ * Claude's answer to an @claude Luke wrote in a task's own text, posted as a
+ * comment on the task so the reply sits in the task and he can answer back.
+ */
+export async function commentOnTaskMention(taskId: string, line: string, reply: string, actor: Actor) {
+  if (actor.kind !== "agent") return;
+  const title = await targetTitle("task", taskId);
+  await db.insert(comments).values({ targetType: "task", targetId: taskId, body: reply, quote: line.slice(0, 2000), ...madeByColumns(actor) });
+  await notifyLuke(actor, { type: "task", id: taskId, title }, reply);
+}
+
 const id = z.uuid().describe("The comment's id.");
-const targetType = z.enum(commentTargets).describe('"note" or "artifact".');
+const targetType = z.enum(commentTargets).describe('"note", "artifact" or "task".');
 const body = z.string().trim().min(1).max(20_000).describe("What the comment says.");
 
 export const commentOperations = {
   list_comments: defineOperation({
     name: "list_comments",
     description:
-      "Comment threads on Luke's notes and artifacts, each with its replies. Give a note or artifact to see its comments, or leave both out to see comments across everything. open: true shows only unresolved ones, which is how to find what Luke has asked you to look at. Each comment may quote the words it's about, and on an artifact says which version it was made on.",
+      "Comment threads on Luke's notes, artifacts and tasks, each with its replies. Give a note, artifact or task to see its comments, or leave both out to see comments across everything. open: true shows only unresolved ones, which is how to find what Luke has asked you to look at. Each comment may quote the words it's about, and on an artifact says which version it was made on.",
     input: z.object({
       targetType: targetType.optional(),
-      targetId: z.uuid().optional().describe("The note's or artifact's id."),
+      targetId: z.uuid().optional().describe("The note's, artifact's or task's id."),
       open: z.boolean().optional().describe("Only comments not yet resolved."),
       limit: z.number().int().min(1).max(200).optional(),
     }),
@@ -143,10 +186,10 @@ export const commentOperations = {
 
   add_comment: defineOperation({
     name: "add_comment",
-    description: "Start a comment thread on a note or an artifact. To answer an existing comment, use reply_to_comment.",
+    description: "Start a comment thread on a note, an artifact or a task. To answer an existing comment, use reply_to_comment.",
     input: z.object({
       targetType,
-      targetId: z.uuid().describe("The note's or artifact's id."),
+      targetId: z.uuid().describe("The note's, artifact's or task's id."),
       body,
       quote: z.string().trim().max(2000).optional().describe("The words the comment is about, copied exactly."),
     }),
@@ -186,6 +229,7 @@ export const commentOperations = {
         .update(comments)
         .set({ updatedAt: new Date(), ...(actor.kind === "user" && thread.resolved ? { resolvedAt: null } : {}) })
         .where(eq(comments.id, thread.id));
+      await resolveThreadMentions(thread.id, actor, body);
       await notifyLuke(actor, thread.target, body);
       return getThread(thread.id);
     },

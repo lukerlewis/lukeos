@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { findMentions } from "@/lib/mentions";
+import { commentOnTaskMention } from "./comments";
 import { listSops } from "./sops";
 import { defineOperation, OperationError, type Actor } from "./define";
 
@@ -16,12 +17,12 @@ export type Mention = {
   id: string;
   /** The line the tag is on: what Luke is asking. */
   text: string;
-  /** Where he wrote it. For a comment, `on` is the note or artifact it's on. */
+  /** Where he wrote it. For a comment, `on` is the note, artifact or task it's on. */
   where: {
     type: MentionTarget;
     id: string;
     title: string;
-    on: { type: "note" | "artifact"; id: string; title: string } | null;
+    on: { type: "note" | "artifact" | "task"; id: string; title: string } | null;
     /** Written in the scratch pad on Luke's dashboard. */
     scratchPad: boolean;
   };
@@ -107,9 +108,10 @@ const where = {
   scratchPad: sql<boolean>`exists (select 1 from notes n where ${mentions.targetType} = 'note' and n.id = ${mentions.targetId} and n.kind = 'scratchpad')`,
   onType: sql<string | null>`(select c.target_type from comments c where ${mentions.targetType} = 'comment' and c.id = ${mentions.targetId})`,
   onId: sql<string | null>`(select c.target_id from comments c where ${mentions.targetType} = 'comment' and c.id = ${mentions.targetId})`,
-  onTitle: sql<string | null>`(select coalesce(n.title, a.title) from comments c
+  onTitle: sql<string | null>`(select coalesce(n.title, a.title, t.title) from comments c
     left join notes n on c.target_type = 'note' and n.id = c.target_id
     left join artifacts a on c.target_type = 'artifact' and a.id = c.target_id
+    left join tasks t on c.target_type = 'task' and t.id = c.target_id
     where ${mentions.targetType} = 'comment' and c.id = ${mentions.targetId})`,
 };
 const live = sql`(
@@ -118,7 +120,8 @@ const live = sql`(
   or (${mentions.targetType} = 'comment' and exists (select 1 from comments c
     left join notes n on c.target_type = 'note' and n.id = c.target_id
     left join artifacts a on c.target_type = 'artifact' and a.id = c.target_id
-    where c.id = ${mentions.targetId} and coalesce(n.deleted_at, a.deleted_at) is null and coalesce(n.id, a.id) is not null)))`;
+    left join tasks t on c.target_type = 'task' and t.id = c.target_id
+    where c.id = ${mentions.targetId} and coalesce(n.deleted_at, a.deleted_at, t.deleted_at) is null and coalesce(n.id, a.id, t.id) is not null)))`;
 
 /** @claude requests, newest first. Open ones only, or everything including what's been dealt with. */
 export async function listMentions(filter: { open?: boolean; ids?: string[]; limit?: number } = {}): Promise<Mention[]> {
@@ -138,7 +141,7 @@ export async function listMentions(filter: { open?: boolean; ids?: string[]; lim
       type: m.targetType as MentionTarget,
       id: m.targetId,
       title,
-      on: onType && onId ? { type: onType as "note" | "artifact", id: onId, title: onTitle ?? "" } : null,
+      on: onType && onId ? { type: onType as "note" | "artifact" | "task", id: onId, title: onTitle ?? "" } : null,
       scratchPad,
     },
     createdAt: m.createdAt,
@@ -179,7 +182,7 @@ export const mentionOperations = {
   resolve_mention: defineOperation({
     name: "resolve_mention",
     description:
-      "Mark an @claude request as dealt with, with a short reply saying what you did (Luke sees it). resolved: false opens it again. Leave the @claude tag in Luke's text; it shows as done once resolved.",
+      "Mark an @claude request as dealt with, with a short reply saying what you did (Luke sees it). For a request in a task, the reply is also posted as a comment on the task, so Luke sees it there and can answer back. For a request in a comment, answer with reply_to_comment instead: that resolves it for you. resolved: false opens it again. Leave the @claude tag in Luke's text; it shows as done once resolved.",
     input: z.object({
       id: z.uuid().describe("The request's id, from list_mentions."),
       reply: z.string().trim().max(2000).optional().describe("What you did, in a sentence or two."),
@@ -200,6 +203,10 @@ export const mentionOperations = {
             : { resolvedAt: null, resolvedBy: null },
         )
         .where(eq(mentions.id, id));
+      // A reply to an @claude in a task goes in the task itself, as a comment Luke can answer.
+      if (resolved && reply && row.status === "open" && row.where.type === "task") {
+        await commentOnTaskMention(row.where.id, row.text, reply, actor);
+      }
       return (await listMentions({ ids: [id], limit: 1 }))[0];
     },
   }),

@@ -86,7 +86,7 @@ function Row({ mention: m, when }: { mention: Mention; when: string }) {
   const place = m.where.scratchPad
     ? { label: "Scratch pad", href: "/" }
     : m.where.type === "comment" && m.where.on
-      ? { label: `Comment on ${m.where.on.title || "Untitled"}`, href: `/${m.where.on.type}s/${m.where.on.id}` }
+      ? { label: `Comment on ${m.where.on.title || "Untitled"}`, href: m.where.on.type === "task" ? `/?task=${m.where.on.id}` : `/${m.where.on.type}s/${m.where.on.id}` }
       : m.where.type === "note"
         ? { label: m.where.title || "Untitled note", href: `/notes/${m.where.id}` }
         : { label: m.where.title || "Task", href: null };

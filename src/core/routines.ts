@@ -354,7 +354,7 @@ export const routineOperations = {
     input: z.object({}),
     run: async () => {
       const now = new Date();
-      const [timeZone, checkIns, due, mentions, comments, waitingMessages, toTag] = await Promise.all([
+      const [timeZone, checkIns, due, allMentions, comments, waitingMessages, toTag] = await Promise.all([
         getTimeZone(),
         getCheckIns(),
         dueRoutines(now),
@@ -364,6 +364,9 @@ export const routineOperations = {
         untaggedInspiration(),
       ]);
       const waitingComments = comments.filter((c) => (c.replies.at(-1) ?? c).madeBy.kind === "user");
+      // An @claude inside a comment waiting for a reply is already listed with the comment.
+      const inWaiting = new Set(waitingComments.flatMap((c) => [c.id, ...c.replies.map((r) => r.id)]));
+      const mentions = allMentions.filter((m) => !(m.where.type === "comment" && inWaiting.has(m.where.id)));
       const nothingToDo =
         due.length === 0 && mentions.length === 0 && waitingComments.length === 0 && waitingMessages.length === 0 && toTag.length === 0;
       return {

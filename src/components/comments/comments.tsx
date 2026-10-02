@@ -35,7 +35,7 @@ function usePickedWords() {
 const who = (m: MadeBy) => (m.kind === "user" ? "You" : m.routine ? `${m.name ?? "Claude"} (${m.routine})` : (m.name ?? "Claude"));
 
 /**
- * Comments on a note or an artifact. Pick some words first to quote them.
+ * Comments on a note, an artifact or a task. Pick some words first to quote them.
  * Claude reads open comments through the connector and can reply and resolve them.
  */
 export function Comments({
@@ -43,14 +43,18 @@ export function Comments({
   threads,
   timeZone,
   currentVersion,
+  onChanged,
 }: {
   target: { type: CommentTarget; id: string };
   threads: Comment[];
   timeZone: string;
   /** Artifacts: the latest version, so older comments can say which version they were on. */
   currentVersion?: number;
+  /** Reloads the threads after a change. Defaults to refreshing the page. */
+  onChanged?: () => void;
 }) {
   const router = useRouter();
+  const changed = onChanged ?? (() => router.refresh());
   const [picked, setPicked] = usePickedWords();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -65,7 +69,7 @@ export function Comments({
       await op("add_comment", { targetType: target.type, targetId: target.id, body, quote: picked ?? undefined });
       setText("");
       setPicked(null);
-      router.refresh();
+      changed();
     } catch (err) {
       alert((err as Error).message);
     } finally {
@@ -81,13 +85,7 @@ export function Comments({
         {open.length > 0 && <span className="text-xs font-normal text-muted-foreground">{open.length} open</span>}
       </h2>
 
-      <form
-        className="flex flex-col gap-2 rounded-xl border bg-card p-3 shadow-xs"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void add();
-        }}
-      >
+      <div className="flex flex-col gap-2 rounded-xl border bg-card p-3 shadow-xs">
         {picked ? (
           <div className="flex items-start gap-2 rounded-lg bg-muted px-2.5 py-1.5 text-xs text-muted-foreground">
             <span className="line-clamp-3 grow italic">“{picked}”</span>
@@ -105,18 +103,18 @@ export function Comments({
               void add();
             }
           }}
-          placeholder={target.type === "artifact" ? "Leave a comment for Claude…" : "Leave a comment…"}
+          placeholder={target.type === "note" ? "Leave a comment…" : "Leave a comment for Claude…"}
           aria-label="New comment"
           rows={2}
           className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-lg border bg-background px-3 py-2 text-[16px] outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40 md:text-[13px]"
         />
-        <Button type="submit" size="sm" className="self-end" disabled={busy || !text.trim()}>
+        <Button size="sm" className="self-end" onClick={() => void add()} disabled={busy || !text.trim()}>
           {busy ? "Saving…" : "Comment"}
         </Button>
-      </form>
+      </div>
 
       {open.map((t) => (
-        <Thread key={t.id} thread={t} timeZone={timeZone} currentVersion={currentVersion} />
+        <Thread key={t.id} thread={t} timeZone={timeZone} currentVersion={currentVersion} onChanged={changed} />
       ))}
       {threads.length === 0 && <p className="px-1 text-xs text-muted-foreground">No comments yet.</p>}
       {resolved.length > 0 && (
@@ -126,7 +124,7 @@ export function Comments({
           </summary>
           <div className="mt-3 flex flex-col gap-3">
             {resolved.map((t) => (
-              <Thread key={t.id} thread={t} timeZone={timeZone} currentVersion={currentVersion} />
+              <Thread key={t.id} thread={t} timeZone={timeZone} currentVersion={currentVersion} onChanged={changed} />
             ))}
           </div>
         </details>
@@ -135,8 +133,17 @@ export function Comments({
   );
 }
 
-function Thread({ thread, timeZone, currentVersion }: { thread: Comment; timeZone: string; currentVersion?: number }) {
-  const router = useRouter();
+function Thread({
+  thread,
+  timeZone,
+  currentVersion,
+  onChanged,
+}: {
+  thread: Comment;
+  timeZone: string;
+  currentVersion?: number;
+  onChanged: () => void;
+}) {
   const [replying, setReplying] = useState(false);
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
@@ -145,7 +152,7 @@ function Thread({ thread, timeZone, currentVersion }: { thread: Comment; timeZon
     setBusy(true);
     try {
       await action();
-      router.refresh();
+      onChanged();
     } catch (err) {
       alert((err as Error).message);
     } finally {

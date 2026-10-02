@@ -3,6 +3,8 @@
 import { ChevronDown, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createContext, use, useCallback, useEffect, useRef, useState } from "react";
+import { Comments } from "@/components/comments/comments";
+import type { Comment } from "@/core/comments";
 import type { Project } from "@/core/projects";
 import type { Task } from "@/core/tasks";
 import { Button } from "@/components/ui/button";
@@ -67,10 +69,12 @@ export function useTaskEditor() {
 export function TaskEditorProvider({
   projects,
   today,
+  timeZone,
   children,
 }: {
   projects: Project[];
   today: string;
+  timeZone: string;
   children: React.ReactNode;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -92,6 +96,18 @@ export function TaskEditorProvider({
     });
   }, []);
 
+  // A link like /?task=<id> (from a notification) opens that task.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("task");
+    if (!id) return;
+    url.searchParams.delete("task");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    op("get_task", { id })
+      .then(openTask)
+      .catch(() => {});
+  }, [openTask]);
+
   const newTask = useCallback<Editor["newTask"]>((defaults) => {
     // A new task goes in Today unless the screen picked a list.
     setDraft({
@@ -111,7 +127,14 @@ export function TaskEditorProvider({
     <EditorContext value={{ openTask, newTask }}>
       {children}
       {draft && (
-        <TaskDialog key={draft.id ?? "new"} initial={draft} projects={projects} today={today} onClose={() => setDraft(null)} />
+        <TaskDialog
+          key={draft.id ?? "new"}
+          initial={draft}
+          projects={projects}
+          today={today}
+          timeZone={timeZone}
+          onClose={() => setDraft(null)}
+        />
       )}
     </EditorContext>
   );
@@ -121,11 +144,13 @@ function TaskDialog({
   initial,
   projects,
   today,
+  timeZone,
   onClose,
 }: {
   initial: Draft;
   projects: Project[];
   today: string;
+  timeZone: string;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -371,6 +396,8 @@ function TaskDialog({
               />
             </Field>
 
+            {draft.id && <TaskComments taskId={draft.id} timeZone={timeZone} />}
+
             {draft.madeBy && draft.createdAt && (
               <p className="text-xs text-muted-foreground">
                 <MadeByLabel madeBy={draft.madeBy} createdAt={draft.createdAt} />
@@ -403,6 +430,27 @@ function TaskDialog({
       </form>
     </Dialog>
   );
+}
+
+/** The task's comments: Luke asks Claude something here (or with @claude), and Claude answers in the same place. */
+function TaskComments({ taskId, timeZone }: { taskId: string; timeZone: string }) {
+  const [threads, setThreads] = useState<Comment[] | null>(null);
+  const load = useCallback(() => {
+    op("list_comments", { targetType: "task", targetId: taskId })
+      .then(setThreads)
+      .catch(() => {});
+  }, [taskId]);
+
+  useEffect(() => {
+    load();
+    // A notification while the task is open (e.g. Claude replying) shows straight away.
+    const onPush = (e: MessageEvent) => e.data?.type === "lukeos:push" && load();
+    navigator.serviceWorker?.addEventListener("message", onPush);
+    return () => navigator.serviceWorker?.removeEventListener("message", onPush);
+  }, [load]);
+
+  if (!threads) return null;
+  return <Comments target={{ type: "task", id: taskId }} threads={threads} timeZone={timeZone} onChanged={load} />;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

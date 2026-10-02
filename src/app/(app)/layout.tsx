@@ -46,7 +46,7 @@ async function AppShell({ children }: { children: React.ReactNode }) {
   const menuProjects = projects.map((p) => ({ id: p.id, name: p.name, hex: colorHex(p.color) }));
 
   return (
-    <TaskEditorProvider projects={projects} today={today}>
+    <TaskEditorProvider projects={projects} today={today} timeZone={timeZone}>
       <CommandMenuProvider projects={menuProjects} today={today}>
         <TimeZoneSync saved={timeZone} />
         <PushListener />
