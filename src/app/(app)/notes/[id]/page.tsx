@@ -7,6 +7,7 @@ import { DoneTags } from "@/components/notes/done-tags";
 import { HtmlNote } from "@/components/notes/html-note";
 import { NoteEditor } from "@/components/notes/note-editor";
 import { OperationError } from "@/core/define";
+import { listFolders } from "@/core/folders";
 import { getNote } from "@/core/notes";
 import { listComments } from "@/core/comments";
 import { doneMentionIds } from "@/core/mentions";
@@ -31,16 +32,19 @@ export async function generateMetadata({ params }: PageProps<"/notes/[id]">): Pr
 
 export default async function NotePage({ params, searchParams }: PageProps<"/notes/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const [note, projects, threads, timeZone, done] = await Promise.all([
+  const [note, projects, folders, threads, timeZone, done] = await Promise.all([
     load(id),
     listProjects(),
+    listFolders(),
     listComments({ targetType: "note", targetId: id }),
     getTimeZone(),
     doneMentionIds("note", id),
   ]);
   // The scratch pad lives on the dashboard.
   if (note.scratchPad) redirect("/");
-  const back = note.project
+  const back = note.folder
+    ? { href: `/notes?folder=${note.folder.id}`, label: note.folder.name }
+    : note.project
     ? { href: `/projects/${note.project.id}?view=notes`, label: note.project.name }
     : { href: "/notes", label: "Notes" };
 
@@ -70,6 +74,7 @@ export default async function NotePage({ params, searchParams }: PageProps<"/not
                 key={note.id}
                 note={note}
                 projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+                folders={folders.map((f) => ({ id: f.id, name: f.name }))}
                 autoFocus={query.new === "1"}
               />
             )}

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, FileText, List, SquareKanban } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Folder as FolderIcon, List, SquareKanban } from "lucide-react";
 import { ArtifactList } from "@/components/artifacts/artifact-list";
 import { Board } from "@/components/board/board";
 import { BoardViewSwitch } from "@/components/board/view-switch";
+import { NewFolderButton } from "@/components/notes/folder-dialog";
 import { NewNoteButton } from "@/components/notes/new-note-button";
 import { NoteList } from "@/components/notes/note-list";
 import { EditProjectButton } from "@/components/projects/project-dialog";
@@ -16,8 +17,9 @@ import { SegmentedLinks } from "@/components/ui/segmented-links";
 import { listArtifacts } from "@/core/artifacts";
 import { boardTasks } from "@/core/board";
 import { OperationError } from "@/core/define";
+import { listFolders } from "@/core/folders";
 import { listNotes } from "@/core/notes";
-import { getProject } from "@/core/projects";
+import { getProject, listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { listTasks } from "@/core/tasks";
 import { todayIn } from "@/lib/dates";
@@ -48,14 +50,19 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const notesView = query.view === "notes";
   const listView = !boardView && !notesView;
 
-  const [project, tasks, timeZone, board, notes, artifacts] = await Promise.all([
+  const [project, tasks, timeZone, board, notes, artifacts, folders, projects] = await Promise.all([
     load(id),
     listView ? listTasks({ projectId: id, includeDone: true }) : [],
     getTimeZone(),
     boardView ? boardTasks(boardView, id) : null,
     notesView ? listNotes({ projectId: id }) : [],
     notesView ? listArtifacts({ projectId: id }) : [],
+    notesView ? listFolders({ projectId: id }) : [],
+    notesView ? listProjects() : [],
   ]);
+  // Notes in the folders attached to this project show under their folder.
+  const folderIds = new Set(folders.map((f) => f.id));
+  const looseNotes = notes.filter((n) => !n.folder || !folderIds.has(n.folder.id));
   const date = todayIn(timeZone);
   const groups = (["doing", "todo", "done"] as Status[]).map((status) => ({
     status,
@@ -90,6 +97,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           ]}
         />
         {notesView && <NewNoteButton projectId={project.id} variant="outline" />}
+        {notesView && <NewFolderButton projects={projects.map((p) => ({ id: p.id, name: p.name }))} projectId={project.id} />}
         {boardView && (
           <BoardViewSwitch view={boardView} href={(by) => `${page}?view=board${by === "when" ? "&by=when" : ""}`} />
         )}
@@ -97,14 +105,40 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
 
       {notesView ? (
         <div className="flex max-w-3xl flex-col gap-5">
-          <Card>
-            <NoteList
-              notes={notes}
-              timeZone={timeZone}
-              showProject={false}
-              empty={<EmptyState>No notes in this project yet.</EmptyState>}
-            />
-          </Card>
+          {folders.map((folder) => {
+            const inFolder = notes.filter((n) => n.folder?.id === folder.id);
+            return (
+              <section key={folder.id} className="flex flex-col gap-2">
+                <Link
+                  href={`/notes?folder=${folder.id}`}
+                  className="flex items-center gap-2 self-start px-1 text-sm font-semibold hover:text-muted-foreground"
+                >
+                  <FolderIcon className="size-4 text-muted-foreground" aria-hidden />
+                  {folder.name}
+                  <span className="text-xs font-normal text-muted-foreground">{inFolder.length}</span>
+                  <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+                </Link>
+                <Card>
+                  <NoteList
+                    notes={inFolder}
+                    timeZone={timeZone}
+                    showProject={false}
+                    empty={<EmptyState>No notes in this folder yet.</EmptyState>}
+                  />
+                </Card>
+              </section>
+            );
+          })}
+          {(looseNotes.length > 0 || folders.length === 0) && (
+            <Card>
+              <NoteList
+                notes={looseNotes}
+                timeZone={timeZone}
+                showProject={false}
+                empty={<EmptyState>No notes in this project yet.</EmptyState>}
+              />
+            </Card>
+          )}
           {artifacts.length > 0 && (
             <section className="flex flex-col gap-2">
               <h2 className="px-1 text-sm font-semibold">From Claude</h2>

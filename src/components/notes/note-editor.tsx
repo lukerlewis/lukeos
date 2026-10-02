@@ -36,6 +36,7 @@ type Change = {
   title?: string;
   content?: string;
   projectId?: string | null;
+  folderId?: string | null;
   description?: string;
   body?: string;
   instructions?: string;
@@ -113,16 +114,19 @@ export function useAutosave(noteId: string, save: "update_note" | "update_sop" |
 export function NoteEditor({
   note,
   projects,
+  folders,
   autoFocus,
 }: {
   note: Note;
   projects: { id: string; name: string }[];
+  folders: { id: string; name: string }[];
   autoFocus?: boolean;
 }) {
   const router = useRouter();
   const { state, queue, flush } = useAutosave(note.id);
   const [title, setTitle] = useState(note.title);
   const [projectId, setProjectId] = useState(note.project?.id ?? null);
+  const [folderId, setFolderId] = useState(note.folder?.id ?? null);
   const [pinned, setPinned] = useState(note.pinned);
   const [uploading, setUploading] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -217,7 +221,7 @@ export function NoteEditor({
     try {
       await op("delete_note", { id: note.id });
       showTrashedToast("note", note.id, () => router.push(`/notes/${note.id}`));
-      router.push(projectId ? `/projects/${projectId}?view=notes` : "/notes");
+      router.push(folderId ? `/notes?folder=${folderId}` : projectId ? `/projects/${projectId}?view=notes` : "/notes");
       router.refresh();
     } catch (err) {
       alert((err as Error).message);
@@ -263,6 +267,23 @@ export function NoteEditor({
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={folderId ?? ""}
+          onChange={(e) => {
+            const next = e.target.value || null;
+            setFolderId(next);
+            queue({ folderId: next }, 0);
+          }}
+          aria-label="Folder"
+          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[16px] text-foreground md:text-[13px] shadow-xs"
+        >
+          <option value="">No folder</option>
+          {folders.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
             </option>
           ))}
         </select>

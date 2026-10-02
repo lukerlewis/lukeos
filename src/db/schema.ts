@@ -76,6 +76,23 @@ export const tasks = pgTable(
 );
 
 /**
+ * A folder in Notes. One level only (no folders inside folders), and a note
+ * sits in at most one. A folder can be attached to a project, so its notes
+ * show on that project too. Deleting a folder keeps its notes: they become
+ * unfiled.
+ */
+export const noteFolders = pgTable("note_folders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+  createdByKind: madeBy.createdByKind,
+  createdByName: madeBy.createdByName,
+  createdByRoutine: madeBy.createdByRoutine,
+  createdAt: madeBy.createdAt,
+  updatedAt: madeBy.updatedAt,
+});
+
+/**
  * A note: Luke's own page of writing, inside a project or on its own.
  * Markdown (headings, lists, checklists, links, photos), or occasionally a
  * finished HTML page. What Claude makes on its own goes in artifacts instead.
@@ -85,6 +102,8 @@ export const notes = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    /** The folder it's filed in, if any. */
+    folderId: uuid("folder_id").references(() => noteFolders.id, { onDelete: "set null" }),
     title: text("title").notNull().default(""),
     content: text("content").notNull().default(""),
     format: text("format").notNull().default("markdown"), // "markdown" | "html"
@@ -94,7 +113,7 @@ export const notes = pgTable(
     pinnedAt: timestamp("pinned_at", { withTimezone: true }),
     ...madeBy,
   },
-  (t) => [index("notes_project_idx").on(t.projectId), index("notes_updated_idx").on(t.updatedAt)],
+  (t) => [index("notes_project_idx").on(t.projectId), index("notes_folder_idx").on(t.folderId), index("notes_updated_idx").on(t.updatedAt)],
 );
 
 /**

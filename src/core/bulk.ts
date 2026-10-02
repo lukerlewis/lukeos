@@ -5,6 +5,7 @@ import { db, schema } from "@/db";
 import { changesForMove, columnIds } from "@/lib/board";
 import type { Bucket, Status } from "@/lib/task-fields";
 import { defineOperation, OperationError } from "./define";
+import { assertFolder } from "./folders";
 import { assertProject } from "./projects";
 import { fields, syncRepeats } from "./tasks";
 
@@ -107,21 +108,25 @@ export const bulkOperations = {
   update_notes: defineOperation({
     name: "update_notes",
     description:
-      "Change several notes at once: move them into a project or out of their project (projectId null), or pin or unpin them. Fields left out stay as they are.",
+      "Change several notes at once: move them into a project or out of their project (projectId null), into a folder or out of their folder (folderId null), or pin or unpin them. Fields left out stay as they are.",
     input: z.object({
       ids: ids("notes"),
       projectId: z.uuid().nullable().optional().describe("The project to put them in. null means they stand on their own."),
+      folderId: z.uuid().nullable().optional().describe("The folder to file them in. null takes them out of their folder."),
       pinned: z.boolean().optional().describe("true pins them to the top of Luke's notes; false unpins them."),
     }),
-    run: async ({ ids, projectId, pinned }): Promise<Outcome> => {
-      if (projectId === undefined && pinned === undefined) throw new OperationError("Say what to change: projectId or pinned.");
+    run: async ({ ids, projectId, folderId, pinned }): Promise<Outcome> => {
+      if (projectId === undefined && folderId === undefined && pinned === undefined)
+        throw new OperationError("Say what to change: projectId, folderId or pinned.");
       const rows = await liveTitles(notes, ids);
       const project = await projectName(projectId);
+      if (folderId) await assertFolder(folderId);
       const now = new Date();
       await db
         .update(notes)
         .set({
           ...(projectId !== undefined && { projectId, updatedAt: now }),
+          ...(folderId !== undefined && { folderId, updatedAt: now }),
           // Notes already pinned keep their place.
           ...(pinned !== undefined && { pinnedAt: pinned ? sql`coalesce(${notes.pinnedAt}, ${now})` : null }),
         })

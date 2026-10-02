@@ -99,6 +99,13 @@
       "when": 1790939419052,
       "tag": "0013_task_buckets",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790939801374,
+      "tag": "0014_note_folders",
+      "breakpoints": true
     }
   ]
 }

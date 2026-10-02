@@ -5,6 +5,7 @@ import { db, schema } from "@/db";
 import { projectColorNames, type ProjectColor } from "@/lib/project-colors";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { listArtifacts } from "./artifacts";
+import { listFolders } from "./folders";
 import { listNotes } from "./notes";
 import { listTasks } from "./tasks";
 
@@ -80,11 +81,12 @@ export const projectOperations = {
   get_project: defineOperation({
     name: "get_project",
     description:
-      "Get one project with all of its tasks (including done ones), its notes and its artifacts (titles and excerpts; use get_note or get_artifact for the full text).",
+      "Get one project with all of its tasks (including done ones), the note folders attached to it, its notes (including those in its folders) and its artifacts (titles and excerpts; use get_note or get_artifact for the full text).",
     input: z.object({ id }),
     run: async ({ id }) => ({
       ...(await getProject(id)),
       tasks: await listTasks({ projectId: id, includeDone: true }),
+      folders: await listFolders({ projectId: id }),
       notes: await listNotes({ projectId: id }),
       artifacts: await listArtifacts({ projectId: id }),
     }),

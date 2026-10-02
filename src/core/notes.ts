@@ -6,9 +6,10 @@ import { colorHex, type ProjectColor } from "@/lib/project-colors";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { tagMentions } from "@/lib/mentions";
 import { syncMentions } from "./mentions";
+import { assertFolder } from "./folders";
 import { assertProject } from "./projects";
 
-const { notes, projects, images } = schema;
+const { notes, noteFolders, projects, images } = schema;
 
 import { noteFormats, type NoteFormat } from "@/lib/note-formats";
 
@@ -21,6 +22,8 @@ export type NoteSummary = {
   /** The first line or two of text, for lists. */
   excerpt: string;
   project: { id: string; name: string; color: ProjectColor; hex: string } | null;
+  /** The folder it's filed in, if any. */
+  folder: { id: string; name: string } | null;
   /** Pinned notes sit at the top of every list of notes. */
   pinned: boolean;
   madeBy: ReturnType<typeof madeByOf>;
@@ -71,6 +74,7 @@ const live = and(isNull(notes.deletedAt), sql`(${projects.id} is null or ${proje
 export async function listNotes(
   filter: {
     projectId?: string | null;
+    folderId?: string | null;
     madeBy?: "luke" | "claude";
     routine?: string;
     search?: string;
@@ -80,7 +84,10 @@ export async function listNotes(
   // The scratch pad lives on the dashboard, not in Notes.
   const where: (SQL | undefined)[] = [live, eq(notes.kind, "note")];
   if (filter.projectId === null) where.push(isNull(notes.projectId));
-  else if (filter.projectId) where.push(eq(notes.projectId, filter.projectId));
+  // A project's notes include the ones in folders attached to it.
+  else if (filter.projectId) where.push(or(eq(notes.projectId, filter.projectId), eq(noteFolders.projectId, filter.projectId)));
+  if (filter.folderId === null) where.push(isNull(notes.folderId));
+  else if (filter.folderId) where.push(eq(notes.folderId, filter.folderId));
   if (filter.madeBy) where.push(eq(notes.createdByKind, filter.madeBy === "claude" ? "agent" : "user"));
   if (filter.routine) where.push(eq(notes.createdByRoutine, filter.routine));
   if (filter.search?.trim()) {
@@ -103,20 +110,23 @@ export async function listNotes(
         updatedAt: notes.updatedAt,
       },
       project: projects,
+      folder: { id: noteFolders.id, name: noteFolders.name },
     })
     .from(notes)
     .leftJoin(projects, eq(projects.id, notes.projectId))
+    .leftJoin(noteFolders, eq(noteFolders.id, notes.folderId))
     .where(and(...where))
     // Pinned notes first (the most recently pinned on top), then the rest by when they were changed.
     .orderBy(sql`${notes.pinnedAt} desc nulls last`, desc(notes.updatedAt))
     .limit(filter.limit ?? 200);
 
-  return rows.map(({ note, project }) => ({
+  return rows.map(({ note, project, folder }) => ({
     id: note.id,
     title: note.title,
     format: note.format as NoteFormat,
     excerpt: excerptOf(note.start, note.format),
     project: projectOf(project),
+    folder,
     pinned: note.pinnedAt !== null,
     madeBy: madeByOf(note),
     createdAt: note.createdAt,
@@ -126,13 +136,14 @@ export async function listNotes(
 
 export async function getNote(id: string): Promise<Note> {
   const [row] = await db
-    .select({ note: notes, project: projects })
+    .select({ note: notes, project: projects, folder: { id: noteFolders.id, name: noteFolders.name } })
     .from(notes)
     .leftJoin(projects, eq(projects.id, notes.projectId))
+    .leftJoin(noteFolders, eq(noteFolders.id, notes.folderId))
     .where(and(eq(notes.id, id), live))
     .limit(1);
   if (!row) throw new OperationError("That note doesn't exist, or it's in Trash.", 404);
-  const { note, project } = row;
+  const { note, project, folder } = row;
   return {
     id: note.id,
     title: note.title,
@@ -141,6 +152,7 @@ export async function getNote(id: string): Promise<Note> {
     content: note.content,
     scratchPad: note.kind === "scratchpad",
     project: projectOf(project),
+    folder,
     pinned: note.pinnedAt !== null,
     madeBy: madeByOf(note),
     createdAt: note.createdAt,
@@ -174,14 +186,20 @@ const content = z
     'The note\'s body. For Markdown notes: headings (#), lists (-), checklists (- [ ] and - [x]), links, and photos as ![](url) using a url from save_image. For format "html", a complete HTML page.',
   );
 const projectId = z.uuid().nullable().describe("The project it belongs to. null means it stands on its own.");
+const folderId = z.uuid().nullable().describe("The folder to file it in (see list_folders). null means it isn't in a folder.");
 
 export const noteOperations = {
   list_notes: defineOperation({
     name: "list_notes",
     description:
-      "List notes: pinned ones first, then the most recently changed, with a short excerpt of each (use get_note for the full text). Filter by project, by who made them, by routine, or search the title and text.",
+      "List notes: pinned ones first, then the most recently changed, with a short excerpt of each (use get_note for the full text). Filter by project, by folder, by who made them, by routine, or search the title and text.",
     input: z.object({
-      projectId: z.uuid().nullable().optional().describe("Only this project's notes. null means notes with no project."),
+      projectId: z
+        .uuid()
+        .nullable()
+        .optional()
+        .describe("Only this project's notes, including those in folders attached to it. null means notes with no project."),
+      folderId: z.uuid().nullable().optional().describe("Only notes in this folder. null means notes not in any folder."),
       madeBy: z.enum(["luke", "claude"]).optional().describe("Only notes Luke made, or only ones Claude made."),
       routine: z.string().optional().describe("Only notes made by this routine."),
       search: z.string().optional().describe("Words to look for in the title or text."),
@@ -206,9 +224,11 @@ export const noteOperations = {
       content: content.optional(),
       format: z.enum(noteFormats).optional().describe('"markdown" (the default) or "html".'),
       projectId: projectId.optional(),
+      folderId: folderId.optional(),
     }),
     run: async (input, { actor }) => {
       if (input.projectId) await assertProject(input.projectId);
+      if (input.folderId) await assertFolder(input.folderId);
       const [row] = await db
         .insert(notes)
         .values({
@@ -217,6 +237,7 @@ export const noteOperations = {
           content: actor.kind === "user" ? tagMentions(input.content ?? "", () => crypto.randomUUID()) : (input.content ?? ""),
           format: input.format ?? "markdown",
           projectId: input.projectId ?? null,
+          folderId: input.folderId ?? null,
           ...madeByColumns(actor),
         })
         .returning({ id: notes.id });
@@ -229,18 +250,20 @@ export const noteOperations = {
   update_note: defineOperation({
     name: "update_note",
     description:
-      "Change one of Luke's notes: its title, its whole text, its project, or whether it's pinned to the top of his notes. Only when Luke explicitly asks you to change his note. To add to the end without rewriting it (a running log, say), use append instead of content. Fields left out stay as they are.",
+      "Change one of Luke's notes: its title, its whole text, its project, its folder, or whether it's pinned to the top of his notes. Only when Luke explicitly asks you to change his note. To add to the end without rewriting it (a running log, say), use append instead of content. Fields left out stay as they are.",
     input: z.object({
       id,
       title: title.optional(),
       content: content.optional(),
       append: z.string().max(200_000).optional().describe("Text to add to the end of the note, as a new paragraph."),
       projectId: projectId.optional(),
+      folderId: folderId.optional(),
       pinned: z.boolean().optional().describe("true pins the note to the top of Luke's notes; false unpins it."),
     }),
-    run: async ({ id, title, content, append, projectId, pinned }, { actor }) => {
+    run: async ({ id, title, content, append, projectId, folderId, pinned }, { actor }) => {
       const current = await getNote(id);
       if (projectId) await assertProject(projectId);
+      if (folderId) await assertFolder(folderId);
       let body = content;
       if (append?.trim()) {
         const base = (body ?? current.content).trimEnd();
@@ -250,9 +273,10 @@ export const noteOperations = {
         ...(title !== undefined && { title }),
         ...(body !== undefined && { content: body }),
         ...(projectId !== undefined && { projectId }),
+        ...(folderId !== undefined && { folderId }),
         ...(pinned !== undefined && pinned !== current.pinned && { pinnedAt: pinned ? new Date() : null }),
         // Pinning isn't editing, so it doesn't change when the note was last edited.
-        ...((title !== undefined || body !== undefined || projectId !== undefined) && { updatedAt: new Date() }),
+        ...((title !== undefined || body !== undefined || projectId !== undefined || folderId !== undefined) && { updatedAt: new Date() }),
       };
       if (Object.keys(set).length) await db.update(notes).set(set).where(eq(notes.id, id));
       const note = await getNote(id);
