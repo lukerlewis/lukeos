@@ -41,6 +41,7 @@ export function MessageThread({
   unread: number;
 }) {
   const router = useRouter();
+  const rootRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const [sending, setSending] = useState<ThreadMessage[]>([]);
   const shown = [...messages, ...sending.filter((s) => !messages.some((m) => m.id === s.id))];
@@ -54,8 +55,33 @@ export function MessageThread({
       .catch(() => {});
   }, [unread]);
 
-  // Start at the newest message, and follow new ones as they arrive.
+  // Open at the newest message. Next.js scrolls a newly opened screen back to
+  // the top just after this runs, and the notifications banner can appear above
+  // the chain a moment later, so hold the bottom until the screen settles or
+  // Luke scrolls himself. Runs before the first paint, so there's no visible jump.
   useLayoutEffect(() => {
+    const toEnd = () => endRef.current?.scrollIntoView({ block: "end" });
+    toEnd();
+    const frame = requestAnimationFrame(toEnd);
+    const resize = new ResizeObserver(toEnd);
+    const area = rootRef.current?.parentElement;
+    if (area) resize.observe(area);
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      clearTimeout(timer);
+      for (const e of ["wheel", "touchstart", "keydown"]) window.removeEventListener(e, stop);
+    };
+    const timer = setTimeout(stop, 1500);
+    for (const e of ["wheel", "touchstart", "keydown"]) window.addEventListener(e, stop, { passive: true });
+    return stop;
+  }, []);
+
+  // Follow new messages as they arrive.
+  const count = useRef(shown.length);
+  useLayoutEffect(() => {
+    if (shown.length === count.current) return;
+    count.current = shown.length;
     endRef.current?.scrollIntoView({ block: "end" });
   }, [shown.length]);
 
@@ -74,7 +100,7 @@ export function MessageThread({
   const waiting = lastLuke >= 0 && !shown[lastLuke].answered && !shown.slice(lastLuke + 1).some((m) => m.from === "claude");
 
   return (
-    <div className="flex grow flex-col">
+    <div ref={rootRef} className="flex grow flex-col">
       {shown.length === 0 ? (
         <div className="mx-auto flex max-w-sm flex-col items-center gap-2 py-16 text-center">
           <span className="flex size-12 items-center justify-center rounded-full bg-muted">
