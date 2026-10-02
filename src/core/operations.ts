@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { passkeyCount } from "@/lib/auth/passkeys";
 import { activityOperations } from "./activity";
+import { archiveOperations } from "./archive";
 import { artifactOperations } from "./artifacts";
 import { boardOperations } from "./board";
 import { bulkOperations } from "./bulk";
@@ -47,6 +48,7 @@ export const operations = {
   ...projectOperations,
   ...noteOperations,
   ...folderOperations,
+  ...archiveOperations,
   ...artifactOperations,
   ...commentOperations,
   ...mentionOperations,

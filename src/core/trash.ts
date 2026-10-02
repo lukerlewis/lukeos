@@ -8,11 +8,13 @@ import { deleteOrphanComments } from "./artifacts";
 import { deleteOrphanMentions } from "./mentions";
 import { defineOperation, madeByOf, OperationError, type MadeBy } from "./define";
 
-const { tasks, notes, artifacts, projects, sops, routines } = schema;
+const { tasks, notes, artifacts, projects, sops, routines, archiveEntries } = schema;
 
-type Kind = "task" | "note" | "artifact" | "project" | "sop" | "routine";
+type Kind = "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry";
+type OwnKind = "sop" | "routine" | "entry";
 /** Things that stand alone, outside any project. */
-const ownTable = (type: "sop" | "routine") => (type === "sop" ? sops : routines);
+const ownTable = (type: OwnKind) => (type === "sop" ? sops : type === "routine" ? routines : archiveEntries);
+const isOwn = (type: Kind): type is OwnKind => type === "sop" || type === "routine" || type === "entry";
 const tableOf = (type: "task" | "note" | "artifact") => (type === "task" ? tasks : type === "note" ? notes : artifacts);
 
 /** How long things stay in Trash before they're deleted for good. */
@@ -36,7 +38,9 @@ export type TrashItem = {
   deletesOn: Date;
 };
 
-const itemType = z.enum(["task", "note", "artifact", "project", "sop", "routine"]).describe("task, note, artifact, project, sop or routine.");
+const itemType = z
+  .enum(["task", "note", "artifact", "project", "sop", "routine", "entry"])
+  .describe("task, note, artifact, project, sop, routine or entry (a Work archive entry).");
 
 function deletesOn(deletedAt: Date) {
   return new Date(deletedAt.getTime() + TRASH_DAYS * DAY_MS);
@@ -60,6 +64,7 @@ export async function purgeExpiredTrash({ force = false } = {}) {
     await tx.delete(projects).where(lt(projects.deletedAt, cutoff));
     await tx.delete(sops).where(lt(sops.deletedAt, cutoff));
     await tx.delete(routines).where(lt(routines.deletedAt, cutoff));
+    await tx.delete(archiveEntries).where(lt(archiveEntries.deletedAt, cutoff));
   });
   await deleteOrphanComments();
   await deleteOrphanMentions();
@@ -67,7 +72,7 @@ export async function purgeExpiredTrash({ force = false } = {}) {
 }
 
 /**
- * Photos that no note, artifact or task mentions any more. Only ones over a day old,
+ * Photos that no note, artifact, task or Work archive entry mentions any more. Only ones over a day old,
  * so a photo being pasted into a note right now isn't touched.
  */
 async function deleteUnusedImages() {
@@ -76,7 +81,8 @@ async function deleteUnusedImages() {
     where i.created_at < now() - interval '1 day'
       and not exists (select 1 from notes n where position(i.id::text in n.content) > 0)
       and not exists (select 1 from artifact_parts p where position(i.id::text in p.content) > 0)
-      and not exists (select 1 from tasks t where position(i.id::text in coalesce(t.notes, '')) > 0)`);
+      and not exists (select 1 from tasks t where position(i.id::text in coalesce(t.notes, '')) > 0)
+      and not exists (select 1 from archive_entries e where position(i.id::text in e.story) > 0)`);
 }
 
 /**
@@ -92,7 +98,7 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
   const onItsOwn = (deletedAt: AnyColumn) =>
     sql`(${parent.id} is null or ${parent.deletedAt} is null or ${parent.deletedAt} <> ${deletedAt})`;
 
-  const [taskRows, noteRows, artifactRows, projectRows, sopRows, routineRows] = await Promise.all([
+  const [taskRows, noteRows, artifactRows, projectRows, sopRows, routineRows, entryRows] = await Promise.all([
     want("task")
       ? db
           .select({ task: tasks, parent })
@@ -178,6 +184,19 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
           .from(routines)
           .where(isNotNull(routines.deletedAt))
       : [],
+    want("entry")
+      ? db
+          .select({
+            id: archiveEntries.id,
+            title: archiveEntries.title,
+            deletedAt: archiveEntries.deletedAt,
+            createdByKind: archiveEntries.createdByKind,
+            createdByName: archiveEntries.createdByName,
+            createdByRoutine: archiveEntries.createdByRoutine,
+          })
+          .from(archiveEntries)
+          .where(isNotNull(archiveEntries.deletedAt))
+      : [],
   ]);
 
   const parentOf = (p: typeof parent.$inferSelect | null) =>
@@ -250,13 +269,24 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
       deletedAt: routine.deletedAt!,
       deletesOn: deletesOn(routine.deletedAt!),
     })),
+    ...entryRows.map((entry) => ({
+      type: "entry" as const,
+      id: entry.id,
+      title: entry.title || "Untitled",
+      project: null,
+      contains: null,
+      format: null,
+      madeBy: madeByOf(entry),
+      deletedAt: entry.deletedAt!,
+      deletesOn: deletesOn(entry.deletedAt!),
+    })),
   ];
   items.sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
   return items;
 }
 
 async function trashedRow(type: TrashItem["type"], id: string) {
-  const table = type === "project" ? projects : type === "sop" || type === "routine" ? ownTable(type) : tableOf(type);
+  const table = type === "project" ? projects : isOwn(type) ? ownTable(type) : tableOf(type);
   const [row] = await db
     .select({ deletedAt: table.deletedAt })
     .from(table)
@@ -290,7 +320,7 @@ export async function restoreFromTrash(type: TrashItem["type"], id: string) {
     });
     return { restored: { type, id }, movedOutOfProject: false };
   }
-  if (type === "sop" || type === "routine") {
+  if (isOwn(type)) {
     const table = ownTable(type);
     await db.update(table).set({ deletedAt: null }).where(eq(table.id, id));
     return { restored: { type, id }, movedOutOfProject: false };
@@ -322,7 +352,7 @@ export async function deleteForever(type: TrashItem["type"], id: string) {
       await tx.delete(artifacts).where(and(eq(artifacts.projectId, id), eq(artifacts.deletedAt, deletedAt)));
       await tx.delete(projects).where(eq(projects.id, id));
     });
-  } else if (type === "sop" || type === "routine") {
+  } else if (isOwn(type)) {
     const table = ownTable(type);
     await db.delete(table).where(eq(table.id, id));
   } else {
@@ -342,7 +372,8 @@ export async function emptyTrash() {
     const p = await tx.delete(projects).where(isNotNull(projects.deletedAt)).returning({ id: projects.id });
     const s = await tx.delete(sops).where(isNotNull(sops.deletedAt)).returning({ id: sops.id });
     const r = await tx.delete(routines).where(isNotNull(routines.deletedAt)).returning({ id: routines.id });
-    return { tasks: t.length, notes: n.length, artifacts: a.length, projects: p.length, sops: s.length, routines: r.length };
+    const e = await tx.delete(archiveEntries).where(isNotNull(archiveEntries.deletedAt)).returning({ id: archiveEntries.id });
+    return { tasks: t.length, notes: n.length, artifacts: a.length, projects: p.length, sops: s.length, routines: r.length, entries: e.length };
   });
   await deleteOrphanComments();
   await deleteOrphanMentions();
@@ -356,7 +387,8 @@ export async function trashCount() {
          + (select count(*) from artifacts where deleted_at is not null)
          + (select count(*) from projects where deleted_at is not null)
          + (select count(*) from sops where deleted_at is not null)
-         + (select count(*) from routines where deleted_at is not null) as n`).then((r) => r.rows);
+         + (select count(*) from routines where deleted_at is not null)
+         + (select count(*) from archive_entries where deleted_at is not null) as n`).then((r) => r.rows);
   return Number(row.n);
 }
 
@@ -373,7 +405,7 @@ export const trashOperations = {
   restore_from_trash: defineOperation({
     name: "restore_from_trash",
     description:
-      "Bring a task, note, artifact, project, SOP or routine back from Trash. Restoring a project also brings back the tasks, notes and artifacts that went to Trash with it. A task, note or artifact whose project is still in Trash comes back on its own, outside the project.",
+      "Bring a task, note, artifact, project, SOP, routine or Work archive entry back from Trash. Restoring a project also brings back the tasks, notes and artifacts that went to Trash with it. A task, note or artifact whose project is still in Trash comes back on its own, outside the project.",
     input: z.object({ type: itemType, id }),
     run: async ({ type, id }) => restoreFromTrash(type, id),
   }),

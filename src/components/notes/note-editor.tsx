@@ -47,13 +47,21 @@ type Change = {
   sopId?: string | null;
   enabled?: boolean;
   pinned?: boolean;
+  story?: string;
+  size?: "win" | "story" | "project";
+  stage?: "raw" | "drafted" | "published";
+  company?: string | null;
+  role?: string | null;
+  period?: string | null;
+  outcome?: string | null;
+  confidential?: boolean;
 };
 
 /**
  * Saves changes a moment after typing stops, one save at a time, and makes
  * sure nothing is lost when Luke leaves the page or switches apps.
  */
-export function useAutosave(noteId: string, save: "update_note" | "update_sop" | "update_routine" = "update_note") {
+export function useAutosave(noteId: string, save: "update_note" | "update_sop" | "update_routine" | "update_archive_entry" = "update_note") {
   const [state, setState] = useState<SaveState>("saved");
   const pending = useRef<Change>({});
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -328,7 +336,7 @@ export function NoteEditor({
   );
 }
 
-function imageFiles(list: FileList | null | undefined) {
+export function imageFiles(list: FileList | null | undefined) {
   return Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
 }
 

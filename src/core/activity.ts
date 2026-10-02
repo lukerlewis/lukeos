@@ -5,9 +5,9 @@ import { db, schema } from "@/db";
 import { statusLabel, type Status } from "@/lib/task-fields";
 import { defineOperation, type Actor } from "./define";
 
-const { activityLog, tasks, notes, artifacts, projects, sops, routines } = schema;
+const { activityLog, tasks, notes, artifacts, projects, sops, routines, archiveEntries } = schema;
 
-type ItemType = "task" | "note" | "artifact" | "project" | "sop" | "routine";
+type ItemType = "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry";
 
 /** One line of the activity log. */
 export type ActivityEntry = {
@@ -54,12 +54,22 @@ const fieldLabel: Record<string, string> = {
   sopId: "SOP",
   enabled: "on",
   pinned: "pin",
+  story: "story",
+  size: "size",
+  stage: "stage",
+  company: "company",
+  role: "role",
+  period: "when",
+  outcome: "outcome",
+  confidential: "confidential",
 };
 
 const quote = (title: string | null | undefined) => {
   const t = (title ?? "").trim() || "Untitled";
   return `“${t.length > 60 ? `${t.slice(0, 59)}…` : t}”`;
 };
+
+const kindLabel = (type: ItemType) => (type === "sop" ? "SOP" : type === "entry" ? "Work archive entry" : type);
 
 const changed = (input: Record<string, unknown>) =>
   Object.keys(input)
@@ -73,7 +83,8 @@ async function titleOf(type: ItemType, id: unknown) {
       const [row] = await db.select({ t: projects.name }).from(projects).where(eq(projects.id, id)).limit(1);
       return row?.t ?? null;
     }
-    const table = type === "task" ? tasks : type === "note" ? notes : type === "sop" ? sops : type === "routine" ? routines : artifacts;
+    const table =
+      type === "task" ? tasks : type === "note" ? notes : type === "sop" ? sops : type === "routine" ? routines : type === "entry" ? archiveEntries : artifacts;
     const [row] = await db.select({ t: table.title }).from(table).where(eq(table.id, id)).limit(1);
     return row?.t ?? null;
   } catch {
@@ -99,6 +110,11 @@ export async function titleBefore(tool: string, input: Record<string, unknown>) 
       return titleOf("sop", input.id);
     case "delete_routine":
       return titleOf("routine", input.id);
+    case "delete_archive_entry":
+      return titleOf("entry", input.id);
+    case "add_archive_link":
+    case "add_archive_file":
+      return titleOf("entry", input.entryId);
     case "restore_from_trash":
     case "delete_forever":
       return titleOf(input.type as ItemType, input.id);
@@ -214,6 +230,28 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       const verb = run.status === "failed" ? "Couldn't finish" : "Finished";
       return { summary: `${verb} routine ${quote(run.routine.title)}`, item: { type: "routine", id: run.routine.id } };
     }
+    case "create_archive_entry":
+      return { summary: `Added ${quote(task.title)} to the Work archive`, item: { type: "entry", id: task.id } };
+    case "update_archive_entry": {
+      const fields = changed(input);
+      const summary =
+        typeof input.append === "string" && input.append.trim() && fields.length === 0
+          ? `Added to ${quote(task.title)} in the Work archive`
+          : `Edited ${quote(task.title)} in the Work archive${fields.length ? ` (${fields.join(", ")})` : ""}`;
+      return { summary, item: { type: "entry", id: task.id } };
+    }
+    case "delete_archive_entry":
+      return { summary: `Moved ${quote(before)} from the Work archive to Trash`, item: { type: "entry", id: String(input.id) } };
+    case "add_archive_link":
+    case "add_archive_file":
+      return {
+        summary: `Added ${tool === "add_archive_link" ? "a link" : "a file"} ${quote((r as { name?: string }).name)} to ${quote(before)}`,
+        item: { type: "entry", id: String(input.entryId) },
+      };
+    case "remove_archive_file": {
+      const f = r as { name?: string; entryId?: string };
+      return { summary: `Removed ${quote(f.name)} from a Work archive entry`, item: f.entryId ? { type: "entry", id: f.entryId } : undefined };
+    }
     case "set_check_in_times":
       return { summary: `Changed check-in times to ${String((r as { checkIns?: string }).checkIns ?? "")}` };
     case "copy_artifact_to_note":
@@ -252,13 +290,13 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
 
     case "restore_from_trash": {
       const type = input.type as ItemType;
-      return { summary: `Brought back ${type === "sop" ? "SOP" : type} ${quote(before)} from Trash`, item: { type, id: String(input.id) } };
+      return { summary: `Brought back ${kindLabel(type)} ${quote(before)} from Trash`, item: { type, id: String(input.id) } };
     }
     case "delete_forever":
-      return { summary: `Deleted ${input.type === "sop" ? "SOP" : input.type} ${quote(before)} forever` };
+      return { summary: `Deleted ${kindLabel(input.type as ItemType)} ${quote(before)} forever` };
     case "empty_trash": {
       const c = (r.deletedForever ?? {}) as Record<string, number>;
-      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.routines ?? 0);
+      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.routines ?? 0) + (c.entries ?? 0);
       return { summary: `Emptied Trash (${n} ${n === 1 ? "item" : "items"})` };
     }
 

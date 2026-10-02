@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Archive,
   CheckSquare,
   CornerDownLeft,
   FilePlus,
@@ -119,6 +120,7 @@ const pages: { href: string; label: string; icon: LucideIcon; keywords?: string 
   { href: "/", label: "Dashboard", icon: LayoutDashboard, keywords: "home today due board kanban" },
   { href: "/tasks", label: "All tasks", icon: CheckSquare, keywords: "list" },
   { href: "/notes", label: "Notes", icon: FileText, keywords: "pages documents" },
+  { href: "/archive", label: "Work archive", icon: Archive, keywords: "portfolio case studies wins stories career" },
   { href: "/agents", label: "Agents", icon: Bot, keywords: "ai claude routines made activity from" },
   { href: "/projects", label: "Projects", icon: Folder },
   { href: "/trash", label: "Trash", icon: Trash2, keywords: "deleted bin restore" },
@@ -420,6 +422,16 @@ function resultItem(
         actions.onDone?.();
         actions.openTask(task);
       },
+    };
+  }
+  if (r.type === "entry") {
+    return {
+      key: `entry-${r.id}`,
+      group: "Work archive",
+      label: r.title,
+      icon: Archive,
+      detail,
+      run: () => actions.go(`/archive/${r.id}`),
     };
   }
   if (r.type === "artifact") {

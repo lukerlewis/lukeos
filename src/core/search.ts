@@ -7,11 +7,11 @@ import type { Status } from "@/lib/task-fields";
 import { defineOperation, madeByOf, type MadeBy } from "./define";
 import { excerptOf, plainTextOf } from "./notes";
 
-const { tasks, notes, artifacts, projects } = schema;
+const { tasks, notes, artifacts, projects, archiveEntries } = schema;
 
 /** One thing that matched a search. */
 export type SearchResult = {
-  type: "task" | "note" | "artifact" | "project";
+  type: "task" | "note" | "artifact" | "project" | "entry";
   id: string;
   title: string;
   /** A bit of the text around the first match, when it matched below the title. */
@@ -75,7 +75,9 @@ export async function search(query: string, filter: { type?: SearchResult["type"
     from artifact_parts p join artifact_versions v on v.id = p.version_id
     where v.artifact_id = ${artifacts.id} and v.number = ${artifacts.version}), '')`;
 
-  const [taskRows, noteRows, artifactRows, projectRows] = await Promise.all([
+  const entryText = sql<string>`concat_ws(' ', ${archiveEntries.story}, ${archiveEntries.company}, ${archiveEntries.role}, ${archiveEntries.outcome})`;
+
+  const [taskRows, noteRows, artifactRows, projectRows, entryRows] = await Promise.all([
     want("task")
       ? db
           .select({ task: tasks, project: projects })
@@ -116,6 +118,14 @@ export async function search(query: string, filter: { type?: SearchResult["type"
           .from(projects)
           .where(and(isNull(projects.deletedAt), matchesAll(words, sql`${projects.name}`)))
           .orderBy(desc(projects.updatedAt))
+          .limit(limit)
+      : [],
+    want("entry")
+      ? db
+          .select({ entry: archiveEntries, text: entryText })
+          .from(archiveEntries)
+          .where(and(isNull(archiveEntries.deletedAt), matchesAll(words, sql`${archiveEntries.title}`, entryText)))
+          .orderBy(desc(archiveEntries.updatedAt))
           .limit(limit)
       : [],
   ]);
@@ -177,6 +187,21 @@ export async function search(query: string, filter: { type?: SearchResult["type"
         updatedAt: artifact.updatedAt,
       };
     }),
+    ...entryRows.map(({ entry, text }) => {
+      const title = entry.title || "Untitled";
+      return {
+        type: "entry" as const,
+        id: entry.id,
+        title,
+        snippet: titleHasAll(title, words) ? excerptOf(entry.story, "markdown") || null : snippetAround(plainTextOf(text, "markdown"), words),
+        status: null,
+        dueDate: null,
+        format: null,
+        project: null,
+        madeBy: madeByOf(entry),
+        updatedAt: entry.updatedAt,
+      };
+    }),
   ];
 
   results.sort((a, b) => {
@@ -191,10 +216,10 @@ export const searchOperations = {
   search: defineOperation({
     name: "search",
     description:
-      "Search everything in LukeOS (not Trash): task titles and task notes, note titles and text, artifact titles and text (latest version), and project names. Every word must match. Results whose title matches come first, then the most recently changed. Done tasks are included.",
+      "Search everything in LukeOS (not Trash): task titles and task notes, note titles and text, artifact titles and text (latest version), Work archive entries (title, story and details), and project names. Every word must match. Results whose title matches come first, then the most recently changed. Done tasks are included.",
     input: z.object({
       query: z.string().min(1).max(200).describe("The words to look for."),
-      type: z.enum(["task", "note", "artifact", "project"]).optional().describe("Only this kind of thing."),
+      type: z.enum(["task", "note", "artifact", "project", "entry"]).optional().describe("Only this kind of thing."),
       limit: z.number().int().min(1).max(100).optional(),
     }),
     run: async ({ query, type, limit }) => search(query, { type, limit }),

@@ -287,6 +287,61 @@ export const routineRuns = pgTable(
   (t) => [unique("routine_runs_once").on(t.routineId, t.dueAt), index("routine_runs_due_idx").on(t.dueAt)],
 );
 
+/**
+ * An entry in Luke's Work archive: a piece of work he's done, kept as raw
+ * material for case studies, his portfolio and content. Anything from a quick
+ * win to a multi-year project. The story is Markdown with photos in it; the
+ * first photo is the cover.
+ */
+export const archiveEntries = pgTable(
+  "archive_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull().default(""),
+    size: text("size").notNull().default("win"), // "win" | "story" | "project"
+    stage: text("stage").notNull().default("raw"), // "raw" | "drafted" | "published"
+    story: text("story").notNull().default(""),
+    company: text("company"),
+    role: text("role"),
+    /** When it happened, in Luke's words, e.g. "2021 to 2024" or "March 2025". */
+    period: text("period"),
+    /** The result, in a line. */
+    outcome: text("outcome"),
+    /** Names a client or has internal numbers, so it needs disguising before it's shared. */
+    confidential: boolean("confidential").notNull().default(false),
+    ...madeBy,
+  },
+  (t) => [index("archive_entries_updated_idx").on(t.updatedAt)],
+);
+
+/**
+ * A file (a PDF, a short video...) or a link (Figma, a live site, a video)
+ * kept with a Work archive entry. Files are stored in the database, like
+ * photos, and shown at /api/files/<id>.
+ */
+export const archiveFiles = pgTable(
+  "archive_files",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    entryId: uuid("entry_id")
+      .notNull()
+      .references(() => archiveEntries.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // "file" | "link"
+    name: text("name").notNull().default(""),
+    /** Links only. */
+    url: text("url"),
+    /** Files only. */
+    mimeType: text("mime_type"),
+    bytes: integer("bytes"),
+    data: bytea("data"),
+    createdByKind: madeBy.createdByKind,
+    createdByName: madeBy.createdByName,
+    createdByRoutine: madeBy.createdByRoutine,
+    createdAt: madeBy.createdAt,
+  },
+  (t) => [index("archive_files_entry_idx").on(t.entryId)],
+);
+
 /** A photo pasted into a note, kept in the database and shown at /api/images/<id>. */
 export const images = pgTable("images", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -364,7 +419,7 @@ export const activityLog = pgTable(
     routine: text("routine"),
     tool: text("tool").notNull(),
     summary: text("summary").notNull(),
-    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop" | "routine", when it's about one thing
+    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry", when it's about one thing
     itemId: uuid("item_id"),
   },
   (t) => [index("activity_log_at_idx").on(t.at)],
@@ -381,7 +436,7 @@ export const messages = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     body: text("body").notNull(),
     /** Something in LukeOS the message is about, shown as a card under it. */
-    linkType: text("link_type"), // "task" | "note" | "artifact" | "project" | "routine"
+    linkType: text("link_type"), // "task" | "note" | "artifact" | "project" | "routine" | "entry"
     linkId: uuid("link_id"),
     /** Claude's messages: when Luke saw it. */
     readAt: timestamp("read_at", { withTimezone: true }),

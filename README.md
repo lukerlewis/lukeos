@@ -42,6 +42,15 @@ the app, Claude can do too, through a connector (roadmap step 3).
   `/api/images/<id>`. Claude can also save a finished HTML page (format
   `html`), shown read-only in a sandboxed frame. Operations in
   `src/core/notes.ts`.
+- **Work archive** (`/archive`): Luke's record of work he's done, from quick
+  wins to multi-year projects, kept as raw material for case studies and
+  content. Each entry has a size, a stage (Raw, Drafted, Published), details,
+  a confidential flag, and a story edited like a note (its first photo is the
+  cover on the grid). Files up to 4 MB are stored in the database
+  (`archive_files`, uploaded raw to `/api/archive/<id>/files`, served at
+  `/api/files/<id>`, downloading rather than opening unless they're a PDF,
+  photo, video or audio); anything bigger goes in as a link. Operations in
+  `src/core/archive.ts`.
 - **From Claude** (`/from-claude`): everything Claude made (notes, tasks,
   projects), filterable by routine, with a New count since Luke last looked
   (`src/core/from-claude.ts`).
