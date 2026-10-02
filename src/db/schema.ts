@@ -61,6 +61,8 @@ export const tasks = pgTable(
     title: text("title").notNull(),
     status: text("status").notNull().default("todo"), // "todo" | "doing" | "done"
     dueDate: date("due_date"), // YYYY-MM-DD, no time of day
+    /** Which list it's in: "today" | "tomorrow" | "this_week" | "later". Set by hand, separate from the due date. */
+    bucket: text("bucket").notNull().default("today"),
     priority: text("priority"), // "low" | "medium" | "high"
     effort: text("effort"), // "small" | "medium" | "large"
     notes: text("notes"),

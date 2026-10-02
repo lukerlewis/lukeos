@@ -7,7 +7,7 @@ import type { Task } from "@/core/tasks";
 import { friendlyDay, nextRepeat } from "@/lib/dates";
 import { SmartChips, useSmartEntry } from "./smart-chips";
 import { op } from "@/lib/ops-client";
-import { effortLabel, priorityLabel, repeatLabel, type Status } from "@/lib/task-fields";
+import { effortLabel, priorityLabel, repeatLabel, type Bucket, type Status } from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
 import { showToast } from "@/components/shell/toast";
 import { ClaudeBadge } from "./made-by";
@@ -131,12 +131,13 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
 /** "Add a task" line at the bottom of a list: type and press Enter. */
 export function QuickAdd({
   projectId,
-  dueDate,
+  bucket,
   placeholder = "Add a task",
   today,
 }: {
   projectId?: string | null;
-  dueDate?: string | null;
+  /** The list it goes in. Today if left out. */
+  bucket?: Bucket;
   placeholder?: string;
   /** Today in Luke's time zone, for reading "tomorrow" or "every monday" out of the name. */
   today: string;
@@ -146,14 +147,14 @@ export function QuickAdd({
   const [pending, startTransition] = useTransition();
   const smart = useSmartEntry(title, today);
   const { parsed } = smart;
-  const due = parsed.dueDate ?? (parsed.repeat ? (dueDate ?? today) : (dueDate ?? null));
+  const due = parsed.dueDate ?? (parsed.repeat ? today : null);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const typed = title;
     const clean = parsed.title;
     if (!clean) return;
-    const fields = { title: clean, projectId: projectId ?? null, dueDate: due, repeat: parsed.repeat };
+    const fields = { title: clean, projectId: projectId ?? null, bucket, dueDate: due, repeat: parsed.repeat };
     setTitle("");
     smart.reset();
     startTransition(async () => {

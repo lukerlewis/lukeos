@@ -27,10 +27,10 @@ import type { Task } from "@/core/tasks";
 import { changesForMove, columnOf, columnsFor, compareTasks, type BoardView, type Column, type ColumnId } from "@/lib/board";
 import { friendlyDay } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
-import { effortLabel, priorityLabel, repeatLabel, type Status } from "@/lib/task-fields";
+import { effortLabel, priorityLabel, repeatLabel, type Bucket, type Status } from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
 
-type Change = { id: string; changes: Partial<Pick<Task, "dueDate" | "status">> };
+type Change = { id: string; changes: Partial<Pick<Task, "bucket" | "status">> };
 
 // Tapping a card's circle steps it along: To do, Doing, Done, and back to To do.
 
@@ -41,8 +41,8 @@ const findColumn: CollisionDetection = (args) => {
 };
 
 /**
- * The board: tasks as cards in columns, either by when they're due or by
- * status. Drag a card to another column to move it (press and hold on a
+ * The board: tasks as cards in columns, either by list (Today, Tomorrow,
+ * This week, Later) or by status. Drag a card to another column to move it (press and hold on a
  * phone); tap it to open it.
  */
 export function Board({
@@ -70,7 +70,7 @@ export function Board({
     state.map((t) => (t.id === id ? { ...t, ...changes } : t)),
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const columns = columnsFor(view, today, show);
+  const columns = columnsFor(view, show);
   const dragging = items.find((t) => t.id === draggingId);
 
   const sensors = useSensors(
@@ -98,7 +98,7 @@ export function Board({
     const task = items.find((t) => t.id === active.id);
     if (!task || !over) return;
     const to = over.id as ColumnId;
-    const changes = changesForMove(task, to, today);
+    const changes = changesForMove(task, to);
     if (!changes) return;
     save({ id: task.id, changes }, () => op("move_task", { id: task.id, to }));
   }
@@ -113,7 +113,7 @@ export function Board({
   }
 
   function addTo(column: Column) {
-    const placed = changesForMove({ dueDate: null, status: "todo" }, column.id, today);
+    const placed = view === "status" ? { status: column.id as Status } : { bucket: column.id as Bucket };
     newTask({ projectId: projectId ?? null, ...placed });
   }
 
@@ -153,7 +153,7 @@ export function Board({
         )}
       >
         {columns.map((column) => {
-          const cards = items.filter((t) => columnOf(t, view, today) === column.id).sort(compareTasks);
+          const cards = items.filter((t) => columnOf(t, view) === column.id).sort(compareTasks);
           return (
             <BoardColumn key={column.id} column={column} view={view} count={cards.length} onAdd={() => addTo(column)}>
               {cards.map((t) => (
@@ -200,7 +200,6 @@ function BoardColumn({
             {column.title}
             <span className="text-xs font-normal text-muted-foreground">{count}</span>
           </h2>
-          {column.hint && <p className="text-xs text-muted-foreground">{column.hint}</p>}
         </div>
         <button
           type="button"

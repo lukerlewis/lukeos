@@ -2,9 +2,9 @@ import "server-only";
 import { and, asc, eq, gte, inArray, isNull, lte, ne, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
-import { addDays, isoDay, nextRepeat } from "@/lib/dates";
+import { addDays, isoDay, nextRepeat, whenOf } from "@/lib/dates";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
-import { efforts, priorities, repeats, statuses, type Effort, type Priority, type Repeat, type Status } from "@/lib/task-fields";
+import { buckets, efforts, priorities, repeats, statuses, type Bucket, type Effort, type Priority, type Repeat, type Status } from "@/lib/task-fields";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { syncMentions } from "./mentions";
 import { assertProject } from "./projects";
@@ -16,6 +16,8 @@ export type Task = {
   id: string;
   title: string;
   status: Status;
+  /** Which of Luke's lists it's in: Today, Tomorrow, This week or Later. Separate from the due date. */
+  bucket: Bucket;
   dueDate: string | null;
   priority: Priority | null;
   effort: Effort | null;
@@ -37,6 +39,7 @@ function toTask(t: TaskRow, p: ProjectRow | null): Task {
     id: t.id,
     title: t.title,
     status: t.status as Status,
+    bucket: t.bucket as Bucket,
     dueDate: t.dueDate,
     priority: t.priority as Priority | null,
     effort: t.effort as Effort | null,
@@ -58,6 +61,7 @@ const priorityRank = sql`case ${tasks.priority} when 'high' then 0 when 'medium'
 export async function listTasks(filter: {
   projectId?: string | null;
   status?: Status;
+  bucket?: Bucket;
   includeDone?: boolean;
   dueOnOrBefore?: string;
   dueOnOrAfter?: string;
@@ -68,6 +72,7 @@ export async function listTasks(filter: {
   else if (filter.projectId) where.push(eq(tasks.projectId, filter.projectId));
   if (filter.status) where.push(eq(tasks.status, filter.status));
   else if (!filter.includeDone) where.push(ne(tasks.status, "done"));
+  if (filter.bucket) where.push(eq(tasks.bucket, filter.bucket));
   if (filter.dueOnOrBefore) where.push(lte(tasks.dueDate, filter.dueOnOrBefore));
   if (filter.dueOnOrAfter) where.push(gte(tasks.dueDate, filter.dueOnOrAfter));
 
@@ -93,18 +98,19 @@ export async function getTask(id: string) {
   return toTask(row.task, row.project);
 }
 
-/** What the Today screen shows: late and due-today tasks, and the week ahead. */
+/** What's on Luke's plate: his Today list, and open tasks that are late, due today or due in the week ahead. */
 export async function getToday() {
   const date = await today();
-  const [dueByToday, upcoming] = await Promise.all([
-    listTasks({ dueOnOrBefore: date }),
-    listTasks({ dueOnOrAfter: addDays(date, 1), dueOnOrBefore: addDays(date, 7) }),
+  const [todayList, due] = await Promise.all([
+    listTasks({ bucket: "today" }),
+    listTasks({ dueOnOrBefore: addDays(date, 7) }),
   ]);
   return {
     date,
-    overdue: dueByToday.filter((t) => t.dueDate! < date),
-    today: dueByToday.filter((t) => t.dueDate === date),
-    upcoming,
+    todayList,
+    overdue: due.filter((t) => t.dueDate! < date),
+    dueToday: due.filter((t) => t.dueDate === date),
+    dueSoon: due.filter((t) => t.dueDate! > date),
   };
 }
 
@@ -120,13 +126,16 @@ export async function syncRepeats(ids: string[]) {
   const date = await today();
   for (const t of rows) {
     if (t.status === "done" && t.repeat && !t.repeatNextId) {
+      const dueDate = nextRepeat(t.dueDate, t.repeat as Repeat, date);
       const [next] = await db
         .insert(tasks)
         .values({
           title: t.title,
           projectId: t.projectId,
           status: "todo",
-          dueDate: nextRepeat(t.dueDate, t.repeat as Repeat, date),
+          // The next one starts in the list its due date points to; after that it stays where Luke puts it.
+          bucket: bucketFor(dueDate, date),
+          dueDate,
           priority: t.priority,
           effort: t.effort,
           notes: t.notes,
@@ -146,6 +155,15 @@ export async function syncRepeats(ids: string[]) {
   }
 }
 
+/** The list a due date points to, for placing a repeat's next one. */
+function bucketFor(dueDate: string | null, today: string): Bucket {
+  const when = whenOf(dueDate, today);
+  if (when === "overdue" || when === "today") return "today";
+  if (when === "tomorrow") return "tomorrow";
+  if (when === "week") return "this_week";
+  return "later";
+}
+
 // Inputs: every field but the title is optional, and `null` clears a field.
 const id = z.uuid().describe("The task's id.");
 const dueDate = z
@@ -157,6 +175,11 @@ export const fields = {
   title: z.string().trim().min(1).max(500),
   projectId: z.uuid().nullable().describe("The project to put it in. null means no project."),
   status: z.enum(statuses).describe("todo, doing or done."),
+  bucket: z
+    .enum(buckets)
+    .describe(
+      "Which of Luke's lists it's in: today, tomorrow, this_week or later. He sets these by hand; they're separate from the due date, so changing one never changes the other.",
+    ),
   dueDate,
   priority: z.enum(priorities).nullable().describe("low, medium or high. null clears it."),
   effort: z.enum(efforts).nullable().describe("How big the task is: small, medium or large. null clears it."),
@@ -173,7 +196,7 @@ export const taskOperations = {
   get_today: defineOperation({
     name: "get_today",
     description:
-      "What's on Luke's plate: today's date in his time zone, open tasks that are overdue or due today, and open tasks due in the next 7 days.",
+      "What's on Luke's plate: today's date in his time zone, the open tasks in his Today list (todayList), and open tasks that are overdue, due today, or due in the next 7 days, whatever list they're in.",
     input: z.object({}),
     run: async () => getToday(),
   }),
@@ -181,10 +204,11 @@ export const taskOperations = {
   list_tasks: defineOperation({
     name: "list_tasks",
     description:
-      "List tasks, soonest due first. By default only open tasks (To do and Doing) from every project. Filter by project, status or a due date range.",
+      "List tasks, soonest due first. By default only open tasks (To do and Doing) from every project. Filter by project, status, list (bucket) or a due date range.",
     input: z.object({
       projectId: z.uuid().nullable().optional().describe("Only this project's tasks. null means tasks with no project."),
       status: z.enum(statuses).optional(),
+      bucket: z.enum(buckets).optional().describe("Only tasks in this list: today, tomorrow, this_week or later."),
       includeDone: z.boolean().optional().describe("Include done tasks too. Ignored if status is set."),
       dueOnOrAfter: z.string().regex(isoDay).optional().describe("YYYY-MM-DD"),
       dueOnOrBefore: z.string().regex(isoDay).optional().describe("YYYY-MM-DD"),
@@ -203,11 +227,12 @@ export const taskOperations = {
   create_task: defineOperation({
     name: "create_task",
     description:
-      "Create a task. Only the title is required; it starts as To do unless a status is given. Set repeat for something that comes back every day, weekday, week, month or year.",
+      "Create a task. Only the title is required; it starts as To do in the Today list unless a status or bucket is given. Set repeat for something that comes back every day, weekday, week, month or year.",
     input: z.object({
       title: fields.title,
       projectId: fields.projectId.optional(),
       status: fields.status.optional(),
+      bucket: fields.bucket.optional(),
       dueDate: fields.dueDate.optional(),
       priority: fields.priority.optional(),
       effort: fields.effort.optional(),
@@ -223,6 +248,7 @@ export const taskOperations = {
           title: input.title,
           projectId: input.projectId ?? null,
           status,
+          bucket: input.bucket ?? "today",
           dueDate: input.dueDate ?? null,
           priority: input.priority ?? null,
           effort: input.effort ?? null,
@@ -241,12 +267,13 @@ export const taskOperations = {
   update_task: defineOperation({
     name: "update_task",
     description:
-      "Change any fields of a task: title, project, status, due date, priority, effort, notes or how it repeats. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
+      "Change any fields of a task: title, project, status, list (bucket), due date, priority, effort, notes or how it repeats. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
     input: z.object({
       id,
       title: fields.title.optional(),
       projectId: fields.projectId.optional(),
       status: fields.status.optional(),
+      bucket: fields.bucket.optional(),
       dueDate: fields.dueDate.optional(),
       priority: fields.priority.optional(),
       effort: fields.effort.optional(),

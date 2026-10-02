@@ -3,11 +3,9 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { changesForMove, columnIds } from "@/lib/board";
-import { todayIn } from "@/lib/dates";
-import type { Status } from "@/lib/task-fields";
+import type { Bucket, Status } from "@/lib/task-fields";
 import { defineOperation, OperationError } from "./define";
 import { assertProject } from "./projects";
-import { getTimeZone } from "./settings";
 import { fields, syncRepeats } from "./tasks";
 
 /**
@@ -42,11 +40,12 @@ export const bulkOperations = {
   update_tasks: defineOperation({
     name: "update_tasks",
     description:
-      "Change several tasks at once: their project, status, due date, priority or effort. The same changes go to every task listed. Fields left out stay as they are; null clears one.",
+      "Change several tasks at once: their project, list (bucket), status, due date, priority or effort. The same changes go to every task listed. Fields left out stay as they are; null clears one.",
     input: z.object({
       ids: ids("tasks"),
       projectId: fields.projectId.optional(),
       status: fields.status.optional(),
+      bucket: fields.bucket.optional(),
       dueDate: fields.dueDate.optional(),
       priority: fields.priority.optional(),
       effort: fields.effort.optional(),
@@ -71,18 +70,17 @@ export const bulkOperations = {
   move_tasks: defineOperation({
     name: "move_tasks",
     description:
-      "Move several tasks to a board column at once, just like move_task does for one. today, tomorrow, this_week and later set the due date; todo, doing and done set the status. Tasks already in that column are left alone.",
+      "Move several tasks to a board column at once, just like move_task does for one. today, tomorrow, this_week and later put them in that list (due dates stay as they are); todo, doing and done set the status. Tasks already in that column are left alone.",
     input: z.object({ ids: ids("tasks"), to: z.enum(columnIds) }),
     run: async ({ ids, to }): Promise<Outcome> => {
       const rows = await db
         .select()
         .from(tasks)
         .where(and(inArray(tasks.id, ids), isNull(tasks.deletedAt)));
-      const today = todayIn(await getTimeZone());
       const moved: string[] = [];
       await db.transaction(async (tx) => {
         for (const task of rows) {
-          const changes = changesForMove({ ...task, status: task.status as Status }, to, today);
+          const changes = changesForMove({ bucket: task.bucket as Bucket, status: task.status as Status }, to);
           if (!changes) continue;
           const set: Record<string, unknown> = { ...changes, updatedAt: new Date() };
           if ("status" in changes) set.completedAt = changes.status === "done" ? new Date() : null;

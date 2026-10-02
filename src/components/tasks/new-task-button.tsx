@@ -3,9 +3,10 @@
 import { Plus } from "lucide-react";
 import { Fab } from "@/components/shell/fab";
 import { Button } from "@/components/ui/button";
+import type { Bucket } from "@/lib/task-fields";
 import { useTaskEditor } from "./task-editor";
 
-type Defaults = { projectId?: string | null; dueDate?: string | null };
+type Defaults = { projectId?: string | null; bucket?: Bucket };
 
 /** "New" in the top bar on computers. */
 export function NewTaskHeaderButton({ defaults }: { defaults?: Defaults }) {

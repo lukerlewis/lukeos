@@ -13,6 +13,8 @@ import { showTrashedToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import {
+  bucketLabel,
+  buckets,
   effortLabel,
   efforts,
   priorities,
@@ -21,6 +23,7 @@ import {
   repeats,
   statuses,
   statusLabel,
+  type Bucket,
   type Effort,
   type Priority,
   type Repeat,
@@ -34,6 +37,7 @@ type Draft = {
   title: string;
   projectId: string | null;
   status: Status;
+  bucket: Bucket;
   dueDate: string | null;
   priority: Priority | null;
   effort: Effort | null;
@@ -46,8 +50,8 @@ type Draft = {
 type Editor = {
   /** Open an existing task to view and change it. */
   openTask: (task: Task) => void;
-  /** Start a new task, optionally in a project or due on a day. */
-  newTask: (defaults?: Partial<Pick<Draft, "title" | "projectId" | "dueDate" | "status">>) => void;
+  /** Start a new task, optionally in a project or list. */
+  newTask: (defaults?: Partial<Pick<Draft, "title" | "projectId" | "bucket" | "status">>) => void;
 };
 
 const EditorContext = createContext<Editor | null>(null);
@@ -76,6 +80,7 @@ export function TaskEditorProvider({
       title: t.title,
       projectId: t.project?.id ?? null,
       status: t.status,
+      bucket: t.bucket,
       dueDate: t.dueDate,
       priority: t.priority,
       effort: t.effort,
@@ -87,20 +92,19 @@ export function TaskEditorProvider({
   }, []);
 
   const newTask = useCallback<Editor["newTask"]>((defaults) => {
-    // On phones a new task is due today unless the screen picked a day (or no day).
-    const dueDate =
-      defaults && "dueDate" in defaults ? (defaults.dueDate ?? null) : isPhone() ? today : null;
+    // A new task goes in Today unless the screen picked a list.
     setDraft({
       title: defaults?.title ?? "",
       projectId: defaults?.projectId ?? null,
       status: defaults?.status ?? "todo",
-      dueDate,
+      bucket: defaults?.bucket ?? "today",
+      dueDate: null,
       priority: null,
       effort: null,
       repeat: null,
       notes: "",
     });
-  }, [today]);
+  }, []);
 
   return (
     <EditorContext value={{ openTask, newTask }}>
@@ -169,6 +173,7 @@ function TaskDialog({
       title: parsed.title,
       projectId: draft.projectId,
       status: draft.status,
+      bucket: draft.bucket,
       dueDate,
       priority: draft.priority,
       effort: draft.effort,
@@ -271,6 +276,14 @@ function TaskDialog({
                 value={draft.status}
                 onChange={(v) => set("status", v)}
                 options={statuses.map((s) => ({ value: s, label: statusLabel[s] }))}
+              />
+            </Field>
+
+            <Field label="List">
+              <Segmented
+                value={draft.bucket}
+                onChange={(v) => set("bucket", v)}
+                options={buckets.map((b) => ({ value: b, label: bucketLabel[b] }))}
               />
             </Field>
 
@@ -384,8 +397,6 @@ function TaskDialog({
     </Dialog>
   );
 }
-
-const isPhone = () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

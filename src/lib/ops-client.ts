@@ -36,6 +36,7 @@ const taskFields = (t: TaskSnapshot) => ({
   title: t.title,
   projectId: t.project?.id ?? null,
   status: t.status,
+  bucket: t.bucket,
   dueDate: t.dueDate,
   priority: t.priority,
   effort: t.effort,

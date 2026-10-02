@@ -4,18 +4,9 @@ import { QuickAdd, TaskList } from "@/components/tasks/task-list";
 import { Card, CardHeader } from "@/components/ui/card";
 import { today } from "@/core/settings";
 import { listTasks } from "@/core/tasks";
-import { whenOf, type When } from "@/lib/dates";
+import { bucketLabel, buckets } from "@/lib/task-fields";
 
 export const metadata: Metadata = { title: "All tasks · LukeOS" };
-
-const sections: { when: When; title: string }[] = [
-  { when: "overdue", title: "Late" },
-  { when: "today", title: "Today" },
-  { when: "tomorrow", title: "Tomorrow" },
-  { when: "week", title: "This week" },
-  { when: "later", title: "Later" },
-  { when: "none", title: "No date" },
-];
 
 export default async function TasksPage() {
   const [date, open, done] = await Promise.all([today(), listTasks({}), listTasks({ status: "done", limit: 200 })]);
@@ -32,22 +23,17 @@ export default async function TasksPage() {
             <QuickAdd today={date} />
           </Card>
         )}
-        {sections.map(({ when, title }) => {
-          const group = open.filter((t) => whenOf(t.dueDate, date) === when);
+        {buckets.map((bucket) => {
+          const group = open.filter((t) => t.bucket === bucket);
           if (group.length === 0) return null;
           return (
-            <Card key={when}>
-              <CardHeader title={title} aside={group.length} />
+            <Card key={bucket}>
+              <CardHeader title={bucketLabel[bucket]} aside={group.length} />
               <TaskList tasks={group} today={date} />
-              {when === "none" && <QuickAdd today={date} />}
+              <QuickAdd bucket={bucket} today={date} />
             </Card>
           );
         })}
-        {open.length > 0 && !open.some((t) => t.dueDate === null) && (
-          <Card>
-            <QuickAdd today={date} />
-          </Card>
-        )}
         {recentlyDone.length > 0 && (
           <details className="group">
             <summary className="cursor-pointer px-1 py-1 text-sm font-semibold text-muted-foreground select-none">

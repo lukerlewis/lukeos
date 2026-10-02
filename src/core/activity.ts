@@ -35,6 +35,7 @@ const fieldLabel: Record<string, string> = {
   title: "title",
   projectId: "project",
   status: "status",
+  bucket: "list",
   dueDate: "due date",
   priority: "priority",
   effort: "effort",

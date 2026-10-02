@@ -23,7 +23,7 @@ export const dashboardOperations = {
   get_dashboard: defineOperation({
     name: "get_dashboard",
     description:
-      'Luke\'s dashboard (the app\'s home screen) as he has it set up. It has two tabs: Today (layout "list"), which shows only tasks due today or late, and Board, which shows every task in columns by when it\'s due (Today including late, Tomorrow, This week, Later). By default it hides Done tasks; Luke can switch them on in Filters. This returns every column, whichever tab he\'s on; pass by or show to look at it differently without changing Luke\'s setup. "view" in the result is his saved setup.',
+      'Luke\'s dashboard (the app\'s home screen) as he has it set up. It has two tabs: Today (layout "list"), which shows the tasks in his Today list, and Board, which shows every task in columns by list (Today, Tomorrow, This week, Later). Lists are set by hand and have nothing to do with due dates. By default it hides Done tasks; Luke can switch them on in Filters. This returns every column, whichever tab he\'s on; pass by or show to look at it differently without changing Luke\'s setup. "view" in the result is his saved setup.',
     input: z.object({
       by: z.enum(boardViews).optional().describe('"when" (the default, as on the dashboard) or "status".'),
       show: showField.optional().describe("Only tasks with these statuses. Leave out to use Luke's choice."),
