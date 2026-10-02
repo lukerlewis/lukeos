@@ -3,8 +3,9 @@ import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm"
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { assertArtifact } from "./artifacts";
-import { defineOperation, madeByColumns, madeByOf, OperationError, type MadeBy } from "./define";
+import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, type MadeBy } from "./define";
 import { deleteOrphanMentions, syncMentions } from "./mentions";
+import { sendPush } from "./push";
 
 const { comments, notes, artifacts } = schema;
 
@@ -110,6 +111,18 @@ async function getThread(id: string) {
   return thread;
 }
 
+/** Tells Luke's phone when Claude answers or starts a comment, so he can reply. */
+async function notifyLuke(actor: Actor, target: Comment["target"], text: string) {
+  if (actor.kind !== "agent") return;
+  const flat = text.replace(/\s+/g, " ").trim();
+  await sendPush({
+    title: `${actor.name} · ${target.title || (target.type === "note" ? "Note" : "Artifact")}`,
+    body: flat.length > 180 ? `${flat.slice(0, 179)}…` : flat,
+    url: `/${target.type === "note" ? "notes" : "artifacts"}/${target.id}`,
+    tag: `lukeos-comment-${target.id}`,
+  });
+}
+
 const id = z.uuid().describe("The comment's id.");
 const targetType = z.enum(commentTargets).describe('"note" or "artifact".');
 const body = z.string().trim().min(1).max(20_000).describe("What the comment says.");
@@ -145,14 +158,16 @@ export const commentOperations = {
         .values({ targetType, targetId, body, quote: quote || null, version, ...madeByColumns(actor) })
         .returning({ id: comments.id });
       await syncMentions("comment", row.id, [body], actor);
-      return getThread(row.id);
+      const thread = await getThread(row.id);
+      await notifyLuke(actor, thread.target, body);
+      return thread;
     },
   }),
 
   reply_to_comment: defineOperation({
     name: "reply_to_comment",
     description:
-      "Answer a comment, e.g. to say what you changed. Replying doesn't resolve it; call resolve_comment too when it's been dealt with.",
+      "Answer a comment thread, e.g. to say what you changed, answer Luke's question, or ask him one. Luke gets a notification and can reply back, so a thread can go back and forth. Replying doesn't resolve it: call resolve_comment when it's fully dealt with, and leave it open if you've asked him something. If Luke replies to a resolved thread it opens again and comes back to you.",
     input: z.object({ id: id.describe("The id of the comment being answered."), body }),
     run: async ({ id, body }, { actor }) => {
       const thread = await getThread(id);
@@ -166,7 +181,12 @@ export const commentOperations = {
         ...madeByColumns(actor),
       }).returning({ id: comments.id });
       await syncMentions("comment", reply.id, [body], actor);
-      await db.update(comments).set({ updatedAt: new Date() }).where(eq(comments.id, thread.id));
+      // Luke answering a resolved thread opens it again, so Claude sees it.
+      await db
+        .update(comments)
+        .set({ updatedAt: new Date(), ...(actor.kind === "user" && thread.resolved ? { resolvedAt: null } : {}) })
+        .where(eq(comments.id, thread.id));
+      await notifyLuke(actor, thread.target, body);
       return getThread(thread.id);
     },
   }),
