@@ -113,8 +113,7 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader title="iPhone Shortcut" />
           <div className="flex flex-col gap-3 px-4 py-4">
-            <CopyAddress address={`${proto}://${host}/api/inspiration/shortcut`} label="Copy Shortcut address" />
-            <ShortcutKey hasKey={shortcutKey} />
+            <ShortcutKey hasKey={shortcutKey} address={`${proto}://${host}/api/inspiration/shortcut`} />
           </div>
         </Card>
 
