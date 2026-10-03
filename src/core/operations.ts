@@ -18,6 +18,7 @@ import { noteOperations } from "./notes";
 import { projectOperations } from "./projects";
 import { routineOperations } from "./routines";
 import { searchOperations } from "./search";
+import { rollOverLists } from "./rollover";
 import { getTimeZone, settingsOperations, today } from "./settings";
 import { sopOperations } from "./sops";
 import { contextOperations } from "./context";
@@ -76,6 +77,8 @@ export async function runOperation(name: string, rawInput: unknown, actor: Actor
   const parsed = op.input.safeParse(rawInput ?? {});
   if (!parsed.success) return { ok: false as const, status: 400, error: z.prettifyError(parsed.error) };
   try {
+    // Tomorrow becomes Today at midnight before anything reads or moves a task.
+    await rollOverLists();
     return { ok: true as const, result: await op.run(parsed.data, { actor }) };
   } catch (err) {
     if (err instanceof OperationError) return { ok: false as const, status: err.status, error: err.message };

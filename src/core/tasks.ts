@@ -9,6 +9,7 @@ import { buckets, efforts, priorities, repeats, statuses, type Bucket, type Effo
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { syncMentions } from "./mentions";
 import { assertProject } from "./projects";
+import { rollOverLists } from "./rollover";
 import { today } from "./settings";
 
 const { tasks, projects } = schema;
@@ -68,6 +69,7 @@ export async function listTasks(filter: {
   dueOnOrAfter?: string;
   limit?: number;
 }) {
+  await rollOverLists();
   const where: (SQL | undefined)[] = [isNull(tasks.deletedAt)];
   if (filter.projectId === null) where.push(isNull(tasks.projectId));
   else if (filter.projectId) where.push(eq(tasks.projectId, filter.projectId));
@@ -89,6 +91,7 @@ export async function listTasks(filter: {
 }
 
 export async function getTask(id: string) {
+  await rollOverLists();
   const [row] = await db
     .select({ task: tasks, project: projects })
     .from(tasks)
