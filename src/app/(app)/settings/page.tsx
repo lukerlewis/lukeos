@@ -15,7 +15,7 @@ import { ShortcutKey } from "./shortcut";
 import { StorageMeter } from "@/components/inspiration/storage-notice";
 import { storageUsage } from "@/lib/storage";
 import { hasShortcutKey } from "@/lib/shortcut-key";
-import { AddDeviceButton, RemoveDeviceButton, SignOutButton } from "./devices";
+import { AddDeviceButton, NewDeviceLink, RemoveDeviceButton, SignOutButton } from "./devices";
 import { ThemeSwitch } from "./theme-switch";
 
 export const metadata: Metadata = { title: "Settings · LukeOS" };
@@ -72,7 +72,8 @@ export default async function SettingsPage() {
               </li>
             ))}
           </ul>
-          <div className="flex flex-col gap-2 border-t px-4 py-4">
+          <div className="flex flex-col gap-3 border-t px-4 py-4">
+            <NewDeviceLink />
             <AddDeviceButton />
           </div>
         </Card>

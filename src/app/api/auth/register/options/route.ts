@@ -2,11 +2,13 @@ import { generateRegistrationOptions } from "@simplewebauthn/server";
 import { NextResponse } from "next/server";
 import { db, schema } from "@/db";
 import { saveChallenge } from "@/lib/auth/challenge";
+import { isValidInvite } from "@/lib/auth/device-invite";
 import { canRegister, OWNER_USER_ID } from "@/lib/auth/passkeys";
 import { relyingParty, RP_NAME } from "@/lib/auth/relying-party";
 
 export async function POST(req: Request) {
-  if (!(await canRegister())) {
+  const { invite } = (await req.json().catch(() => ({}))) as { invite?: unknown };
+  if (!(await canRegister()) && !(await isValidInvite(invite))) {
     return NextResponse.json({ error: "Sign in first to add another device." }, { status: 403 });
   }
   const { rpID } = relyingParty(req);

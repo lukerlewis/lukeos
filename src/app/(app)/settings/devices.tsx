@@ -1,10 +1,11 @@
 "use client";
 
-import { LogOut, Plus } from "lucide-react";
+import { Link2, LogOut, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { friendlyPasskeyError, registerPasskey } from "@/lib/passkey-client";
+import { CopyAddress } from "./claude";
 
 export function AddDeviceButton() {
   const router = useRouter();
@@ -34,6 +35,50 @@ export function AddDeviceButton() {
       {message && (
         <p role="status" className="text-[13px] text-muted-foreground">
           {message}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Makes a one-time link that a new device (with no passkey yet) opens to add its own. */
+export function NewDeviceLink() {
+  const [busy, setBusy] = useState(false);
+  const [link, setLink] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function make() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/auth/invite", { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setLink(`${location.origin}/sign-in/add/${data.code}`);
+      // Hide it once it stops working.
+      setTimeout(() => setLink(null), new Date(data.expiresAt).getTime() - Date.now());
+    } else {
+      setError(data.error ?? "Couldn't make a link.");
+    }
+    setBusy(false);
+  }
+
+  if (link) {
+    return (
+      <div className="flex w-full flex-col gap-2">
+        <CopyAddress address={link} label="Copy link" />
+        <p className="text-[13px] text-muted-foreground">Open on the new device. Works once, for 10 minutes.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <Button variant="outline" onClick={make} disabled={busy}>
+        <Link2 className="size-4" aria-hidden />
+        Add a new device
+      </Button>
+      {error && (
+        <p role="alert" className="text-[13px] text-danger">
+          {error}
         </p>
       )}
     </div>

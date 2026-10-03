@@ -21,10 +21,11 @@ export function friendlyPasskeyError(err: unknown): string | null {
   return err instanceof Error ? err.message : "Something went wrong. Please try again.";
 }
 
-export async function registerPasskey() {
-  const optionsJSON = await post("/api/auth/register/options");
+/** `invite` is the one-time code from Settings, for a new device that can't sign in yet. */
+export async function registerPasskey(invite?: string) {
+  const optionsJSON = await post("/api/auth/register/options", invite ? { invite } : undefined);
   const response = await startRegistration({ optionsJSON });
-  await post("/api/auth/register/verify", response);
+  await post("/api/auth/register/verify", invite ? { ...response, invite } : response);
 }
 
 export async function signInWithPasskey() {
