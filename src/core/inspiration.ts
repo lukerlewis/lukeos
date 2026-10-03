@@ -15,9 +15,17 @@ const { inspirationItems, projects, storedFiles } = schema;
 /**
  * Inspiration: Luke's gallery of things that inspire him, like mymind.
  * Pictures, links (with their preview), videos (as links), quotes and PDFs.
- * Claude tags and describes each new one at its next check-in, so search
- * finds things by what's in them.
+ * Claude used to tag and describe each new one at its next check-in, so search
+ * finds things by what's in them. That's paused (CLAUDE_TAGGING_ON) to save
+ * Luke's tokens; Claude only tags when he asks.
  */
+
+/**
+ * Whether Claude tags and describes new things on its own (at check-in, and
+ * when it saves something). Off since 2026-10-03: Luke put it on ice to save
+ * tokens. Flip to true to turn it back on; the tag tools work either way.
+ */
+export const CLAUDE_TAGGING_ON = false;
 
 export { inspirationKinds, type InspirationKind };
 
@@ -353,7 +361,8 @@ export const inspirationOperations = {
   add_inspiration: defineOperation({
     name: "add_inspiration",
     description:
-      "Save something to Luke's Inspiration. Give exactly one of: url (a web page, video or picture on the web: its preview is saved too), text (a quote or snippet), or image (a picture, base64, up to 3 MB). Tag it and describe it while you're at it.",
+      "Save something to Luke's Inspiration. Give exactly one of: url (a web page, video or picture on the web: its preview is saved too), text (a quote or snippet), or image (a picture, base64, up to 3 MB)." +
+      (CLAUDE_TAGGING_ON ? " Tag it and describe it while you're at it." : " Only tag or describe it if Luke asks."),
     input: z.object({
       url: z.string().trim().max(2000).optional(),
       text: z.string().max(20_000).optional(),

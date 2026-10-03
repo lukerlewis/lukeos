@@ -19,7 +19,7 @@ import {
 } from "@/lib/schedule";
 import { listComments } from "./comments";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type MadeBy } from "./define";
-import { TAGGING_HOW_TO, untaggedInspiration } from "./inspiration";
+import { CLAUDE_TAGGING_ON, TAGGING_HOW_TO, untaggedInspiration } from "./inspiration";
 import { listMentions } from "./mentions";
 import { listMessages } from "./messages";
 import { getTimeZone } from "./settings";
@@ -350,7 +350,9 @@ export const routineOperations = {
   get_inbox: defineOperation({
     name: "get_inbox",
     description:
-      "Everything waiting for an agent right now: Luke's messages waiting for an answer, his open @claude requests, comments waiting for a reply, routines that are due, and new Inspiration items to tag and describe. Call this first when you check in. If nothingToDo is true, stop: there's nothing to do. For each routine, call start_routine_run before doing it (it gives you the instructions), then finish_routine_run.",
+      "Everything waiting for an agent right now: Luke's messages waiting for an answer, his open @claude requests, comments waiting for a reply, " +
+      (CLAUDE_TAGGING_ON ? "routines that are due, and new Inspiration items to tag and describe" : "and routines that are due") +
+      ". Call this first when you check in. If nothingToDo is true, stop: there's nothing to do. For each routine, call start_routine_run before doing it (it gives you the instructions), then finish_routine_run.",
     input: z.object({}),
     run: async () => {
       const now = new Date();
@@ -361,7 +363,8 @@ export const routineOperations = {
         listMentions({ open: true, limit: 50 }),
         listComments({ open: true, limit: 50 }),
         listMessages({ waiting: true, limit: 50 }),
-        untaggedInspiration(),
+        // Tagging is paused to save Luke's tokens, so nothing is listed to tag.
+        CLAUDE_TAGGING_ON ? untaggedInspiration() : [],
       ]);
       const waitingComments = comments.filter((c) => (c.replies.at(-1) ?? c).madeBy.kind === "user");
       // An @claude inside a comment waiting for a reply is already listed with the comment.
