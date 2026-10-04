@@ -388,6 +388,8 @@ export const routineOperations = {
           ...(m.attachments.length && { attachments: m.attachments.map(({ id, kind, name, mimeType, bytes }) => ({ id, kind, name, mimeType, bytes })) }),
           sentAt: m.createdAt,
           ...(m.editedAt && { editedAt: m.editedAt }),
+          // The earlier message (often one of Claude's questions) Luke is replying to.
+          ...(m.replyTo && { replyTo: m.replyTo }),
         })),
         routines: due.map((d) => ({
           id: d.routine.id,

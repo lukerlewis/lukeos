@@ -56,7 +56,14 @@ export type Message = {
   editedAt: Date | null;
   /** Unsent: text, attachments and link are left out. Only the app is given these. */
   unsent: boolean;
+  /**
+   * The message this one replies to, with the start of what it said. When that
+   * one has been unsent or is gone, unavailable is true and there's no snippet.
+   */
+  replyTo: ReplyTo | null;
 };
+
+export type ReplyTo = { id: string; from: "luke" | "claude" | null; snippet: string; unavailable: boolean };
 
 const linkTitle = sql<string | null>`case ${messages.linkType}
   when 'task' then (select t.title from tasks t where t.id = ${messages.linkId} and t.deleted_at is null)
@@ -81,7 +88,32 @@ const toAttachment = (a: MessageAttachmentRow): Attachment => ({
   height: a.height ?? null,
 });
 
-function toMessage(row: typeof messages.$inferSelect & { linkTitle: string | null }): Message {
+/** What a quoted reply shows of the original: its first words, or what was sent if it was only files. */
+function snippetOf(body: string, attachments: MessageAttachmentRow[]) {
+  const flat = body.replace(/\s+/g, " ").trim();
+  if (flat) return flat.length > 140 ? `${flat.slice(0, 139)}…` : flat;
+  return attachments.length ? attachmentsLine(attachments).replace(/^Sent (an? )?/, "").replace(/^./, (c) => c.toUpperCase()) : "";
+}
+
+/** The originals that these messages reply to, by id. Missing ones are gone for good. */
+async function repliedTo(ids: string[]) {
+  const out = new Map<string, ReplyTo>();
+  if (!ids.length) return out;
+  const rows = await db
+    .select({ id: messages.id, body: messages.body, attachments: messages.attachments, createdByKind: messages.createdByKind, deletedAt: messages.deletedAt })
+    .from(messages)
+    .where(inArray(messages.id, ids));
+  for (const r of rows)
+    out.set(
+      r.id,
+      r.deletedAt
+        ? { id: r.id, from: null, snippet: "", unavailable: true }
+        : { id: r.id, from: r.createdByKind === "agent" ? "claude" : "luke", snippet: snippetOf(r.body, r.attachments ?? []), unavailable: false },
+    );
+  return out;
+}
+
+function toMessage(row: typeof messages.$inferSelect & { linkTitle: string | null }, originals: Map<string, ReplyTo>): Message {
   const madeBy = madeByOf(row);
   const unsent = row.deletedAt !== null;
   return {
@@ -97,6 +129,7 @@ function toMessage(row: typeof messages.$inferSelect & { linkTitle: string | nul
     answeredAt: row.answeredAt,
     editedAt: row.editedAt,
     unsent,
+    replyTo: row.replyTo && !unsent ? (originals.get(row.replyTo) ?? { id: row.replyTo, from: null, snippet: "", unavailable: true }) : null,
   };
 }
 
@@ -120,7 +153,8 @@ export async function listMessages(
     .where(and(...conditions))
     .orderBy(desc(messages.createdAt))
     .limit(filter.limit ?? 100);
-  return rows.reverse().map(toMessage);
+  const originals = await repliedTo([...new Set(rows.flatMap((r) => (r.replyTo && !r.deletedAt ? [r.replyTo] : [])))]);
+  return rows.reverse().map((r) => toMessage(r, originals));
 }
 
 /** How many of Claude's messages Luke hasn't seen yet. */
@@ -329,7 +363,7 @@ export const messageOperations = {
   list_messages: defineOperation({
     name: "list_messages",
     description:
-      "The Messages chain between Luke and Claude, oldest first (the newest at the end), like a text conversation. Each message says who sent it (from \"luke\" or \"claude\"), when, anything in LukeOS it's about (link), and any photos, videos or files sent with it (attachments; look at one with get_message_attachment). Luke's messages show whether they've been answered. editedAt is set when the sender changed the text after sending. Messages unsent by either side aren't listed. waiting: true gives only Luke's messages nobody has dealt with yet (get_inbox lists these too).",
+      "The Messages chain between Luke and Claude, oldest first (the newest at the end), like a text conversation. Each message says who sent it (from \"luke\" or \"claude\"), when, anything in LukeOS it's about (link), and any photos, videos or files sent with it (attachments; look at one with get_message_attachment). Luke's messages show whether they've been answered. editedAt is set when the sender changed the text after sending. replyTo is set when a message replies to an earlier one (either side's): its id and the start of what it said, so you know which of your questions Luke is answering (unavailable: true if that one was unsent). Messages unsent by either side aren't listed. waiting: true gives only Luke's messages nobody has dealt with yet (get_inbox lists these too).",
     input: z.object({
       waiting: z.boolean().optional().describe("Only Luke's messages that haven't been answered."),
       limit: z.number().int().min(1).max(200).optional().describe("How many of the most recent messages. Defaults to 100."),
@@ -340,7 +374,7 @@ export const messageOperations = {
   send_message: defineOperation({
     name: "send_message",
     description:
-      "Text Luke in his Messages chain. It sends a notification to his phone, so keep it short and worth his attention: one to three plain sentences, like a text from a helpful colleague. Use it to answer his messages (pass their ids as answers, so they stop showing as waiting), to tell him something finished or needs him, or when he asks you to let him know something. Long write-ups go in a document (create_document); link it here instead of pasting it. link points at one task, document, note, project, routine, Work archive entry or Inspiration item, shown as a card he can tap. attachments sends photos or files with it (photos show in the chain; other files as a card he taps to open), each up to 3 MB; to send one again, pass its id as fileId.",
+      "Text Luke in his Messages chain. It sends a notification to his phone, so keep it short and worth his attention: one to three plain sentences, like a text from a helpful colleague. Use it to answer his messages (pass their ids as answers, so they stop showing as waiting), to tell him something finished or needs him, or when he asks you to let him know something. When you have questions about what he asked in Messages, ask them here (numbered if there are several) rather than in a document. Long write-ups (real deliverables) go in a document (create_document); link it here instead of pasting it. replyTo quotes one earlier message (his or yours) above yours, e.g. when answering one of several things he sent. link points at one task, document, note, project, routine, Work archive entry or Inspiration item, shown as a card he can tap. attachments sends photos or files with it (photos show in the chain; other files as a card he taps to open), each up to 3 MB; to send one again, pass its id as fileId.",
     input: z.object({
       text: z.string().trim().max(4000).optional().describe("The message. Plain text; short. Can be left out when sending attachments."),
       link: z
@@ -352,14 +386,22 @@ export const messageOperations = {
         .max(100)
         .optional()
         .describe("Ids of Luke's messages this deals with (from get_inbox or list_messages). They stop showing as waiting."),
+      replyTo: z
+        .uuid()
+        .optional()
+        .describe("The id of one earlier message (Luke's or yours) this replies to. It's shown quoted above this one."),
       attachments: z
         .array(z.union([newAttachment, uploadedAttachment]))
         .max(MAX_ATTACHMENTS)
         .optional()
         .describe("Photos or files to send: name, mimeType and base64 data for a new one, or fileId for one already in Messages."),
     }),
-    run: async ({ text = "", link, answers, attachments: given }, { actor }) => {
+    run: async ({ text = "", link, answers, replyTo, attachments: given }, { actor }) => {
       if (link) await assertLink(link.type, link.id);
+      if (replyTo) {
+        const [original] = await db.select({ id: messages.id }).from(messages).where(and(eq(messages.id, replyTo), isNull(messages.deletedAt))).limit(1);
+        if (!original) throw new OperationError("The message you're replying to isn't there any more.", 404);
+      }
       const attachments = given?.length ? await attachmentsFrom(given) : [];
       if (!text && !attachments.length) throw new OperationError("Write something, or attach a file.");
       const [row] = await db
@@ -369,6 +411,7 @@ export const messageOperations = {
           attachments,
           linkType: link?.type ?? null,
           linkId: link?.id ?? null,
+          replyTo: replyTo ?? null,
           // Luke's own messages count as read; Claude's count as answered.
           readAt: actor.kind === "user" ? new Date() : null,
           ...madeByColumns(actor),

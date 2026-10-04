@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Pencil, Undo2 } from "lucide-react";
+import { Copy, Pencil, Reply, Undo2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
@@ -24,22 +24,28 @@ export function messageRect(el: HTMLElement): MenuAnchor["rect"] {
 }
 
 /**
- * The small menu for one of Luke's messages: Edit, Copy and Unsend. Opens
- * from a press and hold on a phone, or the ⋯ button or a right-click on a
- * computer, lined up under the message (or above it near the bottom).
+ * The small menu for a message: Reply and Copy on any, plus Edit and Unsend
+ * on Luke's own. Opens from a press and hold on a phone, or the ⋯ button or a
+ * right-click on a computer, lined up under the message (or above it near the
+ * bottom), on the side the message sits.
  */
 export function MessageMenu({
   anchor,
+  mine,
   canEdit,
   canCopy,
+  onReply,
   onEdit,
   onCopy,
   onUnsend,
   onClose,
 }: {
   anchor: MenuAnchor;
+  /** Luke's message: on the right, and can be edited and unsent. */
+  mine: boolean;
   canEdit: boolean;
   canCopy: boolean;
+  onReply: () => void;
   onEdit: () => void;
   onCopy: () => void;
   onUnsend: () => void;
@@ -61,7 +67,9 @@ export function MessageMenu({
   }, [onClose]);
 
   const { rect } = anchor;
-  const right = Math.max(12, window.innerWidth - rect.right);
+  const side = mine
+    ? { right: Math.max(12, window.innerWidth - rect.right) }
+    : { left: Math.min(Math.max(12, rect.left), window.innerWidth - MENU_W - 12) };
   const below = rect.bottom + GAP + 150 < window.innerHeight - BOTTOM_ROOM || rect.top < 200;
   const place = below ? { top: rect.bottom + GAP } : { bottom: window.innerHeight - rect.top + GAP };
 
@@ -76,31 +84,34 @@ export function MessageMenu({
       <div
         role="menu"
         aria-label="Message"
-        style={{ right, width: MENU_W, ...place }}
-        className={cn("motion-pop fixed flex flex-col rounded-xl border bg-card p-1 shadow-lg", below ? "origin-top-right" : "origin-bottom-right")}
+        style={{ ...side, width: MENU_W, ...place }}
+        className={cn(
+          "motion-pop fixed flex flex-col rounded-xl border bg-card p-1 shadow-lg",
+          below ? (mine ? "origin-top-right" : "origin-top-left") : mine ? "origin-bottom-right" : "origin-bottom-left",
+        )}
       >
-        {canEdit && (
-          <button ref={first} type="button" role="menuitem" className={item} onClick={run(onEdit)}>
+        <button ref={first} type="button" role="menuitem" className={item} onClick={run(onReply)}>
+          Reply
+          <Reply className="size-4 text-muted-foreground" aria-hidden />
+        </button>
+        {mine && canEdit && (
+          <button type="button" role="menuitem" className={item} onClick={run(onEdit)}>
             Edit
             <Pencil className="size-4 text-muted-foreground" aria-hidden />
           </button>
         )}
         {canCopy && (
-          <button ref={canEdit ? undefined : first} type="button" role="menuitem" className={item} onClick={run(onCopy)}>
+          <button type="button" role="menuitem" className={item} onClick={run(onCopy)}>
             Copy
             <Copy className="size-4 text-muted-foreground" aria-hidden />
           </button>
         )}
-        <button
-          ref={canEdit || canCopy ? undefined : first}
-          type="button"
-          role="menuitem"
-          className={cn(item, "text-danger")}
-          onClick={run(onUnsend)}
-        >
-          Unsend
-          <Undo2 className="size-4" aria-hidden />
-        </button>
+        {mine && (
+          <button type="button" role="menuitem" className={cn(item, "text-danger")} onClick={run(onUnsend)}>
+            Unsend
+            <Undo2 className="size-4" aria-hidden />
+          </button>
+        )}
       </div>
     </div>
   );

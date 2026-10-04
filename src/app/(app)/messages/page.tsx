@@ -35,6 +35,7 @@ export default async function MessagesPage() {
           answered: m.answered,
           edited: m.editedAt !== null,
           unsent: m.unsent,
+          replyTo: m.replyTo,
         }))}
       />
     </Page>

@@ -613,6 +613,8 @@ export const messages = pgTable(
     /** Luke's messages: when Claude dealt with it, and the reply that did. */
     answeredAt: timestamp("answered_at", { withTimezone: true }),
     answeredBy: uuid("answered_by"),
+    /** The message this one replies to (either side's). Kept even if that one is unsent or gone. */
+    replyTo: uuid("reply_to"),
     /** When the sender last changed the text. */
     editedAt: timestamp("edited_at", { withTimezone: true }),
     /** Unsent: the chain shows a quiet line in its place, and it waits in Trash. */

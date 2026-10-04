@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArrowUp, Check, Lightbulb, Bot, CheckSquare, FileText, Folder, MoreHorizontal, Plus, Repeat, Sparkles, NotebookPen, X } from "lucide-react";
+import { Archive, ArrowUp, Check, Lightbulb, Bot, CheckSquare, FileText, Folder, MoreHorizontal, Plus, Repeat, Reply, Sparkles, NotebookPen, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
@@ -35,6 +35,8 @@ export type ThreadMessage = {
   edited: boolean;
   /** Unsent: shown as a quiet line in its place. */
   unsent: boolean;
+  /** The earlier message this replies to, quoted above it. */
+  replyTo: { id: string; from: "luke" | "claude" | null; snippet: string; unavailable: boolean } | null;
 };
 
 /** Messages more than this far apart get their own time line, like iMessage. */
@@ -70,6 +72,9 @@ export function MessageThread({
   const [menu, setMenu] = useState<MenuAnchor | null>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
   const [editing, setEditing] = useState<ThreadMessage | null>(null);
+  const [replying, setReplying] = useState<ThreadMessage | null>(null);
+  // The message a quote was tapped to jump to, lit up for a moment.
+  const [flash, setFlash] = useState<string | null>(null);
   const shown = [...messages, ...sending.filter((s) => !messages.some((m) => m.id === s.id))].map((m) =>
     changed[m.id] ? { ...m, ...changed[m.id] } : m,
   );
@@ -81,11 +86,11 @@ export function MessageThread({
       return next;
     });
 
-  // Press and hold one of Luke's messages on a phone to open its menu.
+  // Press and hold a message on a phone to open its menu.
   const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
   const held = useRef(false);
   const openMenu = (el: HTMLElement) => {
-    const id = el.dataset.mine;
+    const id = el.dataset.msg;
     if (id) setMenu({ id, rect: messageRect(el) });
   };
   const cancelHold = () => {
@@ -93,8 +98,20 @@ export function MessageThread({
     hold.current = null;
   };
 
+  function jumpTo(id: string) {
+    const el = document.getElementById(`msg-${id}`);
+    if (!el) {
+      showToast("That message is too far back to show");
+      return;
+    }
+    el.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    setFlash(id);
+    setTimeout(() => setFlash((f) => (f === id ? null : f)), 1400);
+  }
+
   async function unsend(m: ThreadMessage) {
     if (editing?.id === m.id) setEditing(null);
+    if (replying?.id === m.id) setReplying(null);
     change(m.id, { unsent: true });
     try {
       await op("unsend_message", { id: m.id });
@@ -190,7 +207,7 @@ export function MessageThread({
           aria-label="Messages"
           onPointerDown={(e) => {
             if (e.pointerType === "mouse") return;
-            const el = (e.target as Element).closest<HTMLElement>("[data-mine]");
+            const el = (e.target as Element).closest<HTMLElement>("[data-msg]");
             if (!el) return;
             cancelHold();
             hold.current = {
@@ -210,7 +227,7 @@ export function MessageThread({
           onPointerUp={cancelHold}
           onPointerCancel={cancelHold}
           onContextMenu={(e) => {
-            const el = (e.target as Element).closest<HTMLElement>("[data-mine]");
+            const el = (e.target as Element).closest<HTMLElement>("[data-msg]");
             if (!el) return;
             e.preventDefault();
             cancelHold();
@@ -231,7 +248,11 @@ export function MessageThread({
             const sameSender = prev && !newTime && prev.from === m.from && !prev.unsent;
             const mine = m.from === "luke";
             const pending = m.id.startsWith("sending-");
-            const actionable = mine && !pending && !m.unsent;
+            const actionable = !pending && !m.unsent;
+            // An original unsent since the screen loaded shows as unavailable straight away.
+            const quoted = m.replyTo && (m.replyTo.unavailable || shown.find((x) => x.id === m.replyTo!.id)?.unsent)
+              ? { ...m.replyTo, unavailable: true }
+              : m.replyTo;
             return (
               <Fragment key={m.id}>
                 {newTime && (
@@ -243,13 +264,17 @@ export function MessageThread({
                   <li className="py-1.5 text-center text-[12px] text-muted-foreground">{mine ? "You" : "Claude"} unsent a message</li>
                 ) : (
                 <li
-                  data-mine={actionable ? m.id : undefined}
+                  id={`msg-${m.id}`}
+                  data-msg={actionable ? m.id : undefined}
                   onMouseEnter={
                     actionable
                       ? (e) => {
-                          // Sit the ⋯ button just left of the message, however wide it is.
+                          // Sit the ⋯ button just beside the message (left of Luke's, right of Claude's), however wide it is.
                           const li = e.currentTarget;
-                          li.style.setProperty("--msg-left", `${messageRect(li).left - li.getBoundingClientRect().left}px`);
+                          const r = messageRect(li);
+                          const box = li.getBoundingClientRect();
+                          li.style.setProperty("--msg-left", `${r.left - box.left}px`);
+                          li.style.setProperty("--msg-right", `${r.right - box.left}px`);
                         }
                       : undefined
                   }
@@ -258,14 +283,16 @@ export function MessageThread({
                     mine ? "items-end" : "items-start",
                     !sameSender && !newTime && "mt-2",
                     actionable && "group relative pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]",
-                    actionable && "transition-transform",
-                    menu?.id === m.id && "origin-right scale-[1.02]",
+                    "transition-[transform,background-color] duration-300",
+                    menu?.id === m.id && (mine ? "origin-right scale-[1.02]" : "origin-left scale-[1.02]"),
                     editing?.id === m.id && "opacity-60",
+                    flash === m.id && "rounded-2xl bg-muted/70",
                   )}
                 >
                   {!mine && m.routine && (!sameSender || prev.routine !== m.routine) && (
                     <span className="px-3 pb-0.5 text-[11px] text-muted-foreground">{m.routine}</span>
                   )}
+                  {quoted && <Quote quote={quoted} mine={mine} onJump={jumpTo} />}
                   {m.attachments.length > 0 && (
                     <MessageAttachments attachments={m.attachments} mine={mine} pending={pending} onOpen={setPhoto} />
                   )}
@@ -290,7 +317,7 @@ export function MessageThread({
                       data-menu-ignore
                       aria-label="Message options"
                       onClick={(e) => openMenu(e.currentTarget.parentElement!)}
-                      style={{ left: "calc(var(--msg-left, 0px) - 2.25rem)" }}
+                      style={{ left: mine ? "calc(var(--msg-left, 0px) - 2.25rem)" : "calc(var(--msg-right, 0px) + 0.5rem)" }}
                       className="absolute top-1/2 hidden size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted focus-visible:opacity-100 pointer-fine:flex"
                     >
                       <MoreHorizontal className="size-4" aria-hidden />
@@ -319,10 +346,20 @@ export function MessageThread({
           return (
             <MessageMenu
               anchor={menu}
+              mine={m.from === "luke"}
               canEdit={m.text.length > 0}
               canCopy={m.text.length > 0}
               onClose={closeMenu}
-              onEdit={() => setEditing(m)}
+              onReply={() => {
+                setEditing(null);
+                setReplying(m);
+                // Keep the newest message in view above the taller box.
+                requestAnimationFrame(() => endRef.current?.scrollIntoView({ block: "end" }));
+              }}
+              onEdit={() => {
+                setReplying(null);
+                setEditing(m);
+              }}
               onCopy={() => navigator.clipboard?.writeText(m.text).then(() => showToast("Copied"), () => {})}
               onUnsend={() => void unsend(m)}
             />
@@ -330,9 +367,14 @@ export function MessageThread({
         })()}
       <Composer
         editing={editing}
+        replying={replying}
         onCancelEdit={() => setEditing(null)}
+        onCancelReply={() => setReplying(null)}
         onSaveEdit={(m, text) => void saveEdit(m, text)}
-        onSending={(m) => setSending((s) => [...s, m])}
+        onSending={(m) => {
+          setReplying(null);
+          setSending((s) => [...s, m]);
+        }}
         onSent={(tempId, real) =>
           setSending((s) => (real ? s.map((x) => (x.id === tempId ? real : x)) : s.filter((x) => x.id !== tempId)))
         }
@@ -346,14 +388,19 @@ export function MessageThread({
 
 function Composer({
   editing,
+  replying,
   onCancelEdit,
+  onCancelReply,
   onSaveEdit,
   onSending,
   onSent,
 }: {
   /** One of Luke's messages being changed: the box holds its text until he saves or cancels. */
   editing: ThreadMessage | null;
+  /** The message Luke is replying to, shown above the box until he sends or cancels. */
+  replying: ThreadMessage | null;
   onCancelEdit: () => void;
+  onCancelReply: () => void;
   onSaveEdit: (m: ThreadMessage, text: string) => void;
   onSending: (m: ThreadMessage) => void;
   onSent: (tempId: string, real: ThreadMessage | null) => void;
@@ -390,6 +437,12 @@ function Composer({
     return () => setText(draft.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId]);
+
+  // Starting a reply puts the cursor in the box.
+  const replyingId = replying?.id ?? null;
+  useEffect(() => {
+    if (replyingId) box.current?.focus();
+  }, [replyingId]);
 
   const update = (key: string, change: Partial<Pending>) =>
     setPicked((list) => list.map((p) => (p.key === key ? { ...p, ...change } : p)));
@@ -451,6 +504,7 @@ function Composer({
       answered: false,
       edited: false,
       unsent: false,
+      replyTo: replying ? { id: replying.id, from: replying.from, snippet: snippetOf(replying), unavailable: false } : null,
     });
     setText("");
     setPicked([]);
@@ -458,11 +512,12 @@ function Composer({
       try {
         const sent = await op("send_message", {
           ...(clean && { text: clean }),
+          ...(replying && { replyTo: replying.id }),
           ...(files.length && {
             attachments: files.map((f) => ({ fileId: f.fileId, thumbId: f.thumbId, name: f.name, width: f.width, height: f.height })),
           }),
         });
-        onSent(tempId, { ...sent, routine: null, createdAt: new Date(sent.createdAt).toISOString(), edited: false, unsent: false });
+        onSent(tempId, { ...sent, routine: null, createdAt: new Date(sent.createdAt).toISOString(), edited: false, unsent: false, replyTo: sent.replyTo });
         for (const p of kept) if (p.preview) URL.revokeObjectURL(p.preview);
         router.refresh();
       } catch (err) {
@@ -501,7 +556,26 @@ function Composer({
           </button>
         </div>
       ) : (
-        <PendingTray items={picked} onRemove={remove} />
+        <>
+          {replying && (
+            <div className="mx-auto flex max-w-2xl items-center gap-2 pb-1.5 pl-1">
+              <Reply className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <div className="min-w-0 grow border-l-2 pl-2 text-[13px] leading-snug">
+                <div className="font-medium">{replying.from === "luke" ? "You" : "Claude"}</div>
+                <div className="truncate text-muted-foreground">{snippetOf(replying)}</div>
+              </div>
+              <button
+                type="button"
+                onClick={onCancelReply}
+                aria-label="Cancel reply"
+                className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            </div>
+          )}
+          <PendingTray items={picked} onRemove={remove} />
+        </>
       )}
       <div className="mx-auto flex max-w-2xl items-end gap-2">
         <button
@@ -536,9 +610,10 @@ function Composer({
             add(files);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Escape" && editing) {
+            if (e.key === "Escape" && (editing || replying)) {
               e.preventDefault();
-              onCancelEdit();
+              if (editing) onCancelEdit();
+              else onCancelReply();
               return;
             }
             // Enter sends on a computer; Shift+Enter (and the phone's return key) starts a new line.
@@ -565,6 +640,30 @@ function Composer({
         </button>
       </div>
     </form>
+  );
+}
+
+/** The start of a message, for a reply's quote: its words, or what was sent if it was only files. */
+function snippetOf(m: ThreadMessage) {
+  const flat = m.text.replace(/\s+/g, " ").trim();
+  if (flat) return flat.length > 140 ? `${flat.slice(0, 139)}…` : flat;
+  const kinds = new Set(m.attachments.map((a) => a.kind));
+  const what = kinds.size > 1 ? "file" : kinds.has("image") ? "photo" : kinds.has("video") ? "video" : "file";
+  return m.attachments.length > 1 ? `${m.attachments.length} ${what}s` : what === "photo" ? "Photo" : what === "video" ? "Video" : "File";
+}
+
+/** The message a reply answers, quoted small above it. Tapping it jumps to the original. */
+function Quote({ quote, mine, onJump }: { quote: NonNullable<ThreadMessage["replyTo"]>; mine: boolean; onJump: (id: string) => void }) {
+  const cls = cn(
+    "mb-0.5 flex max-w-[75%] flex-col rounded-2xl border px-3 py-1.5 text-left text-[13px] leading-snug md:max-w-[65%]",
+    mine ? "self-end" : "self-start",
+  );
+  if (quote.unavailable) return <div className={cn(cls, "text-muted-foreground italic")}>Original message unavailable</div>;
+  return (
+    <button type="button" className={cn(cls, "press-tint")} onClick={() => onJump(quote.id)} aria-label="Go to the original message">
+      <span className="text-[11px] font-medium text-muted-foreground">{quote.from === "luke" ? "You" : "Claude"}</span>
+      <span className="line-clamp-2 text-muted-foreground">{quote.snippet}</span>
+    </button>
   );
 }
 
