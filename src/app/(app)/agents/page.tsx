@@ -23,11 +23,13 @@ import { SopList } from "@/components/sops/sop-list";
 import { ContextList } from "@/components/context/context-list";
 import { NewContextButton } from "@/components/context/new-context-button";
 import { listContext } from "@/core/context";
+import { ARTIFACTS_ON } from "@/lib/features";
 
 export const metadata: Metadata = { title: "Agents · LukeOS" };
 
+// Artifacts are on ice (Claude makes documents now), so their tab is hidden and Agents opens on @claude.
 const views = [
-  { value: undefined, label: "Artifacts" },
+  ...(ARTIFACTS_ON ? [{ value: undefined, label: "Artifacts" }] : []),
   { value: "claude", label: "@claude" },
   { value: "sops", label: "SOPs" },
   { value: "context", label: "Context" },
@@ -37,18 +39,23 @@ const views = [
 
 export default async function FromClaudePage({ searchParams }: PageProps<"/agents">) {
   const query = await searchParams;
+  const view = typeof query.view === "string" ? query.view : ARTIFACTS_ON ? undefined : "claude";
   const viewSwitch = (active: string | undefined) => (
     <SegmentedLinks
       label="View"
       className="max-w-full self-start overflow-x-auto"
-      options={views.map((v) => ({ href: v.value ? `/agents?view=${v.value}` : "/agents", label: v.label, active: active === v.value }))}
+      options={views.map((v) => ({
+        href: v.value && (ARTIFACTS_ON || v.value !== "claude") ? `/agents?view=${v.value}` : "/agents",
+        label: v.label,
+        active: active === v.value,
+      }))}
     />
   );
-  if (query.view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
-  if (query.view === "claude") return <MentionsPage viewSwitch={viewSwitch("claude")} />;
-  if (query.view === "sops") return <SopsPage viewSwitch={viewSwitch("sops")} />;
-  if (query.view === "context") return <ContextPage viewSwitch={viewSwitch("context")} />;
-  if (query.view === "routines") return <RoutinesPage viewSwitch={viewSwitch("routines")} />;
+  if (view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
+  if (view === "claude") return <MentionsPage viewSwitch={viewSwitch("claude")} />;
+  if (view === "sops") return <SopsPage viewSwitch={viewSwitch("sops")} />;
+  if (view === "context") return <ContextPage viewSwitch={viewSwitch("context")} />;
+  if (view === "routines") return <RoutinesPage viewSwitch={viewSwitch("routines")} />;
 
   const routine = typeof query.routine === "string" && query.routine ? query.routine : undefined;
   const [items, routines, timeZone, projects] = await Promise.all([

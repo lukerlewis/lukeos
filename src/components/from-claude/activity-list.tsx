@@ -10,7 +10,7 @@ export type ActivityRow = {
   time: string;
   summary: string;
   who: string | null;
-  item: { type: "task" | "note" | "artifact" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration"; id: string } | null;
+  item: { type: "task" | "note" | "artifact" | "document" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration"; id: string } | null;
 };
 
 /** The activity log, one day at a time: a time and a short line for each thing Claude did. */

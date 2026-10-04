@@ -53,6 +53,8 @@ export type RoutineRun = {
   startedAt: Date | null;
   finishedAt: Date | null;
   summary: string | null;
+  /** What it made: a document, or (from before documents) an artifact. */
+  document: { id: string; title: string } | null;
   artifact: { id: string; title: string } | null;
 };
 
@@ -107,7 +109,7 @@ const scheduleOf = (r: Row): Schedule => ({
   dayOfMonth: r.dayOfMonth,
 });
 
-function runOf(row: typeof routineRuns.$inferSelect, artifactTitle: string | null, now: Date): RoutineRun {
+function runOf(row: typeof routineRuns.$inferSelect, artifactTitle: string | null, documentTitle: string | null, now: Date): RoutineRun {
   const stalled = row.status === "running" && row.startedAt && now.getTime() - row.startedAt.getTime() > STALLED_MS;
   return {
     id: row.id,
@@ -117,6 +119,7 @@ function runOf(row: typeof routineRuns.$inferSelect, artifactTitle: string | nul
     startedAt: row.startedAt,
     finishedAt: row.finishedAt,
     summary: row.summary,
+    document: row.documentId ? { id: row.documentId, title: documentTitle || "Untitled" } : null,
     artifact: row.artifactId ? { id: row.artifactId, title: artifactTitle ?? "Untitled" } : null,
   };
 }
@@ -125,8 +128,9 @@ async function runsFor(routineIds: string[], limit: number | "latest") {
   if (routineIds.length === 0) return [];
   const now = new Date();
   const artifactTitle = sql<string | null>`(select a.title from artifacts a where a.id = ${routineRuns.artifactId} and a.deleted_at is null)`;
+  const documentTitle = sql<string | null>`(select d.title from documents d where d.id = ${routineRuns.documentId} and d.deleted_at is null)`;
   const base = db
-    .select({ run: routineRuns, artifactTitle })
+    .select({ run: routineRuns, artifactTitle, documentTitle })
     .from(routineRuns)
     .where(
       limit === "latest"
@@ -136,7 +140,7 @@ async function runsFor(routineIds: string[], limit: number | "latest") {
     )
     .orderBy(desc(routineRuns.dueAt));
   const rows = limit === "latest" ? await base : await base.limit(limit);
-  return rows.map(({ run, artifactTitle }) => ({ routineId: run.routineId, run: runOf(run, artifactTitle, now) }));
+  return rows.map(({ run, artifactTitle, documentTitle }) => ({ routineId: run.routineId, run: runOf(run, artifactTitle, documentTitle, now) }));
 }
 
 async function sopTitles(ids: string[]) {
@@ -318,7 +322,7 @@ const dayOfMonth = z.number().int().min(1).max(31).describe("Monthly only: the d
 const instructions = z
   .string()
   .max(100_000)
-  .describe("What to do each time, in Markdown. Say what to make (usually an artifact) and anything to check or include.");
+  .describe("What to do each time, in Markdown. Say what to make (usually a document) and anything to check or include.");
 const sopId = z.uuid().nullable().describe("An SOP to follow while doing it (from list_sops), or null for none.");
 
 async function assertSop(id: string | null | undefined) {
@@ -578,20 +582,20 @@ export const routineOperations = {
   finish_routine_run: defineOperation({
     name: "finish_routine_run",
     description:
-      'Mark a routine run as finished: status "done", or "failed" if you couldn\'t do it (say why in summary). Include a one or two sentence summary of what you did, and the artifact you made, if any.',
+      'Mark a routine run as finished: status "done", or "failed" if you couldn\'t do it (say why in summary). Include a one or two sentence summary of what you did, and the document you made, if any.',
     input: z.object({
       runId: z.uuid().describe("From start_routine_run."),
       status: z.enum(["done", "failed"]).optional().describe('Defaults to "done".'),
       summary: z.string().trim().max(2000).optional().describe("What you did, in a sentence or two. Luke sees it in the routine's history."),
-      artifactId: z.uuid().optional().describe("The artifact you made this run, if any."),
+      documentId: z.uuid().optional().describe("The document you made this run, if any."),
     }),
-    run: async ({ runId, status = "done", summary, artifactId }) => {
+    run: async ({ runId, status = "done", summary, documentId }) => {
       const [row] = await db.select().from(routineRuns).where(eq(routineRuns.id, runId)).limit(1);
       if (!row) throw new OperationError("That run doesn't exist. Use the runId start_routine_run gave you.", 404);
       if (row.status === "missed") throw new OperationError("That run was never started.", 409);
       await db
         .update(routineRuns)
-        .set({ status, summary: summary || null, artifactId: artifactId ?? null, finishedAt: new Date() })
+        .set({ status, summary: summary || null, documentId: documentId ?? null, finishedAt: new Date() })
         .where(eq(routineRuns.id, runId));
       const routine = await routineRow(row.routineId).catch(() => null);
       return { runId, routine: routine ? { id: routine.id, title: routine.title } : null, status };

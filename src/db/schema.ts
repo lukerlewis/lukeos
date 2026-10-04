@@ -118,6 +118,26 @@ export const notes = pgTable(
 );
 
 /**
+ * A document: a printable page, like Google Docs, written by Luke or Claude
+ * and exported as a PDF. Stored as Markdown, so Claude reads and writes the
+ * same text. Unlike notes (Luke's quick writing), documents are finished
+ * pieces of work, and they're where Claude puts what it makes for Luke.
+ */
+export const documents = pgTable(
+  "documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    title: text("title").notNull().default(""),
+    content: text("content").notNull().default(""),
+    /** When Claude last made or changed it, for the New count in the sidebar. */
+    claudeChangedAt: timestamp("claude_changed_at", { withTimezone: true }),
+    ...madeBy,
+  },
+  (t) => [index("documents_project_idx").on(t.projectId), index("documents_updated_idx").on(t.updatedAt)],
+);
+
+/**
  * An artifact: something an agent made for Luke, such as a report or a web
  * page. It's a bundle of parts (a report, its data, a page...) with photos
  * inside them, and it keeps every version: an update adds a version rather
@@ -172,7 +192,7 @@ export const artifactParts = pgTable(
 );
 
 /**
- * A comment on a note, an artifact, a task or a Work archive entry, by Luke or Claude. It can quote the
+ * A comment on a note, an artifact, a document, a task or a Work archive entry, by Luke or Claude. It can quote the
  * words it's about, and on an artifact it records which version it was
  * made on. Replies point at the comment they answer. Resolving closes it.
  */
@@ -180,7 +200,7 @@ export const comments = pgTable(
   "comments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    targetType: text("target_type").notNull(), // "note" | "artifact" | "task" | "entry"
+    targetType: text("target_type").notNull(), // "note" | "artifact" | "document" | "task" | "entry"
     targetId: uuid("target_id").notNull(),
     parentId: uuid("parent_id").references((): AnyPgColumn => comments.id, { onDelete: "cascade" }),
     /** Artifacts only: the version number it was made on. */
@@ -301,8 +321,9 @@ export const routineRuns = pgTable(
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     /** What the agent says it did. */
     summary: text("summary"),
-    /** What it made, if anything. */
+    /** What it made, if anything: a document (or, before documents, an artifact). */
     artifactId: uuid("artifact_id"),
+    documentId: uuid("document_id"),
   },
   (t) => [unique("routine_runs_once").on(t.routineId, t.dueAt), index("routine_runs_due_idx").on(t.dueAt)],
 );
@@ -491,7 +512,7 @@ export const activityLog = pgTable(
     routine: text("routine"),
     tool: text("tool").notNull(),
     summary: text("summary").notNull(),
-    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration" | "context", when it's about one thing
+    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration" | "context" | "document", when it's about one thing
     itemId: uuid("item_id"),
   },
   (t) => [index("activity_log_at_idx").on(t.at)],
@@ -520,7 +541,7 @@ export const messages = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     body: text("body").notNull(),
     /** Something in LukeOS the message is about, shown as a card under it. */
-    linkType: text("link_type"), // "task" | "note" | "artifact" | "project" | "routine" | "entry"
+    linkType: text("link_type"), // "task" | "note" | "artifact" | "project" | "routine" | "entry" | "document"
     linkId: uuid("link_id"),
     /** Photos, videos and files sent with it, kept in stored_files. */
     attachments: jsonb("attachments").$type<MessageAttachmentRow[]>().notNull().default([]),

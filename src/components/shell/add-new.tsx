@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, ChevronDown, FilePlus, FolderPlus, Plus } from "lucide-react";
+import { CheckSquare, ChevronDown, FilePlus, FolderPlus, Newspaper, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ProjectDialog } from "@/components/projects/project-dialog";
@@ -13,7 +13,7 @@ type Open = null | "menu" | "project";
 
 /**
  * "Add new": one button that opens a short menu of what to make (a task, a
- * note or a project). In the top bar on computers; phones get a "+" that adds a task.
+ * note, a document or a project). In the top bar on computers; phones get a "+" that adds a task.
  */
 export function AddNew() {
   const router = useRouter();
@@ -42,6 +42,18 @@ export function AddNew() {
         try {
           const note = await op("create_note", {});
           router.push(`/notes/${note.id}?new=1`);
+        } catch (err) {
+          alert((err as Error).message);
+        }
+      },
+    },
+    {
+      label: "Document",
+      icon: Newspaper,
+      run: async () => {
+        try {
+          const doc = await op("create_document", { title: "" });
+          router.push(`/documents/${doc.id}?new=1`);
         } catch (err) {
           alert((err as Error).message);
         }

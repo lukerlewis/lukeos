@@ -21,7 +21,7 @@ import { sendPush } from "./push";
 
 const { messages, storedFiles } = schema;
 
-export const linkTypes = ["task", "note", "artifact", "project", "routine", "entry", "inspiration"] as const;
+export const linkTypes = ["task", "note", "document", "artifact", "project", "routine", "entry", "inspiration"] as const;
 export type LinkType = (typeof linkTypes)[number];
 
 export type Attachment = {
@@ -57,6 +57,7 @@ export type Message = {
 const linkTitle = sql<string | null>`case ${messages.linkType}
   when 'task' then (select t.title from tasks t where t.id = ${messages.linkId} and t.deleted_at is null)
   when 'note' then (select coalesce(nullif(n.title, ''), 'Untitled note') from notes n where n.id = ${messages.linkId} and n.deleted_at is null)
+  when 'document' then (select coalesce(nullif(d.title, ''), 'Untitled document') from documents d where d.id = ${messages.linkId} and d.deleted_at is null)
   when 'artifact' then (select a.title from artifacts a where a.id = ${messages.linkId} and a.deleted_at is null)
   when 'project' then (select p.name from projects p where p.id = ${messages.linkId} and p.deleted_at is null)
   when 'routine' then (select r.title from routines r where r.id = ${messages.linkId} and r.deleted_at is null)
@@ -117,7 +118,7 @@ export async function unreadMessageCount() {
 }
 
 async function assertLink(type: LinkType, id: string) {
-  const table = { task: schema.tasks, note: schema.notes, artifact: schema.artifacts, project: schema.projects, routine: schema.routines, entry: schema.archiveEntries, inspiration: schema.inspirationItems }[type];
+  const table = { task: schema.tasks, note: schema.notes, document: schema.documents, artifact: schema.artifacts, project: schema.projects, routine: schema.routines, entry: schema.archiveEntries, inspiration: schema.inspirationItems }[type];
   const [row] = await db.select({ id: table.id }).from(table).where(eq(table.id, id)).limit(1);
   if (!row) throw new OperationError(`That ${type} doesn't exist.`, 404);
 }
@@ -312,13 +313,13 @@ export const messageOperations = {
   send_message: defineOperation({
     name: "send_message",
     description:
-      "Text Luke in his Messages chain. It sends a notification to his phone, so keep it short and worth his attention: one to three plain sentences, like a text from a helpful colleague. Use it to answer his messages (pass their ids as answers, so they stop showing as waiting), to tell him something finished or needs him, or when he asks you to let him know something. Long write-ups go in an artifact (create_artifact); link it here instead of pasting it. link points at one task, note, artifact, project, routine, Work archive entry or Inspiration item, shown as a card he can tap. attachments sends photos or files with it (photos show in the chain; other files as a card he taps to open), each up to 3 MB; to send one again, pass its id as fileId.",
+      "Text Luke in his Messages chain. It sends a notification to his phone, so keep it short and worth his attention: one to three plain sentences, like a text from a helpful colleague. Use it to answer his messages (pass their ids as answers, so they stop showing as waiting), to tell him something finished or needs him, or when he asks you to let him know something. Long write-ups go in a document (create_document); link it here instead of pasting it. link points at one task, document, note, project, routine, Work archive entry or Inspiration item, shown as a card he can tap. attachments sends photos or files with it (photos show in the chain; other files as a card he taps to open), each up to 3 MB; to send one again, pass its id as fileId.",
     input: z.object({
       text: z.string().trim().max(4000).optional().describe("The message. Plain text; short. Can be left out when sending attachments."),
       link: z
         .object({ type: z.enum(linkTypes), id: z.uuid() })
         .optional()
-        .describe("Something in LukeOS this is about, e.g. the artifact you just made."),
+        .describe("Something in LukeOS this is about, e.g. the document you just made."),
       answers: z
         .array(z.uuid())
         .max(100)

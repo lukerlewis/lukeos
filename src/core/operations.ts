@@ -8,6 +8,7 @@ import { boardOperations } from "./board";
 import { bulkOperations } from "./bulk";
 import { commentOperations } from "./comments";
 import { dashboardOperations } from "./dashboard";
+import { documentOperations } from "./documents";
 import { defineOperation, OperationError, type Actor, type Operation } from "./define";
 import { folderOperations } from "./folders";
 import { inspirationOperations } from "./inspiration";
@@ -49,6 +50,7 @@ export const operations = {
   ...boardOperations,
   ...dashboardOperations,
   ...projectOperations,
+  ...documentOperations,
   ...noteOperations,
   ...folderOperations,
   ...archiveOperations,

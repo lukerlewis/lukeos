@@ -17,6 +17,9 @@ import { QuickAdd, TaskList } from "@/components/tasks/task-list";
 import { Card } from "@/components/ui/card";
 import { SegmentedLinks } from "@/components/ui/segmented-links";
 import { listArtifacts } from "@/core/artifacts";
+import { listDocuments } from "@/core/documents";
+import { DocumentList } from "@/components/documents/document-list";
+import { ARTIFACTS_ON } from "@/lib/features";
 import { boardTasks } from "@/core/board";
 import { OperationError } from "@/core/define";
 import { listFolders } from "@/core/folders";
@@ -54,13 +57,14 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const inspirationView = query.view === "inspiration";
   const listView = !boardView && !notesView && !inspirationView;
 
-  const [project, tasks, timeZone, board, notes, artifacts, folders, projects, inspiration] = await Promise.all([
+  const [project, tasks, timeZone, board, notes, documents, artifacts, folders, projects, inspiration] = await Promise.all([
     load(id),
     listView ? listTasks({ projectId: id, includeDone: true }) : [],
     getTimeZone(),
     boardView ? boardTasks(boardView, id) : null,
     notesView ? listNotes({ projectId: id }) : [],
-    notesView ? listArtifacts({ projectId: id }) : [],
+    notesView ? listDocuments({ projectId: id }) : [],
+    notesView && ARTIFACTS_ON ? listArtifacts({ projectId: id }) : [],
     notesView ? listFolders({ projectId: id }) : [],
     notesView || inspirationView ? listProjects() : [],
     inspirationView ? listInspiration({ projectId: id }) : [],
@@ -157,6 +161,14 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
                 empty={<EmptyState>No notes in this project yet.</EmptyState>}
               />
             </Card>
+          )}
+          {documents.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h2 className="px-1 text-sm font-semibold">Documents</h2>
+              <Card>
+                <DocumentList documents={documents} timeZone={timeZone} showProject={false} />
+              </Card>
+            </section>
           )}
           {artifacts.length > 0 && (
             <section className="flex flex-col gap-2">

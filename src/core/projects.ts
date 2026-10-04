@@ -5,11 +5,13 @@ import { db, schema } from "@/db";
 import { projectColorNames, type ProjectColor } from "@/lib/project-colors";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { listArtifacts } from "./artifacts";
+import { listDocuments } from "./documents";
+import { ARTIFACTS_ON } from "@/lib/features";
 import { listFolders } from "./folders";
 import { listNotes } from "./notes";
 import { listTasks } from "./tasks";
 
-const { projects, tasks, notes, artifacts } = schema;
+const { projects, tasks, notes, artifacts, documents } = schema;
 
 export type Project = {
   id: string;
@@ -81,14 +83,15 @@ export const projectOperations = {
   get_project: defineOperation({
     name: "get_project",
     description:
-      "Get one project with all of its tasks (including done ones), the note folders attached to it, its notes (including those in its folders) and its artifacts (titles and excerpts; use get_note or get_artifact for the full text).",
+      "Get one project with all of its tasks (including done ones), its documents, the note folders attached to it and its notes (including those in its folders): titles and excerpts; use get_document or get_note for the full text.",
     input: z.object({ id }),
     run: async ({ id }) => ({
       ...(await getProject(id)),
       tasks: await listTasks({ projectId: id, includeDone: true }),
       folders: await listFolders({ projectId: id }),
       notes: await listNotes({ projectId: id }),
-      artifacts: await listArtifacts({ projectId: id }),
+      documents: await listDocuments({ projectId: id }),
+      ...(ARTIFACTS_ON ? { artifacts: await listArtifacts({ projectId: id }) } : {}),
     }),
   }),
 
@@ -128,7 +131,7 @@ export const projectOperations = {
 
   delete_project: defineOperation({
     name: "delete_project",
-    description: "Move a project and all of its tasks, notes and artifacts to Trash, where they are kept for 30 days.",
+    description: "Move a project and all of its tasks, notes and documents to Trash, where they are kept for 30 days.",
     input: z.object({ id }),
     run: async ({ id }) => {
       await assertProject(id);
@@ -147,6 +150,10 @@ export const projectOperations = {
           .update(artifacts)
           .set({ deletedAt: now })
           .where(and(eq(artifacts.projectId, id), isNull(artifacts.deletedAt)));
+        await tx
+          .update(documents)
+          .set({ deletedAt: now })
+          .where(and(eq(documents.projectId, id), isNull(documents.deletedAt)));
       });
       return { deleted: id };
     },

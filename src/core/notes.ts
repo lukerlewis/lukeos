@@ -218,7 +218,7 @@ export const noteOperations = {
   create_note: defineOperation({
     name: "create_note",
     description:
-      "Create a note in Luke's Notes, on its own or inside a project, written in Markdown. Notes are Luke's own writing, so only do this when he explicitly asks for a note. For anything else you write for him (reports, pages, research), use create_artifact.",
+      "Create a note in Luke's Notes, on its own or inside a project, written in Markdown. Notes are Luke's own writing, so only do this when he explicitly asks for a note. For anything else you write for him (reports, research, plans, drafts), use create_document.",
     input: z.object({
       title: title.optional(),
       content: content.optional(),
@@ -299,7 +299,7 @@ export const noteOperations = {
   save_image: defineOperation({
     name: "save_image",
     description:
-      "Save a photo (JPEG, PNG, WebP or GIF, up to 3 MB) so it can go in an artifact or a note. Returns a url, and a ready-made Markdown line to put in the text (in an HTML part, use <img src=\"url\">).",
+      "Save a photo (JPEG, PNG, WebP or GIF, up to 3 MB) so it can go in a document or a note. Returns a url, and a ready-made Markdown line to put in the text.",
     input: z.object({
       data: z.base64().describe("The image file, base64 encoded."),
       mimeType: z.enum(imageTypes),

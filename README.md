@@ -42,6 +42,17 @@ the app, Claude can do too, through a connector (roadmap step 3).
   `/api/images/<id>`. Claude can also save a finished HTML page (format
   `html`), shown read-only in a sandboxed frame. Operations in
   `src/core/notes.ts`.
+- **Documents** (`/documents`, and on each project's Notes tab): printable
+  pages like Google Docs, written by Luke or Claude. A US Letter page with
+  1 inch margins sits on a grey desk and is edited in place (Tiptap, saved as
+  Markdown); text uses Inter at the same sizes as the PDF. Export PDF builds a
+  real PDF on the server (`/api/documents/<id>/pdf`, pdfmake, fonts in
+  `src/assets/fonts`, layout in `src/lib/document-pdf.ts`); phones get the
+  share sheet, computers a download. Filter All / Made by me / Made by Claude;
+  Claude's new or changed documents count in the sidebar. Documents have
+  comment threads. This is where Claude puts what it makes; artifacts are on
+  ice (`ARTIFACTS_ON` in `src/lib/features.ts` hides their Agents tab and
+  tools; nothing was deleted). Operations in `src/core/documents.ts`.
 - **Work archive** (`/archive`): Luke's record of work he's done, from quick
   wins to multi-year projects, kept as raw material for case studies and
   content. Each entry has a size, a stage (Raw, Drafted, Published), details,

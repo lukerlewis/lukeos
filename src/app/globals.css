@@ -397,3 +397,202 @@
   height: 0;
   pointer-events: none;
 }
+
+/* Documents: a printable page (US Letter, 1 inch margins) on a grey desk,
+   like Google Docs. On a computer the page is the real size, and the text
+   sizes match the exported PDF (src/lib/document-pdf.ts), so it prints as it
+   looks. On phones the page fills the width and the text is 16px, so the
+   iPhone doesn't zoom in when typing. */
+.doc-desk {
+  background: var(--muted);
+}
+.doc-page {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 8.5in;
+  min-height: 70dvh;
+  padding: 28px 22px 48px;
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--foreground) 6%, transparent),
+    0 1px 3px color-mix(in oklab, black 12%, transparent);
+  font-family: var(--font-document), var(--font-sans);
+  font-size: 16px;
+}
+@media (width >= 48rem) {
+  .doc-page {
+    min-height: 11in;
+    padding: 1in;
+    font-size: 11pt;
+  }
+}
+.doc-body {
+  outline: none;
+  line-height: 1.5;
+  min-height: 12rem;
+  overflow-wrap: anywhere;
+}
+.doc-body > * + * {
+  margin-top: 0.75em;
+}
+.doc-body > :first-child {
+  margin-top: 0;
+}
+.doc-body h1 {
+  font-size: 1.82em;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin-top: 1em;
+}
+.doc-body h2 {
+  font-size: 1.36em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.1em;
+}
+.doc-body h3 {
+  font-size: 1.14em;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 1em;
+}
+.doc-body a {
+  color: var(--doing);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.doc-body ul,
+.doc-body ol {
+  padding-left: 1.5em;
+}
+.doc-body ul {
+  list-style: disc;
+}
+.doc-body ol {
+  list-style: decimal;
+}
+.doc-body li > p {
+  margin: 0.2em 0;
+}
+.doc-body ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.1em;
+}
+.doc-body ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6em;
+}
+.doc-body ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.35em;
+  user-select: none;
+}
+.doc-body ul[data-type="taskList"] li > label input {
+  width: 1em;
+  height: 1em;
+  accent-color: var(--done);
+}
+.doc-body ul[data-type="taskList"] li > div {
+  flex-grow: 1;
+  min-width: 0;
+}
+.doc-body blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  color: var(--subtle-foreground);
+}
+.doc-body code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--muted);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+.doc-body pre {
+  background: var(--muted);
+  border-radius: 6px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+}
+.doc-body pre code {
+  background: none;
+  padding: 0;
+}
+.doc-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5em 0;
+}
+.doc-body .tableWrapper {
+  overflow-x: auto;
+}
+.doc-body table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.doc-body th,
+.doc-body td {
+  border: 1px solid var(--border);
+  padding: 0.35em 0.6em;
+  text-align: left;
+  vertical-align: top;
+}
+.doc-body th {
+  background: var(--muted);
+  font-weight: 600;
+}
+.doc-body td > p,
+.doc-body th > p {
+  margin: 0;
+}
+.doc-body .selectedCell {
+  background: color-mix(in oklab, var(--doing) 12%, transparent);
+}
+.doc-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+.doc-body img.ProseMirror-selectednode {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.doc-body p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Printing a document (Cmd+P) prints just the page, in black on white. */
+@media print {
+  @page {
+    size: letter;
+    margin: 1in;
+  }
+  body:has(.doc-page) * {
+    visibility: hidden;
+  }
+  body:has(.doc-page) .doc-page,
+  body:has(.doc-page) .doc-page * {
+    visibility: visible;
+  }
+  body:has(.doc-page) .doc-page {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+    background: white;
+    color: black;
+    font-size: 11pt;
+  }
+}

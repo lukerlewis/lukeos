@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // pdfmake reads its font data with Node's fs, so it runs as-is rather than bundled.
+  serverExternalPackages: ["pdfmake"],
+  // The fonts that go into exported PDFs (src/lib/document-pdf.ts).
+  outputFileTracingIncludes: { "/api/documents/**": ["./src/assets/fonts/*.ttf"] },
   experimental: {
     // Keep screens you've just seen for 30 seconds, so going back to them
     // is instant. Any change you make refreshes them straight away.

@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArrowUp, Lightbulb, Bot, CheckSquare, FileText, Folder, Plus, Repeat, Sparkles } from "lucide-react";
+import { Archive, ArrowUp, Lightbulb, Bot, CheckSquare, FileText, Folder, Plus, Repeat, Sparkles, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
@@ -27,7 +27,7 @@ export type ThreadMessage = {
   from: "luke" | "claude";
   /** "End of day recap", when a routine sent it. */
   routine: string | null;
-  link: { type: "task" | "note" | "artifact" | "project" | "routine" | "entry" | "inspiration"; id: string; title: string } | null;
+  link: { type: "task" | "note" | "document" | "artifact" | "project" | "routine" | "entry" | "inspiration"; id: string; title: string } | null;
   createdAt: string;
   answered: boolean;
 };
@@ -372,8 +372,8 @@ function Linkified({ text, mine }: { text: string; mine: boolean }) {
   );
 }
 
-const linkIcons = { task: CheckSquare, note: FileText, artifact: Sparkles, project: Folder, routine: Repeat, entry: Archive, inspiration: Lightbulb };
-const linkKinds = { task: "Task", note: "Note", artifact: "Artifact", project: "Project", routine: "Routine", entry: "Work archive", inspiration: "Inspiration" };
+const linkIcons = { task: CheckSquare, note: FileText, document: Newspaper, artifact: Sparkles, project: Folder, routine: Repeat, entry: Archive, inspiration: Lightbulb };
+const linkKinds = { task: "Task", note: "Note", document: "Document", artifact: "Artifact", project: "Project", routine: "Routine", entry: "Work archive", inspiration: "Inspiration" };
 
 /** A card under a message for the task, artifact or other thing it's about. */
 function LinkCard({ link, mine }: { link: NonNullable<ThreadMessage["link"]>; mine: boolean }) {

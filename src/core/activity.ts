@@ -6,9 +6,9 @@ import { statusLabel, type Status } from "@/lib/task-fields";
 import { defineOperation, type Actor } from "./define";
 import { inspirationLabel } from "./inspiration";
 
-const { activityLog, tasks, notes, artifacts, projects, sops, contextFiles, routines, archiveEntries, inspirationItems } = schema;
+const { activityLog, tasks, notes, artifacts, documents, projects, sops, contextFiles, routines, archiveEntries, inspirationItems } = schema;
 
-type ItemType = "task" | "note" | "artifact" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration";
+type ItemType = "task" | "note" | "artifact" | "document" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration";
 
 /** One line of the activity log. */
 export type ActivityEntry = {
@@ -96,6 +96,8 @@ async function titleOf(type: ItemType, id: unknown) {
     const table =
       type === "task"
         ? tasks
+        : type === "document"
+          ? documents
         : type === "note"
           ? notes
           : type === "sop"
@@ -124,6 +126,8 @@ export async function titleBefore(tool: string, input: Record<string, unknown>) 
       return titleOf("task", input.id);
     case "delete_note":
       return titleOf("note", input.id);
+    case "delete_document":
+      return titleOf("document", input.id);
     case "delete_project":
       return titleOf("project", input.id);
     case "delete_artifact":
@@ -209,6 +213,18 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
             : `Edited note ${quote(task.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`;
       return { summary, item: { type: "note", id: task.id } };
     }
+    case "create_document":
+      return { summary: `Wrote document ${quote(task.title)}${inProject(task)}`, item: { type: "document", id: task.id } };
+    case "update_document": {
+      const fields = changed(input);
+      const summary =
+        typeof input.append === "string" && input.append.trim() && fields.length === 0
+          ? `Added to document ${quote(task.title)}`
+          : `Edited document ${quote(task.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`;
+      return { summary, item: { type: "document", id: task.id } };
+    }
+    case "delete_document":
+      return { summary: `Moved document ${quote(before)} to Trash`, item: { type: "document", id: String(input.id) } };
     case "delete_note":
       return { summary: `Moved note ${quote(before)} to Trash`, item: { type: "note", id: String(input.id) } };
     case "create_artifact": {
@@ -316,7 +332,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "add_comment":
     case "reply_to_comment":
     case "resolve_comment": {
-      const c = r as { target?: { type: "note" | "artifact" | "task" | "entry"; id: string; title: string } };
+      const c = r as { target?: { type: "note" | "artifact" | "document" | "task" | "entry"; id: string; title: string } };
       if (!c.target) return null;
       const on = `${kindLabel(c.target.type)} ${quote(c.target.title)}`;
       const summary =
@@ -333,7 +349,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Deleted a comment" };
     case "resolve_mention": {
       const m = r as {
-        where?: { type: string; id: string; title: string; on: { type: "note" | "artifact" | "task" | "entry"; id: string; title: string } | null };
+        where?: { type: string; id: string; title: string; on: { type: "note" | "artifact" | "document" | "task" | "entry"; id: string; title: string } | null };
       };
       if (!m.where) return null;
       const verb = input.resolved === false ? "Reopened" : "Dealt with";
@@ -353,7 +369,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: `Deleted ${kindLabel(input.type as ItemType)} ${quote(before)} forever` };
     case "empty_trash": {
       const c = (r.deletedForever ?? {}) as Record<string, number>;
-      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.context ?? 0) + (c.routines ?? 0) + (c.entries ?? 0) + (c.inspiration ?? 0);
+      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.documents ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.context ?? 0) + (c.routines ?? 0) + (c.entries ?? 0) + (c.inspiration ?? 0);
       return { summary: `Emptied Trash (${n} ${n === 1 ? "item" : "items"})` };
     }
 

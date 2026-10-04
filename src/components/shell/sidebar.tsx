@@ -30,7 +30,7 @@ export function Sidebar({
     () => /Mac|iPhone|iPad/.test(navigator.platform),
     () => true,
   );
-  // Opening Agents clears the count straight away, without a reload.
+  // Opening Documents clears Claude's New count straight away, without a reload.
   const [clearedAt, setClearedAt] = useState<number | null>(null);
   useEffect(() => {
     const clear = () => setClearedAt(newFromClaude);
@@ -39,7 +39,7 @@ export function Sidebar({
   }, [newFromClaude]);
   const unread = useUnreadMessages(unreadMessages);
   const counts: Record<string, number> = {
-    "/agents": clearedAt === newFromClaude ? 0 : newFromClaude,
+    "/documents": clearedAt === newFromClaude ? 0 : newFromClaude,
     "/messages": unread,
   };
 

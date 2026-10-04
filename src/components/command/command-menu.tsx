@@ -12,6 +12,7 @@ import {
   Globe,
   Package,
   Monitor,
+  Newspaper,
   Moon,
   Plus,
   Search,
@@ -120,7 +121,8 @@ type Item = {
 const pages: { href: string; label: string; icon: LucideIcon; keywords?: string }[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, keywords: "home today due board kanban" },
   { href: "/tasks", label: "All tasks", icon: CheckSquare, keywords: "list" },
-  { href: "/notes", label: "Notes", icon: FileText, keywords: "pages documents" },
+  { href: "/notes", label: "Notes", icon: FileText, keywords: "pages jot" },
+  { href: "/documents", label: "Documents", icon: Newspaper, keywords: "docs pages pdf print made by claude artifacts reports" },
   { href: "/inspiration", label: "Inspiration", icon: Lightbulb, keywords: "mymind gallery moodboard pictures images references ideas" },
   { href: "/archive", label: "Work archive", icon: Archive, keywords: "portfolio case studies wins stories career" },
   { href: "/agents", label: "Agents", icon: Bot, keywords: "ai claude routines made activity from" },
@@ -207,6 +209,17 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
         run: async () => {
           const note = await op("create_note", { title: q || undefined });
           go(`/notes/${note.id}?new=1`);
+        },
+      },
+      {
+        key: "new-document",
+        group: "Create",
+        label: q ? `New document “${q}”` : "New document",
+        icon: Newspaper,
+        keywords: "add page doc write pdf print letter",
+        run: async () => {
+          const doc = await op("create_document", { title: q || "" });
+          go(`/documents/${doc.id}?new=1`);
         },
       },
       {
@@ -386,7 +399,7 @@ function Kbd({ children }: { children: React.ReactNode }) {
   return <kbd className="rounded-[5px] border bg-muted px-1.5 font-mono text-[11px]">{children}</kbd>;
 }
 
-/** A task, note or artifact found by searching, as a row. */
+/** A task, note, document or other thing found by searching, as a row. */
 function resultItem(
   r: SearchResult,
   today: string,
@@ -434,6 +447,16 @@ function resultItem(
       icon: Lightbulb,
       detail,
       run: () => actions.go(`/inspiration?item=${r.id}`),
+    };
+  }
+  if (r.type === "document") {
+    return {
+      key: `document-${r.id}`,
+      group: "Documents",
+      label: r.title,
+      icon: Newspaper,
+      detail,
+      run: () => actions.go(`/documents/${r.id}`),
     };
   }
   if (r.type === "entry") {
