@@ -155,8 +155,8 @@ export function QuickAdd({
     const typed = title;
     const clean = parsed.title;
     if (!clean) return;
-    // A date typed in the name picks the list; otherwise it goes in this one.
-    const list = parsed.dueDate ? bucketForDate(parsed.dueDate, today) : bucket;
+    // A list typed in the name ("this week") wins, then a typed date picks the list; otherwise it goes in this one.
+    const list = parsed.bucket ?? (parsed.dueDate ? bucketForDate(parsed.dueDate, today) : bucket);
     const fields = { title: clean, projectId: projectId ?? null, bucket: list, dueDate: due, repeat: parsed.repeat };
     setTitle("");
     smart.reset();

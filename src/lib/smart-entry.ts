@@ -1,14 +1,15 @@
 /**
- * Reads a due date and a repeat out of a task name as it's typed, so
- * "put away laundry tomorrow" becomes "put away laundry", due tomorrow.
+ * Reads a due date, a repeat and a list out of a task name as it's typed, so
+ * "put away laundry tomorrow" becomes "put away laundry", due tomorrow, and
+ * "call the bank this week" goes in the This week list.
  * Plain rules, no AI: each rule is a pattern and how to turn it into a day.
  */
 
 import { addDays, addMonths, endOfMonth, endOfWeek } from "@/lib/dates";
-import type { Repeat } from "@/lib/task-fields";
+import type { Bucket, Repeat } from "@/lib/task-fields";
 
 export type SmartMatch = {
-  kind: "date" | "repeat";
+  kind: "date" | "repeat" | "list";
   /** Where the words are in the text, so they can be highlighted or left in. */
   start: number;
   end: number;
@@ -21,10 +22,12 @@ export type SmartEntry = {
   /** The day the words name. null for no date, or a repeat with no day of its own ("every week"). */
   dueDate: string | null;
   repeat: Repeat | null;
+  /** The list the words name ("this week", "later"), which sets the list but not a due date. */
+  bucket: Bucket | null;
   matches: SmartMatch[];
 };
 
-type Found = { dueDate?: string; repeat?: Repeat };
+type Found = { dueDate?: string; repeat?: Repeat; bucket?: Bucket };
 type Rule = { kind: SmartMatch["kind"]; re: RegExp; read: (m: RegExpExecArray, today: string) => Found | null };
 
 const dayNames: Record<string, number> = {
@@ -205,10 +208,14 @@ const rules: Rule[] = [
       return day ? { dueDate: day } : null;
     },
   },
+
+  // Lists: these pick the list only. Last, so "end of this week" and "next week" stay dates.
+  { kind: "list", re: rx("(?:(?:later|sometime|for)\\s+)?this\\s+week"), read: () => ({ bucket: "this_week" }) },
+  { kind: "list", re: rx("(?:for\\s+)?later"), read: () => ({ bucket: "later" }) },
 ];
 
 /**
- * Finds the first date and the first repeat in `text`. Words listed in
+ * Finds the first date, repeat and list in `text`. Words listed in
  * `ignore` (lower case) were turned back into plain words by the user and
  * are left alone.
  */
@@ -232,6 +239,7 @@ export function parseTaskText(text: string, today: string, ignore: ReadonlySet<s
 
   const repeat = found.find((f) => f.kind === "repeat");
   const date = found.find((f) => f.kind === "date");
+  const list = found.find((f) => f.kind === "list");
   // A repeat with no day of its own ("every week") leaves dueDate empty; the caller picks today or the screen's day.
   const dueDate = date?.dueDate ?? repeat?.dueDate ?? null;
 
@@ -244,5 +252,5 @@ export function parseTaskText(text: string, today: string, ignore: ReadonlySet<s
     .replace(/^[\s,;:–—-]+|[\s,;:–—-]+$/g, "")
     .trim();
 
-  return { title: matches.length ? title : text.trim(), dueDate, repeat: repeat?.repeat ?? null, matches };
+  return { title: matches.length ? title : text.trim(), dueDate, repeat: repeat?.repeat ?? null, bucket: list?.bucket ?? null, matches };
 }

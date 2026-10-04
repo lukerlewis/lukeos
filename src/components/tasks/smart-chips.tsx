@@ -1,21 +1,21 @@
 "use client";
 
-import { CalendarDays, Repeat, X } from "lucide-react";
+import { CalendarDays, List, Repeat, X } from "lucide-react";
 import { useState } from "react";
 import { friendlyDay } from "@/lib/dates";
 import { parseTaskText, type SmartEntry, type SmartMatch } from "@/lib/smart-entry";
-import { repeatLabel, type Repeat as RepeatValue } from "@/lib/task-fields";
+import { bucketLabel, repeatLabel, type Repeat as RepeatValue } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 
 /**
- * Reads dates and repeats out of a new task's name as it's typed. Tapping a
+ * Reads dates, repeats and lists out of a new task's name as it's typed. Tapping a
  * chip's × puts those words back as plain words.
  */
 export function useSmartEntry(text: string, today: string, enabled = true) {
   const [ignore, setIgnore] = useState<ReadonlySet<string>>(() => new Set());
   const parsed: SmartEntry = enabled
     ? parseTaskText(text, today, ignore)
-    : { title: text.trim(), dueDate: null, repeat: null, matches: [] };
+    : { title: text.trim(), dueDate: null, repeat: null, bucket: null, matches: [] };
 
   function dismiss(kind: SmartMatch["kind"]) {
     const match = parsed.matches.find((m) => m.kind === kind);
@@ -25,7 +25,7 @@ export function useSmartEntry(text: string, today: string, enabled = true) {
   return { parsed, dismiss, reset: () => setIgnore(new Set()) };
 }
 
-/** The date and repeat picked up from the name, each as a chip with a × to undo it. */
+/** The date, repeat and list picked up from the name, each as a chip with a × to undo it. */
 export function SmartChips({
   parsed,
   dueDate,
@@ -53,6 +53,7 @@ export function SmartChips({
         <Chip icon={CalendarDays} label={friendlyDay(dueDate, today)} onDismiss={() => onDismiss(has("date") ? "date" : "repeat")} />
       )}
       {has("repeat") && repeat && <Chip icon={Repeat} label={repeatLabel[repeat]} onDismiss={() => onDismiss("repeat")} />}
+      {parsed.bucket && <Chip icon={List} label={bucketLabel[parsed.bucket]} onDismiss={() => onDismiss("list")} />}
     </div>
   );
 }
@@ -72,7 +73,7 @@ function Chip({ icon: Icon, label, onDismiss }: { icon: typeof Repeat; label: st
   );
 }
 
-/** The name as typed, with the words that set a date or repeat picked out. Sits under a see-through text box. */
+/** The name as typed, with the words that set a date, repeat or list picked out. Sits under a see-through text box. */
 export function HighlightedText({ text, matches }: { text: string; matches: SmartMatch[] }) {
   const parts: React.ReactNode[] = [];
   let at = 0;

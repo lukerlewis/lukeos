@@ -167,9 +167,10 @@ function TaskDialog({
   const { parsed } = smart;
   const dueDate = dueTouched ? draft.dueDate : (parsed.dueDate ?? (parsed.repeat ? (draft.dueDate ?? today) : draft.dueDate));
   const repeat = parsed.repeat ?? draft.repeat;
-  // A new task's list follows its due date until a list is picked by hand.
+  // A new task's list follows a list typed in its name ("later"), else its due date, until a list is picked by hand.
   const [bucketTouched, setBucketTouched] = useState(false);
-  const bucket = isNew && !bucketTouched && dueDate ? bucketForDate(dueDate, today) : draft.bucket;
+  const bucket =
+    isNew && !bucketTouched ? (parsed.bucket ?? (dueDate ? bucketForDate(dueDate, today) : draft.bucket)) : draft.bucket;
   const highlight = isNew && parsed.matches.length > 0;
 
   function pickDue(value: string | null) {
@@ -312,6 +313,7 @@ function TaskDialog({
               <Segmented
                 value={bucket}
                 onChange={(v) => {
+                  if (parsed.bucket) smart.dismiss("list");
                   setBucketTouched(true);
                   set("bucket", v);
                 }}
