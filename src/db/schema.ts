@@ -91,6 +91,12 @@ export const cards = pgTable(
     notes: text("notes"),
     /** Order within its column: lowest first. A card moved to a column goes to the end. */
     position: integer("position").notNull().default(0),
+    /**
+     * Set when Luke rejects a suggested idea from the Inbox column. The card is
+     * hidden everywhere but kept, so Claude knows not to suggest it again.
+     */
+    rejectedAt: timestamp("rejected_at", { withTimezone: true }),
+    rejectReason: text("reject_reason"),
     ...madeBy,
   },
   (t) => [index("cards_project_idx").on(t.projectId), index("cards_column_idx").on(t.columnId)],

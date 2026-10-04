@@ -259,6 +259,14 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     }
     case "delete_card":
       return { summary: `Moved card ${quote(before)} to Trash`, item: { type: "card", id: String(input.id) } };
+    case "approve_card": {
+      const c = r as Named & { column?: { name: string } | null };
+      return { summary: `Approved idea ${quote(c.title)}, moved to ${c.column?.name ?? "the next column"}`, item: { type: "card", id: c.id } };
+    }
+    case "reject_card":
+      return { summary: `Rejected idea ${quote(String(r.title))}` };
+    case "unreject_card":
+      return { summary: `Brought back rejected idea ${quote(task.title)}`, item: { type: "card", id: task.id } };
     case "attach_to_card":
     case "detach_from_card": {
       const kind = { task: "a task", document: "a document", note: "a note", inspiration: "an Inspiration item", entry: "a Work archive entry" }[String(input.type)] ?? "something";

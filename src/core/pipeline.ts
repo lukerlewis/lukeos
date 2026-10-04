@@ -1,7 +1,8 @@
 import "server-only";
-import { and, asc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
+import { isInbox } from "@/lib/inbox";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type MadeBy } from "./define";
 import { inspirationLabel } from "./inspiration";
@@ -20,6 +21,9 @@ export const attachableTypes = ["task", ...attachmentTypes] as const;
 export type AttachableType = (typeof attachableTypes)[number];
 
 export type PipelineColumn = { id: string; name: string; position: number };
+
+/** An idea Luke rejected: hidden from the board, kept so it isn't suggested again. */
+export type RejectedIdea = { id: string; title: string; notes: string | null; reason: string | null; rejectedAt: Date };
 
 export type CardSummary = {
   id: string;
@@ -47,7 +51,7 @@ export type Card = CardSummary & {
   attachments: CardAttachment[];
 };
 
-const liveCard = and(isNull(cards.deletedAt), isNull(projects.deletedAt));
+const liveCard = and(isNull(cards.deletedAt), isNull(projects.deletedAt), isNull(cards.rejectedAt));
 
 const taskCount = {
   open: sql<number>`(select count(*) from tasks t where t.card_id = ${cards.id} and t.deleted_at is null and t.status <> 'done')`.mapWith(Number),
@@ -182,13 +186,26 @@ export async function getCard(id: string): Promise<Card> {
 /** A project's pipeline: its columns in order, each with its cards. */
 export async function getPipeline(projectId: string) {
   const project = await getProject(projectId);
-  const [columns, all] = await Promise.all([listColumns(projectId), listCards({ projectId })]);
+  const [columns, all, rejected] = await Promise.all([listColumns(projectId), listCards({ projectId }), listRejected(projectId)]);
   // A card whose column went away sits in the first one.
   const columnOf = (c: CardSummary) => (columns.some((col) => col.id === c.columnId) ? c.columnId : columns[0]?.id);
   return {
     project,
     columns: columns.map((col) => ({ ...col, cards: all.filter((c) => columnOf(c) === col.id) })),
+    /** Ideas Luke rejected (titles and reasons only): never suggest these again. */
+    rejected: rejected.map(({ title, reason }) => (reason ? { title, reason } : { title })),
   };
+}
+
+/** Ideas Luke rejected in a project's Inbox, newest first. */
+export async function listRejected(projectId: string, limit = 300): Promise<RejectedIdea[]> {
+  const rows = await db
+    .select({ id: cards.id, title: cards.title, notes: cards.notes, reason: cards.rejectReason, rejectedAt: cards.rejectedAt })
+    .from(cards)
+    .where(and(eq(cards.projectId, projectId), isNotNull(cards.rejectedAt), isNull(cards.deletedAt)))
+    .orderBy(desc(cards.rejectedAt))
+    .limit(limit);
+  return rows.map((r) => ({ ...r, rejectedAt: r.rejectedAt! }));
 }
 
 /** Finds a project's column by its id or its name (any case). */
@@ -381,7 +398,7 @@ export const pipelineOperations = {
   create_card: defineOperation({
     name: "create_card",
     description:
-      "Add a card to a project's pipeline: a piece of work (e.g. a post or a video idea), not a to-do. It goes at the end of the column given, or the first column. Add tasks inside it with create_task and its cardId, and attach things with attach_to_card. It shows on the project's Board; nothing opens automatically.",
+      "Add a card to a project's pipeline: a piece of work (e.g. a post or a video idea), not a to-do. It goes at the end of the column given, or the first column. If the pipeline has an Inbox column, ideas you come up with on your own go there for Luke to approve or reject; check the rejected list from get_pipeline first so you never suggest one again. Add tasks inside it with create_task and its cardId, and attach things with attach_to_card. It shows on the project's Board; nothing opens automatically.",
     input: z.object({
       projectId,
       title: z.string().trim().min(1).max(500),
@@ -439,6 +456,70 @@ export const pipelineOperations = {
         .set({ columnId: target.id, position: await endOf(target.id), updatedAt: new Date() })
         .where(eq(cards.id, id));
       return { moved: true, card: await getCard(id) };
+    },
+  }),
+
+  approve_card: defineOperation({
+    name: "approve_card",
+    description:
+      "Approve an idea in a pipeline's Inbox column: it moves on to the next column (e.g. Ideas). This is what Luke's Approve button does; only use it when Luke asks.",
+    input: z.object({ id: cardId }),
+    run: async ({ id }) => {
+      const card = await getCard(id);
+      if (!isInbox(card.column)) throw new OperationError(`"${card.title}" isn't in the Inbox column.`);
+      const columns = await listColumns(card.project.id);
+      const next = columns[columns.findIndex((c) => c.id === card.columnId) + 1];
+      if (!next) throw new OperationError("There's no column after Inbox to move it to.");
+      await db
+        .update(cards)
+        .set({ columnId: next.id, position: await endOf(next.id), updatedAt: new Date() })
+        .where(eq(cards.id, id));
+      return getCard(id);
+    },
+  }),
+
+  reject_card: defineOperation({
+    name: "reject_card",
+    description:
+      "Reject an idea in a pipeline's Inbox column: it's hidden from the board but kept, and listed under \"rejected\" in get_pipeline so it's never suggested again. This is what Luke's Reject button does; only use it when Luke asks.",
+    input: z.object({
+      id: cardId,
+      reason: z.string().trim().max(500).optional().describe("Why Luke rejected it, if he said."),
+    }),
+    run: async ({ id, reason }) => {
+      const card = await getCard(id);
+      await db
+        .update(cards)
+        .set({ rejectedAt: new Date(), rejectReason: reason || null, updatedAt: new Date() })
+        .where(eq(cards.id, id));
+      return { rejected: id, title: card.title };
+    },
+  }),
+
+  unreject_card: defineOperation({
+    name: "unreject_card",
+    description: "Bring a rejected idea back to its project's Inbox column (undoes reject_card).",
+    input: z.object({ id: cardId }),
+    run: async ({ id }) => {
+      const [row] = await db
+        .select({ projectId: cards.projectId })
+        .from(cards)
+        .where(and(eq(cards.id, id), isNotNull(cards.rejectedAt), isNull(cards.deletedAt)))
+        .limit(1);
+      if (!row) throw new OperationError("That idea isn't rejected.", 404);
+      await db.update(cards).set({ rejectedAt: null, rejectReason: null, updatedAt: new Date() }).where(eq(cards.id, id));
+      return getCard(id);
+    },
+  }),
+
+  list_rejected_ideas: defineOperation({
+    name: "list_rejected_ideas",
+    description:
+      "Ideas Luke rejected from a project's Inbox, newest first, with their notes and his reason when he gave one. Check these before suggesting ideas so you never suggest the same thing (or a close variation) again. get_pipeline also lists their titles.",
+    input: z.object({ projectId }),
+    run: async ({ projectId }) => {
+      await assertProject(projectId);
+      return listRejected(projectId);
     },
   }),
 

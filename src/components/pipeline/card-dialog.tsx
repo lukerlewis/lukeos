@@ -1,11 +1,11 @@
 "use client";
 
-import { Archive, CheckSquare, FileText, Lightbulb, NotebookPen, Paperclip, Plus, Trash2, X } from "lucide-react";
+import { Archive, Check, CheckSquare, FileText, Lightbulb, NotebookPen, Paperclip, Plus, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Comments } from "@/components/comments/comments";
-import { showTrashedToast } from "@/components/shell/toast";
+import { showToast, showTrashedToast } from "@/components/shell/toast";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { StatusIcon } from "@/components/tasks/status-circle";
 import { useTaskEditor } from "@/components/tasks/task-editor";
@@ -14,6 +14,7 @@ import { Dialog } from "@/components/ui/dialog";
 import type { Comment } from "@/core/comments";
 import type { AttachableType, Card, PipelineColumn } from "@/core/pipeline";
 import { friendlyDay } from "@/lib/dates";
+import { isInbox } from "@/lib/inbox";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
@@ -115,7 +116,29 @@ export function CardDialog({
     }
   }
 
+  /** Inbox: Approve moves the idea on to the next column; Reject hides it (Claude keeps it). */
+  async function review(action: "approve" | "reject") {
+    if (!card) return;
+    setBusy(true);
+    try {
+      await op(action === "approve" ? "approve_card" : "reject_card", { id: card.id });
+      if (action === "reject") {
+        showToast("Idea rejected", async () => {
+          await op("unreject_card", { id: card.id });
+          router.refresh();
+        });
+      }
+      router.refresh();
+      onClose();
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
+  }
+
   const loading = !isNew && !card;
+  const inInbox = !!card && isInbox(card.column) && card.columnId === columnId;
+  const canApprove = inInbox && columns.findIndex((c) => c.id === card.columnId) < columns.length - 1;
 
   return (
     <Dialog label={isNew ? "New card" : "Card"} onClose={onClose} focusFirstField={isNew}>
@@ -140,6 +163,21 @@ export function CardDialog({
             <X className="size-5" aria-hidden />
           </Button>
         </div>
+
+        {inInbox && (
+          <div className="flex gap-2 px-5 pt-3">
+            <Button variant="outline" onClick={() => review("reject")} disabled={busy} className="grow">
+              <X className="size-4" aria-hidden />
+              Reject idea
+            </Button>
+            {canApprove && (
+              <Button onClick={() => review("approve")} disabled={busy} className="grow">
+                <Check className="size-4" aria-hidden />
+                Approve idea
+              </Button>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-col gap-5 px-5 py-4">
           <Row label="Column">
