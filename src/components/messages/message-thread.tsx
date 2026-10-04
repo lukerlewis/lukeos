@@ -1,9 +1,10 @@
 "use client";
 
-import { Archive, ArrowUp, Lightbulb, Bot, CheckSquare, FileText, Folder, Plus, Repeat, Sparkles, NotebookPen } from "lucide-react";
+import { Archive, ArrowUp, Check, Lightbulb, Bot, CheckSquare, FileText, Folder, MoreHorizontal, Plus, Repeat, Sparkles, NotebookPen, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { showToast } from "@/components/shell/toast";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import { friendlyDay, todayIn } from "@/lib/dates";
 import { attachmentKind, MAX_ATTACHMENTS } from "@/lib/message-files";
@@ -18,6 +19,7 @@ import {
   type Pending,
   type ThreadAttachment,
 } from "./attachments";
+import { MessageMenu, messageRect, type MenuAnchor } from "./message-menu";
 import { MESSAGES_READ_EVENT } from "./unread";
 
 export type ThreadMessage = {
@@ -30,10 +32,15 @@ export type ThreadMessage = {
   link: { type: "task" | "note" | "document" | "artifact" | "project" | "routine" | "entry" | "inspiration"; id: string; title: string } | null;
   createdAt: string;
   answered: boolean;
+  edited: boolean;
+  /** Unsent: shown as a quiet line in its place. */
+  unsent: boolean;
 };
 
 /** Messages more than this far apart get their own time line, like iMessage. */
 const GAP_MS = 60 * 60_000;
+/** How long a press has to be held on a phone to open a message's menu. */
+const HOLD_MS = 450;
 
 /**
  * The Messages chain: Luke's texts on the right, Claude's on the left in
@@ -58,7 +65,62 @@ export function MessageThread({
   const [sending, setSending] = useState<ThreadMessage[]>([]);
   const [photo, setPhoto] = useState<ThreadAttachment | null>(null);
   const closePhoto = useCallback(() => setPhoto(null), []);
-  const shown = [...messages, ...sending.filter((s) => !messages.some((m) => m.id === s.id))];
+  // Edits and unsends show straight away, before the screen reloads.
+  const [changed, setChanged] = useState<Record<string, Partial<ThreadMessage>>>({});
+  const [menu, setMenu] = useState<MenuAnchor | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const [editing, setEditing] = useState<ThreadMessage | null>(null);
+  const shown = [...messages, ...sending.filter((s) => !messages.some((m) => m.id === s.id))].map((m) =>
+    changed[m.id] ? { ...m, ...changed[m.id] } : m,
+  );
+  const change = (id: string, patch: Partial<ThreadMessage> | null) =>
+    setChanged((all) => {
+      const next = { ...all };
+      if (patch) next[id] = { ...next[id], ...patch };
+      else delete next[id];
+      return next;
+    });
+
+  // Press and hold one of Luke's messages on a phone to open its menu.
+  const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
+  const held = useRef(false);
+  const openMenu = (el: HTMLElement) => {
+    const id = el.dataset.mine;
+    if (id) setMenu({ id, rect: messageRect(el) });
+  };
+  const cancelHold = () => {
+    if (hold.current) clearTimeout(hold.current.timer);
+    hold.current = null;
+  };
+
+  async function unsend(m: ThreadMessage) {
+    if (editing?.id === m.id) setEditing(null);
+    change(m.id, { unsent: true });
+    try {
+      await op("unsend_message", { id: m.id });
+      showToast("Message unsent", async () => {
+        await op("restore_from_trash", { type: "message", id: m.id });
+        change(m.id, null);
+      });
+      router.refresh();
+    } catch (err) {
+      change(m.id, null);
+      alert((err as Error).message);
+    }
+  }
+
+  async function saveEdit(m: ThreadMessage, text: string) {
+    setEditing(null);
+    if (text === m.text) return;
+    change(m.id, { text, edited: true });
+    try {
+      await op("edit_message", { id: m.id, text });
+      router.refresh();
+    } catch (err) {
+      change(m.id, null);
+      alert((err as Error).message);
+    }
+  }
 
   // Opening Messages marks Claude's texts as seen and clears the app icon's number.
   useEffect(() => {
@@ -110,7 +172,7 @@ export function MessageThread({
   const hourFmt = new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit" });
   // "1:05pm", like times elsewhere in LukeOS.
   const time = (at: Date) => hourFmt.format(at).replace(/\s?([AP])M$/i, (_, x: string) => `${x.toLowerCase()}m`);
-  const lastLuke = shown.findLastIndex((m) => m.from === "luke");
+  const lastLuke = shown.findLastIndex((m) => m.from === "luke" && !m.unsent);
   const waiting = lastLuke >= 0 && !shown[lastLuke].answered && !shown.slice(lastLuke + 1).some((m) => m.from === "claude");
 
   return (
@@ -123,14 +185,53 @@ export function MessageThread({
           <p className="font-medium">Text Claude anything</p>
         </div>
       ) : (
-        <ol className="mx-auto flex w-full max-w-2xl flex-col gap-1 pb-2" aria-label="Messages">
+        <ol
+          className="mx-auto flex w-full max-w-2xl flex-col gap-1 pb-2"
+          aria-label="Messages"
+          onPointerDown={(e) => {
+            if (e.pointerType === "mouse") return;
+            const el = (e.target as Element).closest<HTMLElement>("[data-mine]");
+            if (!el) return;
+            cancelHold();
+            hold.current = {
+              x: e.clientX,
+              y: e.clientY,
+              timer: setTimeout(() => {
+                hold.current = null;
+                held.current = true;
+                navigator.vibrate?.(10);
+                openMenu(el);
+              }, HOLD_MS),
+            };
+          }}
+          onPointerMove={(e) => {
+            if (hold.current && Math.hypot(e.clientX - hold.current.x, e.clientY - hold.current.y) > 8) cancelHold();
+          }}
+          onPointerUp={cancelHold}
+          onPointerCancel={cancelHold}
+          onContextMenu={(e) => {
+            const el = (e.target as Element).closest<HTMLElement>("[data-mine]");
+            if (!el) return;
+            e.preventDefault();
+            cancelHold();
+            openMenu(el);
+          }}
+          // The tap that ends a press and hold doesn't also open a photo or link.
+          onClickCapture={(e) => {
+            if (!held.current) return;
+            held.current = false;
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           {shown.map((m, i) => {
             const prev = shown[i - 1];
             const at = new Date(m.createdAt);
             const newTime = !prev || at.getTime() - new Date(prev.createdAt).getTime() > GAP_MS;
-            const sameSender = prev && !newTime && prev.from === m.from;
+            const sameSender = prev && !newTime && prev.from === m.from && !prev.unsent;
             const mine = m.from === "luke";
             const pending = m.id.startsWith("sending-");
+            const actionable = mine && !pending && !m.unsent;
             return (
               <Fragment key={m.id}>
                 {newTime && (
@@ -138,7 +239,30 @@ export function MessageThread({
                     <span className="font-medium">{friendlyDay(todayIn(timeZone, at), today)}</span> {time(at)}
                   </li>
                 )}
-                <li className={cn("flex flex-col", mine ? "items-end" : "items-start", !sameSender && !newTime && "mt-2")}>
+                {m.unsent ? (
+                  <li className="py-1.5 text-center text-[12px] text-muted-foreground">{mine ? "You" : "Claude"} unsent a message</li>
+                ) : (
+                <li
+                  data-mine={actionable ? m.id : undefined}
+                  onMouseEnter={
+                    actionable
+                      ? (e) => {
+                          // Sit the ⋯ button just left of the message, however wide it is.
+                          const li = e.currentTarget;
+                          li.style.setProperty("--msg-left", `${messageRect(li).left - li.getBoundingClientRect().left}px`);
+                        }
+                      : undefined
+                  }
+                  className={cn(
+                    "flex flex-col",
+                    mine ? "items-end" : "items-start",
+                    !sameSender && !newTime && "mt-2",
+                    actionable && "group relative pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]",
+                    actionable && "transition-transform",
+                    menu?.id === m.id && "origin-right scale-[1.02]",
+                    editing?.id === m.id && "opacity-60",
+                  )}
+                >
                   {!mine && m.routine && (!sameSender || prev.routine !== m.routine) && (
                     <span className="px-3 pb-0.5 text-[11px] text-muted-foreground">{m.routine}</span>
                   )}
@@ -159,7 +283,21 @@ export function MessageThread({
                     </div>
                   )}
                   {m.link && <LinkCard link={m.link} mine={mine} />}
+                  {m.edited && <span className="px-1 pt-0.5 text-[11px] text-muted-foreground">Edited</span>}
+                  {actionable && (
+                    <button
+                      type="button"
+                      data-menu-ignore
+                      aria-label="Message options"
+                      onClick={(e) => openMenu(e.currentTarget.parentElement!)}
+                      style={{ left: "calc(var(--msg-left, 0px) - 2.25rem)" }}
+                      className="absolute top-1/2 hidden size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted focus-visible:opacity-100 pointer-fine:flex"
+                    >
+                      <MoreHorizontal className="size-4" aria-hidden />
+                    </button>
+                  )}
                 </li>
+                )}
               </Fragment>
             );
           })}
@@ -174,7 +312,26 @@ export function MessageThread({
           )}
         </ol>
       )}
+      {menu &&
+        (() => {
+          const m = shown.find((x) => x.id === menu.id);
+          if (!m) return null;
+          return (
+            <MessageMenu
+              anchor={menu}
+              canEdit={m.text.length > 0}
+              canCopy={m.text.length > 0}
+              onClose={closeMenu}
+              onEdit={() => setEditing(m)}
+              onCopy={() => navigator.clipboard?.writeText(m.text).then(() => showToast("Copied"), () => {})}
+              onUnsend={() => void unsend(m)}
+            />
+          );
+        })()}
       <Composer
+        editing={editing}
+        onCancelEdit={() => setEditing(null)}
+        onSaveEdit={(m, text) => void saveEdit(m, text)}
         onSending={(m) => setSending((s) => [...s, m])}
         onSent={(tempId, real) =>
           setSending((s) => (real ? s.map((x) => (x.id === tempId ? real : x)) : s.filter((x) => x.id !== tempId)))
@@ -188,9 +345,16 @@ export function MessageThread({
 }
 
 function Composer({
+  editing,
+  onCancelEdit,
+  onSaveEdit,
   onSending,
   onSent,
 }: {
+  /** One of Luke's messages being changed: the box holds its text until he saves or cancels. */
+  editing: ThreadMessage | null;
+  onCancelEdit: () => void;
+  onSaveEdit: (m: ThreadMessage, text: string) => void;
   onSending: (m: ThreadMessage) => void;
   onSent: (tempId: string, real: ThreadMessage | null) => void;
 }) {
@@ -208,6 +372,24 @@ function Composer({
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [text]);
+
+  // Editing swaps what's being written for the message's text, and puts it back after.
+  const draft = useRef("");
+  const editingId = editing?.id ?? null;
+  useEffect(() => {
+    if (!editing) return;
+    setText((current) => {
+      draft.current = current;
+      return editing.text;
+    });
+    const el = box.current;
+    if (el) {
+      el.focus();
+      requestAnimationFrame(() => el.setSelectionRange(el.value.length, el.value.length));
+    }
+    return () => setText(draft.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingId]);
 
   const update = (key: string, change: Partial<Pending>) =>
     setPicked((list) => list.map((p) => (p.key === key ? { ...p, ...change } : p)));
@@ -248,6 +430,12 @@ function Composer({
 
   function send() {
     const clean = text.trim();
+    if (editing) {
+      if (!clean && !editing.attachments.length) return;
+      draft.current = "";
+      onSaveEdit(editing, clean);
+      return;
+    }
     if (!canSend) return;
     const tempId = `sending-${Date.now()}`;
     const files = ready.map((p) => p.uploaded!);
@@ -261,6 +449,8 @@ function Composer({
       link: null,
       createdAt: new Date().toISOString(),
       answered: false,
+      edited: false,
+      unsent: false,
     });
     setText("");
     setPicked([]);
@@ -272,7 +462,7 @@ function Composer({
             attachments: files.map((f) => ({ fileId: f.fileId, thumbId: f.thumbId, name: f.name, width: f.width, height: f.height })),
           }),
         });
-        onSent(tempId, { ...sent, routine: null, createdAt: new Date(sent.createdAt).toISOString() });
+        onSent(tempId, { ...sent, routine: null, createdAt: new Date(sent.createdAt).toISOString(), edited: false, unsent: false });
         for (const p of kept) if (p.preview) URL.revokeObjectURL(p.preview);
         router.refresh();
       } catch (err) {
@@ -298,13 +488,27 @@ function Composer({
       }}
       className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-[5] -mx-5 mt-auto border-t bg-background/95 px-3 py-2 backdrop-blur md:bottom-0 md:mx-0 md:border-0 md:px-0 md:pb-6"
     >
-      <PendingTray items={picked} onRemove={remove} />
+      {editing ? (
+        <div className="mx-auto flex max-w-2xl items-center gap-2 pb-1.5 pl-1 text-[13px] text-muted-foreground">
+          <span className="grow truncate">Editing message</span>
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            aria-label="Cancel editing"
+            className="flex size-7 items-center justify-center rounded-full hover:bg-muted"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
+        </div>
+      ) : (
+        <PendingTray items={picked} onRemove={remove} />
+      )}
       <div className="mx-auto flex max-w-2xl items-end gap-2">
         <button
           type="button"
           onClick={() => filePicker.current?.click()}
           aria-label="Add photos or files"
-          className="mb-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
+          className={cn("mb-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground", editing && "hidden")}
         >
           <Plus className="size-[18px]" strokeWidth={2.5} aria-hidden />
         </button>
@@ -325,12 +529,18 @@ function Composer({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onPaste={(e) => {
+            if (editing) return;
             const files = [...e.clipboardData.files];
             if (!files.length) return;
             e.preventDefault();
             add(files);
           }}
           onKeyDown={(e) => {
+            if (e.key === "Escape" && editing) {
+              e.preventDefault();
+              onCancelEdit();
+              return;
+            }
             // Enter sends on a computer; Shift+Enter (and the phone's return key) starts a new line.
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(pointer: fine)").matches) {
               e.preventDefault();
@@ -343,11 +553,15 @@ function Composer({
         />
         <button
           type="submit"
-          disabled={!canSend}
-          aria-label="Send"
+          disabled={editing ? !text.trim() && !editing.attachments.length : !canSend}
+          aria-label={editing ? "Save" : "Send"}
           className="mb-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
         >
-          <ArrowUp className="size-[18px]" strokeWidth={2.5} aria-hidden />
+          {editing ? (
+            <Check className="size-[18px]" strokeWidth={2.5} aria-hidden />
+          ) : (
+            <ArrowUp className="size-[18px]" strokeWidth={2.5} aria-hidden />
+          )}
         </button>
       </div>
     </form>

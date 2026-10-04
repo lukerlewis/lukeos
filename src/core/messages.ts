@@ -8,7 +8,7 @@ import type { MessageAttachmentRow } from "@/db/schema";
 import { attachmentKind, MAX_ATTACHMENTS, MAX_MESSAGE_FILE_BYTES, type AttachmentKind } from "@/lib/message-files";
 import { preparePicture } from "@/lib/picture";
 import { adoptBlob, readStoredBytes, storageUsage, storeFile } from "@/lib/storage";
-import { defineOperation, madeByColumns, madeByOf, OperationError, type MadeBy } from "./define";
+import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, type MadeBy } from "./define";
 import { sendPush } from "./push";
 
 /**
@@ -52,6 +52,10 @@ export type Message = {
   /** Luke's messages: Claude has dealt with it. */
   answered: boolean;
   answeredAt: Date | null;
+  /** When the sender changed the text, if they did. */
+  editedAt: Date | null;
+  /** Unsent: text, attachments and link are left out. Only the app is given these. */
+  unsent: boolean;
 };
 
 const linkTitle = sql<string | null>`case ${messages.linkType}
@@ -79,23 +83,33 @@ const toAttachment = (a: MessageAttachmentRow): Attachment => ({
 
 function toMessage(row: typeof messages.$inferSelect & { linkTitle: string | null }): Message {
   const madeBy = madeByOf(row);
+  const unsent = row.deletedAt !== null;
   return {
     id: row.id,
-    text: row.body,
-    attachments: (row.attachments ?? []).map(toAttachment),
+    text: unsent ? "" : row.body,
+    attachments: unsent ? [] : (row.attachments ?? []).map(toAttachment),
     from: madeBy.kind === "agent" ? "claude" : "luke",
     madeBy,
-    link: row.linkType && row.linkId ? { type: row.linkType as LinkType, id: row.linkId, title: row.linkTitle ?? "" } : null,
+    link: !unsent && row.linkType && row.linkId ? { type: row.linkType as LinkType, id: row.linkId, title: row.linkTitle ?? "" } : null,
     createdAt: row.createdAt,
     read: row.readAt !== null,
     answered: row.answeredAt !== null,
     answeredAt: row.answeredAt,
+    editedAt: row.editedAt,
+    unsent,
   };
 }
 
-/** The chain, oldest first. `waiting` gives only Luke's messages Claude hasn't dealt with. */
-export async function listMessages(filter: { limit?: number; before?: Date; waiting?: boolean; ids?: string[] } = {}) {
+/**
+ * The chain, oldest first. `waiting` gives only Luke's messages Claude hasn't
+ * dealt with. Unsent messages are left out, except for the app (`withUnsent`),
+ * which shows a quiet line where each one was.
+ */
+export async function listMessages(
+  filter: { limit?: number; before?: Date; waiting?: boolean; ids?: string[]; withUnsent?: boolean } = {},
+) {
   const conditions: (SQL | undefined)[] = [];
+  if (!filter.withUnsent) conditions.push(isNull(messages.deletedAt));
   if (filter.before) conditions.push(lt(messages.createdAt, filter.before));
   if (filter.waiting) conditions.push(eq(messages.createdByKind, "user"), isNull(messages.answeredAt));
   if (filter.ids) conditions.push(inArray(messages.id, filter.ids.length ? filter.ids : ["00000000-0000-0000-0000-000000000000"]));
@@ -112,7 +126,7 @@ export async function listMessages(filter: { limit?: number; before?: Date; wait
 /** How many of Claude's messages Luke hasn't seen yet. */
 export async function unreadMessageCount() {
   const rows = await db.execute<{ n: number }>(
-    sql`select count(*) as n from messages where created_by_kind = 'agent' and read_at is null`,
+    sql`select count(*) as n from messages where created_by_kind = 'agent' and read_at is null and deleted_at is null`,
   );
   return Number(rows.rows[0].n);
 }
@@ -201,7 +215,7 @@ async function findAttachment(fileId: string) {
   const rows = await db
     .select({ attachments: messages.attachments })
     .from(messages)
-    .where(sql`${messages.attachments} @> ${JSON.stringify([{ fileId }])}::jsonb`)
+    .where(and(isNull(messages.deletedAt), sql`${messages.attachments} @> ${JSON.stringify([{ fileId }])}::jsonb`))
     .limit(1);
   return rows[0]?.attachments.find((a) => a.fileId === fileId) ?? null;
 }
@@ -298,11 +312,24 @@ const preview = (text: string) => {
   return flat.length > 180 ? `${flat.slice(0, 179)}…` : flat;
 };
 
+/** A message the actor sent and hasn't unsent: Luke can change only his, Claude only its own. */
+async function ownMessage(id: string, actor: Actor) {
+  const [row] = await db
+    .select({ id: messages.id, body: messages.body, attachments: messages.attachments, createdByKind: messages.createdByKind, deletedAt: messages.deletedAt })
+    .from(messages)
+    .where(eq(messages.id, id))
+    .limit(1);
+  if (!row || row.deletedAt) throw new OperationError("That message doesn't exist.", 404);
+  if (row.createdByKind !== actor.kind)
+    throw new OperationError(actor.kind === "user" ? "Only Claude can change Claude's messages." : "Only Luke can change Luke's messages.", 403);
+  return row;
+}
+
 export const messageOperations = {
   list_messages: defineOperation({
     name: "list_messages",
     description:
-      "The Messages chain between Luke and Claude, oldest first (the newest at the end), like a text conversation. Each message says who sent it (from \"luke\" or \"claude\"), when, anything in LukeOS it's about (link), and any photos, videos or files sent with it (attachments; look at one with get_message_attachment). Luke's messages show whether they've been answered. waiting: true gives only Luke's messages nobody has dealt with yet (get_inbox lists these too).",
+      "The Messages chain between Luke and Claude, oldest first (the newest at the end), like a text conversation. Each message says who sent it (from \"luke\" or \"claude\"), when, anything in LukeOS it's about (link), and any photos, videos or files sent with it (attachments; look at one with get_message_attachment). Luke's messages show whether they've been answered. editedAt is set when the sender changed the text after sending. Messages unsent by either side aren't listed. waiting: true gives only Luke's messages nobody has dealt with yet (get_inbox lists these too).",
     input: z.object({
       waiting: z.boolean().optional().describe("Only Luke's messages that haven't been answered."),
       limit: z.number().int().min(1).max(200).optional().describe("How many of the most recent messages. Defaults to 100."),
@@ -377,6 +404,34 @@ export const messageOperations = {
     },
   }),
 
+  edit_message: defineOperation({
+    name: "edit_message",
+    description:
+      "Change the text of a message you sent Luke, e.g. to fix a mistake. It shows as edited, and doesn't notify him again. Only your own messages (Luke edits his in the app), and only when Luke asks.",
+    input: z.object({
+      id: z.uuid().describe("The message's id, from list_messages."),
+      text: z.string().trim().max(4000).describe("The new text. Plain text; short."),
+    }),
+    run: async ({ id, text }, { actor }) => {
+      const row = await ownMessage(id, actor);
+      if (!text && !row.attachments.length) throw new OperationError("Write something, or unsend it instead.");
+      if (text !== row.body) await db.update(messages).set({ body: text, editedAt: new Date() }).where(eq(messages.id, id));
+      return (await listMessages({ ids: [id], limit: 1 }))[0];
+    },
+  }),
+
+  unsend_message: defineOperation({
+    name: "unsend_message",
+    description:
+      "Unsend a message you sent Luke: it disappears from the chain (a quiet \"unsent\" line stays in its place) along with its photos and files, and waits in Trash for 30 days. Only your own messages, and only when Luke asks. A notification already on his phone can't be taken back.",
+    input: z.object({ id: z.uuid().describe("The message's id, from list_messages.") }),
+    run: async ({ id }, { actor }) => {
+      await ownMessage(id, actor);
+      await db.update(messages).set({ deletedAt: new Date() }).where(eq(messages.id, id));
+      return { unsent: id };
+    },
+  }),
+
   mark_messages_read: defineOperation({
     name: "mark_messages_read",
     description: "Marks Claude's messages as seen. The app does this when Luke opens Messages; agents don't need to.",
@@ -385,7 +440,7 @@ export const messageOperations = {
       await db
         .update(messages)
         .set({ readAt: new Date() })
-        .where(and(eq(messages.createdByKind, "agent"), isNull(messages.readAt)));
+        .where(and(eq(messages.createdByKind, "agent"), isNull(messages.readAt), isNull(messages.deletedAt)));
       return { unread: 0 };
     },
   }),

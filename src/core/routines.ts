@@ -387,6 +387,7 @@ export const routineOperations = {
           // Look at each with get_message_attachment.
           ...(m.attachments.length && { attachments: m.attachments.map(({ id, kind, name, mimeType, bytes }) => ({ id, kind, name, mimeType, bytes })) }),
           sentAt: m.createdAt,
+          ...(m.editedAt && { editedAt: m.editedAt }),
         })),
         routines: due.map((d) => ({
           id: d.routine.id,

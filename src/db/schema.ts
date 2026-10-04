@@ -613,6 +613,10 @@ export const messages = pgTable(
     /** Luke's messages: when Claude dealt with it, and the reply that did. */
     answeredAt: timestamp("answered_at", { withTimezone: true }),
     answeredBy: uuid("answered_by"),
+    /** When the sender last changed the text. */
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+    /** Unsent: the chain shows a quiet line in its place, and it waits in Trash. */
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdByKind: text("created_by_kind").notNull().default("user"), // "user" | "agent"
     createdByName: text("created_by_name"),
     createdByRoutine: text("created_by_routine"),

@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Messages · LukeOS" };
 
 export default async function MessagesPage() {
   const [messages, unread, timeZone, next] = await Promise.all([
-    listMessages({ limit: 200 }),
+    listMessages({ limit: 200, withUnsent: true }),
     unreadMessageCount(),
     getTimeZone(),
     nextCheckIn(),
@@ -33,6 +33,8 @@ export default async function MessagesPage() {
           link: m.link,
           createdAt: m.createdAt.toISOString(),
           answered: m.answered,
+          edited: m.editedAt !== null,
+          unsent: m.unsent,
         }))}
       />
     </Page>

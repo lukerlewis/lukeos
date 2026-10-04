@@ -460,6 +460,10 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       const files = n ? `${n} ${n === 1 ? "attachment" : "attachments"}` : "";
       return { summary: text ? `Sent you a message: ${quote(text)}${files ? ` (with ${files})` : ""}` : `Sent you ${files}` };
     }
+    case "edit_message":
+      return { summary: `Edited a message to you: ${quote(String(input.text ?? "").replace(/\s+/g, " ").trim())}` };
+    case "unsend_message":
+      return { summary: "Unsent a message to you" };
     case "mark_messages_read":
       return null;
     case "set_dashboard_view":
