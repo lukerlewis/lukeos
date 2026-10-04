@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CheckSquare, FileText, LayoutDashboard, MessageSquare, RotateCcw, Sparkles } from "lucide-react";
+import { Check, CheckSquare, LayoutDashboard, MessageSquare, RotateCcw, Sparkles, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
@@ -82,7 +82,7 @@ function Row({ mention: m, when }: { mention: Mention; when: string }) {
     }
   }
 
-  const Icon = m.where.type === "task" ? CheckSquare : m.where.type === "comment" ? MessageSquare : m.where.scratchPad ? LayoutDashboard : FileText;
+  const Icon = m.where.type === "task" ? CheckSquare : m.where.type === "comment" ? MessageSquare : m.where.scratchPad ? LayoutDashboard : NotebookPen;
   const place = m.where.scratchPad
     ? { label: "Scratch pad", href: "/" }
     : m.where.type === "comment" && m.where.on

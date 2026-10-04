@@ -1,4 +1,4 @@
-import { MessageSquare, Newspaper } from "lucide-react";
+import { MessageSquare, FileText } from "lucide-react";
 import Link from "next/link";
 import { editedLabel } from "@/components/notes/note-list";
 import { ClaudeBadge } from "@/components/tasks/made-by";
@@ -23,7 +23,7 @@ export function DocumentList({
         <li key={d.id} className="border-b last:border-b-0">
           <Link href={`/documents/${d.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
             <span className="relative mt-0.5 shrink-0">
-              <Newspaper className="size-[18px] text-muted-foreground md:size-4" aria-hidden />
+              <FileText className="size-[18px] text-muted-foreground md:size-4" aria-hidden />
               {d.isNew && <span className="absolute -top-1 -right-1 size-2 rounded-full bg-doing ring-2 ring-card" aria-label="New" />}
             </span>
             <span className="flex min-w-0 grow flex-col gap-0.5">

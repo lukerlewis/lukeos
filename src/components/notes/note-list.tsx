@@ -1,4 +1,4 @@
-import { FileText, Globe, Pin } from "lucide-react";
+import { Globe, Pin, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import type { NoteSummary } from "@/core/notes";
@@ -28,7 +28,7 @@ export function NoteList({
   return (
     <ul>
       {notes.map((n) => {
-        const Icon = n.format === "html" ? Globe : FileText;
+        const Icon = n.format === "html" ? Globe : NotebookPen;
         return (
           <li key={n.id} className="border-b last:border-b-0">
             <Link href={`/notes/${n.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">

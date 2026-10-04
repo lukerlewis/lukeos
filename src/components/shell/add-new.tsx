@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, ChevronDown, FilePlus, FolderPlus, Newspaper, Plus } from "lucide-react";
+import { CheckSquare, ChevronDown, FilePlus, FolderPlus, NotebookPen, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ProjectDialog } from "@/components/projects/project-dialog";
@@ -37,7 +37,7 @@ export function AddNew() {
     { label: "Task", icon: CheckSquare, run: () => newTask() },
     {
       label: "Note",
-      icon: FilePlus,
+      icon: NotebookPen,
       run: async () => {
         try {
           const note = await op("create_note", {});
@@ -49,7 +49,7 @@ export function AddNew() {
     },
     {
       label: "Document",
-      icon: Newspaper,
+      icon: FilePlus,
       run: async () => {
         try {
           const doc = await op("create_document", { title: "" });

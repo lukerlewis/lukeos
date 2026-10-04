@@ -1,4 +1,4 @@
-import { Package, Newspaper } from "lucide-react";
+import { Package, FileText } from "lucide-react";
 import Link from "next/link";
 import { EmptyState } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
@@ -35,7 +35,7 @@ export function RunHistory({ runs, timeZone }: { runs: RoutineRun[]; timeZone: s
                     href={`/documents/${run.document.id}`}
                     className="press inline-flex items-center gap-1.5 self-start text-[13px] font-medium text-foreground hover:underline"
                   >
-                    <Newspaper className="size-3.5 text-muted-foreground" aria-hidden />
+                    <FileText className="size-3.5 text-muted-foreground" aria-hidden />
                     {run.document.title}
                   </Link>
                 )}

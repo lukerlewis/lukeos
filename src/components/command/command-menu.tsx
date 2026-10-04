@@ -12,7 +12,6 @@ import {
   Globe,
   Package,
   Monitor,
-  Newspaper,
   Moon,
   Plus,
   Search,
@@ -22,6 +21,7 @@ import {
   Sun,
   Trash2,
   type LucideIcon,
+  NotebookPen,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -121,8 +121,8 @@ type Item = {
 const pages: { href: string; label: string; icon: LucideIcon; keywords?: string }[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, keywords: "home today due board kanban" },
   { href: "/tasks", label: "All tasks", icon: CheckSquare, keywords: "list" },
-  { href: "/notes", label: "Notes", icon: FileText, keywords: "pages jot" },
-  { href: "/documents", label: "Documents", icon: Newspaper, keywords: "docs pages pdf print made by claude artifacts reports" },
+  { href: "/notes", label: "Notes", icon: NotebookPen, keywords: "pages jot" },
+  { href: "/documents", label: "Documents", icon: FileText, keywords: "docs pages pdf print made by claude artifacts reports" },
   { href: "/inspiration", label: "Inspiration", icon: Lightbulb, keywords: "mymind gallery moodboard pictures images references ideas" },
   { href: "/archive", label: "Work archive", icon: Archive, keywords: "portfolio case studies wins stories career" },
   { href: "/agents", label: "Agents", icon: Bot, keywords: "ai claude routines made activity from" },
@@ -204,7 +204,7 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
         key: "new-note",
         group: "Create",
         label: q ? `New note “${q}”` : "New note",
-        icon: FilePlus,
+        icon: NotebookPen,
         keywords: "add page document write",
         run: async () => {
           const note = await op("create_note", { title: q || undefined });
@@ -215,7 +215,7 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
         key: "new-document",
         group: "Create",
         label: q ? `New document “${q}”` : "New document",
-        icon: Newspaper,
+        icon: FilePlus,
         keywords: "add page doc write pdf print letter",
         run: async () => {
           const doc = await op("create_document", { title: q || "" });
@@ -454,7 +454,7 @@ function resultItem(
       key: `document-${r.id}`,
       group: "Documents",
       label: r.title,
-      icon: Newspaper,
+      icon: FileText,
       detail,
       run: () => actions.go(`/documents/${r.id}`),
     };
@@ -479,7 +479,7 @@ function resultItem(
       run: () => actions.go(`/artifacts/${r.id}`),
     };
   }
-  const Icon = r.format === "html" ? Globe : FileText;
+  const Icon = r.format === "html" ? Globe : NotebookPen;
   return {
     key: `note-${r.id}`,
     group: "Notes",

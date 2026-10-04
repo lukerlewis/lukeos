@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, Folder, Globe, MessageSquare, Newspaper, Package } from "lucide-react";
+import { CheckSquare, Folder, Globe, MessageSquare, FileText, Package } from "lucide-react";
 import Link from "next/link";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import type { ClaudeItem } from "@/core/from-claude";
@@ -47,7 +47,7 @@ export function ClaudeItemList({ items, when }: { items: ClaudeItem[]; when: Rec
 
 /** The inside of a row: icon (with a dot if new), title, time, excerpt and who made it. */
 export function ItemBody({ item, when }: { item: ClaudeItem; when: string }) {
-  const Icon = item.type === "task" ? CheckSquare : item.type === "project" ? Folder : item.type === "document" ? Newspaper : item.format === "html" ? Globe : Package;
+  const Icon = item.type === "task" ? CheckSquare : item.type === "project" ? Folder : item.type === "document" ? FileText : item.format === "html" ? Globe : Package;
   return (
     <>
       <span className="relative mt-0.5 shrink-0">

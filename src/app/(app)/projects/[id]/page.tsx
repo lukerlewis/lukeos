@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, FileText, Folder as FolderIcon, Lightbulb, List, SquareKanban } from "lucide-react";
+import { ChevronLeft, ChevronRight, Folder as FolderIcon, Lightbulb, List, NotebookPen, SquareKanban } from "lucide-react";
 import { ArtifactList } from "@/components/artifacts/artifact-list";
 import { AddButton } from "@/components/inspiration/add";
 import { InspirationBoard } from "@/components/inspiration/board";
@@ -102,7 +102,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           options={[
             { href: page, label: "List", icon: List, active: listView },
             { href: `${page}?view=board`, label: "Board", icon: SquareKanban, active: !!boardView },
-            { href: `${page}?view=notes`, label: "Notes", icon: FileText, active: notesView },
+            { href: `${page}?view=notes`, label: "Notes", icon: NotebookPen, active: notesView },
             { href: `${page}?view=inspiration`, label: "Inspiration", icon: Lightbulb, active: inspirationView },
           ]}
         />

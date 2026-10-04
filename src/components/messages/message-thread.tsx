@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArrowUp, Lightbulb, Bot, CheckSquare, FileText, Folder, Plus, Repeat, Sparkles, Newspaper } from "lucide-react";
+import { Archive, ArrowUp, Lightbulb, Bot, CheckSquare, FileText, Folder, Plus, Repeat, Sparkles, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
@@ -372,7 +372,7 @@ function Linkified({ text, mine }: { text: string; mine: boolean }) {
   );
 }
 
-const linkIcons = { task: CheckSquare, note: FileText, document: Newspaper, artifact: Sparkles, project: Folder, routine: Repeat, entry: Archive, inspiration: Lightbulb };
+const linkIcons = { task: CheckSquare, note: NotebookPen, document: FileText, artifact: Sparkles, project: Folder, routine: Repeat, entry: Archive, inspiration: Lightbulb };
 const linkKinds = { task: "Task", note: "Note", document: "Document", artifact: "Artifact", project: "Project", routine: "Routine", entry: "Work archive", inspiration: "Inspiration" };
 
 /** A card under a message for the task, artifact or other thing it's about. */

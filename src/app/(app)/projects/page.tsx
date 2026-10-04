@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archive, Bot, Lightbulb, Newspaper, CheckSquare, ChevronRight, Trash2 } from "lucide-react";
+import { Archive, Bot, Lightbulb, FileText, CheckSquare, ChevronRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { NewProjectButton } from "@/components/projects/project-dialog";
 import { EmptyState, Page } from "@/components/shell/page";
@@ -32,7 +32,7 @@ export default async function ProjectsPage() {
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/documents" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
-          <Newspaper className="size-[18px] text-muted-foreground" aria-hidden />
+          <FileText className="size-[18px] text-muted-foreground" aria-hidden />
           <span className="grow text-[15px] font-medium">Documents</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>

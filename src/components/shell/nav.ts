@@ -1,11 +1,11 @@
-import { Archive, Bot, Newspaper, Lightbulb, CheckSquare, Ellipsis, FileText, LayoutDashboard, MessagesSquare, Search } from "lucide-react";
+import { Archive, Bot, FileText, Lightbulb, CheckSquare, Ellipsis, LayoutDashboard, MessagesSquare, Search, NotebookPen } from "lucide-react";
 
 export const mainNav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/messages", label: "Messages", icon: MessagesSquare },
   { href: "/tasks", label: "All tasks", icon: CheckSquare },
-  { href: "/notes", label: "Notes", icon: FileText },
-  { href: "/documents", label: "Documents", icon: Newspaper },
+  { href: "/notes", label: "Notes", icon: NotebookPen },
+  { href: "/documents", label: "Documents", icon: FileText },
   { href: "/inspiration", label: "Inspiration", icon: Lightbulb },
   { href: "/archive", label: "Work archive", icon: Archive },
   { href: "/agents", label: "Agents", icon: Bot },
@@ -15,7 +15,7 @@ export const mainNav = [
 export const phoneTabs = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, also: [] },
   { href: "/search", label: "Search", icon: Search, also: [] },
-  { href: "/notes", label: "Notes", icon: FileText, also: [] },
+  { href: "/notes", label: "Notes", icon: NotebookPen, also: [] },
   { href: "/messages", label: "Messages", icon: MessagesSquare, also: [] },
   { href: "/projects", label: "More", icon: Ellipsis, also: ["/tasks", "/documents", "/inspiration", "/archive", "/agents", "/trash", "/artifacts", "/claude"] },
 ] as const;
