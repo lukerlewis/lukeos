@@ -14,16 +14,14 @@ export function MadeByLabel({ madeBy, createdAt }: { madeBy: MadeBy; createdAt: 
   );
 }
 
-/** The small label on anything Claude made. */
+/** The quiet mark on anything Claude made: a small faded sparkle in the meta line. */
 export function ClaudeBadge({ madeBy }: { madeBy: MadeBy }) {
   if (madeBy.kind !== "agent") return null;
+  const label = madeBy.routine ? `Made by ${madeBy.name ?? "Claude"} (${madeBy.routine})` : `Made by ${madeBy.name ?? "Claude"}`;
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-px text-[11px] font-medium text-subtle-foreground"
-      title={madeBy.routine ? `Made by ${madeBy.name ?? "Claude"} (${madeBy.routine})` : `Made by ${madeBy.name ?? "Claude"}`}
-    >
+    <span className="inline-flex shrink-0 items-center text-muted-foreground opacity-75" title={label}>
       <Sparkles className="size-3" aria-hidden />
-      {madeBy.name ?? "Claude"}
+      <span className="sr-only">{label}</span>
     </span>
   );
 }
