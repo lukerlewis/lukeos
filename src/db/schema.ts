@@ -53,12 +53,75 @@ export const projects = pgTable("projects", {
   ...madeBy,
 });
 
+/**
+ * A column in a project's pipeline (e.g. Ideas, Drafting, Published), in
+ * order. A project has a pipeline once it has columns; Luke adds, renames,
+ * reorders and deletes them. Deleting one moves its cards to another first.
+ */
+export const pipelineColumns = pgTable(
+  "pipeline_columns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    position: integer("position").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("pipeline_columns_project_idx").on(t.projectId)],
+);
+
+/**
+ * A card in a project's pipeline: a piece of work moving through the columns,
+ * like "LinkedIn post about X". Not a task: it stays out of Luke's lists, but
+ * it can hold tasks (tasks.card_id) and have documents, notes, Inspiration
+ * items and Work archive entries attached (card_attachments).
+ */
+export const cards = pgTable(
+  "cards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    columnId: uuid("column_id").references(() => pipelineColumns.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    /** Order within its column: lowest first. A card moved to a column goes to the end. */
+    position: integer("position").notNull().default(0),
+    ...madeBy,
+  },
+  (t) => [index("cards_project_idx").on(t.projectId), index("cards_column_idx").on(t.columnId)],
+);
+
+/** Something attached to a card: a document, note, Inspiration item or Work archive entry. (Tasks use tasks.card_id.) */
+export const cardAttachments = pgTable(
+  "card_attachments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    cardId: uuid("card_id")
+      .notNull()
+      .references(() => cards.id, { onDelete: "cascade" }),
+    itemType: text("item_type").notNull(), // "document" | "note" | "inspiration" | "entry"
+    itemId: uuid("item_id").notNull(),
+    createdByKind: madeBy.createdByKind,
+    createdByName: madeBy.createdByName,
+    createdByRoutine: madeBy.createdByRoutine,
+    createdAt: madeBy.createdAt,
+  },
+  (t) => [unique("card_attachments_once").on(t.cardId, t.itemType, t.itemId), index("card_attachments_item_idx").on(t.itemType, t.itemId)],
+);
+
 /** A task. Everything except the title is optional. */
 export const tasks = pgTable(
   "tasks",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    /** The pipeline card it belongs to, if any. It still shows in Luke's lists like any task. */
+    cardId: uuid("card_id").references(() => cards.id, { onDelete: "set null" }),
     title: text("title").notNull(),
     status: text("status").notNull().default("todo"), // "todo" | "doing" | "done"
     dueDate: date("due_date"), // YYYY-MM-DD, no time of day
@@ -73,7 +136,7 @@ export const tasks = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
     ...madeBy,
   },
-  (t) => [index("tasks_project_idx").on(t.projectId), index("tasks_due_idx").on(t.dueDate)],
+  (t) => [index("tasks_project_idx").on(t.projectId), index("tasks_due_idx").on(t.dueDate), index("tasks_card_idx").on(t.cardId)],
 );
 
 /**
@@ -192,7 +255,7 @@ export const artifactParts = pgTable(
 );
 
 /**
- * A comment on a note, an artifact, a document, a task or a Work archive entry, by Luke or Claude. It can quote the
+ * A comment on a note, an artifact, a document, a task, a Work archive entry or a pipeline card, by Luke or Claude. It can quote the
  * words it's about, and on an artifact it records which version it was
  * made on. Replies point at the comment they answer. Resolving closes it.
  */
@@ -200,7 +263,7 @@ export const comments = pgTable(
   "comments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    targetType: text("target_type").notNull(), // "note" | "artifact" | "document" | "task" | "entry"
+    targetType: text("target_type").notNull(), // "note" | "artifact" | "document" | "task" | "entry" | "card"
     targetId: uuid("target_id").notNull(),
     parentId: uuid("parent_id").references((): AnyPgColumn => comments.id, { onDelete: "cascade" }),
     /** Artifacts only: the version number it was made on. */
@@ -512,7 +575,7 @@ export const activityLog = pgTable(
     routine: text("routine"),
     tool: text("tool").notNull(),
     summary: text("summary").notNull(),
-    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration" | "context" | "document", when it's about one thing
+    itemType: text("item_type"), // "task" | "note" | "artifact" | "project" | "sop" | "routine" | "entry" | "inspiration" | "context" | "document" | "card", when it's about one thing
     itemId: uuid("item_id"),
   },
   (t) => [index("activity_log_at_idx").on(t.at)],

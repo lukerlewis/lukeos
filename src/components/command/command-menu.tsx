@@ -19,6 +19,7 @@ import {
   Bot,
   LayoutDashboard,
   Sun,
+  SquareKanban,
   Trash2,
   type LucideIcon,
   NotebookPen,
@@ -447,6 +448,16 @@ function resultItem(
       icon: Lightbulb,
       detail,
       run: () => actions.go(`/inspiration?item=${r.id}`),
+    };
+  }
+  if (r.type === "card") {
+    return {
+      key: `card-${r.id}`,
+      group: "Cards",
+      label: r.title,
+      icon: SquareKanban,
+      detail,
+      run: () => actions.go(`/cards/${r.id}`),
     };
   }
   if (r.type === "document") {

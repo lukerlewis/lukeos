@@ -6,7 +6,9 @@ import { ArtifactList } from "@/components/artifacts/artifact-list";
 import { AddButton } from "@/components/inspiration/add";
 import { InspirationBoard } from "@/components/inspiration/board";
 import { Board } from "@/components/board/board";
-import { BoardViewSwitch } from "@/components/board/view-switch";
+import { BoardViewSwitch, type BoardGrouping } from "@/components/board/view-switch";
+import { PipelineBoard } from "@/components/pipeline/pipeline-board";
+import { getPipeline, listColumns } from "@/core/pipeline";
 import { NewFolderButton } from "@/components/notes/folder-dialog";
 import { NewNoteButton } from "@/components/notes/new-note-button";
 import { NoteList } from "@/components/notes/note-list";
@@ -51,13 +53,20 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const { id } = await params;
   const query = await searchParams;
   const page = `/projects/${id}`;
-  // A project's board starts with To do / Doing / Done columns.
-  const boardView = query.view === "board" ? (query.by === "when" ? "when" : "status") : null;
-  const notesView = query.view === "notes";
-  const inspirationView = query.view === "inspiration";
-  const listView = !boardView && !notesView && !inspirationView;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  const pipelineColumns = await listColumns(id);
+  const hasPipeline = pipelineColumns.length > 0;
+  // A project with a pipeline opens on it; otherwise on its list, and its board starts with To do / Doing / Done.
+  const view = query.view ?? (hasPipeline ? "board" : "list");
+  const grouping: BoardGrouping =
+    query.by === "when" || query.by === "status" || query.by === "pipeline" ? query.by : hasPipeline ? "pipeline" : "status";
+  const pipelineView = view === "board" && grouping === "pipeline";
+  const boardView = view === "board" && grouping !== "pipeline" ? grouping : null;
+  const notesView = view === "notes";
+  const inspirationView = view === "inspiration";
+  const listView = !boardView && !pipelineView && !notesView && !inspirationView;
 
-  const [project, tasks, timeZone, board, notes, documents, artifacts, folders, projects, inspiration] = await Promise.all([
+  const [project, tasks, timeZone, board, notes, documents, artifacts, folders, projects, inspiration, pipeline] = await Promise.all([
     load(id),
     listView ? listTasks({ projectId: id, includeDone: true }) : [],
     getTimeZone(),
@@ -68,6 +77,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     notesView ? listFolders({ projectId: id }) : [],
     notesView || inspirationView ? listProjects() : [],
     inspirationView ? listInspiration({ projectId: id }) : [],
+    pipelineView ? getPipeline(id) : null,
   ]);
   // Notes in the folders attached to this project show under their folder.
   const folderIds = new Set(folders.map((f) => f.id));
@@ -77,6 +87,25 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     status,
     tasks: tasks.filter((t) => t.status === status),
   }));
+
+  const toolbar = (
+    <>
+      <SegmentedLinks
+        label="Layout"
+        options={[
+          { href: `${page}?view=list`, label: "List", icon: List, active: listView },
+          { href: `${page}?view=board`, label: "Board", icon: SquareKanban, active: !!boardView || pipelineView },
+          { href: `${page}?view=notes`, label: "Notes", icon: NotebookPen, active: notesView },
+          { href: `${page}?view=inspiration`, label: "Inspiration", icon: Lightbulb, active: inspirationView },
+        ]}
+      />
+      {notesView && <NewNoteButton projectId={project.id} variant="outline" />}
+      {notesView && <NewFolderButton projects={projects.map((p) => ({ id: p.id, name: p.name }))} projectId={project.id} />}
+      {(boardView || pipelineView) && (
+        <BoardViewSwitch pipeline view={grouping} href={(by) => `${page}?view=board&by=${by}`} />
+      )}
+    </>
+  );
 
   return (
     <Page
@@ -94,26 +123,22 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         </span>
       }
       actions={<EditProjectButton project={{ id: project.id, name: project.name, color: project.color }} />}
-      newTask={inspirationView ? false : { projectId: project.id }}
+      newTask={inspirationView || pipelineView ? false : { projectId: project.id }}
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <SegmentedLinks
-          label="Layout"
-          options={[
-            { href: page, label: "List", icon: List, active: listView },
-            { href: `${page}?view=board`, label: "Board", icon: SquareKanban, active: !!boardView },
-            { href: `${page}?view=notes`, label: "Notes", icon: NotebookPen, active: notesView },
-            { href: `${page}?view=inspiration`, label: "Inspiration", icon: Lightbulb, active: inspirationView },
-          ]}
-        />
-        {notesView && <NewNoteButton projectId={project.id} variant="outline" />}
-        {notesView && <NewFolderButton projects={projects.map((p) => ({ id: p.id, name: p.name }))} projectId={project.id} />}
-        {boardView && (
-          <BoardViewSwitch view={boardView} href={(by) => `${page}?view=board${by === "when" ? "&by=when" : ""}`} />
-        )}
-      </div>
+      {!pipelineView && <div className="flex flex-wrap items-center gap-2">{toolbar}</div>}
 
-      {inspirationView ? (
+
+      {pipelineView && pipeline ? (
+        <PipelineBoard
+          key={typeof query.card === "string" ? query.card : "pipeline"}
+          projectId={project.id}
+          columns={pipeline.columns}
+          openCardId={typeof query.card === "string" ? query.card : undefined}
+          timeZone={timeZone}
+          today={date}
+          toolbar={toolbar}
+        />
+      ) : inspirationView ? (
         <InspirationBoard
           items={inspiration}
           projects={projects.map((p) => ({ id: p.id, name: p.name, color: p.color }))}

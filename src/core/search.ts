@@ -9,11 +9,11 @@ import { defineOperation, madeByOf, type MadeBy } from "./define";
 import { inspirationLabel, searchableInspiration } from "./inspiration";
 import { excerptOf, plainTextOf } from "./notes";
 
-const { tasks, notes, artifacts, documents, projects, archiveEntries, inspirationItems } = schema;
+const { tasks, notes, artifacts, documents, cards, projects, archiveEntries, inspirationItems } = schema;
 
 /** One thing that matched a search. */
 export type SearchResult = {
-  type: "task" | "note" | "document" | "artifact" | "project" | "entry" | "inspiration";
+  type: "task" | "note" | "document" | "card" | "artifact" | "project" | "entry" | "inspiration";
   id: string;
   title: string;
   /** A bit of the text around the first match, when it matched below the title. */
@@ -79,7 +79,7 @@ export async function search(query: string, filter: { type?: SearchResult["type"
 
   const entryText = sql<string>`concat_ws(' ', ${archiveEntries.story}, ${archiveEntries.company}, ${archiveEntries.role}, ${archiveEntries.outcome})`;
 
-  const [taskRows, noteRows, documentRows, artifactRows, projectRows, entryRows, inspirationRows] = await Promise.all([
+  const [taskRows, noteRows, documentRows, cardRows, artifactRows, projectRows, entryRows, inspirationRows] = await Promise.all([
     want("task")
       ? db
           .select({ task: tasks, project: projects })
@@ -112,6 +112,15 @@ export async function search(query: string, filter: { type?: SearchResult["type"
           .leftJoin(projects, eq(projects.id, documents.projectId))
           .where(and(isNull(documents.deletedAt), liveProject, matchesAll(words, sql`${documents.title}`, sql`${documents.content}`)))
           .orderBy(desc(documents.updatedAt))
+          .limit(limit)
+      : [],
+    want("card")
+      ? db
+          .select({ card: cards, project: projects })
+          .from(cards)
+          .innerJoin(projects, eq(projects.id, cards.projectId))
+          .where(and(isNull(cards.deletedAt), isNull(projects.deletedAt), matchesAll(words, sql`${cards.title}`, sql`coalesce(${cards.notes}, '')`)))
+          .orderBy(desc(cards.updatedAt))
           .limit(limit)
       : [],
     // Artifacts are on ice while ARTIFACTS_ON is false, so they're left out.
@@ -207,6 +216,18 @@ export async function search(query: string, filter: { type?: SearchResult["type"
         updatedAt: doc.updatedAt,
       };
     }),
+    ...cardRows.map(({ card, project }) => ({
+      type: "card" as const,
+      id: card.id,
+      title: card.title,
+      snippet: titleHasAll(card.title, words) ? null : snippetAround(card.notes ?? "", words),
+      status: null,
+      dueDate: null,
+      format: null,
+      project: projectOf(project),
+      madeBy: madeByOf(card),
+      updatedAt: card.updatedAt,
+    })),
     ...artifactRows.map(({ artifact, project, text }) => {
       const title = artifact.title || "Untitled";
       return {
@@ -266,10 +287,10 @@ export const searchOperations = {
   search: defineOperation({
     name: "search",
     description:
-      "Search everything in LukeOS (not Trash): task titles and task notes, document titles and text, note titles and text, Work archive entries (title, story and details), Inspiration (titles, text, tags and descriptions), and project names. Every word must match. Results whose title matches come first, then the most recently changed. Done tasks are included.",
+      "Search everything in LukeOS (not Trash): task titles and task notes, document titles and text, pipeline cards (title and notes), note titles and text, Work archive entries (title, story and details), Inspiration (titles, text, tags and descriptions), and project names. Every word must match. Results whose title matches come first, then the most recently changed. Done tasks are included.",
     input: z.object({
       query: z.string().min(1).max(200).describe("The words to look for."),
-      type: z.enum(["task", "document", "note", "project", "entry", "inspiration", ...(ARTIFACTS_ON ? (["artifact"] as const) : [])]).optional().describe("Only this kind of thing."),
+      type: z.enum(["task", "document", "card", "note", "project", "entry", "inspiration", ...(ARTIFACTS_ON ? (["artifact"] as const) : [])]).optional().describe("Only this kind of thing."),
       limit: z.number().int().min(1).max(100).optional(),
     }),
     run: async ({ query, type, limit }) => search(query, { type, limit }),

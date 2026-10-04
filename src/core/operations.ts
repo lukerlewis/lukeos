@@ -16,6 +16,7 @@ import { fromClaudeOperations } from "./from-claude";
 import { mentionOperations } from "./mentions";
 import { messageOperations } from "./messages";
 import { noteOperations } from "./notes";
+import { pipelineOperations } from "./pipeline";
 import { projectOperations } from "./projects";
 import { routineOperations } from "./routines";
 import { searchOperations } from "./search";
@@ -50,6 +51,7 @@ export const operations = {
   ...boardOperations,
   ...dashboardOperations,
   ...projectOperations,
+  ...pipelineOperations,
   ...documentOperations,
   ...noteOperations,
   ...folderOperations,

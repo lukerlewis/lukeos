@@ -34,6 +34,15 @@ the app, Claude can do too, through a connector (roadmap step 3).
   and what a move changes live in `src/lib/board.ts`, shared by the screen
   and the `get_board` / `move_task` operations (`src/core/board.ts`), so a
   drag and a move by Claude do the same thing.
+- **Pipelines** (on a project's Board, the Pipeline grouping): columns Luke
+  sets per project (add, rename, reorder, delete; deleting one with cards asks
+  where they go) holding cards that move along by drag and drop. A card is a
+  piece of work, not a task: title, notes, comments, tasks inside it
+  (`tasks.card_id`, still shown in Luke's lists) and attached documents,
+  notes, Inspiration items and Work archive entries (`card_attachments`). A
+  project with a pipeline opens on it. `/cards/<id>` opens a card on its
+  project. Operations in `src/core/pipeline.ts`, screens in
+  `src/components/pipeline/`.
 - **Notes** (`/notes`, and a Notes tab on each project): Markdown pages,
   edited with Tiptap (`src/components/notes/note-editor.tsx`), saved as
   Markdown so Claude reads and writes the same text. Changes save a moment

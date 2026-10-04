@@ -12,7 +12,19 @@ import { assertProject } from "./projects";
 import { rollOverLists } from "./rollover";
 import { today } from "./settings";
 
-const { tasks, projects } = schema;
+const { tasks, projects, cards } = schema;
+
+/** The project of a live pipeline card. Throws if the card is gone or in Trash. */
+async function cardProject(id: string) {
+  const [row] = await db
+    .select({ projectId: cards.projectId })
+    .from(cards)
+    .innerJoin(projects, eq(projects.id, cards.projectId))
+    .where(and(eq(cards.id, id), isNull(cards.deletedAt), isNull(projects.deletedAt)))
+    .limit(1);
+  if (!row) throw new OperationError("That card doesn't exist, or it's in Trash.", 404);
+  return row.projectId;
+}
 
 export type Task = {
   id: string;
@@ -27,6 +39,8 @@ export type Task = {
   /** How often it comes back once done: daily, weekly or monthly. */
   repeat: Repeat | null;
   project: { id: string; name: string; color: ProjectColor; hex: string } | null;
+  /** The pipeline card it's inside, if any. */
+  cardId: string | null;
   completedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -48,6 +62,7 @@ function toTask(t: TaskRow, p: ProjectRow | null): Task {
     notes: t.notes,
     repeat: t.repeat as Repeat | null,
     project: p ? { id: p.id, name: p.name, color: p.color as ProjectColor, hex: colorHex(p.color) } : null,
+    cardId: t.cardId,
     completedAt: t.completedAt,
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
@@ -62,6 +77,7 @@ const priorityRank = sql`case ${tasks.priority} when 'high' then 0 when 'medium'
 
 export async function listTasks(filter: {
   projectId?: string | null;
+  cardId?: string;
   status?: Status;
   bucket?: Bucket;
   includeDone?: boolean;
@@ -73,6 +89,7 @@ export async function listTasks(filter: {
   const where: (SQL | undefined)[] = [isNull(tasks.deletedAt)];
   if (filter.projectId === null) where.push(isNull(tasks.projectId));
   else if (filter.projectId) where.push(eq(tasks.projectId, filter.projectId));
+  if (filter.cardId) where.push(eq(tasks.cardId, filter.cardId));
   if (filter.status) where.push(eq(tasks.status, filter.status));
   else if (!filter.includeDone) where.push(ne(tasks.status, "done"));
   if (filter.bucket) where.push(eq(tasks.bucket, filter.bucket));
@@ -136,6 +153,7 @@ export async function syncRepeats(ids: string[]) {
         .values({
           title: t.title,
           projectId: t.projectId,
+          cardId: t.cardId,
           status: "todo",
           // The next one starts in the list its due date points to; after that it stays where Luke puts it.
           bucket: bucketForDate(dueDate, date),
@@ -169,6 +187,10 @@ const dueDate = z
 export const fields = {
   title: z.string().trim().min(1).max(500),
   projectId: z.uuid().nullable().describe("The project to put it in. null means no project."),
+  cardId: z
+    .uuid()
+    .nullable()
+    .describe("The pipeline card it goes inside (it still shows in Luke's lists like any task). A new task in a card goes in the card's project unless projectId is given. null takes it out of its card."),
   status: z.enum(statuses).describe("todo, doing or done."),
   bucket: z
     .enum(buckets)
@@ -226,6 +248,7 @@ export const taskOperations = {
     input: z.object({
       title: fields.title,
       projectId: fields.projectId.optional(),
+      cardId: fields.cardId.optional(),
       status: fields.status.optional(),
       bucket: fields.bucket.optional(),
       dueDate: fields.dueDate.optional(),
@@ -236,12 +259,14 @@ export const taskOperations = {
     }),
     run: async (input, { actor }) => {
       if (input.projectId) await assertProject(input.projectId);
+      const inCard = input.cardId ? await cardProject(input.cardId) : null;
       const status = input.status ?? "todo";
       const [row] = await db
         .insert(tasks)
         .values({
           title: input.title,
-          projectId: input.projectId ?? null,
+          projectId: input.projectId === undefined ? inCard : input.projectId,
+          cardId: input.cardId ?? null,
           status,
           // A new task with a date starts in the list that date points to; after that, only Luke moves it.
           bucket: input.bucket ?? (input.dueDate ? bucketForDate(input.dueDate, await today()) : "today"),
@@ -263,11 +288,12 @@ export const taskOperations = {
   update_task: defineOperation({
     name: "update_task",
     description:
-      "Change any fields of a task: title, project, status, list (bucket), due date, priority, effort, notes or how it repeats. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
+      "Change any fields of a task: title, project, card, status, list (bucket), due date, priority, effort, notes or how it repeats. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
     input: z.object({
       id,
       title: fields.title.optional(),
       projectId: fields.projectId.optional(),
+      cardId: fields.cardId.optional(),
       status: fields.status.optional(),
       bucket: fields.bucket.optional(),
       dueDate: fields.dueDate.optional(),
@@ -279,6 +305,7 @@ export const taskOperations = {
     run: async ({ id, ...changes }, { actor }) => {
       const current = await getTask(id);
       if (changes.projectId) await assertProject(changes.projectId);
+      if (changes.cardId) await cardProject(changes.cardId);
       const set: Partial<TaskRow> = { updatedAt: new Date() };
       for (const [key, value] of Object.entries(changes)) {
         if (value !== undefined) (set as Record<string, unknown>)[key] = value;

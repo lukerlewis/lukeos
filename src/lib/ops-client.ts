@@ -35,6 +35,7 @@ const taskFields = (t: TaskSnapshot) => ({
   id: t.id,
   title: t.title,
   projectId: t.project?.id ?? null,
+  cardId: t.cardId,
   status: t.status,
   bucket: t.bucket,
   dueDate: t.dueDate,
@@ -89,6 +90,8 @@ function undoFor(
       return { label: `adding task ${quote(r.title)}`, run: async () => void (await send("delete_task", { id: r.id })) };
     case "create_note":
       return { label: `adding note ${quote(r.title)}`, run: async () => void (await send("delete_note", { id: r.id })) };
+    case "create_card":
+      return { label: `adding card ${quote(r.title)}`, run: async () => void (await send("delete_card", { id: r.id })) };
     case "create_document":
       return { label: `adding document ${quote(r.title)}`, run: async () => void (await send("delete_document", { id: r.id })) };
     case "create_routine":
@@ -109,13 +112,14 @@ function undoFor(
     case "copy_artifact_to_note":
       return { label: "copying to a note", run: async () => void (await send("delete_note", { id: r.id })) };
     case "restore_from_trash": {
-      const { type, id } = input as { type: "task" | "note" | "artifact" | "document" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration"; id: string };
+      const { type, id } = input as { type: "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration"; id: string };
       const del = (
         {
           task: "delete_task",
           note: "delete_note",
           artifact: "delete_artifact",
           document: "delete_document",
+          card: "delete_card",
           project: "delete_project",
           sop: "delete_sop",
           context: "delete_context",

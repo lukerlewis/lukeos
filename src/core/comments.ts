@@ -7,9 +7,9 @@ import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, t
 import { deleteOrphanMentions, syncMentions } from "./mentions";
 import { sendPush } from "./push";
 
-const { comments, notes, artifacts, documents, tasks, archiveEntries, mentions } = schema;
+const { comments, notes, artifacts, documents, tasks, archiveEntries, cards, projects, mentions } = schema;
 
-export const commentTargets = ["note", "artifact", "document", "task", "entry"] as const;
+export const commentTargets = ["note", "artifact", "document", "task", "entry", "card"] as const;
 export type CommentTarget = (typeof commentTargets)[number];
 
 export type Comment = {
@@ -47,6 +47,16 @@ async function targetTitle(type: CommentTarget, id: string) {
       .limit(1);
     if (!doc) throw new OperationError("That document doesn't exist, or it's in Trash.", 404);
     return doc.title;
+  }
+  if (type === "card") {
+    const [card] = await db
+      .select({ title: cards.title })
+      .from(cards)
+      .innerJoin(projects, eq(projects.id, cards.projectId))
+      .where(and(eq(cards.id, id), isNull(cards.deletedAt), isNull(projects.deletedAt)))
+      .limit(1);
+    if (!card) throw new OperationError("That card doesn't exist, or it's in Trash.", 404);
+    return card.title;
   }
   if (type === "entry") {
     const [entry] = await db
@@ -96,7 +106,8 @@ export async function listComments(
     or (${comments.targetType} = 'artifact' and exists (select 1 from ${artifacts} a where a.id = ${comments.targetId} and a.deleted_at is null))
     or (${comments.targetType} = 'document' and exists (select 1 from ${documents} d where d.id = ${comments.targetId} and d.deleted_at is null))
     or (${comments.targetType} = 'task' and exists (select 1 from ${tasks} t where t.id = ${comments.targetId} and t.deleted_at is null))
-    or (${comments.targetType} = 'entry' and exists (select 1 from ${archiveEntries} e where e.id = ${comments.targetId} and e.deleted_at is null)))`);
+    or (${comments.targetType} = 'entry' and exists (select 1 from ${archiveEntries} e where e.id = ${comments.targetId} and e.deleted_at is null))
+    or (${comments.targetType} = 'card' and exists (select 1 from ${cards} k join ${projects} p on p.id = k.project_id where k.id = ${comments.targetId} and k.deleted_at is null and p.deleted_at is null)))`);
 
   const threads = await db
     .select({
@@ -106,7 +117,8 @@ export async function listComments(
         (select a.title from ${artifacts} a where ${comments.targetType} = 'artifact' and a.id = ${comments.targetId}),
         (select d.title from ${documents} d where ${comments.targetType} = 'document' and d.id = ${comments.targetId}),
         (select t.title from ${tasks} t where ${comments.targetType} = 'task' and t.id = ${comments.targetId}),
-        (select e.title from ${archiveEntries} e where ${comments.targetType} = 'entry' and e.id = ${comments.targetId}), '')`,
+        (select e.title from ${archiveEntries} e where ${comments.targetType} = 'entry' and e.id = ${comments.targetId}),
+        (select k.title from ${cards} k where ${comments.targetType} = 'card' and k.id = ${comments.targetId}), '')`,
     })
     .from(comments)
     .where(and(...where))
@@ -144,9 +156,9 @@ async function getThread(id: string) {
   return thread;
 }
 
-const fallbackTitle = { note: "Note", artifact: "Artifact", document: "Document", task: "Task", entry: "Work archive entry" } as const;
+const fallbackTitle = { note: "Note", artifact: "Artifact", document: "Document", task: "Task", entry: "Work archive entry", card: "Card" } as const;
 
-/** Where a comment's note, artifact, document, task or Work archive entry opens in the app. Tasks open over the dashboard. */
+/** Where a comment's note, artifact, document, task, Work archive entry or card opens in the app. Tasks open over the dashboard; cards (/cards/<id>) on their project's Board. */
 export const commentTargetUrl = (target: { type: CommentTarget; id: string }) =>
   target.type === "task" ? `/?task=${target.id}` : target.type === "entry" ? `/archive/${target.id}` : `/${target.type}s/${target.id}`;
 
@@ -189,17 +201,17 @@ export async function commentOnTaskMention(taskId: string, line: string, reply: 
 }
 
 const id = z.uuid().describe("The comment's id.");
-const targetType = z.enum(commentTargets).describe('"document", "note", "task", "entry" (a Work archive entry) or "artifact".');
+const targetType = z.enum(commentTargets).describe('"document", "note", "task", "entry" (a Work archive entry), "card" (a pipeline card) or "artifact".');
 const body = z.string().trim().min(1).max(20_000).describe("What the comment says.");
 
 export const commentOperations = {
   list_comments: defineOperation({
     name: "list_comments",
     description:
-      "Comment threads on Luke's documents, notes, tasks, Work archive entries and artifacts, each with its replies. Give one of them to see its comments, or leave both out to see comments across everything. open: true shows only unresolved ones, which is how to find what Luke has asked you to look at. Each comment may quote the words it's about, and on an artifact says which version it was made on.",
+      "Comment threads on Luke's documents, notes, tasks, Work archive entries, pipeline cards and artifacts, each with its replies. Give one of them to see its comments, or leave both out to see comments across everything. open: true shows only unresolved ones, which is how to find what Luke has asked you to look at. Each comment may quote the words it's about, and on an artifact says which version it was made on.",
     input: z.object({
       targetType: targetType.optional(),
-      targetId: z.uuid().optional().describe("The document's, note's, task's, entry's or artifact's id."),
+      targetId: z.uuid().optional().describe("The document's, note's, task's, entry's, card's or artifact's id."),
       open: z.boolean().optional().describe("Only comments not yet resolved."),
       limit: z.number().int().min(1).max(200).optional(),
     }),
@@ -208,10 +220,10 @@ export const commentOperations = {
 
   add_comment: defineOperation({
     name: "add_comment",
-    description: "Start a comment thread on a document, a note, a task, a Work archive entry or an artifact. To answer an existing comment, use reply_to_comment.",
+    description: "Start a comment thread on a document, a note, a task, a Work archive entry, a pipeline card or an artifact. To answer an existing comment, use reply_to_comment.",
     input: z.object({
       targetType,
-      targetId: z.uuid().describe("The document's, note's, task's, entry's or artifact's id."),
+      targetId: z.uuid().describe("The document's, note's, task's, entry's, card's or artifact's id."),
       body,
       quote: z.string().trim().max(2000).optional().describe("The words the comment is about, copied exactly."),
     }),

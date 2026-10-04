@@ -23,7 +23,7 @@ export type Mention = {
     type: MentionTarget;
     id: string;
     title: string;
-    on: { type: "note" | "artifact" | "document" | "task" | "entry"; id: string; title: string } | null;
+    on: { type: "note" | "artifact" | "document" | "task" | "entry" | "card"; id: string; title: string } | null;
     /** Written in the scratch pad on Luke's dashboard. */
     scratchPad: boolean;
   };
@@ -110,12 +110,13 @@ const where = {
   scratchPad: sql<boolean>`exists (select 1 from notes n where mentions.target_type = 'note' and n.id = mentions.target_id and n.kind = 'scratchpad')`,
   onType: sql<string | null>`(select c.target_type from comments c where mentions.target_type = 'comment' and c.id = mentions.target_id)`,
   onId: sql<string | null>`(select c.target_id from comments c where mentions.target_type = 'comment' and c.id = mentions.target_id)`,
-  onTitle: sql<string | null>`(select coalesce(n.title, a.title, d.title, t.title, e.title) from comments c
+  onTitle: sql<string | null>`(select coalesce(n.title, a.title, d.title, t.title, e.title, k.title) from comments c
     left join notes n on c.target_type = 'note' and n.id = c.target_id
     left join artifacts a on c.target_type = 'artifact' and a.id = c.target_id
     left join documents d on c.target_type = 'document' and d.id = c.target_id
     left join tasks t on c.target_type = 'task' and t.id = c.target_id
     left join archive_entries e on c.target_type = 'entry' and e.id = c.target_id
+    left join cards k on c.target_type = 'card' and k.id = c.target_id
     where mentions.target_type = 'comment' and c.id = mentions.target_id)`,
 };
 const live = sql`(
@@ -127,7 +128,8 @@ const live = sql`(
     left join documents d on c.target_type = 'document' and d.id = c.target_id
     left join tasks t on c.target_type = 'task' and t.id = c.target_id
     left join archive_entries e on c.target_type = 'entry' and e.id = c.target_id
-    where c.id = ${mentions.targetId} and coalesce(n.deleted_at, a.deleted_at, d.deleted_at, t.deleted_at, e.deleted_at) is null and coalesce(n.id, a.id, d.id, t.id, e.id) is not null)))`;
+    left join cards k on c.target_type = 'card' and k.id = c.target_id
+    where c.id = ${mentions.targetId} and coalesce(n.deleted_at, a.deleted_at, d.deleted_at, t.deleted_at, e.deleted_at, k.deleted_at) is null and coalesce(n.id, a.id, d.id, t.id, e.id, k.id) is not null)))`;
 
 /** @claude requests, newest first. Open ones only, or everything including what's been dealt with. */
 export async function listMentions(filter: { open?: boolean; ids?: string[]; limit?: number } = {}): Promise<Mention[]> {
@@ -147,7 +149,7 @@ export async function listMentions(filter: { open?: boolean; ids?: string[]; lim
       type: m.targetType as MentionTarget,
       id: m.targetId,
       title,
-      on: onType && onId ? { type: onType as "note" | "artifact" | "document" | "task" | "entry", id: onId, title: onTitle ?? "" } : null,
+      on: onType && onId ? { type: onType as "note" | "artifact" | "document" | "task" | "entry" | "card", id: onId, title: onTitle ?? "" } : null,
       scratchPad,
     },
     createdAt: m.createdAt,
