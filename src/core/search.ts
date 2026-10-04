@@ -119,7 +119,7 @@ export async function search(query: string, filter: { type?: SearchResult["type"
           .select({ card: cards, project: projects })
           .from(cards)
           .innerJoin(projects, eq(projects.id, cards.projectId))
-          .where(and(isNull(cards.deletedAt), isNull(projects.deletedAt), matchesAll(words, sql`${cards.title}`, sql`coalesce(${cards.notes}, '')`)))
+          .where(and(isNull(cards.deletedAt), isNull(cards.rejectedAt), isNull(projects.deletedAt), matchesAll(words, sql`${cards.title}`, sql`coalesce(${cards.notes}, '')`)))
           .orderBy(desc(cards.updatedAt))
           .limit(limit)
       : [],

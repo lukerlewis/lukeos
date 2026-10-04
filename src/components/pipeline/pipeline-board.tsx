@@ -16,14 +16,16 @@ import {
   type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { CheckSquare, Columns3, MessageSquare, Paperclip, Plus } from "lucide-react";
+import { Check, CheckSquare, Columns3, MessageSquare, Paperclip, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useOptimistic, useState, useTransition } from "react";
 import { Fab } from "@/components/shell/fab";
+import { showToast } from "@/components/shell/toast";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import { Card as Panel } from "@/components/ui/card";
 import type { CardSummary, PipelineColumn } from "@/core/pipeline";
+import { isInbox } from "@/lib/inbox";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { CardDialog, type CardDraft } from "./card-dialog";
@@ -62,9 +64,12 @@ export function PipelineBoard({
   const dndId = useId();
   const [, startTransition] = useTransition();
   const cards = columns.flatMap((c) => c.cards.map((card) => ({ ...card, columnId: c.id })));
-  const [items, move] = useOptimistic(cards, (state, { id, to }: { id: string; to: string }) => {
+  // to: null hides the card (a rejected idea).
+  const [items, move] = useOptimistic(cards, (state, { id, to }: { id: string; to: string | null }) => {
     const card = state.find((c) => c.id === id);
-    return card ? [...state.filter((c) => c.id !== id), { ...card, columnId: to }] : state;
+    if (!card) return state;
+    const rest = state.filter((c) => c.id !== id);
+    return to ? [...rest, { ...card, columnId: to }] : rest;
   });
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CardDraft | null>(openCardId ? { id: openCardId } : null);
@@ -95,6 +100,38 @@ export function PipelineBoard({
       move({ id: card.id, to });
       try {
         await op("move_card", { id: card.id, to });
+      } catch (err) {
+        alert((err as Error).message);
+      }
+      router.refresh();
+    });
+  }
+
+  /** Inbox: Approve moves an idea on to the next column. */
+  function approve(card: CardSummary) {
+    const next = list[list.findIndex((c) => c.id === card.columnId) + 1];
+    if (!next) return;
+    startTransition(async () => {
+      move({ id: card.id, to: next.id });
+      try {
+        await op("approve_card", { id: card.id });
+      } catch (err) {
+        alert((err as Error).message);
+      }
+      router.refresh();
+    });
+  }
+
+  /** Inbox: Reject hides an idea, but Claude keeps it so it isn't suggested again. */
+  function reject(card: CardSummary) {
+    startTransition(async () => {
+      move({ id: card.id, to: null });
+      try {
+        await op("reject_card", { id: card.id });
+        showToast("Idea rejected", async () => {
+          await op("unreject_card", { id: card.id });
+          router.refresh();
+        });
       } catch (err) {
         alert((err as Error).message);
       }
@@ -164,7 +201,12 @@ export function PipelineBoard({
               return (
                 <Column key={column.id} column={column} count={inColumn.length} onAdd={() => newCard(column.id)}>
                   {inColumn.map((card) => (
-                    <DraggableCard key={card.id} card={card} onOpen={() => setDraft({ id: card.id })} />
+                    <DraggableCard
+                      key={card.id}
+                      card={card}
+                      onOpen={() => setDraft({ id: card.id })}
+                      review={isInbox(column) ? { onApprove: () => approve(card), onReject: () => reject(card), canApprove: column.id !== list.at(-1)?.id } : undefined}
+                    />
                   ))}
                 </Column>
               );
@@ -272,7 +314,9 @@ function Column({
   );
 }
 
-function DraggableCard({ card, onOpen }: { card: CardSummary; onOpen: () => void }) {
+type Review = { onApprove: () => void; onReject: () => void; canApprove: boolean };
+
+function DraggableCard({ card, onOpen, review }: { card: CardSummary; onOpen: () => void; review?: Review }) {
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: card.id });
   return (
     <li ref={setNodeRef} className={cn(isDragging && "opacity-40")}>
@@ -287,12 +331,35 @@ function DraggableCard({ card, onOpen }: { card: CardSummary; onOpen: () => void
           if (e.key === "Enter" && !isDragging) onOpen();
           else listeners?.onKeyDown?.(e);
         }}
-      />
+      >
+        {review && <ReviewButtons {...review} />}
+      </CardBody>
     </li>
   );
 }
 
-function CardBody({ card, className, ...rest }: { card: CardSummary } & React.ComponentProps<"div">) {
+/** Approve / Reject on an Inbox card. Pressing them never drags or opens the card. */
+function ReviewButtons({ onApprove, onReject, canApprove }: Review) {
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
+  const button =
+    "pressable flex h-9 grow items-center justify-center gap-1.5 rounded-lg border text-[13px] font-medium md:h-8 md:text-xs";
+  return (
+    <div className="flex gap-2 pt-1" onPointerDown={stop} onKeyDown={stop} onClick={stop}>
+      <button type="button" onClick={onReject} className={cn(button, "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+        <X className="size-3.5" aria-hidden />
+        Reject
+      </button>
+      {canApprove && (
+        <button type="button" onClick={onApprove} className={cn(button, "border-transparent bg-primary text-primary-foreground hover:opacity-90")}>
+          <Check className="size-3.5" aria-hidden />
+          Approve
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CardBody({ card, className, children, ...rest }: { card: CardSummary } & React.ComponentProps<"div">) {
   const tasks = card.taskCount.open + card.taskCount.done;
   const meta = tasks > 0 || card.attachmentCount > 0 || card.openComments > 0 || card.madeBy.kind === "agent";
   return (
@@ -328,6 +395,7 @@ function CardBody({ card, className, ...rest }: { card: CardSummary } & React.Co
           <ClaudeBadge madeBy={card.madeBy} />
         </div>
       )}
+      {children}
     </div>
   );
 }
