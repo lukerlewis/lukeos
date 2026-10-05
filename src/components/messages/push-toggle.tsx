@@ -44,10 +44,10 @@ export function PushPrompt() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl items-start gap-3 rounded-xl border bg-card px-4 py-3 shadow-xs">
+    <div className="mx-auto flex w-full max-w-2xl items-start gap-3 rounded-xl border bg-card px-4 py-3 border-stroke">
       <Bell className="mt-0.5 size-[18px] shrink-0 text-foreground" aria-hidden />
       <div className="flex grow flex-col gap-2">
-        <p className="text-[14px]">
+        <p className="text-preview">
           {state === "needs-install"
             ? "To get a notification when Claude texts you, add LukeOS to your Home Screen (Share, then Add to Home Screen) and open it from there."
             : "Get a notification when Claude texts you."}
@@ -107,7 +107,7 @@ export function PushSettings({ devices }: { devices: number }) {
 
   return (
     <div className="flex flex-col gap-3 px-4 py-4">
-      <p className="text-[13px] text-muted-foreground">
+      <p className="text-meta text-muted-foreground">
         {state ? explain[state] : "Checking this device…"}
         {devices > 0 && ` ${devices} ${devices === 1 ? "device has" : "devices have"} them on.`}
       </p>
@@ -138,7 +138,7 @@ export function PushSettings({ devices }: { devices: number }) {
           </>
         )}
       </div>
-      {note && <p className="text-[13px] text-muted-foreground">{note}</p>}
+      {note && <p className="text-meta text-muted-foreground">{note}</p>}
     </div>
   );
 }

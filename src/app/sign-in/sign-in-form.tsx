@@ -31,12 +31,12 @@ export function SignInForm({ mode, next = "/" }: { mode: "sign-in" | "set-up"; n
         {busy ? "Waiting for your device…" : mode === "set-up" ? "Create passkey" : "Sign in"}
       </Button>
       {mode === "sign-in" && (
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-meta text-muted-foreground">
           On a new computer? Choose the option to use your phone, then scan the code.
         </p>
       )}
       {error && (
-        <p role="alert" className="text-[13px] text-danger">
+        <p role="alert" className="text-meta text-danger">
           {error}
         </p>
       )}

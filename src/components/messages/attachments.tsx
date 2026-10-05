@@ -163,20 +163,20 @@ export function PendingTray({ items, onRemove }: { items: Pending[]; onRemove: (
               ) : (
                 <span className="flex flex-col items-center gap-0.5 px-1 text-center">
                   <FileText className="size-5 text-muted-foreground" aria-hidden />
-                  <span className="w-14 truncate text-[10px] leading-tight">{p.file.name}</span>
+                  <span className="w-14 truncate text-xs leading-tight">{p.file.name}</span>
                 </span>
               )}
               {busy && (
                 <span className="absolute inset-0 flex items-center justify-center bg-background/50">
                   {p.progress > 0 && p.progress < 1 ? (
-                    <span className="text-[11px] font-semibold tabular-nums">{Math.round(p.progress * 100)}%</span>
+                    <span className="text-xs font-semibold tabular-nums">{Math.round(p.progress * 100)}%</span>
                   ) : (
                     <Loader2 className="size-4 animate-spin" aria-label="Adding" />
                   )}
                 </span>
               )}
               {p.error && (
-                <span className="absolute inset-x-0 bottom-0 bg-danger px-1 text-center text-[10px] text-white">Failed</span>
+                <span className="absolute inset-x-0 bottom-0 bg-danger px-1 text-center text-xs text-white">Failed</span>
               )}
             </div>
             <button
@@ -185,7 +185,7 @@ export function PendingTray({ items, onRemove }: { items: Pending[]; onRemove: (
               aria-label={`Remove ${p.file.name || "attachment"}`}
               className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-background"
             >
-              <X className="size-3" strokeWidth={3} aria-hidden />
+              <X className="size-3" aria-hidden />
             </button>
           </li>
         );
@@ -260,8 +260,8 @@ export function MessageAttachments({
         >
           <FileText className="size-5 shrink-0 text-muted-foreground" aria-hidden />
           <span className="flex min-w-0 flex-col text-left">
-            <span className="truncate text-[14px] font-medium">{a.name}</span>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="truncate text-preview font-medium">{a.name}</span>
+            <span className="text-meta text-muted-foreground">
               {fileKind(a)} · {fileSize(a.bytes)}
             </span>
           </span>

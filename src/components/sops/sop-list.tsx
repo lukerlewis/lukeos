@@ -13,14 +13,14 @@ export function SopList({ sops, when }: { sops: SopSummary[]; when: Record<strin
             <ScrollText className="mt-0.5 size-[18px] shrink-0 text-muted-foreground md:size-4" aria-hidden />
             <span className="flex min-w-0 grow flex-col gap-0.5">
               <span className="flex items-baseline gap-3">
-                <span className="min-w-0 grow truncate text-[15px] font-medium md:text-sm">{s.title || "Untitled SOP"}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{when[s.id]}</span>
+                <span className="min-w-0 grow truncate text-control font-medium">{s.title || "Untitled SOP"}</span>
+                <span className="shrink-0 text-meta text-muted-foreground">{when[s.id]}</span>
               </span>
-              <span className="line-clamp-2 text-[13px] text-muted-foreground">
+              <span className="line-clamp-2 text-meta text-muted-foreground">
                 {s.description || "No description yet. Add one so Claude knows when to use it."}
               </span>
               {s.madeBy.kind === "agent" && (
-                <span className="mt-1 flex items-center gap-2.5 text-xs text-muted-foreground">
+                <span className="mt-1 flex items-center gap-2.5 text-meta text-muted-foreground">
                   <ClaudeBadge madeBy={s.madeBy} />
                 </span>
               )}

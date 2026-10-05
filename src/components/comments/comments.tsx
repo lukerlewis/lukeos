@@ -85,9 +85,9 @@ export function Comments({
         {open.length > 0 && <span className="text-xs font-normal text-muted-foreground">{open.length} open</span>}
       </h2>
 
-      <div className="flex flex-col gap-2 rounded-xl border bg-card p-3 shadow-xs">
+      <div className="flex flex-col gap-2 rounded-xl border bg-card p-3 border-stroke">
         {picked ? (
-          <div className="flex items-start gap-2 rounded-lg bg-muted px-2.5 py-1.5 text-xs text-muted-foreground">
+          <div className="flex items-start gap-2 rounded-lg bg-muted px-2.5 py-1.5 text-meta text-muted-foreground">
             <span className="line-clamp-3 grow italic">“{picked}”</span>
             <button type="button" onClick={() => setPicked(null)} aria-label="Don't quote this" className="shrink-0 hover:text-foreground">
               <X className="size-3.5" aria-hidden />
@@ -106,7 +106,7 @@ export function Comments({
           placeholder={target.type === "note" || target.type === "entry" ? "Leave a comment…" : "Leave a comment for Claude…"}
           aria-label="New comment"
           rows={2}
-          className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-lg border bg-background px-3 py-2 text-[16px] outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40 md:text-[13px]"
+          className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-lg border bg-background px-3 py-2 text-body outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40 md:text-meta"
         />
         <Button size="sm" className="self-end" onClick={() => void add()} disabled={busy || !text.trim()}>
           {busy ? "Saving…" : "Comment"}
@@ -116,10 +116,10 @@ export function Comments({
       {open.map((t) => (
         <Thread key={t.id} thread={t} timeZone={timeZone} currentVersion={currentVersion} onChanged={changed} />
       ))}
-      {threads.length === 0 && <p className="px-1 text-xs text-muted-foreground">No comments yet.</p>}
+      {threads.length === 0 && <p className="px-1 text-meta text-muted-foreground">No comments yet.</p>}
       {resolved.length > 0 && (
         <details className="group flex flex-col gap-3">
-          <summary className="cursor-pointer px-1 text-xs text-muted-foreground select-none hover:text-foreground">
+          <summary className="cursor-pointer px-1 text-meta text-muted-foreground select-none hover:text-foreground">
             {resolved.length} resolved
           </summary>
           <div className="mt-3 flex flex-col gap-3">
@@ -169,7 +169,7 @@ function Thread({
     });
 
   return (
-    <article className={cn("flex flex-col gap-2 rounded-xl border bg-card p-3 shadow-xs", thread.resolved && "opacity-70")}>
+    <article className={cn("flex flex-col gap-2 rounded-xl border bg-card p-3 border-stroke", thread.resolved && "opacity-70")}>
       <Entry entry={thread} timeZone={timeZone} currentVersion={currentVersion} />
       {thread.replies.map((r) => (
         <div key={r.id} className="ml-3 border-l pl-3">
@@ -190,7 +190,7 @@ function Thread({
           placeholder="Reply…"
           aria-label="Reply"
           rows={2}
-          className="field-sizing-content min-h-14 w-full resize-none rounded-lg border bg-background px-3 py-2 text-[16px] outline-none focus:ring-2 focus:ring-ring/40 md:text-[13px]"
+          className="field-sizing-content min-h-14 w-full resize-none rounded-lg border bg-background px-3 py-2 text-body outline-none focus:ring-2 focus:ring-ring/40 md:text-meta"
         />
       )}
       <div className="flex flex-wrap items-center gap-1">
@@ -246,7 +246,7 @@ function Entry({
   const agent = entry.madeBy.kind === "agent";
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-2 text-meta text-muted-foreground">
         <span className="inline-flex items-center gap-1 font-medium text-foreground">
           {agent && <Sparkles className="size-3" aria-hidden />}
           {who(entry.madeBy)}
@@ -257,9 +257,9 @@ function Entry({
         )}
       </div>
       {entry.quote && (
-        <blockquote className="line-clamp-4 border-l-2 pl-2 text-xs text-muted-foreground italic">{entry.quote}</blockquote>
+        <blockquote className="line-clamp-4 border-l-2 pl-2 text-meta text-muted-foreground italic">{entry.quote}</blockquote>
       )}
-      <p className="text-[14px] whitespace-pre-wrap md:text-[13px]">{entry.body}</p>
+      <p className="text-preview whitespace-pre-wrap md:text-meta">{entry.body}</p>
     </div>
   );
 }

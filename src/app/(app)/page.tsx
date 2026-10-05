@@ -90,7 +90,7 @@ function TodayTasks({
       <Card>
         <div className="flex items-center gap-2 border-b px-4 py-3.5">
           <h2 className="text-sm font-semibold">Today</h2>
-          <span className="text-xs text-muted-foreground">{tasks.length}</span>
+          <span className="text-meta text-muted-foreground">{tasks.length}</span>
         </div>
         <TaskList tasks={[...tasks].sort(compareTasks)} today={today} empty={<EmptyState>Nothing for today.</EmptyState>} />
         {/* "Add a task" makes a To do task, so it only shows while To do tasks do. */}

@@ -26,12 +26,12 @@ export default async function AuthorizePage({ searchParams }: PageProps<"/oauth/
         {check.ok ? (
           <>
             <div className="flex flex-col gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">Connect {check.client.name} to LukeOS?</h1>
-              <p className="text-[15px] text-muted-foreground">
+              <h1 className="text-2xl font-semibold">Connect {check.client.name} to LukeOS?</h1>
+              <p className="text-control text-muted-foreground">
                 Claude will be able to see and change your projects and tasks, just as you can. Anything it adds is
                 labelled as made by Claude.
               </p>
-              <p className="text-[13px] text-muted-foreground">
+              <p className="text-meta text-muted-foreground">
                 You can disconnect it at any time in Settings.
               </p>
             </div>
@@ -49,8 +49,8 @@ export default async function AuthorizePage({ searchParams }: PageProps<"/oauth/
           </>
         ) : (
           <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">Couldn&apos;t connect</h1>
-            <p className="text-[15px] text-muted-foreground">{check.error}</p>
+            <h1 className="text-2xl font-semibold">Couldn&apos;t connect</h1>
+            <p className="text-control text-muted-foreground">{check.error}</p>
           </div>
         )}
       </div>

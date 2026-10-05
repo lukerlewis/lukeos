@@ -28,7 +28,7 @@ const details: { key: Detail; label: string }[] = [
   { key: "outcome", label: "Outcome" },
 ];
 
-const selectClass = "h-8 rounded-lg border bg-card px-2 text-[16px] text-foreground shadow-xs md:text-[13px]";
+const selectClass = "h-8 rounded-lg border bg-card px-2 text-body text-foreground border-stroke-strong md:text-meta";
 
 export function EntryEditor({ entry, autoFocus }: { entry: Entry; autoFocus?: boolean }) {
   const router = useRouter();
@@ -163,10 +163,10 @@ export function EntryEditor({ entry, autoFocus }: { entry: Entry; autoFocus?: bo
         placeholder="Untitled"
         aria-label="Title"
         enterKeyHint="next"
-        className="field-sizing-content resize-none bg-transparent text-[30px] leading-tight font-semibold tracking-tight outline-none placeholder:text-muted-foreground md:text-[28px]"
+        className="field-sizing-content resize-none bg-transparent text-title leading-tight font-semibold outline-none placeholder:text-muted-foreground md:text-title"
       />
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">
         <select
           value={size}
           onChange={(e) => {
@@ -207,7 +207,7 @@ export function EntryEditor({ entry, autoFocus }: { entry: Entry; autoFocus?: bo
             queue({ confidential: !confidential }, 0);
           }}
           className={cn(
-            "press inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] shadow-xs",
+            "press inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-meta border-stroke",
             confidential ? "border-foreground/30 bg-muted text-foreground" : "bg-card text-muted-foreground",
           )}
         >
@@ -227,10 +227,10 @@ export function EntryEditor({ entry, autoFocus }: { entry: Entry; autoFocus?: bo
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 overflow-hidden rounded-xl border bg-card shadow-xs">
+      <div className="grid grid-cols-2 overflow-hidden rounded-xl border bg-card border-stroke">
         {details.map(({ key, label }, i) => (
           <label key={key} className={cn("flex min-w-0 flex-col gap-0.5 px-3 py-2", i % 2 === 1 && "border-l", i >= 2 && "border-t")}>
-            <span className="text-xs text-muted-foreground">{label}</span>
+            <span className="text-meta text-muted-foreground">{label}</span>
             <input
               id={`entry-${key}`}
               value={values[key]}
@@ -242,7 +242,7 @@ export function EntryEditor({ entry, autoFocus }: { entry: Entry; autoFocus?: bo
                 queue({ [key]: e.target.value.trim() || null });
               }}
               aria-label={label}
-              className="min-w-0 bg-transparent text-[16px] outline-none md:text-sm"
+              className="min-w-0 bg-transparent text-body outline-none md:text-sm"
             />
           </label>
         ))}

@@ -205,9 +205,9 @@ export function DocumentEditor({
           placeholder="Untitled document"
           aria-label="Document name"
           enterKeyHint="next"
-          className="field-sizing-content resize-none bg-transparent text-[24px] leading-tight font-semibold tracking-tight outline-none placeholder:text-muted-foreground md:text-[22px]"
+          className="field-sizing-content resize-none bg-transparent text-section leading-tight font-semibold outline-none placeholder:text-muted-foreground md:text-section"
         />
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">
           <select
             value={projectId ?? ""}
             onChange={(e) => {
@@ -216,7 +216,7 @@ export function DocumentEditor({
               queue({ projectId: next }, 0);
             }}
             aria-label="Project"
-            className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[16px] text-foreground shadow-xs md:text-[13px]"
+            className="h-8 max-w-56 rounded-lg border bg-card px-2 text-body text-foreground border-stroke-strong md:text-meta"
           >
             <option value="">No project</option>
             {projects.map((p) => (

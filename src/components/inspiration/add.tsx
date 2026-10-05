@@ -49,11 +49,11 @@ function AddDialog({ onClose }: { onClose: () => void }) {
             }
           }}
           className={cn(
-            "press-tint flex h-36 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed text-[15px] font-medium text-muted-foreground md:text-sm",
+            "press-tint flex h-36 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed text-control font-medium text-muted-foreground",
             over && "border-foreground/40 bg-muted text-foreground",
           )}
         >
-          <ImagePlus className="size-7" strokeWidth={1.5} aria-hidden />
+          <ImagePlus className="size-7" aria-hidden />
           Choose photos or files
         </button>
         <input
@@ -74,7 +74,7 @@ function AddDialog({ onClose }: { onClose: () => void }) {
           }}
           rows={3}
           placeholder="Paste a link or write a quote"
-          className="resize-none rounded-xl border bg-card px-3 py-2.5 text-[16px] outline-none placeholder:text-muted-foreground focus:border-foreground/30 md:text-sm"
+          className="resize-none rounded-lg border bg-card px-3 py-2.5 text-body outline-none placeholder:text-muted-foreground focus:border-foreground/30 md:text-sm"
         />
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>

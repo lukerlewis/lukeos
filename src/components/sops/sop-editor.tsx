@@ -144,10 +144,10 @@ export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocu
         placeholder={k.untitled}
         aria-label="Title"
         enterKeyHint="next"
-        className="field-sizing-content resize-none bg-transparent text-[30px] leading-tight font-semibold tracking-tight outline-none placeholder:text-muted-foreground md:text-[28px]"
+        className="field-sizing-content resize-none bg-transparent text-title leading-tight font-semibold outline-none placeholder:text-muted-foreground md:text-title"
       />
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">
         <span>
           <MadeByLabel madeBy={sop.madeBy} createdAt={sop.createdAt} />
         </span>
@@ -161,12 +161,12 @@ export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocu
         </Button>
       </div>
 
-      <label className="flex flex-col gap-1.5 rounded-xl border bg-card p-3 shadow-xs">
-        <span className="flex items-baseline gap-2 text-[13px] font-medium">
+      <label className="flex flex-col gap-1.5 rounded-xl border bg-card p-3 border-stroke">
+        <span className="flex items-baseline gap-2 text-meta font-medium">
           {k.label}
           <span className="grow" />
           <span
-            className={cn("text-xs font-normal text-muted-foreground", description.length > DESCRIPTION_LONG && "text-amber-700 dark:text-amber-400")}
+            className={cn("text-xs font-normal text-muted-foreground", description.length > DESCRIPTION_LONG && "font-medium text-ink")}
           >
             {description.length}/{DESCRIPTION_MAX}
           </span>
@@ -184,12 +184,12 @@ export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocu
           }}
           placeholder={k.ask}
           aria-label={`Description: ${k.label.toLowerCase()}`}
-          className="field-sizing-content min-h-12 resize-none bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:text-sm"
+          className="field-sizing-content min-h-12 resize-none bg-transparent text-body outline-none placeholder:text-muted-foreground md:text-sm"
         />
       </label>
 
       {bodyTokens > BODY_LONG_TOKENS && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">{k.long}</p>
+        <p className="text-meta font-medium text-ink">{k.long}</p>
       )}
 
       <Toolbar editor={editor} />

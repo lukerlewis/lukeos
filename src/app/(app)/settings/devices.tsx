@@ -33,7 +33,7 @@ export function AddDeviceButton() {
         {busy ? "Waiting for your device…" : "Add this device"}
       </Button>
       {message && (
-        <p role="status" className="text-[13px] text-muted-foreground">
+        <p role="status" className="text-meta text-muted-foreground">
           {message}
         </p>
       )}
@@ -66,7 +66,7 @@ export function NewDeviceLink() {
     return (
       <div className="flex w-full flex-col gap-2">
         <CopyAddress address={link} label="Copy link" />
-        <p className="text-[13px] text-muted-foreground">Open on the new device. Works once, for 10 minutes.</p>
+        <p className="text-meta text-muted-foreground">Open on the new device. Works once, for 10 minutes.</p>
       </div>
     );
   }
@@ -77,7 +77,7 @@ export function NewDeviceLink() {
         Add a new device
       </Button>
       {error && (
-        <p role="alert" className="text-[13px] text-danger">
+        <p role="alert" className="text-meta text-danger">
           {error}
         </p>
       )}

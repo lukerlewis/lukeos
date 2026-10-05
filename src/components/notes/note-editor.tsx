@@ -257,10 +257,10 @@ export function NoteEditor({
         placeholder="Untitled"
         aria-label="Title"
         enterKeyHint="next"
-        className="field-sizing-content resize-none bg-transparent text-[30px] leading-tight font-semibold tracking-tight outline-none placeholder:text-muted-foreground md:text-[28px]"
+        className="field-sizing-content resize-none bg-transparent text-title leading-tight font-semibold outline-none placeholder:text-muted-foreground md:text-title"
       />
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">
         <select
           value={projectId ?? ""}
           onChange={(e) => {
@@ -269,7 +269,7 @@ export function NoteEditor({
             queue({ projectId: next }, 0);
           }}
           aria-label="Project"
-          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[16px] text-foreground md:text-[13px] shadow-xs"
+          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-body text-foreground md:text-meta border-stroke-strong"
         >
           <option value="">No project</option>
           {projects.map((p) => (
@@ -286,7 +286,7 @@ export function NoteEditor({
             queue({ folderId: next }, 0);
           }}
           aria-label="Folder"
-          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[16px] text-foreground md:text-[13px] shadow-xs"
+          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-body text-foreground md:text-meta border-stroke-strong"
         >
           <option value="">No folder</option>
           {folders.map((f) => (

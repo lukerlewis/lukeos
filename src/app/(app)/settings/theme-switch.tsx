@@ -20,7 +20,7 @@ export function ThemeSwitch() {
   const current = mounted ? (theme ?? "system") : null;
 
   return (
-    <div role="radiogroup" aria-label="Appearance" className="inline-flex w-full rounded-lg bg-muted p-1 sm:w-auto">
+    <div role="radiogroup" aria-label="Appearance" className="inline-flex w-full seg-track rounded-lg p-[3px] sm:w-auto">
       {options.map(({ value, label, icon: Icon }) => (
         <button
           key={value}
@@ -29,8 +29,8 @@ export function ThemeSwitch() {
           aria-checked={current === value}
           onClick={() => setTheme(value)}
           className={cn(
-            "flex h-9 grow items-center justify-center gap-2 rounded-md px-3 text-[13px] font-medium text-muted-foreground sm:grow-0",
-            current === value && "bg-card text-foreground shadow-xs",
+            "flex h-9 grow items-center justify-center gap-2 rounded-[8px] px-3 text-preview font-medium text-muted-foreground sm:grow-0",
+            current === value && "seg-on text-foreground",
           )}
         >
           <Icon className="size-4" aria-hidden />

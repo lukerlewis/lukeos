@@ -60,15 +60,15 @@ export function ArtifactView({ artifact, projects }: { artifact: Artifact; proje
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      <h1 className="text-[30px] leading-tight font-semibold tracking-tight break-words md:text-[28px]">
+      <h1 className="text-title leading-tight font-semibold break-words md:text-title">
         {artifact.title || "Untitled"}
       </h1>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">
         <select
           value={projectId ?? ""}
           onChange={(e) => move(e.target.value || null)}
           aria-label="Project"
-          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[16px] text-foreground md:text-[13px] shadow-xs"
+          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-body text-foreground md:text-meta border-stroke-strong"
         >
           <option value="">No project</option>
           {projects.map((p) => (
@@ -85,7 +85,7 @@ export function ArtifactView({ artifact, projects }: { artifact: Artifact; proje
               router.push(n === artifact.version ? base : `${base}?v=${n}`);
             }}
             aria-label="Version"
-            className="h-8 rounded-lg border bg-card px-2 text-[16px] text-foreground md:text-[13px] shadow-xs"
+            className="h-8 rounded-lg border bg-card px-2 text-body text-foreground md:text-meta border-stroke-strong"
           >
             {artifact.versions.map((v) => (
               <option key={v.number} value={v.number}>
@@ -110,7 +110,7 @@ export function ArtifactView({ artifact, projects }: { artifact: Artifact; proje
       </div>
 
       {(!latest || artifact.shown.note) && (
-        <p className={cn("rounded-lg px-3 py-2 text-[13px]", latest ? "bg-muted text-muted-foreground" : "bg-doing/10 text-foreground")}>
+        <p className={cn("rounded-lg px-3 py-2 text-meta", latest ? "bg-muted text-muted-foreground" : "border border-stroke bg-muted text-foreground")}>
           {!latest && (
             <>
               You&apos;re looking at version {artifact.shown.number} of {artifact.version}.{" "}
@@ -134,7 +134,7 @@ export function ArtifactView({ artifact, projects }: { artifact: Artifact; proje
               aria-selected={i === tab}
               onClick={() => setTab(i)}
               className={cn(
-                "-mb-px shrink-0 border-b-2 px-3 py-2 text-[13px] font-medium whitespace-nowrap",
+                "-mb-px shrink-0 border-b-2 px-3 py-2 text-meta font-medium whitespace-nowrap",
                 i === tab ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
@@ -151,7 +151,7 @@ export function ArtifactView({ artifact, projects }: { artifact: Artifact; proje
           srcDoc={part.content}
           sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
           referrerPolicy="no-referrer"
-          className="h-[calc(100dvh-16rem)] min-h-[480px] w-full rounded-xl border bg-white shadow-xs"
+          className="h-[calc(100dvh-16rem)] min-h-[480px] w-full rounded-xl border bg-white border-stroke"
         />
       ) : (
         <div {...{ [COMMENTABLE]: "" }} className="pb-6">

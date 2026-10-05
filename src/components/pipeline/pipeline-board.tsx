@@ -213,7 +213,7 @@ export function PipelineBoard({
             })}
           </div>
           <DragOverlay dropAnimation={null}>
-            {dragging && <CardBody card={dragging} className="motion-lift scale-[1.03] rotate-1 shadow-lg" />}
+            {dragging && <CardBody card={dragging} className="motion-lift scale-[1.03] rotate-1" />}
           </DragOverlay>
         </DndContext>
       )}
@@ -257,7 +257,7 @@ function StartPipeline({ projectId }: { projectId: string }) {
   }
   return (
     <Panel className="flex max-w-3xl flex-col items-center gap-3 px-4 py-8">
-      <p className="text-[13px] text-muted-foreground">No pipeline yet.</p>
+      <p className="text-meta text-muted-foreground">No pipeline yet.</p>
       <Button onClick={start} disabled={busy}>
         <Plus className="size-4" aria-hidden />
         Start a pipeline
@@ -303,7 +303,7 @@ function Column({
       </header>
       <ul className="flex flex-col gap-2">
         {count === 0 ? (
-          <li className="flex h-16 items-center justify-center rounded-[10px] border border-dashed text-xs text-muted-foreground">
+          <li className="flex h-16 items-center justify-center rounded-[10px] border border-dashed text-meta text-muted-foreground">
             Nothing here
           </li>
         ) : (
@@ -342,7 +342,7 @@ function DraggableCard({ card, onOpen, review }: { card: CardSummary; onOpen: ()
 function ReviewButtons({ onApprove, onReject, canApprove }: Review) {
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
   const button =
-    "pressable flex h-9 grow items-center justify-center gap-1.5 rounded-lg border text-[13px] font-medium md:h-8 md:text-xs";
+    "pressable flex h-9 grow items-center justify-center gap-1.5 rounded-lg border text-meta font-medium md:h-8 md:text-xs";
   return (
     <div className="flex gap-2 pt-1" onPointerDown={stop} onKeyDown={stop} onClick={stop}>
       <button type="button" onClick={onReject} className={cn(button, "text-muted-foreground hover:bg-muted hover:text-foreground")}>
@@ -366,14 +366,14 @@ function CardBody({ card, className, children, ...rest }: { card: CardSummary } 
     <div
       {...rest}
       className={cn(
-        "pressable flex cursor-grab touch-manipulation flex-col gap-1.5 rounded-[10px] border bg-card p-3 text-left shadow-xs select-none [-webkit-touch-callout:none] active:cursor-grabbing",
+        "pressable flex cursor-grab touch-manipulation flex-col gap-1.5 rounded-[10px] border bg-card p-3 text-left border-stroke select-none [-webkit-touch-callout:none] active:cursor-grabbing",
         className,
       )}
     >
       <span className="font-medium break-words">{card.title}</span>
-      {card.excerpt && <span className="line-clamp-2 text-xs text-muted-foreground">{card.excerpt}</span>}
+      {card.excerpt && <span className="line-clamp-2 text-meta text-muted-foreground">{card.excerpt}</span>}
       {meta && (
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-0.5 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-0.5 text-meta text-muted-foreground">
           {tasks > 0 && (
             <span className="inline-flex items-center gap-1" title={`${card.taskCount.done} of ${tasks} tasks done`}>
               <CheckSquare className="size-3.5" aria-hidden />

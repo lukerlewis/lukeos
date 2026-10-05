@@ -112,11 +112,11 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
       <div className="flex min-w-0 grow items-start gap-3">
         <Icon className="mt-0.5 size-[18px] shrink-0 text-muted-foreground md:size-4" aria-hidden />
         <div className="flex min-w-0 grow flex-col gap-0.5">
-          <span className="truncate text-[15px] font-medium md:text-sm">
+          <span className="truncate text-control font-medium">
             <span className="sr-only">{kind}: </span>
             {item.title}
           </span>
-          <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+          <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-foreground">
             <span>
               {whenLabel(item, timeZone)}
               {contains && ` · with ${contains}`}

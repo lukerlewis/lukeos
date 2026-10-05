@@ -19,19 +19,19 @@ export function RoutineList({ routines, timeZone }: { routines: RoutineSummary[]
             />
             <span className="flex min-w-0 grow flex-col gap-0.5">
               <span className="flex items-baseline gap-3">
-                <span className={cn("min-w-0 grow truncate text-[15px] font-medium md:text-sm", !r.enabled && "text-muted-foreground")}>
+                <span className={cn("min-w-0 grow truncate text-control font-medium", !r.enabled && "text-muted-foreground")}>
                   {r.title || "Untitled routine"}
                 </span>
-                <span className="shrink-0 text-xs text-muted-foreground">
+                <span className="shrink-0 text-meta text-muted-foreground">
                   {r.enabled ? (r.nextDueAt ? `Next ${whenShort(r.nextDueAt, timeZone)}` : "") : "Off"}
                 </span>
               </span>
-              <span className="truncate text-[13px] text-muted-foreground">
+              <span className="truncate text-meta text-muted-foreground">
                 {r.scheduleLabel}
                 {r.sop && ` · follows ${r.sop.title}`}
               </span>
               {(r.lastRun || r.madeBy.kind === "agent") && (
-                <span className="mt-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                <span className="mt-1 flex min-w-0 items-center gap-2 text-meta text-muted-foreground">
                   {r.lastRun && (
                     <>
                       <RunStatusPill status={r.lastRun.status} />

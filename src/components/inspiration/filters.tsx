@@ -34,7 +34,7 @@ export function SearchBox({ query }: { query: string }) {
   }
 
   return (
-    <label className="flex h-10 w-full items-center gap-2 rounded-xl border bg-card px-3 shadow-xs focus-within:border-foreground/30 md:h-9 md:max-w-sm">
+    <label className="flex h-10 w-full items-center gap-2 rounded-lg border border-stroke-strong bg-card px-3 focus-within:border-ring md:max-w-sm">
       <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       <input
         type="search"
@@ -42,7 +42,7 @@ export function SearchBox({ query }: { query: string }) {
         onChange={(e) => change(e.target.value)}
         placeholder="Search"
         aria-label="Search Inspiration"
-        className="min-w-0 grow bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:text-[13px] [&::-webkit-search-cancel-button]:hidden"
+        className="min-w-0 grow bg-transparent text-body outline-none placeholder:text-muted-foreground md:text-meta [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button type="button" onClick={() => change("")} aria-label="Clear" className="text-muted-foreground hover:text-foreground">
@@ -69,8 +69,8 @@ export function TagChips({ tags, active }: { tags: { tag: string; count: number 
             replace
             scroll={false}
             className={cn(
-              "press inline-flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-[13px] whitespace-nowrap",
-              on ? "border-foreground bg-foreground text-background" : "bg-card text-muted-foreground hover:text-foreground",
+              "press inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-stroke px-3 text-preview whitespace-nowrap",
+              on ? "border-transparent bg-selected font-medium text-ink" : "bg-card text-muted-foreground hover:text-foreground",
             )}
           >
             {tag}

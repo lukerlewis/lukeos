@@ -53,16 +53,16 @@ export function ItemBody({ item, when }: { item: ClaudeItem; when: string }) {
       <span className="relative mt-0.5 shrink-0">
         <Icon className="size-[18px] text-muted-foreground md:size-4" aria-hidden />
         {item.isNew && (
-          <span className="absolute -top-1 -right-1 size-2 rounded-full bg-doing ring-2 ring-card" aria-label="New" />
+          <span className="absolute -top-1 -right-1 size-2 rounded-full bg-unread ring-2 ring-card" aria-label="New" />
         )}
       </span>
       <span className="flex min-w-0 grow flex-col gap-0.5 text-left">
         <span className="flex items-baseline gap-3">
-          <span className="min-w-0 grow truncate text-[15px] font-medium md:text-sm">{item.title || "Untitled"}</span>
-          <span className="shrink-0 text-xs text-muted-foreground">{when}</span>
+          <span className="min-w-0 grow truncate text-control font-medium">{item.title || "Untitled"}</span>
+          <span className="shrink-0 text-meta text-muted-foreground">{when}</span>
         </span>
-        {item.excerpt && <span className="line-clamp-2 text-[13px] text-muted-foreground">{item.excerpt}</span>}
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+        {item.excerpt && <span className="line-clamp-2 text-meta text-muted-foreground">{item.excerpt}</span>}
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-foreground">
           <span>{item.type === "artifact" && item.format === "html" ? "Web page" : kindLabel[item.type]}</span>
           {item.version !== null && item.version > 1 && <span>Version {item.version}</span>}
           {item.openComments > 0 && (

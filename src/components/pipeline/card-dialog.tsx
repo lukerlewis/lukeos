@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 export type CardDraft = { id?: string; projectId?: string; columnId?: string };
 
 const field =
-  "w-full rounded-lg border bg-card px-3 py-2 text-[16px] shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring md:text-[14px]";
+  "w-full rounded-lg border bg-card px-3 py-2 text-body border-stroke-strong outline-none placeholder:text-muted-foreground focus-visible:border-ring md:text-preview";
 
 /** A pipeline card: its name, column and notes, the tasks inside it, what's attached, and comments. */
 export function CardDialog({
@@ -186,7 +186,7 @@ export function CardDialog({
               onChange={(e) => setColumnId(e.target.value)}
               aria-label="Column"
               disabled={loading}
-              className="h-9 w-full rounded-lg border bg-card px-2.5 text-[16px] shadow-xs sm:w-auto sm:min-w-56 md:text-[13px]"
+              className="h-9 w-full rounded-lg border bg-card px-2.5 text-body border-stroke-strong sm:w-auto sm:min-w-56 md:text-meta"
             >
               {columns.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -213,14 +213,14 @@ export function CardDialog({
               <CardTasks card={card} today={today} onChanged={changed} />
               <CardAttachments card={card} onChanged={changed} />
               <CardComments cardId={card.id} timeZone={timeZone} />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-meta text-muted-foreground">
                 <MadeByLabel madeBy={card.madeBy} createdAt={card.createdAt} />
               </p>
             </>
           )}
 
           {error && (
-            <p role="alert" className="text-[13px] text-danger">
+            <p role="alert" className="text-meta text-danger">
               {error}
             </p>
           )}
@@ -311,13 +311,13 @@ function CardTasks({ card, today, onChanged }: { card: Card; today: string; onCh
                 type="button"
                 onClick={() => openTask(t)}
                 className={cn(
-                  "min-w-0 grow py-2 text-left text-[15px] break-words md:text-sm",
+                  "min-w-0 grow py-2 text-left text-control break-words",
                   t.status === "done" && "text-muted-foreground line-through",
                 )}
               >
                 {t.title}
                 {t.dueDate && t.status !== "done" && (
-                  <span className="ml-2 text-xs text-muted-foreground">{friendlyDay(t.dueDate, today)}</span>
+                  <span className="ml-2 text-meta text-muted-foreground">{friendlyDay(t.dueDate, today)}</span>
                 )}
               </button>
               <Button
@@ -401,7 +401,7 @@ function CardAttachments({ card, onChanged }: { card: Card; onChanged: () => voi
             return (
               <li key={`${a.type}-${a.id}`} className="flex items-center gap-2 border-b pl-3 last:border-b-0">
                 <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <Link href={a.href} className="min-w-0 grow truncate py-2.5 text-[15px] hover:underline md:text-sm">
+                <Link href={a.href} className="min-w-0 grow truncate py-2.5 text-control hover:underline">
                   {a.title}
                 </Link>
                 <Button
@@ -419,7 +419,7 @@ function CardAttachments({ card, onChanged }: { card: Card; onChanged: () => voi
           })}
         </ul>
       )}
-      {card.attachments.length === 0 && !picking && <p className="text-[13px] text-muted-foreground">Nothing attached.</p>}
+      {card.attachments.length === 0 && !picking && <p className="text-meta text-muted-foreground">Nothing attached.</p>}
       {picking && (
         <Picker
           card={card}
@@ -485,7 +485,7 @@ function Picker({ card, onPick, onDone }: { card: Card; onPick: (type: Attachabl
               setFound(null);
             }}
             aria-pressed={type === k.type}
-            className="h-8 rounded-full border px-3 text-[13px] font-medium text-subtle-foreground hover:bg-muted aria-pressed:border-foreground aria-pressed:text-foreground"
+            className="h-9 rounded-lg border border-stroke px-3 text-preview font-medium text-subtle-foreground hover:bg-muted aria-pressed:border-transparent aria-pressed:bg-selected aria-pressed:text-ink"
           >
             {k.label}
           </button>
@@ -501,9 +501,9 @@ function Picker({ card, onPick, onDone }: { card: Card; onPick: (type: Attachabl
       />
       <ul className="flex max-h-56 flex-col overflow-y-auto">
         {found === null ? (
-          <li className="px-2 py-3 text-[13px] text-muted-foreground">Looking…</li>
+          <li className="px-2 py-3 text-meta text-muted-foreground">Looking…</li>
         ) : found.length === 0 ? (
-          <li className="px-2 py-3 text-[13px] text-muted-foreground">Nothing found.</li>
+          <li className="px-2 py-3 text-meta text-muted-foreground">Nothing found.</li>
         ) : (
           found.map((r) => {
             const Icon = iconOf(type);
@@ -515,7 +515,7 @@ function Picker({ card, onPick, onDone }: { card: Card; onPick: (type: Attachabl
                     await onPick(type, r.id);
                     onDone();
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-[15px] hover:bg-muted md:text-sm"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-control hover:bg-muted"
                 >
                   <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                   <span className="min-w-0 truncate">{r.title}</span>

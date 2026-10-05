@@ -63,7 +63,7 @@ export default async function SettingsPage() {
                       <span className="ml-2 text-xs font-normal text-muted-foreground">This device</span>
                     )}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-meta text-muted-foreground">
                     Added {dateFmt.format(p.createdAt)}
                     {p.lastUsedAt && ` · last used ${dateFmt.format(p.lastUsedAt)}`}
                   </span>
@@ -81,7 +81,7 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader title="Claude" aside={connections.length ? `${connections.length} connected` : undefined} />
           <div className="flex flex-col gap-3 px-4 py-4">
-            <p className="text-[13px] text-muted-foreground">
+            <p className="text-meta text-muted-foreground">
               Add as a custom connector in Claude&apos;s settings.
             </p>
             <CopyAddress address={connectorAddress} />
@@ -92,7 +92,7 @@ export default async function SettingsPage() {
                 <li key={c.id} className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0">
                   <div className="flex grow flex-col gap-0.5">
                     <span className="font-medium">{c.name}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-meta text-muted-foreground">
                       Connected {dateFmt.format(c.createdAt)}
                       {c.lastUsedAt && ` · last used ${dateFmt.format(c.lastUsedAt)}`}
                     </span>
@@ -123,7 +123,7 @@ export default async function SettingsPage() {
             <Trash2 className="size-[18px] text-muted-foreground" aria-hidden />
             <span className="flex grow flex-col gap-0.5">
               <span className="font-medium">Trash</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-meta text-muted-foreground">
                 {inTrash === 0 ? "Empty" : `${inTrash} ${inTrash === 1 ? "item" : "items"}`}
               </span>
             </span>

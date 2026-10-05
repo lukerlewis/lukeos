@@ -47,7 +47,7 @@ export function Dialog({
         if (e.target === e.currentTarget) onClose();
       }}
       className={cn(
-        "m-0 mt-auto outline-none max-h-[92dvh] w-full max-w-none overflow-y-auto rounded-t-2xl border bg-card p-0 text-foreground shadow-xl backdrop:bg-black/40",
+        "m-0 mt-auto outline-none max-h-[92dvh] w-full max-w-none overflow-y-auto rounded-t-2xl border bg-card p-0 text-foreground border-stroke backdrop:bg-black/40",
         "sm:m-auto sm:max-h-[85dvh] sm:max-w-lg sm:rounded-2xl",
         className,
       )}

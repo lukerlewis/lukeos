@@ -331,18 +331,18 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
           spellCheck={false}
           className="h-13 min-w-0 grow bg-transparent text-base outline-none placeholder:text-muted-foreground"
         />
-        {searching && <span className="text-xs text-muted-foreground">Searching…</span>}
+        {searching && <span className="text-meta text-muted-foreground">Searching…</span>}
       </div>
 
       {error && (
-        <p role="alert" className="border-b px-4 py-2 text-[13px] text-danger">
+        <p role="alert" className="border-b px-4 py-2 text-meta text-danger">
           {error}
         </p>
       )}
 
       <div ref={listRef} id="command-list" role="listbox" className="max-h-[min(60dvh,26rem)] overflow-y-auto p-1.5 max-sm:max-h-none">
         {q && results && !searching && results.filter((r) => r.type !== "project").length === 0 && (
-          <p className="px-3 pt-2.5 pb-1 text-[13px] text-muted-foreground">Nothing in your tasks or notes matches “{q}”.</p>
+          <p className="px-3 pt-2.5 pb-1 text-meta text-muted-foreground">Nothing in your tasks or notes matches “{q}”.</p>
         )}
         {items.map((item, i) => {
           const header = item.group !== lastGroup ? item.group : null;
@@ -359,7 +359,7 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
                 onMouseMove={() => i !== current && setActive(i)}
                 onClick={() => void pick(item)}
                 className={cn(
-                  "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-[15px] md:min-h-10 md:text-sm",
+                  "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-control md:min-h-10",
                   // Touch screens have no arrow keys, so no resting highlight there.
                   i === current && "bg-muted pointer-coarse:bg-transparent",
                   "pointer-coarse:active:bg-muted",
@@ -370,7 +370,7 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
                 </span>
                 <span className="flex min-w-0 grow flex-col">
                   <span className="truncate">{item.label}</span>
-                  {item.detail && <span className="truncate text-xs text-muted-foreground">{item.detail}</span>}
+                  {item.detail && <span className="truncate text-meta text-muted-foreground">{item.detail}</span>}
                 </span>
                 {i === current && (
                   <CornerDownLeft className="hidden size-3.5 shrink-0 text-muted-foreground md:block" aria-hidden />
@@ -381,7 +381,7 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
         })}
       </div>
 
-      <div className="hidden items-center gap-4 border-t px-4 py-2 text-xs text-muted-foreground md:flex">
+      <div className="hidden items-center gap-4 border-t px-4 py-2 text-meta text-muted-foreground md:flex">
         <span>
           <Kbd>↑</Kbd> <Kbd>↓</Kbd> to move
         </span>
@@ -397,7 +397,7 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
 }
 
 function Kbd({ children }: { children: React.ReactNode }) {
-  return <kbd className="rounded-[5px] border bg-muted px-1.5 font-mono text-[11px]">{children}</kbd>;
+  return <kbd className="rounded-[5px] border bg-muted px-1.5 text-xs">{children}</kbd>;
 }
 
 /** A task, note, document or other thing found by searching, as a row. */

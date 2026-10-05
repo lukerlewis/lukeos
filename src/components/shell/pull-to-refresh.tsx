@@ -122,7 +122,7 @@ export function PullToRefresh() {
     >
       <div
         className={cn(
-          "pull-indicator flex size-9 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-md",
+          "pull-indicator flex size-9 items-center justify-center rounded-full border bg-card text-muted-foreground border-stroke",
           (ready || busy) && "text-foreground",
           !pull && "pull-indicator-settle",
         )}

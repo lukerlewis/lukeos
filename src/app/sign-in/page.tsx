@@ -23,8 +23,8 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
           L
         </span>
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{setUp ? "Welcome back" : "Set up LukeOS"}</h1>
-          <p className="text-[15px] text-muted-foreground">
+          <h1 className="text-2xl font-semibold">{setUp ? "Welcome back" : "Set up LukeOS"}</h1>
+          <p className="text-control text-muted-foreground">
             {setUp
               ? "Sign in with Face ID, Touch ID or Windows Hello."
               : "Create a passkey on this device. From then on, only you can get in."}

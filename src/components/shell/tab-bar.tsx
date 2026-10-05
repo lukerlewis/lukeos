@@ -13,7 +13,7 @@ export function TabBar({ unreadMessages = 0 }: { unreadMessages?: number }) {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-10 flex border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-10 flex border-t bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {phoneTabs.map(({ href, label, icon: Icon, also }) => {
         const active = isActive(pathname, href) || also.some((a: string) => isActive(pathname, a));
@@ -24,14 +24,14 @@ export function TabBar({ unreadMessages = 0 }: { unreadMessages?: number }) {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "press flex min-h-14 grow basis-0 flex-col items-center gap-0.5 pt-2.5 pb-2 text-[11px] font-medium text-muted-foreground",
-              active && "font-semibold text-foreground",
+              "press flex min-h-14 grow basis-0 flex-col items-center gap-1 pt-2.5 pb-2 text-xs font-medium text-muted-foreground",
+              active && "text-ink",
             )}
           >
             <span className="relative">
-              <Icon className="size-[22px]" />
+              <Icon className={cn("size-[22px]", active ? "text-foreground" : "text-icon")} aria-hidden />
               {count > 0 && (
-                <span className="absolute -top-1.5 left-3.5 min-w-[18px] rounded-full bg-danger px-1 text-center text-[11px] leading-[18px] font-semibold text-white">
+                <span className="absolute -top-1.5 left-3.5 min-w-[18px] rounded-full bg-notification px-1 text-center text-xs leading-[18px] font-medium text-on-notification">
                   {count}
                   <span className="sr-only"> unread</span>
                 </span>

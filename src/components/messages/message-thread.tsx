@@ -256,12 +256,12 @@ export function MessageThread({
             return (
               <Fragment key={m.id}>
                 {newTime && (
-                  <li className="pt-4 pb-1.5 text-center text-[12px] text-muted-foreground" aria-hidden>
+                  <li className="pt-4 pb-1.5 text-center text-meta text-muted-foreground" aria-hidden>
                     <span className="font-medium">{friendlyDay(todayIn(timeZone, at), today)}</span> {time(at)}
                   </li>
                 )}
                 {m.unsent ? (
-                  <li className="py-1.5 text-center text-[12px] text-muted-foreground">{mine ? "You" : "Claude"} unsent a message</li>
+                  <li className="py-1.5 text-center text-meta text-muted-foreground">{mine ? "You" : "Claude"} unsent a message</li>
                 ) : (
                 <li
                   id={`msg-${m.id}`}
@@ -290,7 +290,7 @@ export function MessageThread({
                   )}
                 >
                   {!mine && m.routine && (!sameSender || prev.routine !== m.routine) && (
-                    <span className="px-3 pb-0.5 text-[11px] text-muted-foreground">{m.routine}</span>
+                    <span className="px-3 pb-0.5 text-meta text-muted-foreground">{m.routine}</span>
                   )}
                   {quoted && <Quote quote={quoted} mine={mine} onJump={jumpTo} />}
                   {m.attachments.length > 0 && (
@@ -300,7 +300,7 @@ export function MessageThread({
                     <div
                       title={time(at)}
                       className={cn(
-                        "max-w-[80%] rounded-[20px] px-3.5 py-2 text-[16px] leading-snug break-words whitespace-pre-wrap md:max-w-[70%] md:text-[15px]",
+                        "max-w-[80%] rounded-[20px] px-3.5 py-2 text-body leading-snug break-words whitespace-pre-wrap md:max-w-[70%] md:text-control",
                         mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
                         pending && "opacity-60",
                       )}
@@ -310,7 +310,7 @@ export function MessageThread({
                     </div>
                   )}
                   {m.link && <LinkCard link={m.link} mine={mine} />}
-                  {m.edited && <span className="px-1 pt-0.5 text-[11px] text-muted-foreground">Edited</span>}
+                  {m.edited && <span className="px-1 pt-0.5 text-meta text-muted-foreground">Edited</span>}
                   {actionable && (
                     <button
                       type="button"
@@ -329,7 +329,7 @@ export function MessageThread({
             );
           })}
           {waiting && (
-            <li className="px-1 pt-1 text-right text-[12px] text-muted-foreground">
+            <li className="px-1 pt-1 text-right text-meta text-muted-foreground">
               {shown[lastLuke].id.startsWith("sending-")
                 ? "Sending…"
                 : nextCheckIn
@@ -544,7 +544,7 @@ function Composer({
       className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-[5] -mx-5 mt-auto border-t bg-background/95 px-3 py-2 backdrop-blur md:bottom-0 md:mx-0 md:border-0 md:px-0 md:pb-6"
     >
       {editing ? (
-        <div className="mx-auto flex max-w-2xl items-center gap-2 pb-1.5 pl-1 text-[13px] text-muted-foreground">
+        <div className="mx-auto flex max-w-2xl items-center gap-2 pb-1.5 pl-1 text-meta text-muted-foreground">
           <span className="grow truncate">Editing message</span>
           <button
             type="button"
@@ -560,7 +560,7 @@ function Composer({
           {replying && (
             <div className="mx-auto flex max-w-2xl items-center gap-2 pb-1.5 pl-1">
               <Reply className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              <div className="min-w-0 grow border-l-2 pl-2 text-[13px] leading-snug">
+              <div className="min-w-0 grow border-l-2 pl-2 text-meta leading-snug">
                 <div className="font-medium">{replying.from === "luke" ? "You" : "Claude"}</div>
                 <div className="truncate text-muted-foreground">{snippetOf(replying)}</div>
               </div>
@@ -584,14 +584,14 @@ function Composer({
           aria-label="Add photos or files"
           className={cn("mb-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground", editing && "hidden")}
         >
-          <Plus className="size-[18px]" strokeWidth={2.5} aria-hidden />
+          <Plus className="size-[18px]" aria-hidden />
         </button>
         <input
           ref={filePicker}
           type="file"
           multiple
           hidden
-          className="text-[16px]"
+          className="text-body"
           onChange={(e) => {
             if (e.target.files?.length) add([...e.target.files]);
             e.target.value = "";
@@ -624,7 +624,7 @@ function Composer({
           }}
           placeholder="Message Claude"
           aria-label="Message Claude"
-          className="min-h-10 grow resize-none rounded-[20px] border bg-card px-4 py-2 text-[16px] leading-snug outline-none placeholder:text-muted-foreground focus:border-ring md:text-[15px]"
+          className="min-h-10 grow resize-none rounded-[20px] border bg-card px-4 py-2 text-body leading-snug outline-none placeholder:text-muted-foreground focus:border-ring md:text-control"
         />
         <button
           type="submit"
@@ -633,9 +633,9 @@ function Composer({
           className="mb-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
         >
           {editing ? (
-            <Check className="size-[18px]" strokeWidth={2.5} aria-hidden />
+            <Check className="size-[18px]" aria-hidden />
           ) : (
-            <ArrowUp className="size-[18px]" strokeWidth={2.5} aria-hidden />
+            <ArrowUp className="size-[18px]" aria-hidden />
           )}
         </button>
       </div>
@@ -655,13 +655,13 @@ function snippetOf(m: ThreadMessage) {
 /** The message a reply answers, quoted small above it. Tapping it jumps to the original. */
 function Quote({ quote, mine, onJump }: { quote: NonNullable<ThreadMessage["replyTo"]>; mine: boolean; onJump: (id: string) => void }) {
   const cls = cn(
-    "mb-0.5 flex max-w-[75%] flex-col rounded-2xl border px-3 py-1.5 text-left text-[13px] leading-snug md:max-w-[65%]",
+    "mb-0.5 flex max-w-[75%] flex-col rounded-2xl border px-3 py-1.5 text-left text-meta leading-snug md:max-w-[65%]",
     mine ? "self-end" : "self-start",
   );
   if (quote.unavailable) return <div className={cn(cls, "text-muted-foreground italic")}>Original message unavailable</div>;
   return (
     <button type="button" className={cn(cls, "press-tint")} onClick={() => onJump(quote.id)} aria-label="Go to the original message">
-      <span className="text-[11px] font-medium text-muted-foreground">{quote.from === "luke" ? "You" : "Claude"}</span>
+      <span className="text-xs font-medium text-muted-foreground">{quote.from === "luke" ? "You" : "Claude"}</span>
       <span className="line-clamp-2 text-muted-foreground">{quote.snippet}</span>
     </button>
   );
@@ -674,7 +674,7 @@ function Linkified({ text, mine }: { text: string; mine: boolean }) {
     <>
       {parts.map((part, i) =>
         i % 2 === 1 ? (
-          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={cn("underline", mine ? "text-primary-foreground" : "text-doing")}>
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={cn("underline", mine ? "text-primary-foreground" : "text-foreground")}>
             {part}
           </a>
         ) : (
@@ -697,8 +697,8 @@ function LinkCard({ link, mine }: { link: NonNullable<ThreadMessage["link"]>; mi
     <>
       <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       <span className="flex min-w-0 flex-col text-left">
-        <span className="text-[11px] text-muted-foreground">{linkKinds[link.type]}</span>
-        <span className="truncate text-[14px] font-medium">{gone ? "No longer here" : link.title}</span>
+        <span className="text-meta text-muted-foreground">{linkKinds[link.type]}</span>
+        <span className="truncate text-preview font-medium">{gone ? "No longer here" : link.title}</span>
       </span>
     </>
   );

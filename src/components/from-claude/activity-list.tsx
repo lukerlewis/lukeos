@@ -27,14 +27,14 @@ export function ActivityList({ days }: { days: { label: string; rows: ActivityRo
               const body = (
                 <>
                   <span className="w-14 shrink-0 text-xs whitespace-nowrap text-muted-foreground tabular-nums">{row.time}</span>
-                  <span className="min-w-0 grow text-[14px] md:text-[13px]">
+                  <span className="min-w-0 grow text-preview md:text-meta">
                     {row.summary}
-                    {row.who && <span className="ml-2 text-xs text-muted-foreground">{row.who}</span>}
+                    {row.who && <span className="ml-2 text-meta text-muted-foreground">{row.who}</span>}
                   </span>
                 </>
               );
               const cls = "flex w-full items-baseline gap-3 px-4 py-2 text-left";
-              const link = cls + " press-tint hover:bg-muted/50";
+              const link = cls + "press-tint hover:bg-muted/50";
               return (
                 <li key={row.id} className="border-t first:border-t-0">
                   {row.item?.type === "task" ? (

@@ -114,7 +114,7 @@ export function SelectableClaudeList({
       <div className="flex min-h-9 items-center justify-between gap-3">
         {selecting ? (
           <>
-            <span className="text-[13px] font-medium">{ids.length === 0 ? `Select ${kind}s` : `${noun(ids.length)} selected`}</span>
+            <span className="text-meta font-medium">{ids.length === 0 ? `Select ${kind}s` : `${noun(ids.length)} selected`}</span>
             <span className="flex gap-1">
               <Button
                 variant="ghost"
@@ -158,7 +158,7 @@ export function SelectableClaudeList({
                       )}
                       aria-hidden
                     >
-                      {on && <Check className="size-3" strokeWidth={3} />}
+                      {on && <Check className="size-3" />}
                     </span>
                     {body}
                   </button>
@@ -189,7 +189,7 @@ export function SelectableClaudeList({
       </Card>
 
       {selecting && ids.length > 0 && (
-        <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-10 mt-1 flex flex-wrap items-center gap-2 rounded-xl border bg-card p-2 shadow-lg md:bottom-4">
+        <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-10 mt-1 flex flex-wrap items-center gap-2 rounded-xl border bg-card p-2 border-stroke md:bottom-4">
           <Picker label="Project" disabled={busy} onPick={setProject}>
             <option value="none">No project</option>
             {projects.map((p) => (
@@ -278,7 +278,7 @@ function Picker({
       value=""
       disabled={disabled}
       onChange={(e) => e.target.value && onPick(e.target.value)}
-      className="h-8 rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] font-medium shadow-xs disabled:opacity-50"
+      className="h-8 rounded-lg border bg-card px-2.5 text-body md:text-meta font-medium border-stroke-strong disabled:opacity-50"
     >
       <option value="" disabled>
         {label}

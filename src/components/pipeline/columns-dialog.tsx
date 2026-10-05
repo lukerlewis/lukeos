@@ -11,7 +11,7 @@ import { op } from "@/lib/ops-client";
 type Row = PipelineColumn & { count: number };
 
 const field =
-  "h-9 min-w-0 grow rounded-lg border bg-card px-2.5 text-[16px] shadow-xs outline-none focus-visible:border-ring md:text-[13px]";
+  "h-9 min-w-0 grow rounded-lg border bg-card px-2.5 text-body border-stroke-strong outline-none focus-visible:border-ring md:text-meta";
 
 /** Add, rename, reorder and delete a pipeline's columns. Each change saves straight away. */
 export function ColumnsDialog({ projectId, columns, onClose }: { projectId: string; columns: Row[]; onClose: () => void }) {
@@ -76,7 +76,7 @@ export function ColumnsDialog({ projectId, columns, onClose }: { projectId: stri
                 onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                 className={field}
               />
-              <span className="w-8 shrink-0 text-center text-xs text-muted-foreground" title="Cards in it">
+              <span className="w-8 shrink-0 text-center text-meta text-muted-foreground" title="Cards in it">
                 {row.count}
               </span>
               <Button variant="ghost" size="icon" onClick={() => shift(i, -1)} disabled={busy || i === 0} aria-label={`Move ${row.name} earlier`}>
@@ -106,7 +106,7 @@ export function ColumnsDialog({ projectId, columns, onClose }: { projectId: stri
               </Button>
             </div>
             {removing?.id === row.id && (
-              <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted p-2.5 text-[13px]">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted p-2.5 text-meta">
                 <span>
                   Move its {row.count} {row.count === 1 ? "card" : "cards"} to
                 </span>
@@ -114,7 +114,7 @@ export function ColumnsDialog({ projectId, columns, onClose }: { projectId: stri
                   value={removing.to}
                   onChange={(e) => setRemoving({ id: row.id, to: e.target.value })}
                   aria-label="Move its cards to"
-                  className="h-9 rounded-lg border bg-card px-2.5 text-[16px] shadow-xs md:text-[13px]"
+                  className="h-9 rounded-lg border bg-card px-2.5 text-body border-stroke-strong md:text-meta"
                 >
                   {rows
                     .filter((r) => r.id !== row.id)

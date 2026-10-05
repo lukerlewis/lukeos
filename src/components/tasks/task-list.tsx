@@ -89,15 +89,15 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
       >
         <span
           className={cn(
-            "min-w-0 grow text-[15px] font-medium break-words md:text-sm",
+            "min-w-0 grow text-control font-medium break-words",
             done && "text-muted-foreground line-through",
           )}
         >
           {task.title}
         </span>
-        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground empty:hidden md:shrink-0 md:flex-nowrap">
+        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-foreground empty:hidden md:shrink-0 md:flex-nowrap">
           <ClaudeBadge madeBy={task.madeBy} />
-          {task.priority === "high" && <span className="font-medium text-danger">{priorityLabel.high} priority</span>}
+          {task.priority === "high" && <span className="tag">{priorityLabel.high} priority</span>}
           {task.effort && <span>{effortLabel[task.effort]}</span>}
           {task.repeat && (
             <span className="inline-flex items-center gap-1" title={repeatLabel[task.repeat]}>
@@ -116,8 +116,8 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
             <span
               className={cn(
                 "font-medium md:w-20 md:text-right",
-                (late || dueToday) && "text-accent-today",
-                late && "text-danger",
+                (late || dueToday) && "text-ink",
+                late && "font-semibold text-ink",
               )}
             >
               {friendlyDay(due, today)}
@@ -181,7 +181,7 @@ export function QuickAdd({
         aria-label={placeholder}
         aria-busy={pending}
         enterKeyHint="done"
-        className="h-12 w-0 min-w-0 grow bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:h-11 md:text-sm"
+        className="h-12 w-0 min-w-0 grow bg-transparent text-body outline-none placeholder:text-muted-foreground md:h-11 md:text-sm"
       />
       <SmartChips parsed={parsed} dueDate={due} repeat={parsed.repeat} today={today} onDismiss={smart.dismiss} className="flex-nowrap" />
     </form>

@@ -20,15 +20,15 @@ export default async function AddDevicePage({ params }: PageProps<"/sign-in/add/
           L
         </span>
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{valid ? "Add this device" : "Link expired"}</h1>
-          <p className="text-[15px] text-muted-foreground">
+          <h1 className="text-2xl font-semibold">{valid ? "Add this device" : "Link expired"}</h1>
+          <p className="text-control text-muted-foreground">
             {valid ? "Create a passkey here to sign in." : "Make a new one in Settings on a signed-in device."}
           </p>
         </div>
         {valid ? (
           <AddThisDevice code={code} />
         ) : (
-          <Link href="/sign-in" className="text-[15px] font-medium text-primary">
+          <Link href="/sign-in" className="text-control font-medium text-primary">
             Back to sign in
           </Link>
         )}

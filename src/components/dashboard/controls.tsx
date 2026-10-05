@@ -10,7 +10,7 @@ import { pushUndo } from "@/lib/undo";
 import { statuses, statusLabel, type Status } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 
-const pill = "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap";
+const pill = "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[8px] px-3 text-preview font-medium whitespace-nowrap";
 
 /**
  * The switches at the top of the dashboard: the Today list or the Board, and a
@@ -63,7 +63,7 @@ export function DashboardControls({ view }: { view: DashboardView }) {
           <span className="text-xs font-medium text-muted-foreground" aria-hidden>
             Show
           </span>
-          <div role="group" aria-label="Show tasks that are" className="inline-flex gap-0.5 self-start rounded-[10px] bg-muted p-[3px]">
+          <div role="group" aria-label="Show tasks that are" className="inline-flex gap-0.5 self-start seg-track rounded-lg p-[3px]">
             {statuses.map((s) => {
               const on = current.show.includes(s);
               return (
@@ -73,7 +73,7 @@ export function DashboardControls({ view }: { view: DashboardView }) {
                   aria-pressed={on}
                   onClick={() => toggle(s)}
                   title={on ? `Hide ${statusLabel[s]}` : `Show ${statusLabel[s]}`}
-                  className={cn(pill, "text-muted-foreground", on && "bg-card text-foreground shadow-xs dark:bg-background")}
+                  className={cn(pill, "text-muted-foreground", on && "seg-on text-foreground")}
                 >
                   <StatusIcon status={s} className={cn("size-3.5", !on && "opacity-50")} />
                   {statusLabel[s]}
@@ -117,12 +117,12 @@ function Filters({ count, children }: { count: number; children: React.ReactNode
         <SlidersHorizontal className="size-3.5" aria-hidden />
         Filters
         {count > 0 && (
-          <span className="rounded-full bg-foreground px-1.5 text-[11px] leading-4 text-background tabular-nums">{count}</span>
+          <span className="rounded-full bg-foreground px-1.5 text-xs leading-4 text-background tabular-nums">{count}</span>
         )}
         <ChevronDown className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
-        <div className="motion-pop absolute right-0 z-30 mt-2 origin-top-right sm:right-auto sm:left-0 sm:origin-top-left flex w-max flex-col gap-4 rounded-xl border bg-card p-4 shadow-lg">{children}</div>
+        <div className="motion-pop absolute right-0 z-30 mt-2 origin-top-right sm:right-auto sm:left-0 sm:origin-top-left flex w-max flex-col gap-4 rounded-xl border bg-card p-4 border-stroke">{children}</div>
       )}
     </div>
   );
@@ -140,7 +140,7 @@ function Choice<T extends string>({
   options: { value: T; label: string; icon?: React.ComponentType<{ className?: string }> }[];
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex gap-0.5 rounded-[10px] bg-muted p-[3px]">
+    <div role="radiogroup" aria-label={label} className="inline-flex gap-0.5 seg-track rounded-lg p-[3px]">
       {options.map(({ value: v, label, icon: Icon }) => (
         <button
           key={v}
@@ -148,7 +148,7 @@ function Choice<T extends string>({
           role="radio"
           aria-checked={value === v}
           onClick={() => value !== v && onChange(v)}
-          className={cn(pill, "text-muted-foreground", value === v && "bg-card text-foreground shadow-xs dark:bg-background")}
+          className={cn(pill, "text-muted-foreground", value === v && "seg-on text-foreground")}
         >
           {Icon && <Icon className="size-3.5" aria-hidden />}
           {label}

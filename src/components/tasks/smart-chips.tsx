@@ -64,11 +64,11 @@ function Chip({ icon: Icon, label, onDismiss }: { icon: typeof Repeat; label: st
       type="button"
       onClick={onDismiss}
       aria-label={`${label}. Tap to keep these words in the name instead`}
-      className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-doing/12 pr-1.5 pl-2.5 text-[13px] font-medium whitespace-nowrap text-doing"
+      className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-stroke bg-muted pr-1.5 pl-2 text-xs font-medium whitespace-nowrap text-subtle-foreground"
     >
       <Icon className="size-3.5" aria-hidden />
       {label}
-      <X className="size-3.5 opacity-70" aria-hidden />
+      <X className="size-3.5 text-icon" aria-hidden />
     </button>
   );
 }
@@ -80,7 +80,7 @@ export function HighlightedText({ text, matches }: { text: string; matches: Smar
   for (const m of matches) {
     parts.push(text.slice(at, m.start));
     parts.push(
-      <mark key={m.start} className="rounded-sm bg-doing/12 text-doing">
+      <mark key={m.start} className="rounded-sm bg-selected text-ink">
         {text.slice(m.start, m.end)}
       </mark>,
     );

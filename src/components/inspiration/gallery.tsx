@@ -118,7 +118,7 @@ function Tile({ item, onOpen }: { item: InspirationItem; onOpen: () => void }) {
       type="button"
       onClick={onOpen}
       aria-label={label}
-      className="pressable group block w-full overflow-hidden rounded-xl border bg-card text-left shadow-xs hover:border-foreground/20"
+      className="pressable group block w-full overflow-hidden rounded-xl border bg-card text-left border-stroke hover:border-foreground/20"
     >
       {item.kind === "image" && <Picture item={item} className="transition-transform group-hover:scale-[1.015]" />}
 
@@ -137,8 +137,8 @@ function Tile({ item, onOpen }: { item: InspirationItem; onOpen: () => void }) {
             </span>
           )}
           <span className="flex flex-col gap-1 px-3 py-2.5">
-            {item.title && <span className="line-clamp-3 text-[14px] leading-snug font-medium md:text-[13px]">{item.title}</span>}
-            <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+            {item.title && <span className="line-clamp-3 text-preview leading-snug font-medium md:text-meta">{item.title}</span>}
+            <span className="flex items-center gap-1.5 truncate text-meta text-muted-foreground">
               {item.kind === "video" && !item.thumb ? <Play className="size-3 shrink-0" aria-hidden /> : <Globe className="size-3 shrink-0" aria-hidden />}
               {item.site}
             </span>
@@ -149,8 +149,8 @@ function Tile({ item, onOpen }: { item: InspirationItem; onOpen: () => void }) {
       {item.kind === "text" && (
         <span className="flex flex-col gap-2 px-4 py-4">
           <Quote className="size-4 text-muted-foreground" aria-hidden />
-          <span className="line-clamp-[12] font-serif text-[16px] leading-relaxed whitespace-pre-line md:text-[15px]">{item.body}</span>
-          {(item.title || item.site) && <span className="truncate text-xs text-muted-foreground">{item.title || item.site}</span>}
+          <span className="line-clamp-[12] text-body leading-relaxed whitespace-pre-line md:text-control">{item.body}</span>
+          {(item.title || item.site) && <span className="truncate text-meta text-muted-foreground">{item.title || item.site}</span>}
         </span>
       )}
 
@@ -159,8 +159,8 @@ function Tile({ item, onOpen }: { item: InspirationItem; onOpen: () => void }) {
           <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <FileText className="size-5" aria-hidden />
           </span>
-          <span className="line-clamp-2 text-[14px] leading-snug font-medium md:text-[13px]">{item.title || item.file?.name}</span>
-          {item.file && <span className="text-xs text-muted-foreground">{fileDetail(item.file)}</span>}
+          <span className="line-clamp-2 text-preview leading-snug font-medium md:text-meta">{item.title || item.file?.name}</span>
+          {item.file && <span className="text-meta text-muted-foreground">{fileDetail(item.file)}</span>}
         </span>
       )}
     </button>

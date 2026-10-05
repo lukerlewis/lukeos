@@ -32,8 +32,8 @@ export function Page({
 }) {
   return (
     <div className="flex min-w-0 grow flex-col">
-      <header className="hidden h-14 shrink-0 items-center border-b px-6 md:flex">
-        <span className="grow font-medium">{title}</span>
+      <header className="hidden h-14 shrink-0 items-center border-b border-stroke bg-muted px-6 md:flex">
+        <span className="grow font-medium text-foreground">{title}</span>
         {addNew ? <AddNew /> : newTask !== false && <NewTaskHeaderButton defaults={newTask} />}
       </header>
       <div
@@ -44,8 +44,8 @@ export function Page({
       >
         <div className="flex items-end justify-between gap-4 pt-8 md:pt-0">
           <div className="min-w-0">
-            {eyebrow && <div className="text-[13px] text-muted-foreground">{eyebrow}</div>}
-            <h1 className="mt-0.5 text-[30px] font-semibold tracking-tight break-words md:mt-1 md:text-[28px]">
+            {eyebrow && <div className="text-meta text-muted-foreground">{eyebrow}</div>}
+            <h1 className="mt-0.5 text-title font-semibold break-words text-ink md:mt-1">
               {heading ?? title}
             </h1>
           </div>
@@ -54,7 +54,7 @@ export function Page({
           <Link
             href="/settings"
             aria-label="Settings"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground md:hidden"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-grey-300 font-medium text-foreground md:hidden"
           >
             L
           </Link>
@@ -68,5 +68,5 @@ export function Page({
 }
 
 export function EmptyState({ children }: { children: React.ReactNode }) {
-  return <p className="px-4 py-6 text-center text-[13px] text-muted-foreground">{children}</p>;
+  return <p className="px-4 py-6 text-center text-meta text-muted-foreground">{children}</p>;
 }

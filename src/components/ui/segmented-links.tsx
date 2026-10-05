@@ -12,7 +12,7 @@ export function SegmentedLinks({
   className?: string;
 }) {
   return (
-    <nav aria-label={label} className={cn("inline-flex gap-0.5 rounded-[10px] bg-muted p-[3px]", className)}>
+    <nav aria-label={label} className={cn("seg-track inline-flex gap-0.5 rounded-lg p-[3px]", className)}>
       {options.map(({ href, label, icon: Icon, active }) => (
         <Link
           key={href}
@@ -21,11 +21,11 @@ export function SegmentedLinks({
           scroll={false}
           aria-current={active ? "page" : undefined}
           className={cn(
-            "press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap text-muted-foreground",
-            active && "bg-card text-foreground shadow-xs dark:bg-background",
+            "press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[8px] px-3 text-preview font-medium whitespace-nowrap text-muted-foreground",
+            active && "seg-on text-foreground",
           )}
         >
-          {Icon && <Icon className="size-3.5" aria-hidden />}
+          {Icon && <Icon className="size-4" aria-hidden />}
           {label}
         </Link>
       ))}

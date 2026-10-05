@@ -1,5 +1,11 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+// The design system's own text sizes (globals.css), so `text-meta` counts as a
+// size and doesn't knock out a text colour like `text-primary-foreground`.
+const twMerge = extendTailwindMerge({
+  extend: { theme: { text: ["tag", "meta", "preview", "control", "body", "heading", "section", "title", "display"] } },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

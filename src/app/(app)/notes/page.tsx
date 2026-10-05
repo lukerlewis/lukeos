@@ -57,7 +57,7 @@ export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
           {folder.project && (
             <Link
               href={`/projects/${folder.project.id}?view=notes`}
-              className="-mt-3 inline-flex items-center gap-1.5 self-start text-[13px] text-muted-foreground hover:text-foreground"
+              className="-mt-3 inline-flex items-center gap-1.5 self-start text-meta text-muted-foreground hover:text-foreground"
             >
               <span className="size-2 rounded-[3px]" style={{ background: folder.project.hex }} aria-hidden />
               {folder.project.name}

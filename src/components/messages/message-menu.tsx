@@ -73,7 +73,7 @@ export function MessageMenu({
   const below = rect.bottom + GAP + 150 < window.innerHeight - BOTTOM_ROOM || rect.top < 200;
   const place = below ? { top: rect.bottom + GAP } : { bottom: window.innerHeight - rect.top + GAP };
 
-  const item = "press-tint flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-[15px] md:py-2 md:text-sm";
+  const item = "press-tint flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-control md:py-2";
   const run = (fn: () => void) => () => {
     onClose();
     fn();
@@ -86,7 +86,7 @@ export function MessageMenu({
         aria-label="Message"
         style={{ ...side, width: MENU_W, ...place }}
         className={cn(
-          "motion-pop fixed flex flex-col rounded-xl border bg-card p-1 shadow-lg",
+          "motion-pop fixed flex flex-col rounded-xl border bg-card p-1 border-stroke",
           below ? (mine ? "origin-top-right" : "origin-top-left") : mine ? "origin-bottom-right" : "origin-bottom-left",
         )}
       >
@@ -107,7 +107,7 @@ export function MessageMenu({
           </button>
         )}
         {mine && (
-          <button type="button" role="menuitem" className={cn(item, "text-danger")} onClick={run(onUnsend)}>
+          <button type="button" role="menuitem" className={item} onClick={run(onUnsend)}>
             Unsend
             <Undo2 className="size-4" aria-hidden />
           </button>

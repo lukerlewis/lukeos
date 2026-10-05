@@ -70,14 +70,14 @@ async function AppShell({ children }: { children: React.ReactNode }) {
 function ShellLoading() {
   return (
     <div className="flex min-h-dvh md:h-dvh">
-      <aside className="hidden w-64 shrink-0 flex-col gap-[18px] border-r bg-sidebar px-3 py-3.5 md:flex" aria-hidden>
+      <aside className="hidden w-60 shrink-0 flex-col gap-4 border-r bg-sidebar px-3 py-3.5 md:flex" aria-hidden>
         <div className="flex items-center gap-2.5 px-2 py-1.5">
-          <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-[13px] font-semibold text-primary-foreground">
+          <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-semibold text-primary-foreground">
             L
           </span>
-          <span className="font-semibold">Luke&apos;s space</span>
+          <span className="font-semibold text-ink">Luke&apos;s space</span>
         </div>
-        <div className="h-9 rounded-lg border bg-card shadow-xs" />
+        <div className="h-10 rounded-lg border border-stroke-strong bg-card" />
         <div className="flex animate-pulse flex-col gap-3 px-2.5 pt-1">
           {[60, 45, 55, 50, 40].map((w, i) => (
             <div key={i} className="h-3.5 rounded bg-muted" style={{ width: `${w}%` }} />

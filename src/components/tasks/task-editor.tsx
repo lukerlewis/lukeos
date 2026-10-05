@@ -292,7 +292,7 @@ function TaskDialog({
           <button
             type="button"
             onClick={() => setMore(true)}
-            className="mx-5 mt-3 flex items-center gap-1 self-start text-[13px] font-medium text-muted-foreground md:hidden"
+            className="mx-5 mt-3 flex items-center gap-1 self-start text-meta font-medium text-muted-foreground md:hidden"
           >
             Show more
             <ChevronDown className="size-4" aria-hidden />
@@ -328,7 +328,7 @@ function TaskDialog({
                   value={dueDate ?? ""}
                   onChange={(e) => pickDue(e.target.value || null)}
                   aria-label="Due date"
-                  className="h-9 rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs"
+                  className="h-9 rounded-lg border bg-card px-2.5 text-body md:text-meta border-stroke-strong"
                 />
                 {dueChoices.map((c) => (
                   <Chip key={c.label} active={dueDate === c.value} onClick={() => pickDue(c.value)}>
@@ -344,7 +344,7 @@ function TaskDialog({
                 value={repeat ?? ""}
                 onChange={(e) => pickRepeat((e.target.value || null) as Repeat | null)}
                 aria-label="Repeat"
-                className="h-9 w-full rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs sm:w-auto sm:min-w-56"
+                className="h-9 w-full rounded-lg border bg-card px-2.5 text-body md:text-meta border-stroke-strong sm:w-auto sm:min-w-56"
               >
                 <option value="">Never</option>
                 {repeats.map((r) => (
@@ -376,7 +376,7 @@ function TaskDialog({
                 value={draft.projectId ?? ""}
                 onChange={(e) => set("projectId", e.target.value || null)}
                 aria-label="Project"
-                className="h-9 w-full rounded-lg border bg-card px-2.5 text-[16px] md:text-[13px] shadow-xs sm:w-auto sm:min-w-56"
+                className="h-9 w-full rounded-lg border bg-card px-2.5 text-body md:text-meta border-stroke-strong sm:w-auto sm:min-w-56"
               >
                 <option value="">No project</option>
                 {projects.map((p) => (
@@ -394,21 +394,21 @@ function TaskDialog({
                 placeholder="Add details, links or a checklist…"
                 aria-label="Notes"
                 rows={4}
-                className="field-sizing-content min-h-24 w-full resize-none rounded-lg border bg-card px-3 py-2 text-[16px] md:text-[14px] shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring"
+                className="field-sizing-content min-h-24 w-full resize-none rounded-lg border bg-card px-3 py-2 text-body md:text-preview border-stroke-strong outline-none placeholder:text-muted-foreground focus-visible:border-ring"
               />
             </Field>
 
             {draft.id && <TaskComments taskId={draft.id} timeZone={timeZone} />}
 
             {draft.madeBy && draft.createdAt && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-meta text-muted-foreground">
                 <MadeByLabel madeBy={draft.madeBy} createdAt={draft.createdAt} />
               </p>
             )}
           </div>
 
           {error && (
-            <p role="alert" className="text-[13px] text-danger">
+            <p role="alert" className="text-meta text-danger">
               {error}
             </p>
           )}
@@ -470,7 +470,7 @@ function Chip({ active, onClick, children }: { active?: boolean; onClick: () => 
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="h-8 rounded-full border px-3 text-[13px] font-medium text-subtle-foreground hover:bg-muted aria-pressed:border-foreground aria-pressed:text-foreground"
+      className="h-9 rounded-lg border border-stroke px-3 text-preview font-medium text-subtle-foreground hover:bg-muted aria-pressed:border-transparent aria-pressed:bg-selected aria-pressed:text-ink"
     >
       {children}
     </button>

@@ -16,7 +16,7 @@ export function CopyAddress({ address, label = "Copy connector address" }: { add
 
   return (
     <div className="flex items-center gap-2 rounded-lg border bg-muted px-3 py-2">
-      <code className="grow truncate text-[13px] select-all">{address}</code>
+      <code className="grow truncate text-meta select-all">{address}</code>
       <Button variant="ghost" size="sm" onClick={copy} aria-label={label}>
         {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
         {copied ? "Copied" : "Copy"}

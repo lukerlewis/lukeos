@@ -10,7 +10,7 @@ import { whenShort } from "./when";
 export function RunHistory({ runs, timeZone }: { runs: RoutineRun[]; timeZone: string }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-[13px] font-medium text-muted-foreground">History</h2>
+      <h2 className="text-meta font-medium text-muted-foreground">History</h2>
       <Card>
         {runs.length === 0 ? (
           <EmptyState>No runs yet.</EmptyState>
@@ -18,22 +18,22 @@ export function RunHistory({ runs, timeZone }: { runs: RoutineRun[]; timeZone: s
           <ul>
             {runs.map((run) => (
               <li key={run.id} className="flex flex-col gap-1 border-b px-4 py-3 last:border-b-0">
-                <span className="flex items-center gap-2 text-[13px]">
+                <span className="flex items-center gap-2 text-meta">
                   <RunStatusPill status={run.status} />
                   <span className="font-medium">Due {whenShort(run.dueAt, timeZone)}</span>
                   <span className="grow" />
                   {run.finishedAt && (
-                    <span className="text-xs text-muted-foreground">Finished {whenShort(run.finishedAt, timeZone)}</span>
+                    <span className="text-meta text-muted-foreground">Finished {whenShort(run.finishedAt, timeZone)}</span>
                   )}
                 </span>
-                {run.summary && <p className="text-[13px] text-muted-foreground">{run.summary}</p>}
+                {run.summary && <p className="text-meta text-muted-foreground">{run.summary}</p>}
                 {run.status === "missed" && (
-                  <p className="text-[13px] text-muted-foreground">No check-in picked it up in time, so it was skipped.</p>
+                  <p className="text-meta text-muted-foreground">No check-in picked it up in time, so it was skipped.</p>
                 )}
                 {run.document && (
                   <Link
                     href={`/documents/${run.document.id}`}
-                    className="press inline-flex items-center gap-1.5 self-start text-[13px] font-medium text-foreground hover:underline"
+                    className="press inline-flex items-center gap-1.5 self-start text-meta font-medium text-foreground hover:underline"
                   >
                     <FileText className="size-3.5 text-muted-foreground" aria-hidden />
                     {run.document.title}
@@ -42,7 +42,7 @@ export function RunHistory({ runs, timeZone }: { runs: RoutineRun[]; timeZone: s
                 {run.artifact && (
                   <Link
                     href={`/artifacts/${run.artifact.id}`}
-                    className="press inline-flex items-center gap-1.5 self-start text-[13px] font-medium text-foreground hover:underline"
+                    className="press inline-flex items-center gap-1.5 self-start text-meta font-medium text-foreground hover:underline"
                   >
                     <Package className="size-3.5 text-muted-foreground" aria-hidden />
                     {run.artifact.title}

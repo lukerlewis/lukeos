@@ -31,7 +31,7 @@ export function AddThisDevice({ code }: { code: string }) {
         {busy ? "Waiting for your device…" : "Create passkey"}
       </Button>
       {error && (
-        <p role="alert" className="text-[13px] text-danger">
+        <p role="alert" className="text-meta text-danger">
           {error}
         </p>
       )}

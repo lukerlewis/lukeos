@@ -18,7 +18,7 @@ export function EntryGrid({ entries }: { entries: EntrySummary[] }) {
           <li key={e.id} className="min-w-0">
             <Link
               href={`/archive/${e.id}`}
-              className="pressable group flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-xs hover:border-foreground/20"
+              className="pressable group flex h-full flex-col overflow-hidden rounded-xl border bg-card border-stroke hover:border-foreground/20"
             >
               <span className="relative block aspect-[4/3] overflow-hidden bg-muted">
                 {e.cover ? (
@@ -26,7 +26,7 @@ export function EntryGrid({ entries }: { entries: EntrySummary[] }) {
                   <img src={e.cover} alt="" loading="lazy" className="size-full object-cover transition-transform group-hover:scale-[1.02]" />
                 ) : (
                   <span className="flex size-full items-center justify-center text-muted-foreground/60">
-                    <Icon className="size-8" strokeWidth={1.5} aria-hidden />
+                    <Icon className="size-8" aria-hidden />
                   </span>
                 )}
                 {(e.stage !== "raw" || e.confidential) && (
@@ -34,7 +34,7 @@ export function EntryGrid({ entries }: { entries: EntrySummary[] }) {
                     {e.stage !== "raw" && (
                       <span
                         className={cn(
-                          "rounded-full px-2 py-0.5 text-[11px] font-medium shadow-xs",
+                          "rounded-full px-2 py-0.5 text-xs font-medium",
                           e.stage === "published" ? "bg-primary text-primary-foreground" : "bg-card text-foreground",
                         )}
                       >
@@ -42,7 +42,7 @@ export function EntryGrid({ entries }: { entries: EntrySummary[] }) {
                       </span>
                     )}
                     {e.confidential && (
-                      <span className="flex size-[22px] items-center justify-center rounded-full bg-card text-foreground shadow-xs" title="Confidential">
+                      <span className="flex size-[22px] items-center justify-center rounded-full border border-stroke bg-card text-foreground" title="Confidential">
                         <Lock className="size-3" aria-label="Confidential" />
                       </span>
                     )}
@@ -50,8 +50,8 @@ export function EntryGrid({ entries }: { entries: EntrySummary[] }) {
                 )}
               </span>
               <span className="flex grow flex-col gap-1 px-3 py-2.5">
-                <span className="line-clamp-2 text-[15px] leading-snug font-medium md:text-sm">{e.title || "Untitled"}</span>
-                <span className="truncate text-xs text-muted-foreground">{details}</span>
+                <span className="line-clamp-2 text-control leading-snug font-medium">{e.title || "Untitled"}</span>
+                <span className="truncate text-meta text-muted-foreground">{details}</span>
                 {e.madeBy.kind === "agent" && (
                   <span className="mt-auto pt-1">
                     <ClaudeBadge madeBy={e.madeBy} />

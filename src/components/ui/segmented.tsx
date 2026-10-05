@@ -15,7 +15,7 @@ export function Segmented<T extends string>({
   className?: string;
 }) {
   return (
-    <div role="radiogroup" className={cn("flex gap-0.5 rounded-[10px] bg-muted p-[3px]", className)}>
+    <div role="radiogroup" className={cn("seg-track flex gap-0.5 rounded-lg p-[3px]", className)}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -24,8 +24,8 @@ export function Segmented<T extends string>({
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "h-8 grow rounded-lg px-2.5 text-[13px] font-medium text-muted-foreground",
-            value === o.value && "bg-card text-foreground shadow-xs dark:bg-background",
+            "h-9 grow rounded-[8px] px-2.5 text-preview font-medium text-muted-foreground",
+            value === o.value && "seg-on text-foreground",
           )}
         >
           {o.label}

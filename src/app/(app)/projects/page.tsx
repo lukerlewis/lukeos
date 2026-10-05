@@ -28,32 +28,32 @@ export default async function ProjectsPage() {
       <Card className="md:hidden">
         <Link href="/tasks" className="press-tint flex min-h-14 items-center gap-3 px-4 py-3">
           <CheckSquare className="size-[18px] text-muted-foreground" aria-hidden />
-          <span className="grow text-[15px] font-medium">All tasks</span>
+          <span className="grow text-control font-medium">All tasks</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/documents" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
           <FileText className="size-[18px] text-muted-foreground" aria-hidden />
-          <span className="grow text-[15px] font-medium">Documents</span>
+          <span className="grow text-control font-medium">Documents</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/inspiration" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
           <Lightbulb className="size-[18px] text-muted-foreground" aria-hidden />
-          <span className="grow text-[15px] font-medium">Inspiration</span>
+          <span className="grow text-control font-medium">Inspiration</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/archive" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
           <Archive className="size-[18px] text-muted-foreground" aria-hidden />
-          <span className="grow text-[15px] font-medium">Work archive</span>
+          <span className="grow text-control font-medium">Work archive</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/agents" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
           <Bot className="size-[18px] text-muted-foreground" aria-hidden />
-          <span className="grow text-[15px] font-medium">Agents</span>
+          <span className="grow text-control font-medium">Agents</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/trash" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
           <Trash2 className="size-[18px] text-muted-foreground" aria-hidden />
-          <span className="grow text-[15px] font-medium">Trash</span>
+          <span className="grow text-control font-medium">Trash</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
       </Card>
@@ -67,9 +67,9 @@ export default async function ProjectsPage() {
               <li key={p.id} className="border-b last:border-b-0">
                 <Link href={`/projects/${p.id}`} className="press-tint flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-muted/50">
                   <span className="size-3 shrink-0 rounded-[4px]" style={{ background: colorHex(p.color) }} aria-hidden />
-                  <span className="grow truncate text-[15px] font-medium md:text-sm">{p.name}</span>
+                  <span className="grow truncate text-control font-medium">{p.name}</span>
                   <ClaudeBadge madeBy={p.madeBy} />
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="shrink-0 text-meta text-muted-foreground">
                     {p.openTasks === 0 ? "Nothing open" : `${p.openTasks} open`}
                   </span>
                 </Link>

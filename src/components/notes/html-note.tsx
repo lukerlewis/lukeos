@@ -55,15 +55,15 @@ export function HtmlNote({ note, projects }: { note: Note; projects: { id: strin
 
   return (
     <div className="flex flex-col gap-3">
-      <h1 className="text-[30px] leading-tight font-semibold tracking-tight break-words md:text-[28px]">
+      <h1 className="text-title leading-tight font-semibold break-words md:text-title">
         {note.title || "Untitled"}
       </h1>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">
         <select
           value={projectId ?? ""}
           onChange={(e) => move(e.target.value || null)}
           aria-label="Project"
-          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-[16px] text-foreground md:text-[13px] shadow-xs"
+          className="h-8 max-w-56 rounded-lg border bg-card px-2 text-body text-foreground md:text-meta border-stroke-strong"
         >
           <option value="">No project</option>
           {projects.map((p) => (
@@ -88,7 +88,7 @@ export function HtmlNote({ note, projects }: { note: Note; projects: { id: strin
         srcDoc={note.content}
         sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
         referrerPolicy="no-referrer"
-        className="h-[calc(100dvh-16rem)] min-h-[480px] w-full rounded-xl border bg-white shadow-xs"
+        className="h-[calc(100dvh-16rem)] min-h-[480px] w-full rounded-xl border bg-white border-stroke"
       />
     </div>
   );

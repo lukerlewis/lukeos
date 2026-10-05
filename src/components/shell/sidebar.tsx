@@ -44,23 +44,23 @@ export function Sidebar({
   };
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col gap-[18px] border-r bg-sidebar px-3 py-3.5 md:flex">
+    <aside className="hidden w-60 shrink-0 flex-col gap-4 border-r bg-sidebar px-3 py-3.5 md:flex">
       <div className="flex items-center gap-2.5 px-2 py-1.5">
-        <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-[13px] font-semibold text-primary-foreground">
+        <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-semibold text-primary-foreground">
           L
         </span>
-        <span className="font-semibold">Luke&apos;s space</span>
+        <span className="font-semibold text-ink">Luke&apos;s space</span>
       </div>
 
       <button
         type="button"
         onClick={openMenu}
         aria-keyshortcuts={isMac ? "Meta+K" : "Control+K"}
-        className="pressable flex h-9 items-center gap-2 rounded-lg border bg-card px-2.5 text-left whitespace-nowrap text-muted-foreground shadow-xs hover:text-foreground"
+        className="pressable flex h-10 items-center gap-2 rounded-lg border border-stroke-strong bg-card px-3 text-left whitespace-nowrap text-muted-foreground hover:text-foreground"
       >
-        <Search className="size-[15px]" aria-hidden />
+        <Search className="size-4 text-icon" aria-hidden />
         <span className="grow truncate">Search</span>
-        <kbd className="rounded-[5px] border bg-sidebar px-1.5 font-mono text-[11px]">{isMac ? "⌘K" : "Ctrl K"}</kbd>
+        <kbd className="rounded-md border border-stroke bg-muted px-1.5 text-xs">{isMac ? "⌘K" : "Ctrl K"}</kbd>
       </button>
 
       <nav className="flex flex-col gap-0.5" aria-label="Main">
@@ -70,13 +70,13 @@ export function Sidebar({
       </nav>
 
       <div className="-mx-1 flex min-h-0 flex-col gap-0.5 overflow-y-auto px-1">
-        <div className="flex items-center justify-between px-2.5 pb-1.5 text-xs font-medium text-muted-foreground">
+        <div className="flex items-center justify-between px-3 pb-1 text-meta font-medium text-muted-foreground">
           <Link href="/projects" className="hover:text-foreground">
             Projects
           </Link>
           <NewProjectIconButton />
         </div>
-        {projects.length === 0 && <p className="px-2.5 text-[13px] text-muted-foreground">No projects yet</p>}
+        {projects.length === 0 && <p className="px-3 text-meta text-muted-foreground">No projects yet</p>}
         {projects.map((p) => {
           const href = `/projects/${p.id}`;
           const active = pathname === href;
@@ -86,13 +86,15 @@ export function Sidebar({
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "pressable flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-subtle-foreground hover:bg-muted",
-                active && "bg-muted font-medium text-foreground",
+                "pressable flex h-11 items-center gap-3 rounded-lg px-3 text-control text-muted-foreground hover:bg-muted",
+                active && "bg-selected font-medium text-ink",
               )}
             >
-              <span className="size-2.5 shrink-0 rounded-[3px]" style={{ background: p.hex }} aria-hidden />
+              <span className="flex size-[18px] shrink-0 items-center justify-center" aria-hidden>
+                <span className="size-2.5 rounded-[3px]" style={{ background: p.hex }} />
+              </span>
               <span className="grow truncate">{p.name}</span>
-              {p.open > 0 && <span className="text-xs text-muted-foreground">{p.open}</span>}
+              {p.open > 0 && <span className="text-meta text-muted-foreground">{p.open}</span>}
             </Link>
           );
         })}
@@ -127,14 +129,14 @@ function NavLink({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "pressable flex h-[34px] items-center gap-2.5 rounded-lg px-2.5 font-medium text-subtle-foreground hover:bg-muted",
-        active && "bg-muted font-semibold text-foreground",
+        "group pressable flex h-11 items-center gap-3 rounded-lg px-3 text-control text-muted-foreground hover:bg-muted",
+        active && "bg-selected font-medium text-ink",
       )}
     >
-      <Icon className="size-4" />
+      <Icon className={cn("size-[18px]", active ? "text-foreground" : "text-icon")} aria-hidden />
       <span className="grow">{label}</span>
       {!!count && (
-        <span className="min-w-5 rounded-full bg-doing px-1.5 text-center text-[11px] leading-5 font-semibold text-white dark:text-background">
+        <span className="min-w-5 rounded-full bg-notification px-1.5 text-center text-xs leading-5 font-medium text-on-notification">
           {count}
           <span className="sr-only"> new</span>
         </span>

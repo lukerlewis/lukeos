@@ -10,7 +10,7 @@ import { op } from "@/lib/ops-client";
 type Existing = { id: string; name: string; projectId: string | null };
 type ProjectOption = { id: string; name: string };
 
-const field = "h-10 rounded-lg border bg-card px-3 text-[16px] shadow-xs outline-none md:text-[15px] focus-visible:border-ring";
+const field = "h-10 rounded-lg border bg-card px-3 text-body border-stroke-strong outline-none md:text-control focus-visible:border-ring";
 
 export function FolderDialog({
   folder,
@@ -86,7 +86,7 @@ export function FolderDialog({
           </select>
         </label>
         {error && (
-          <p role="alert" className="text-[13px] text-danger">
+          <p role="alert" className="text-meta text-danger">
             {error}
           </p>
         )}

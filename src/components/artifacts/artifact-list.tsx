@@ -16,11 +16,11 @@ export function ArtifactList({ artifacts, timeZone }: { artifacts: ArtifactSumma
               <Icon className="mt-0.5 size-[18px] shrink-0 text-muted-foreground md:size-4" aria-hidden />
               <span className="flex min-w-0 grow flex-col gap-0.5">
                 <span className="flex items-baseline gap-3">
-                  <span className="min-w-0 grow truncate text-[15px] font-medium md:text-sm">{a.title || "Untitled"}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{editedLabel(a.changedAt, timeZone)}</span>
+                  <span className="min-w-0 grow truncate text-control font-medium">{a.title || "Untitled"}</span>
+                  <span className="shrink-0 text-meta text-muted-foreground">{editedLabel(a.changedAt, timeZone)}</span>
                 </span>
-                {a.excerpt && <span className="line-clamp-2 text-[13px] text-muted-foreground">{a.excerpt}</span>}
-                <span className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+                {a.excerpt && <span className="line-clamp-2 text-meta text-muted-foreground">{a.excerpt}</span>}
+                <span className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-foreground">
                   <ClaudeBadge madeBy={a.madeBy} />
                   {a.madeBy.routine && <span>{a.madeBy.routine}</span>}
                   {a.version > 1 && <span>Version {a.version}</span>}

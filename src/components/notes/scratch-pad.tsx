@@ -26,7 +26,7 @@ export function ScratchPad({ id, content }: { id: string; content: string }) {
     ],
     content,
     contentType: "markdown",
-    editorProps: { attributes: { class: "note-body min-h-28! text-[16px]! md:text-[14px]!", "aria-label": "Scratch pad" } },
+    editorProps: { attributes: { class: "note-body min-h-28! text-body! md:text-preview!", "aria-label": "Scratch pad" } },
     onUpdate: ({ editor }) => queue({ content: editor.getMarkdown() }),
   });
 
@@ -35,7 +35,7 @@ export function ScratchPad({ id, content }: { id: string; content: string }) {
       <div className="max-h-[50dvh] cursor-text overflow-y-auto" onClick={(e) => e.target === e.currentTarget && editor?.commands.focus("end")}>
         <EditorContent editor={editor} />
       </div>
-      <span className="text-right text-xs text-muted-foreground" aria-live="polite">
+      <span className="text-right text-meta text-muted-foreground" aria-live="polite">
         {state === "saving" ? "Saving…" : state === "error" ? "Not saved yet, retrying" : "Saved"}
       </span>
     </div>

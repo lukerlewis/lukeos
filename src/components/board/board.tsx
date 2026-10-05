@@ -164,7 +164,7 @@ export function Board({
         })}
       </div>
       <DragOverlay dropAnimation={null}>
-        {dragging && <CardBody task={dragging} today={today} showProject={showProject} className="motion-lift scale-[1.03] rotate-1 shadow-lg" />}
+        {dragging && <CardBody task={dragging} today={today} showProject={showProject} className="motion-lift scale-[1.03] rotate-1" />}
       </DragOverlay>
     </DndContext>
   );
@@ -212,7 +212,7 @@ function BoardColumn({
       </header>
       <ul className="flex flex-col gap-2">
         {count === 0 ? (
-          <li className="flex h-16 items-center justify-center rounded-[10px] border border-dashed text-xs text-muted-foreground">
+          <li className="flex h-16 items-center justify-center rounded-[10px] border border-dashed text-meta text-muted-foreground">
             Nothing here
           </li>
         ) : (
@@ -291,7 +291,7 @@ function CardBody({
     <div
       {...rest}
       className={cn(
-        "pressable flex cursor-grab touch-manipulation flex-col gap-2 rounded-[10px] border bg-card p-3 text-left shadow-xs select-none [-webkit-touch-callout:none] active:cursor-grabbing",
+        "pressable flex cursor-grab touch-manipulation flex-col gap-2 rounded-[10px] border bg-card p-3 text-left border-stroke select-none [-webkit-touch-callout:none] active:cursor-grabbing",
         done && "opacity-60",
         className,
       )}
@@ -315,13 +315,13 @@ function CardBody({
         </span>
       </div>
       {meta && (
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-[26px] text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-[26px] text-meta text-muted-foreground">
           {due && (
-            <span className={cn("font-medium", dueToday && "text-accent-today", late && "text-danger")}>
+            <span className={cn("font-medium", dueToday && "text-ink", late && "font-semibold text-ink")}>
               {friendlyDay(due, today)}
             </span>
           )}
-          {task.priority === "high" && <span className="font-medium text-danger">{priorityLabel.high}</span>}
+          {task.priority === "high" && <span className="tag">{priorityLabel.high}</span>}
           {task.effort && <span>{effortLabel[task.effort]}</span>}
           {task.repeat && (
             <span className="inline-flex items-center" title={repeatLabel[task.repeat]}>

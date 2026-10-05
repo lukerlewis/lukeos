@@ -40,10 +40,10 @@ function Preview({ content }: { content: string }) {
     .trim();
   return (
     <div className="flex flex-col gap-2 p-4" aria-busy="true">
-      <div className="note-body max-h-[50dvh] min-h-28 overflow-y-auto text-[16px]! whitespace-pre-wrap md:text-[14px]!">
+      <div className="note-body max-h-[50dvh] min-h-28 overflow-y-auto text-body! whitespace-pre-wrap md:text-preview!">
         {text ? text : <span className="text-muted-foreground">Jot things down. Type @claude to ask Claude to do something.</span>}
       </div>
-      <span className="text-right text-xs text-muted-foreground">Saved</span>
+      <span className="text-right text-meta text-muted-foreground">Saved</span>
     </div>
   );
 }

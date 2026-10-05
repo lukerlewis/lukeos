@@ -17,7 +17,7 @@ export function StorageMeter({ used, limit }: { used: number; limit: number }) {
           style={{ width: `${Math.max(share * 100, used > 0 ? 1 : 0)}%` }}
         />
       </div>
-      <span className="text-[13px] text-muted-foreground">
+      <span className="text-meta text-muted-foreground">
         {formatBytes(used)} of {formatBytes(limit)}
       </span>
     </div>
@@ -27,8 +27,8 @@ export function StorageMeter({ used, limit }: { used: number; limit: number }) {
 /** Shown at the top of Inspiration once storage is getting full. */
 export function StorageNotice({ used, limit, full }: { used: number; limit: number; full: boolean }) {
   return (
-    <div className="flex max-w-3xl flex-col gap-2 rounded-xl border border-danger/40 bg-card px-4 py-3 shadow-xs">
-      <span className="text-sm font-medium">{full ? "Storage is full" : "Storage is nearly full"}</span>
+    <div className="flex max-w-3xl flex-col gap-2 rounded-xl border border-stroke bg-card px-4 py-3">
+      <span className="font-medium text-foreground">{full ? "Storage is full" : "Storage is nearly full"}</span>
       <StorageMeter used={used} limit={limit} />
     </div>
   );

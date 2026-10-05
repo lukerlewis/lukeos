@@ -178,7 +178,7 @@ async function RoutinesPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
     <Page title="Agents" newTask={false} actions={<NewRoutineButton />}>
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch}
-        <p className="text-[13px] text-muted-foreground">Check-ins at {checkInsLabel(checkIns)}.</p>
+        <p className="text-meta text-muted-foreground">Check-ins at {checkInsLabel(checkIns)}.</p>
         <Card>
           {routines.length === 0 ? (
             <EmptyState>No routines yet.</EmptyState>

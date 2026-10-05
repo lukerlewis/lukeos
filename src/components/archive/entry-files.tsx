@@ -90,7 +90,7 @@ export function EntryFiles({ entryId, files: initial, onChange }: { entryId: str
   return (
     <section aria-label="Files and links" className="flex flex-col gap-2">
       {files.length > 0 && (
-        <ul className="overflow-hidden rounded-xl border bg-card shadow-xs">
+        <ul className="overflow-hidden rounded-xl border bg-card border-stroke">
           {files.map((f) => {
             const Icon = iconOf(f);
             return (
@@ -102,8 +102,8 @@ export function EntryFiles({ entryId, files: initial, onChange }: { entryId: str
                   className="press-tint flex min-h-12 min-w-0 grow items-center gap-3 px-3 py-2 hover:bg-muted/50"
                 >
                   <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                  <span className="min-w-0 grow truncate text-[15px] md:text-sm">{f.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{detailOf(f)}</span>
+                  <span className="min-w-0 grow truncate text-control">{f.name}</span>
+                  <span className="shrink-0 text-meta text-muted-foreground">{detailOf(f)}</span>
                 </a>
                 <button
                   type="button"

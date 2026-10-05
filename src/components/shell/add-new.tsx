@@ -73,7 +73,7 @@ export function AddNew() {
       {open === "menu" && (
         <div
           role="menu"
-          className="motion-pop absolute top-full right-0 z-30 mt-2 flex w-56 origin-top-right flex-col rounded-xl border bg-card p-1 shadow-lg"
+          className="motion-pop absolute top-full right-0 z-30 mt-2 flex w-56 origin-top-right flex-col rounded-xl border bg-card p-1 border-stroke"
         >
           {items.map(({ label, icon: Icon, run }) => (
             <button
@@ -84,7 +84,7 @@ export function AddNew() {
                 setOpen(null);
                 void run();
               }}
-              className="press-tint flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] font-medium hover:bg-muted"
+              className="press-tint flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-meta font-medium hover:bg-muted"
             >
               <Icon className="size-4 text-muted-foreground" aria-hidden />
               {label}

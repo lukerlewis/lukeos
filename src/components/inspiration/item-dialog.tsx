@@ -72,7 +72,7 @@ function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {tags.map((tag) => (
-        <span key={tag} className="inline-flex h-7 items-center gap-1 rounded-full bg-muted pr-1 pl-2.5 text-[13px]">
+        <span key={tag} className="inline-flex h-7 items-center gap-1 rounded-full bg-muted pr-1 pl-2.5 text-meta">
           {tag}
           <button
             type="button"
@@ -96,7 +96,7 @@ function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string
         onBlur={add}
         placeholder="Add tag"
         aria-label="Add tag"
-        className="h-7 min-w-24 grow bg-transparent px-1 text-[16px] outline-none placeholder:text-muted-foreground md:text-[13px]"
+        className="h-7 min-w-24 grow bg-transparent px-1 text-body outline-none placeholder:text-muted-foreground md:text-meta"
       />
     </div>
   );
@@ -123,7 +123,7 @@ function Media({ item, body, onBody }: { item: InspirationItem; body: string; on
           value={body}
           onChange={(e) => onBody(e.target.value)}
           aria-label="Quote"
-          className="field-sizing-content w-full resize-none bg-transparent font-serif text-[20px] leading-relaxed outline-none md:text-[22px]"
+          className="field-sizing-content w-full resize-none bg-transparent text-section leading-relaxed outline-none md:text-section"
         />
       </div>
     );
@@ -131,7 +131,7 @@ function Media({ item, body, onBody }: { item: InspirationItem; body: string; on
     return (
       <div className="flex min-h-56 flex-col items-center justify-center gap-3 px-6 py-10 md:min-h-[50dvh]">
         <span className="flex size-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-          <FileText className="size-8" strokeWidth={1.5} aria-hidden />
+          <FileText className="size-8" aria-hidden />
         </span>
         {item.file && <span className="text-sm text-muted-foreground">{fileDetail(item.file)}</span>}
         {item.file && (
@@ -198,7 +198,7 @@ export function ItemDialog({ item, projects, onClose }: { item: InspirationItem;
     }
   }
 
-  const field = "w-full bg-transparent text-[16px] outline-none placeholder:text-muted-foreground md:text-sm";
+  const field = "w-full bg-transparent text-body outline-none placeholder:text-muted-foreground md:text-sm";
 
   return (
     <Dialog label={item.title || "Inspiration"} onClose={done} focusFirstField={false} className="sm:max-w-5xl">
@@ -224,7 +224,7 @@ export function ItemDialog({ item, projects, onClose }: { item: InspirationItem;
               rows={1}
               placeholder="Title"
               aria-label="Title"
-              className="field-sizing-content grow resize-none bg-transparent text-[17px] leading-snug font-semibold outline-none placeholder:text-muted-foreground"
+              className="field-sizing-content grow resize-none bg-transparent text-heading leading-snug font-semibold outline-none placeholder:text-muted-foreground"
             />
             <button
               type="button"
@@ -237,7 +237,7 @@ export function ItemDialog({ item, projects, onClose }: { item: InspirationItem;
           </div>
 
           {item.summary && (
-            <p className="flex gap-2 text-[13px] leading-relaxed text-muted-foreground">
+            <p className="flex gap-2 text-meta leading-relaxed text-muted-foreground">
               <Sparkles className="mt-0.5 size-3.5 shrink-0" aria-label="Claude's description" />
               {item.summary}
             </p>
@@ -270,7 +270,7 @@ export function ItemDialog({ item, projects, onClose }: { item: InspirationItem;
               queue({ projectId: e.target.value || null }, true);
             }}
             aria-label="Project"
-            className="h-9 rounded-lg border bg-card px-2 text-[16px] text-foreground shadow-xs md:text-[13px]"
+            className="h-9 rounded-lg border bg-card px-2 text-body text-foreground border-stroke-strong md:text-meta"
           >
             <option value="">No project</option>
             {projects.map((p) => (
@@ -280,7 +280,7 @@ export function ItemDialog({ item, projects, onClose }: { item: InspirationItem;
             ))}
           </select>
 
-          <div className="flex flex-col gap-1 text-[13px]">
+          <div className="flex flex-col gap-1 text-meta">
             {item.url && (
               <a href={item.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 py-1 hover:underline">
                 <Globe className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
@@ -296,7 +296,7 @@ export function ItemDialog({ item, projects, onClose }: { item: InspirationItem;
             )}
           </div>
 
-          <div className="mt-auto flex items-center gap-2 pt-2 text-xs text-muted-foreground">
+          <div className="mt-auto flex items-center gap-2 pt-2 text-meta text-muted-foreground">
             <span className="grow">
               <MadeByLabel madeBy={item.madeBy} createdAt={item.createdAt} />
             </span>

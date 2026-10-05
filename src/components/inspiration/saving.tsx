@@ -106,7 +106,7 @@ export function SavingPill() {
   const { busy } = useSaving();
   if (!busy) return null;
   return (
-    <div className="motion-toast fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background shadow-lg md:bottom-6">
+    <div className="motion-toast fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-4 py-2 text-meta font-medium text-background md:bottom-6">
       <Loader2 className="size-4 animate-spin" aria-hidden />
       Saving{busy > 1 ? ` ${busy}` : ""}…
     </div>

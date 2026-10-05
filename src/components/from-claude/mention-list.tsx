@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export function Words({ text, done }: { text: string; done: boolean }) {
   const parts = text.split(/(@claude\b)/i);
   return (
-    <span className="text-[15px] break-words md:text-sm">
+    <span className="text-control break-words">
       {parts.map((p, i) =>
         i % 2 === 1 ? (
           <span key={i} className={cn("claude-tag", done && "is-done")}>
@@ -38,9 +38,9 @@ export function MentionList({ mentions, when }: { mentions: Mention[]; when: Rec
         <h2 className="px-1 text-sm font-semibold">
           Waiting for Claude <span className="font-normal text-muted-foreground">{open.length}</span>
         </h2>
-        <ul className="overflow-hidden rounded-xl border bg-card shadow-xs">
+        <ul className="overflow-hidden rounded-xl border bg-card border-stroke">
           {open.length === 0 ? (
-            <li className="px-4 py-6 text-center text-[13px] text-muted-foreground">
+            <li className="px-4 py-6 text-center text-meta text-muted-foreground">
               Nothing waiting.
             </li>
           ) : (
@@ -53,7 +53,7 @@ export function MentionList({ mentions, when }: { mentions: Mention[]; when: Rec
           <h2 className="px-1 text-sm font-semibold">
             Done <span className="font-normal text-muted-foreground">{done.length}</span>
           </h2>
-          <ul className="overflow-hidden rounded-xl border bg-card shadow-xs">
+          <ul className="overflow-hidden rounded-xl border bg-card border-stroke">
             {done.map((m) => (
               <Row key={m.id} mention={m} when={when[m.id]} />
             ))}
@@ -102,7 +102,7 @@ function Row({ mention: m, when }: { mention: Mention; when: string }) {
   return (
     <li id={m.id} className="flex flex-col gap-2 border-b px-4 py-3 last:border-b-0 target:bg-muted/60">
       <Words text={m.text} done={done} />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted-foreground">
         {place.href ? (
           <Link href={place.href} className="inline-flex min-w-0 items-center gap-1.5 hover:text-foreground">
             <Icon className="size-3.5 shrink-0" aria-hidden />
@@ -133,7 +133,7 @@ function Row({ mention: m, when }: { mention: Mention; when: string }) {
         </Button>
       </div>
       {done && (m.reply || m.resolvedBy) && (
-        <p className="flex gap-2 rounded-lg bg-muted px-3 py-2 text-[13px]">
+        <p className="flex gap-2 rounded-lg bg-muted px-3 py-2 text-meta">
           <Sparkles className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden />
           <span>
             <span className="font-medium">{m.resolvedBy ?? "You"}:</span> {m.reply ?? "Marked done."}
