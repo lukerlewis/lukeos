@@ -19,8 +19,8 @@ self.addEventListener("push", (event) => {
         body: data.body || "",
         tag: data.tag,
         renotify: Boolean(data.tag),
-        icon: "/icon-192",
-        badge: "/icon-192",
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
         data: { url },
       });
       if (typeof data.badge === "number" && "setAppBadge" in navigator) {
