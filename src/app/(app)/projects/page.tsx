@@ -57,7 +57,7 @@ export default async function ProjectsPage() {
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
       </Card>
-      <h2 className="-mb-3 px-1 text-sm font-semibold text-muted-foreground md:hidden">Projects</h2>
+      <h2 className="-mb-3 px-1 text-sm font-medium text-muted-foreground md:hidden">Projects</h2>
       <Card>
         {projects.length === 0 ? (
           <EmptyState>No projects yet.</EmptyState>

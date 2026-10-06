@@ -59,7 +59,7 @@ export function ProjectDialog({ project, onClose }: { project?: Existing; onClos
   return (
     <Dialog label={project ? "Edit project" : "New project"} onClose={onClose}>
       <form onSubmit={save} className="flex flex-col gap-4 px-5 pt-5">
-        <h2 className="text-lg font-semibold">{project ? "Edit project" : "New project"}</h2>
+        <h2 className="text-lg font-medium">{project ? "Edit project" : "New project"}</h2>
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-muted-foreground">Name</span>
           <input

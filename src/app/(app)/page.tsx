@@ -89,7 +89,7 @@ function TodayTasks({
     <div className="flex flex-col gap-3">
       <Card>
         <div className="flex items-center gap-2 border-b px-4 py-3.5">
-          <h2 className="text-sm font-semibold">Today</h2>
+          <h2 className="text-sm font-medium">Today</h2>
           <span className="text-meta text-muted-foreground">{tasks.length}</span>
         </div>
         <TaskList tasks={[...tasks].sort(compareTasks)} today={today} empty={<EmptyState>Nothing for today.</EmptyState>} />

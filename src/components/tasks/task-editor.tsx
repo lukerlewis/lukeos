@@ -250,7 +250,7 @@ function TaskDialog({
             {highlight && (
               <div
                 aria-hidden
-                className="pointer-events-none col-start-1 row-start-1 py-1 text-lg font-semibold break-words whitespace-pre-wrap"
+                className="pointer-events-none col-start-1 row-start-1 py-1 text-lg font-medium break-words whitespace-pre-wrap"
               >
                 <HighlightedText text={draft.title} matches={parsed.matches} />
               </div>
@@ -269,7 +269,7 @@ function TaskDialog({
               aria-label="Task name"
               rows={1}
               className={cn(
-                "col-start-1 row-start-1 field-sizing-content min-h-9 resize-none bg-transparent py-1 text-lg font-semibold break-words outline-none placeholder:text-muted-foreground",
+                "col-start-1 row-start-1 field-sizing-content min-h-9 resize-none bg-transparent py-1 text-lg font-medium break-words outline-none placeholder:text-muted-foreground",
                 highlight && "text-transparent caret-foreground",
               )}
             />

@@ -117,7 +117,7 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
               className={cn(
                 "font-medium md:w-20 md:text-right",
                 (late || dueToday) && "text-ink",
-                late && "font-semibold text-ink",
+                late && "font-medium text-ink",
               )}
             >
               {friendlyDay(due, today)}

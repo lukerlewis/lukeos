@@ -35,7 +35,7 @@ export function MentionList({ mentions, when }: { mentions: Mention[]; when: Rec
   return (
     <div className="flex flex-col gap-5">
       <section className="flex flex-col gap-2">
-        <h2 className="px-1 text-sm font-semibold">
+        <h2 className="px-1 text-sm font-medium">
           Waiting for Claude <span className="font-normal text-muted-foreground">{open.length}</span>
         </h2>
         <ul className="overflow-hidden rounded-xl border bg-card border-stroke">
@@ -50,7 +50,7 @@ export function MentionList({ mentions, when }: { mentions: Mention[]; when: Rec
       </section>
       {done.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="px-1 text-sm font-semibold">
+          <h2 className="px-1 text-sm font-medium">
             Done <span className="font-normal text-muted-foreground">{done.length}</span>
           </h2>
           <ul className="overflow-hidden rounded-xl border bg-card border-stroke">

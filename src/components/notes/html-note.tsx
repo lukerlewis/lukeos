@@ -55,7 +55,7 @@ export function HtmlNote({ note, projects }: { note: Note; projects: { id: strin
 
   return (
     <div className="flex flex-col gap-3">
-      <h1 className="text-title leading-tight font-semibold break-words md:text-title">
+      <h1 className="text-title leading-tight font-medium break-words md:text-title">
         {note.title || "Untitled"}
       </h1>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">

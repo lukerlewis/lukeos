@@ -7,7 +7,7 @@ export function Card({ className, ...props }: React.ComponentProps<"section">) {
 export function CardHeader({ title, aside }: { title: string; aside?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between border-b px-4 py-3.5">
-      <h2 className="text-heading font-semibold">{title}</h2>
+      <h2 className="text-heading font-medium">{title}</h2>
       {aside && <span className="text-meta text-muted-foreground">{aside}</span>}
     </div>
   );

@@ -58,7 +58,7 @@ export function ColumnsDialog({ projectId, columns, onClose }: { projectId: stri
   return (
     <Dialog label="Pipeline columns" onClose={onClose} focusFirstField={false}>
       <div className="flex items-center gap-2 px-5 pt-4">
-        <h2 className="grow text-lg font-semibold">Columns</h2>
+        <h2 className="grow text-lg font-medium">Columns</h2>
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="-mr-2">
           <X className="size-5" aria-hidden />
         </Button>

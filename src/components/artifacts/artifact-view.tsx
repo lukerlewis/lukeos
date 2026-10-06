@@ -60,7 +60,7 @@ export function ArtifactView({ artifact, projects }: { artifact: Artifact; proje
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      <h1 className="text-title leading-tight font-semibold break-words md:text-title">
+      <h1 className="text-title leading-tight font-medium break-words md:text-title">
         {artifact.title || "Untitled"}
       </h1>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">

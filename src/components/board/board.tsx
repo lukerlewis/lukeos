@@ -196,7 +196,7 @@ function BoardColumn({
       <header className="flex items-start gap-2 px-1.5 pt-1">
         {view === "status" && <StatusIcon status={column.id as Status} className="mt-px size-4" />}
         <div className="min-w-0 grow">
-          <h2 className="flex items-baseline gap-2 text-sm font-semibold">
+          <h2 className="flex items-baseline gap-2 text-sm font-medium">
             {column.title}
             <span className="text-xs font-normal text-muted-foreground">{count}</span>
           </h2>
@@ -317,7 +317,7 @@ function CardBody({
       {meta && (
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-[26px] text-meta text-muted-foreground">
           {due && (
-            <span className={cn("font-medium", dueToday && "text-ink", late && "font-semibold text-ink")}>
+            <span className={cn("font-medium", dueToday && "text-ink", late && "font-medium text-ink")}>
               {friendlyDay(due, today)}
             </span>
           )}

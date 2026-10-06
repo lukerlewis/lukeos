@@ -205,7 +205,7 @@ export function DocumentEditor({
           placeholder="Untitled document"
           aria-label="Document name"
           enterKeyHint="next"
-          className="field-sizing-content resize-none bg-transparent text-section leading-tight font-semibold outline-none placeholder:text-muted-foreground md:text-section"
+          className="field-sizing-content resize-none bg-transparent text-section leading-tight font-medium outline-none placeholder:text-muted-foreground md:text-section"
         />
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">
           <select

@@ -29,7 +29,7 @@ function AddDialog({ onClose }: { onClose: () => void }) {
           if (text.trim()) done({ text });
         }}
       >
-        <h2 className="text-base font-semibold">Add to Inspiration</h2>
+        <h2 className="text-base font-medium">Add to Inspiration</h2>
         <button
           type="button"
           onClick={() => input.current?.click()}

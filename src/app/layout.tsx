@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
+import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
-const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"], weight: ["400", "500", "600"] });
+const geist = Geist({ variable: "--font-geist", subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
   title: "LukeOS",
@@ -25,7 +25,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${manrope.variable} h-full antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}

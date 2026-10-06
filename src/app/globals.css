@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* The design system: a pure grey scale (no tint) with the same step names in
-   light and dark, Manrope type, and only two colours that mean something: red
+   light and dark, Geist type, and only two colours that mean something: red
    for count badges and blue for unread dots. Dark follows the device setting
    (or the manual choice in Settings) via the `dark` class from next-themes. */
 :root {
@@ -114,7 +114,7 @@
   --color-doing: var(--doing);
   --color-done: var(--done);
   --color-ring: var(--ring);
-  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-sans: var(--font-geist), system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Type scale. Anything bigger than 16px is drawn 4% tighter. */
@@ -182,6 +182,11 @@
   h2,
   h3 {
     color: var(--ink);
+  }
+  /* Only regular and medium: bold text in notes and documents is medium too. */
+  b,
+  strong {
+    font-weight: 500;
   }
   /* Typing fields get the strong stroke. */
   :where(input:not([type="checkbox"], [type="radio"], [type="range"]), textarea, select) {
@@ -396,7 +401,7 @@
 }
 .note-body h1 {
   font-size: 26px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.04em;
   line-height: 1.25;
   color: var(--ink);
@@ -404,7 +409,7 @@
 }
 .note-body h2 {
   font-size: 22px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.04em;
   line-height: 1.5;
   color: var(--ink);
@@ -412,7 +417,7 @@
 }
 .note-body h3 {
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.04em;
   color: var(--ink);
   margin-top: 1em;
@@ -510,7 +515,7 @@
 }
 .note-body th {
   background: var(--color-muted);
-  font-weight: 600;
+  font-weight: 500;
 }
 .note-body td > p,
 .note-body th > p {
@@ -594,20 +599,20 @@
 }
 .doc-body h1 {
   font-size: 1.82em;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.2;
   letter-spacing: -0.015em;
   margin-top: 1em;
 }
 .doc-body h2 {
   font-size: 1.36em;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.3;
   margin-top: 1.1em;
 }
 .doc-body h3 {
   font-size: 1.14em;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.35;
   margin-top: 1em;
 }
@@ -695,7 +700,7 @@
 }
 .doc-body th {
   background: var(--muted);
-  font-weight: 600;
+  font-weight: 500;
 }
 .doc-body td > p,
 .doc-body th > p {
