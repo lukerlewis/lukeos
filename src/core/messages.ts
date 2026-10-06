@@ -11,6 +11,9 @@ import { adoptBlob, readStoredBytes, storageUsage, storeFile } from "@/lib/stora
 import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, type MadeBy } from "./define";
 import { sendPush } from "./push";
 
+/** The longest a message's text can be. */
+const MAX_TEXT = 10000;
+
 /**
  * Messages: a text chain between Luke and Claude. Luke texts a request any
  * time; Claude reads it at the next check-in (get_inbox), does it, and texts
@@ -376,7 +379,7 @@ export const messageOperations = {
     description:
       "Text Luke in his Messages chain. It sends a notification to his phone, so keep it short and worth his attention: one to three plain sentences, like a text from a helpful colleague. Use it to answer his messages (pass their ids as answers, so they stop showing as waiting), to tell him something finished or needs him, or when he asks you to let him know something. When you have questions about what he asked in Messages, ask them here (numbered if there are several) rather than in a document. Long write-ups (real deliverables) go in a document (create_document); link it here instead of pasting it. replyTo quotes one earlier message (his or yours) above yours, e.g. when answering one of several things he sent. link points at one task, document, note, project, routine, Work archive entry or Inspiration item, shown as a card he can tap. attachments sends photos or files with it (photos show in the chain; other files as a card he taps to open), each up to 3 MB; to send one again, pass its id as fileId.",
     input: z.object({
-      text: z.string().trim().max(4000).optional().describe("The message. Plain text; short. Can be left out when sending attachments."),
+      text: z.string().trim().max(MAX_TEXT).optional().describe("The message. Plain text; short. Can be left out when sending attachments."),
       link: z
         .object({ type: z.enum(linkTypes), id: z.uuid() })
         .optional()
@@ -453,7 +456,7 @@ export const messageOperations = {
       "Change the text of a message you sent Luke, e.g. to fix a mistake. It shows as edited, and doesn't notify him again. Only your own messages (Luke edits his in the app), and only when Luke asks.",
     input: z.object({
       id: z.uuid().describe("The message's id, from list_messages."),
-      text: z.string().trim().max(4000).describe("The new text. Plain text; short."),
+      text: z.string().trim().max(MAX_TEXT).describe("The new text. Plain text; short."),
     }),
     run: async ({ id, text }, { actor }) => {
       const row = await ownMessage(id, actor);
