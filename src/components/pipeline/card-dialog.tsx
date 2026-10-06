@@ -157,7 +157,7 @@ export function CardDialog({
             placeholder={loading ? "" : "What's the idea?"}
             aria-label="Card name"
             rows={1}
-            className="field-sizing-content min-h-9 min-w-0 grow resize-none bg-transparent py-1 text-lg font-semibold break-words outline-none placeholder:text-muted-foreground"
+            className="field-sizing-content min-h-9 min-w-0 grow resize-none bg-transparent py-1 text-lg font-medium break-words outline-none placeholder:text-muted-foreground"
           />
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="-mr-2 shrink-0">
             <X className="size-5" aria-hidden />

@@ -69,7 +69,7 @@ export function FolderDialog({
   return (
     <Dialog label={folder ? "Edit folder" : "New folder"} onClose={onClose}>
       <form onSubmit={save} className="flex flex-col gap-4 px-5 pt-5">
-        <h2 className="text-lg font-semibold">{folder ? "Edit folder" : "New folder"}</h2>
+        <h2 className="text-lg font-medium">{folder ? "Edit folder" : "New folder"}</h2>
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-muted-foreground">Name</span>
           <input autoFocus value={name} onChange={(e) => setName(e.target.value)} className={field} />

@@ -96,7 +96,7 @@ export function Toaster() {
             type="button"
             onClick={() => runUndo(toast.undo)}
             disabled={busy}
-            className="rounded-lg px-3 py-1.5 font-semibold underline-offset-2 hover:bg-background/15 disabled:opacity-60"
+            className="rounded-lg px-3 py-1.5 font-medium underline-offset-2 hover:bg-background/15 disabled:opacity-60"
           >
             {busy ? "Undoing…" : "Undo"}
           </button>

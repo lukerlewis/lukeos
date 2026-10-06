@@ -79,7 +79,7 @@ export function Comments({
 
   return (
     <section aria-label="Comments" className="flex flex-col gap-3">
-      <h2 className="flex items-center gap-2 text-sm font-semibold">
+      <h2 className="flex items-center gap-2 text-sm font-medium">
         <MessageSquare className="size-4 text-muted-foreground" aria-hidden />
         Comments
         {open.length > 0 && <span className="text-xs font-normal text-muted-foreground">{open.length} open</span>}

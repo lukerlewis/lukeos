@@ -224,7 +224,7 @@ export function ItemDialog({ item, projects, onClose }: { item: InspirationItem;
               rows={1}
               placeholder="Title"
               aria-label="Title"
-              className="field-sizing-content grow resize-none bg-transparent text-heading leading-snug font-semibold outline-none placeholder:text-muted-foreground"
+              className="field-sizing-content grow resize-none bg-transparent text-heading leading-snug font-medium outline-none placeholder:text-muted-foreground"
             />
             <button
               type="button"

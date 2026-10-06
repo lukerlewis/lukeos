@@ -288,7 +288,7 @@ function Column({
       )}
     >
       <header className="flex items-start gap-2 px-1.5 pt-1">
-        <h2 className="flex min-w-0 grow items-baseline gap-2 text-sm font-semibold">
+        <h2 className="flex min-w-0 grow items-baseline gap-2 text-sm font-medium">
           <span className="truncate">{column.name}</span>
           <span className="text-xs font-normal text-muted-foreground">{count}</span>
         </h2>

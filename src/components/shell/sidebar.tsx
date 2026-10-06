@@ -46,10 +46,10 @@ export function Sidebar({
   return (
     <aside className="hidden w-60 shrink-0 flex-col gap-4 border-r bg-sidebar px-3 py-3.5 md:flex">
       <div className="flex items-center gap-2.5 px-2 py-1.5">
-        <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-semibold text-primary-foreground">
+        <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-medium text-primary-foreground">
           L
         </span>
-        <span className="font-semibold text-ink">Luke&apos;s space</span>
+        <span className="font-medium text-ink">Luke&apos;s space</span>
       </div>
 
       <button

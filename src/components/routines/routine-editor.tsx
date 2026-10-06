@@ -137,7 +137,7 @@ export function RoutineEditor({
         placeholder="Untitled routine"
         aria-label="Title"
         enterKeyHint="next"
-        className="field-sizing-content resize-none bg-transparent text-title leading-tight font-semibold outline-none placeholder:text-muted-foreground md:text-title"
+        className="field-sizing-content resize-none bg-transparent text-title leading-tight font-medium outline-none placeholder:text-muted-foreground md:text-title"
       />
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">

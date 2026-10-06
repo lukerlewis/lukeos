@@ -45,7 +45,7 @@ export function Page({
         <div className="flex items-end justify-between gap-4 pt-8 md:pt-0">
           <div className="min-w-0">
             {eyebrow && <div className="text-meta text-muted-foreground">{eyebrow}</div>}
-            <h1 className="mt-0.5 text-title font-semibold break-words text-ink md:mt-1">
+            <h1 className="mt-0.5 text-title font-medium break-words text-ink md:mt-1">
               {heading ?? title}
             </h1>
           </div>

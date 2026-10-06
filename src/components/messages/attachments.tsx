@@ -169,7 +169,7 @@ export function PendingTray({ items, onRemove }: { items: Pending[]; onRemove: (
               {busy && (
                 <span className="absolute inset-0 flex items-center justify-center bg-background/50">
                   {p.progress > 0 && p.progress < 1 ? (
-                    <span className="text-xs font-semibold tabular-nums">{Math.round(p.progress * 100)}%</span>
+                    <span className="text-xs font-medium tabular-nums">{Math.round(p.progress * 100)}%</span>
                   ) : (
                     <Loader2 className="size-4 animate-spin" aria-label="Adding" />
                   )}

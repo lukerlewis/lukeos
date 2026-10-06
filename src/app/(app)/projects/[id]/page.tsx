@@ -159,7 +159,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
               <section key={folder.id} className="flex flex-col gap-2">
                 <Link
                   href={`/notes?folder=${folder.id}`}
-                  className="flex items-center gap-2 self-start px-1 text-sm font-semibold hover:text-muted-foreground"
+                  className="flex items-center gap-2 self-start px-1 text-sm font-medium hover:text-muted-foreground"
                 >
                   <FolderIcon className="size-4 text-muted-foreground" aria-hidden />
                   {folder.name}
@@ -189,7 +189,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           )}
           {documents.length > 0 && (
             <section className="flex flex-col gap-2">
-              <h2 className="px-1 text-sm font-semibold">Documents</h2>
+              <h2 className="px-1 text-sm font-medium">Documents</h2>
               <Card>
                 <DocumentList documents={documents} timeZone={timeZone} showProject={false} />
               </Card>
@@ -197,7 +197,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           )}
           {artifacts.length > 0 && (
             <section className="flex flex-col gap-2">
-              <h2 className="px-1 text-sm font-semibold">From Claude</h2>
+              <h2 className="px-1 text-sm font-medium">From Claude</h2>
               <Card>
                 <ArtifactList artifacts={artifacts} timeZone={timeZone} />
               </Card>
@@ -217,7 +217,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           {groups.map(({ status, tasks: group }) =>
             group.length === 0 && !(status === "todo" && tasks.length > 0) ? null : (
               <section key={status} className="flex flex-col gap-2">
-                <h2 className="flex items-center gap-2 px-1 text-sm font-semibold">
+                <h2 className="flex items-center gap-2 px-1 text-sm font-medium">
                   <StatusIcon status={status} className="size-4" />
                   {statusLabel[status]}
                   <span className="text-xs font-normal text-muted-foreground">{group.length}</span>

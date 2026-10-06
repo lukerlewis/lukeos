@@ -36,7 +36,7 @@ export default async function TasksPage() {
         })}
         {recentlyDone.length > 0 && (
           <details className="group">
-            <summary className="cursor-pointer px-1 py-1 text-sm font-semibold text-muted-foreground select-none">
+            <summary className="cursor-pointer px-1 py-1 text-sm font-medium text-muted-foreground select-none">
               Recently done ({recentlyDone.length})
             </summary>
             <Card className="mt-2">

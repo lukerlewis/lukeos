@@ -16,11 +16,11 @@ export default async function AddDevicePage({ params }: PageProps<"/sign-in/add/
   return (
     <main className="flex min-h-dvh items-center justify-center px-5 py-16">
       <div className="flex w-full max-w-sm flex-col items-center gap-8 text-center">
-        <span className="flex size-14 items-center justify-center rounded-2xl bg-primary text-2xl font-semibold text-primary-foreground">
+        <span className="flex size-14 items-center justify-center rounded-2xl bg-primary text-2xl font-medium text-primary-foreground">
           L
         </span>
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold">{valid ? "Add this device" : "Link expired"}</h1>
+          <h1 className="text-2xl font-medium">{valid ? "Add this device" : "Link expired"}</h1>
           <p className="text-control text-muted-foreground">
             {valid ? "Create a passkey here to sign in." : "Make a new one in Settings on a signed-in device."}
           </p>
