@@ -1,6 +1,15 @@
 "use client";
 
-import { AudioLines, ChartColumn, ChevronRight, Pause, Play, RotateCcw, SkipForward, SlidersHorizontal } from "lucide-react";
+import {
+  AudioLines,
+  ChartColumn,
+  ChevronRight,
+  Pause,
+  Play,
+  RotateCcw,
+  SkipForward,
+  SlidersHorizontal,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -44,8 +53,13 @@ export function FocusScreen() {
 
       {mode === "pomodoro" ? (
         <>
-          <Ring progress={1 - pomodoro.leftMs / pomodoro.lengthMs} soft={onBreak}>
-            <span className="text-control text-muted-foreground">{phaseLabel[pomodoro.phase]}</span>
+          <Ring
+            progress={1 - pomodoro.leftMs / pomodoro.lengthMs}
+            soft={onBreak}
+          >
+            <span className="text-control text-muted-foreground">
+              {phaseLabel[pomodoro.phase]}
+            </span>
             <Face ms={pomodoro.leftMs} />
             <Rounds done={pomodoro.round} of={settings.roundsBeforeLongBreak} />
           </Ring>
@@ -70,18 +84,39 @@ export function FocusScreen() {
             running={stopwatch.running}
             onStart={focus.startStopwatch}
             onPause={focus.pauseStopwatch}
-            onReset={stopwatch.running || stopwatch.elapsedMs > 0 ? focus.resetStopwatch : undefined}
+            onReset={
+              stopwatch.running || stopwatch.elapsedMs > 0
+                ? focus.resetStopwatch
+                : undefined
+            }
           />
         </>
       )}
 
-      <Card className={cn("w-full", running && "max-md:max-w-md")}>
+      <Card
+        className={cn(
+          "w-full",
+          // Pinned to the bottom, so the timer sits in the middle of the screen.
+          running &&
+            "max-md:absolute max-md:inset-x-5 max-md:bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] max-md:w-auto",
+        )}
+      >
         <div className="flex items-center gap-3 px-4 py-3">
           <AudioLines className="size-[18px] text-icon" aria-hidden />
           <span className="grow text-control text-foreground">Brown noise</span>
-          <Switch on={focus.noise} label="Brown noise" onChange={focus.toggleNoise} />
+          <Switch
+            on={focus.noise}
+            label="Brown noise"
+            onChange={focus.toggleNoise}
+          />
         </div>
-        <Link href="/focus/stats" className={cn(running && "max-md:hidden", "press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3")}>
+        <Link
+          href="/focus/stats"
+          className={cn(
+            running && "max-md:hidden",
+            "press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3",
+          )}
+        >
           <ChartColumn className="size-[18px] text-icon" aria-hidden />
           <span className="grow text-control text-foreground">Stats</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
@@ -92,14 +127,33 @@ export function FocusScreen() {
 }
 
 /** A circle that fills clockwise from the top as time passes. */
-function Ring({ progress, soft, children }: { progress: number; soft?: boolean; children: React.ReactNode }) {
+function Ring({
+  progress,
+  soft,
+  children,
+}: {
+  progress: number;
+  soft?: boolean;
+  children: React.ReactNode;
+}) {
   const r = 46;
   const length = 2 * Math.PI * r;
   const p = Math.min(1, Math.max(0, progress || 0));
   return (
     <div className="relative aspect-square w-[min(300px,80vw)] md:w-[340px]">
-      <svg viewBox="0 0 100 100" className="absolute inset-0 size-full -rotate-90" aria-hidden>
-        <circle cx="50" cy="50" r={r} fill="none" strokeWidth="3" className="stroke-muted" />
+      <svg
+        viewBox="0 0 100 100"
+        className="absolute inset-0 size-full -rotate-90"
+        aria-hidden
+      >
+        <circle
+          cx="50"
+          cy="50"
+          r={r}
+          fill="none"
+          strokeWidth="3"
+          className="stroke-muted"
+        />
         <circle
           cx="50"
           cy="50"
@@ -116,7 +170,9 @@ function Ring({ progress, soft, children }: { progress: number; soft?: boolean; 
           )}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">{children}</div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+        {children}
+      </div>
     </div>
   );
 }
@@ -139,7 +195,14 @@ function Controls({
   const side = "size-14 rounded-full";
   return (
     <div className="flex items-center gap-6">
-      <Button variant="outline" size="icon" className={side} aria-label="Restart" disabled={!onReset} onClick={onReset}>
+      <Button
+        variant="outline"
+        size="icon"
+        className={side}
+        aria-label="Restart"
+        disabled={!onReset}
+        onClick={onReset}
+      >
         <RotateCcw />
       </Button>
       <Button
@@ -147,10 +210,20 @@ function Controls({
         aria-label={running ? "Pause" : "Start"}
         onClick={running ? onPause : onStart}
       >
-        {running ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="translate-x-0.5" />}
+        {running ? (
+          <Pause fill="currentColor" />
+        ) : (
+          <Play fill="currentColor" className="translate-x-0.5" />
+        )}
       </Button>
       {onSkip ? (
-        <Button variant="outline" size="icon" className={side} aria-label={skipLabel} onClick={onSkip}>
+        <Button
+          variant="outline"
+          size="icon"
+          className={side}
+          aria-label={skipLabel}
+          onClick={onSkip}
+        >
           <SkipForward />
         </Button>
       ) : (
@@ -167,17 +240,30 @@ export function LengthsButton() {
   if (!focus || focus.mode !== "pomodoro") return null;
   return (
     <>
-      <Button variant="outline" size="icon" aria-label="Pomodoro lengths" onClick={() => setEditing(true)}>
+      <Button
+        variant="outline"
+        size="icon"
+        aria-label="Pomodoro lengths"
+        onClick={() => setEditing(true)}
+      >
         <SlidersHorizontal />
       </Button>
-      {editing && <LengthsDialog settings={focus.settings} onClose={() => setEditing(false)} />}
+      {editing && (
+        <LengthsDialog
+          settings={focus.settings}
+          onClose={() => setEditing(false)}
+        />
+      )}
     </>
   );
 }
 
 function Face({ ms }: { ms: number }) {
   return (
-    <div role="timer" className="text-[64px] leading-none font-medium tracking-[-0.04em] text-ink tabular-nums md:text-[76px]">
+    <div
+      role="timer"
+      className="text-[64px] leading-none font-medium tracking-[-0.04em] text-ink tabular-nums md:text-[76px]"
+    >
       {clock(ms)}
     </div>
   );
@@ -185,15 +271,33 @@ function Face({ ms }: { ms: number }) {
 
 function Rounds({ done, of }: { done: number; of: number }) {
   return (
-    <div className="flex h-2 gap-2" aria-label={`${Math.min(done, of)} of ${of} rounds done`} role="img">
+    <div
+      className="flex h-2 gap-2"
+      aria-label={`${Math.min(done, of)} of ${of} rounds done`}
+      role="img"
+    >
       {Array.from({ length: of }, (_, i) => (
-        <span key={i} className={cn("size-2 rounded-full", i < done ? "bg-foreground" : "bg-grey-300")} />
+        <span
+          key={i}
+          className={cn(
+            "size-2 rounded-full",
+            i < done ? "bg-foreground" : "bg-grey-300",
+          )}
+        />
       ))}
     </div>
   );
 }
 
-function Switch({ on, label, onChange }: { on: boolean; label: string; onChange: () => void }) {
+function Switch({
+  on,
+  label,
+  onChange,
+}: {
+  on: boolean;
+  label: string;
+  onChange: () => void;
+}) {
   return (
     <button
       type="button"
@@ -201,7 +305,10 @@ function Switch({ on, label, onChange }: { on: boolean; label: string; onChange:
       aria-checked={on}
       aria-label={label}
       onClick={onChange}
-      className={cn("relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors", on ? "bg-primary" : "bg-grey-300")}
+      className={cn(
+        "relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors",
+        on ? "bg-primary" : "bg-grey-300",
+      )}
     >
       <span
         className={cn(
@@ -220,10 +327,19 @@ const fields: { key: keyof FocusSettings; label: string }[] = [
   { key: "roundsBeforeLongBreak", label: "Rounds before a long break" },
 ];
 
-function LengthsDialog({ settings, onClose }: { settings: FocusSettings; onClose: () => void }) {
+function LengthsDialog({
+  settings,
+  onClose,
+}: {
+  settings: FocusSettings;
+  onClose: () => void;
+}) {
   const router = useRouter();
-  const [values, setValues] = useState(() =>
-    Object.fromEntries(fields.map(({ key }) => [key, String(settings[key])])) as Record<keyof FocusSettings, string>,
+  const [values, setValues] = useState(
+    () =>
+      Object.fromEntries(
+        fields.map(({ key }) => [key, String(settings[key])]),
+      ) as Record<keyof FocusSettings, string>,
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -235,7 +351,9 @@ function LengthsDialog({ settings, onClose }: { settings: FocusSettings; onClose
     try {
       await op(
         "update_focus_settings",
-        Object.fromEntries(fields.map(({ key }) => [key, Number(values[key])])) as Partial<FocusSettings>,
+        Object.fromEntries(
+          fields.map(({ key }) => [key, Number(values[key])]),
+        ) as Partial<FocusSettings>,
       );
       router.refresh();
       onClose();
@@ -247,7 +365,10 @@ function LengthsDialog({ settings, onClose }: { settings: FocusSettings; onClose
 
   return (
     <Dialog label="Pomodoro lengths" onClose={onClose} focusFirstField={false}>
-      <form onSubmit={save} className="flex flex-col gap-5 p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
+      <form
+        onSubmit={save}
+        className="flex flex-col gap-5 p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]"
+      >
         <h2 className="text-heading font-medium text-ink">Pomodoro lengths</h2>
         <div className="flex flex-col gap-3">
           {fields.map(({ key, label }) => (
@@ -260,7 +381,9 @@ function LengthsDialog({ settings, onClose }: { settings: FocusSettings; onClose
                 max={FOCUS_LIMITS[key][1]}
                 required
                 value={values[key]}
-                onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
+                onChange={(e) =>
+                  setValues((v) => ({ ...v, [key]: e.target.value }))
+                }
                 className="h-11 w-20 rounded-lg border bg-card px-3 text-right text-base tabular-nums md:text-control"
               />
             </label>
