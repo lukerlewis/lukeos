@@ -59,20 +59,47 @@ export function prepareMiniVideo(onFloatChange: (floating: boolean) => void) {
   video.playsInline = true;
   video.srcObject = canvas.captureStream();
   video.setAttribute("aria-hidden", "true");
-  Object.assign(video.style, { position: "fixed", left: "-10000px", top: "0", width: `${W / 2}px`, height: `${H / 2}px` });
+  // Safari won't float a video that isn't on screen, so it sits in a corner, invisibly small.
+  Object.assign(video.style, { position: "fixed", right: "0", bottom: "0", width: "2px", height: "2px", opacity: "0.01", pointerEvents: "none" });
   document.body.append(video);
   const v = video;
   // The floating window's own pause button would freeze the picture, so keep it playing.
   v.addEventListener("pause", () => void v.play().catch(() => {}));
   v.addEventListener("enterpictureinpicture", () => onFloatChange(true));
   v.addEventListener("leavepictureinpicture", () => onFloatChange(false));
+  v.addEventListener("webkitpresentationmodechanged", () =>
+    onFloatChange((v as SafariVideo).webkitPresentationMode === "picture-in-picture"),
+  );
   void v.play().catch(() => {});
 }
 
-export function toggleMiniVideo() {
-  if (!video) return;
-  if (document.pictureInPictureElement) void document.exitPictureInPicture().catch(() => {});
-  else video.requestPictureInPicture().catch((err) => console.error("[focus] couldn't float the timer", err));
+type SafariVideo = HTMLVideoElement & {
+  webkitSupportsPresentationMode?: (mode: string) => boolean;
+  webkitSetPresentationMode?: (mode: "inline" | "picture-in-picture") => void;
+  webkitPresentationMode?: string;
+};
+
+/** Floats the timer, or puts it back. Returns false when the browser refused. */
+export async function toggleMiniVideo() {
+  const v = video as SafariVideo | null;
+  if (!v) return false;
+  if (document.pictureInPictureElement === v || v.webkitPresentationMode === "picture-in-picture") {
+    if (v.webkitSetPresentationMode) v.webkitSetPresentationMode("inline");
+    else await document.exitPictureInPicture().catch(() => {});
+    return true;
+  }
+  try {
+    // Safari's own way first: it's the one its web apps honour.
+    if (v.webkitSupportsPresentationMode?.("picture-in-picture") && v.webkitSetPresentationMode) {
+      v.webkitSetPresentationMode("picture-in-picture");
+      return true;
+    }
+    await v.requestPictureInPicture();
+    return true;
+  } catch (err) {
+    console.error("[focus] couldn't float the timer", err);
+    return false;
+  }
 }
 
 /** Draws the ring and the time in the app's own colours and font. */

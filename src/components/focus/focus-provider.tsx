@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { showToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 import { clock, type FocusSettings } from "@/lib/focus";
 import { floatsPage, MiniPlayer, MiniVideoPainter, openMiniWindow, prepareMiniVideo, toggleMiniVideo } from "./mini-player";
@@ -318,7 +319,12 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
   }, []);
 
   const toggleMini = () => {
-    if (!floatsPage()) return toggleMiniVideo();
+    if (!floatsPage()) {
+      void toggleMiniVideo().then((ok) => {
+        if (!ok) showToast("This browser wouldn't float the timer. It works in Chrome.");
+      });
+      return;
+    }
     if (mini) return mini.close();
     openMiniWindow()
       .then((win) => {
