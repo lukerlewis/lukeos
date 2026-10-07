@@ -3,7 +3,7 @@
 import { AudioLines, PictureInPicture2, ChartColumn, ChevronRight, Pause, Play, RotateCcw, SkipForward, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -159,6 +159,10 @@ export function LengthsButton() {
   const focus = useFocus();
   const [editing, setEditing] = useState(false);
   const canFloat = useSyncExternalStore(noSubscribe, miniPlayerSupported, () => false);
+  const prepareMini = focus?.prepareMini;
+  useEffect(() => {
+    if (canFloat) prepareMini?.();
+  }, [canFloat, prepareMini]);
   if (!focus) return null;
   return (
     <>
