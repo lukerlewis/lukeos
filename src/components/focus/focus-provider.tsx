@@ -2,10 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { showToast } from "@/components/shell/toast";
 import { op } from "@/lib/ops-client";
 import { clock, type FocusSettings } from "@/lib/focus";
-import { floatsPage, MiniPlayer, MiniVideoPainter, openMiniWindow, prepareMiniVideo, toggleMiniVideo } from "./mini-player";
 
 /**
  * The Focus timers and brown noise live here, in the app's frame, so they keep
@@ -75,11 +73,6 @@ type FocusContextValue = {
   toggleNoise: () => void;
   /** What a running timer shows, for the tab bar and sidebar. */
   runningClock: string | null;
-  /** The floating window on a computer, when it's open. */
-  mini: boolean;
-  toggleMini: () => void;
-  /** Safari needs the floating timer ready before the click. */
-  prepareMini: () => void;
 };
 
 const FocusContext = createContext<FocusContextValue | null>(null);
@@ -95,8 +88,6 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [noise, setNoise] = useState(false);
-  const [mini, setMini] = useState<Window | null>(null);
-  const [miniVideo, setMiniVideo] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const chimeRef = useRef<AudioContext | null>(null);
 
@@ -318,23 +309,6 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     };
   }, []);
 
-  const toggleMini = () => {
-    if (!floatsPage()) {
-      void toggleMiniVideo().then((ok) => {
-        if (!ok) showToast("This browser wouldn't float the timer. It works in Chrome.");
-      });
-      return;
-    }
-    if (mini) return mini.close();
-    openMiniWindow()
-      .then((win) => {
-        if (!win) return;
-        win.addEventListener("pagehide", () => setMini(null));
-        setMini(win);
-      })
-      .catch((err) => console.error("[focus] couldn't open the floating window", err));
-  };
-
   const pomodoroLeft = left(p, now);
   const swElapsed = stopwatchElapsed(state.stopwatch, now);
   const runningClock = pomodoroRunning ? clock(pomodoroLeft) : stopwatchRunning ? clock(swElapsed) : null;
@@ -356,17 +330,11 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     noise,
     toggleNoise,
     runningClock,
-    mini: mini !== null || miniVideo,
-    toggleMini,
-    prepareMini: () => prepareMiniVideo(setMiniVideo),
   };
-
 
   return (
     <FocusContext value={value}>
       {children}
-      {mini && <MiniPlayer win={mini} />}
-      {miniVideo && <MiniVideoPainter />}
       <audio ref={audioRef} src="/sounds/brown-noise.mp3" loop preload="none" />
     </FocusContext>
   );

@@ -1,9 +1,9 @@
 "use client";
 
-import { AudioLines, PictureInPicture2, ChartColumn, ChevronRight, Pause, Play, RotateCcw, SkipForward, SlidersHorizontal } from "lucide-react";
+import { AudioLines, ChartColumn, ChevronRight, Pause, Play, RotateCcw, SkipForward, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -12,7 +12,6 @@ import { clock, FOCUS_LIMITS, type FocusSettings } from "@/lib/focus";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { phaseLabel, useFocus } from "./focus-provider";
-import { miniPlayerSupported } from "./mini-player";
 
 const HOUR = 3_600_000;
 
@@ -152,35 +151,16 @@ function Controls({
   );
 }
 
-const noSubscribe = () => () => {};
-
-/** Beside the title: float the timer (computers that can), and the pomodoro lengths. */
+/** Beside the title: the pomodoro lengths, for the pomodoro only. */
 export function LengthsButton() {
   const focus = useFocus();
   const [editing, setEditing] = useState(false);
-  const canFloat = useSyncExternalStore(noSubscribe, miniPlayerSupported, () => false);
-  const prepareMini = focus?.prepareMini;
-  useEffect(() => {
-    if (canFloat) prepareMini?.();
-  }, [canFloat, prepareMini]);
-  if (!focus) return null;
+  if (!focus || focus.mode !== "pomodoro") return null;
   return (
     <>
-      {canFloat && (
-        <Button
-          variant="outline"
-          size="icon"
-          className={cn("hidden md:inline-flex", focus.mini && "bg-selected")}
-          aria-label={focus.mini ? "Close floating timer" : "Float the timer over other apps"}
-          aria-pressed={focus.mini}
-          onClick={focus.toggleMini}
-        >
-          <PictureInPicture2 />
-        </Button>
-      )}
-      {focus.mode === "pomodoro" && <Button variant="outline" size="icon" aria-label="Pomodoro lengths" onClick={() => setEditing(true)}>
+      <Button variant="outline" size="icon" aria-label="Pomodoro lengths" onClick={() => setEditing(true)}>
         <SlidersHorizontal />
-      </Button>}
+      </Button>
       {editing && <LengthsDialog settings={focus.settings} onClose={() => setEditing(false)} />}
     </>
   );
