@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { op } from "@/lib/ops-client";
 import { clock, type FocusSettings } from "@/lib/focus";
+import { MiniPlayer, openMiniWindow } from "./mini-player";
 
 /**
  * The Focus timers and brown noise live here, in the app's frame, so they keep
@@ -73,6 +74,9 @@ type FocusContextValue = {
   toggleNoise: () => void;
   /** What a running timer shows, for the tab bar and sidebar. */
   runningClock: string | null;
+  /** The floating window on a computer, when it's open. */
+  mini: boolean;
+  toggleMini: () => void;
 };
 
 const FocusContext = createContext<FocusContextValue | null>(null);
@@ -88,6 +92,7 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [noise, setNoise] = useState(false);
+  const [mini, setMini] = useState<Window | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const chimeRef = useRef<AudioContext | null>(null);
 
@@ -309,6 +314,17 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     };
   }, []);
 
+  const toggleMini = () => {
+    if (mini) return mini.close();
+    openMiniWindow()
+      .then((win) => {
+        if (!win) return;
+        win.addEventListener("pagehide", () => setMini(null));
+        setMini(win);
+      })
+      .catch((err) => console.error("[focus] couldn't open the floating window", err));
+  };
+
   const pomodoroLeft = left(p, now);
   const swElapsed = stopwatchElapsed(state.stopwatch, now);
   const runningClock = pomodoroRunning ? clock(pomodoroLeft) : stopwatchRunning ? clock(swElapsed) : null;
@@ -330,11 +346,14 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     noise,
     toggleNoise,
     runningClock,
+    mini: mini !== null,
+    toggleMini,
   };
 
   return (
     <FocusContext value={value}>
       {children}
+      {mini && <MiniPlayer win={mini} />}
       <audio ref={audioRef} src="/sounds/brown-noise.mp3" loop preload="none" />
     </FocusContext>
   );
