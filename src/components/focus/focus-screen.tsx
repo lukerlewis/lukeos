@@ -7,83 +7,138 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
-import { clock, duration, FOCUS_LIMITS, type FocusSettings } from "@/lib/focus";
+import { clock, FOCUS_LIMITS, type FocusSettings } from "@/lib/focus";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
-import { phaseLabel, useFocus, type Phase } from "./focus-provider";
+import { phaseLabel, useFocus } from "./focus-provider";
 
-export function FocusScreen({ todaySeconds, weekSeconds }: { todaySeconds: number; weekSeconds: number }) {
+const HOUR = 3_600_000;
+
+export function FocusScreen() {
   const focus = useFocus();
   if (!focus) return null;
   const { mode, setMode, pomodoro, stopwatch, settings } = focus;
-  // Time on a timer that hasn't finished yet counts straight away; brown noise on its own doesn't.
-  const inProgress =
-    (pomodoro.phase === "focus" && pomodoro.startedAt ? pomodoro.lengthMs - pomodoro.leftMs : 0) + stopwatch.elapsedMs;
+  const onBreak = pomodoro.phase !== "focus";
 
   return (
-    <div className="flex w-full max-w-xl flex-col gap-4 md:mx-auto">
+    <div className="flex w-full max-w-md flex-col items-center gap-8 md:mx-auto">
       <Segmented
         value={mode}
         onChange={setMode}
+        className="w-full"
         options={[
           { value: "pomodoro", label: "Pomodoro" },
           { value: "timer", label: "Timer" },
         ]}
       />
 
-      <Card className="flex flex-col">
-        {mode === "pomodoro" ? (
-          <div className="flex flex-col items-center gap-6 px-5 pt-5 pb-7">
-            <Segmented<Phase>
-              value={pomodoro.phase}
-              onChange={focus.setPhase}
-              className="w-full"
-              options={(["focus", "short", "long"] as const).map((p) => ({ value: p, label: phaseLabel[p] }))}
-            />
+      {mode === "pomodoro" ? (
+        <>
+          <Ring progress={1 - pomodoro.leftMs / pomodoro.lengthMs} soft={onBreak}>
+            <span className="text-control text-muted-foreground">{phaseLabel[pomodoro.phase]}</span>
             <Face ms={pomodoro.leftMs} />
             <Rounds done={pomodoro.round} of={settings.roundsBeforeLongBreak} />
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="icon" aria-label="Reset" onClick={focus.resetPomodoro}>
-                <RotateCcw />
-              </Button>
-              <StartPause running={pomodoro.running} onStart={focus.startPomodoro} onPause={focus.pausePomodoro} />
-              <Button variant="outline" size="icon" aria-label="Skip to next" onClick={focus.skipPomodoro}>
-                <SkipForward />
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-6 px-5 pt-12 pb-7">
+          </Ring>
+          <Controls
+            running={pomodoro.running}
+            onStart={focus.startPomodoro}
+            onPause={focus.pausePomodoro}
+            onReset={focus.resetPomodoro}
+            onSkip={focus.skipPomodoro}
+            skipLabel={onBreak ? "Skip break" : "Skip to break"}
+          />
+        </>
+      ) : (
+        <>
+          {/* The ring goes round once an hour. */}
+          <Ring progress={(stopwatch.elapsedMs % HOUR) / HOUR}>
+            <span className="text-control text-muted-foreground">Timer</span>
             <Face ms={stopwatch.elapsedMs} />
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Reset"
-                disabled={!stopwatch.running && stopwatch.elapsedMs === 0}
-                onClick={focus.resetStopwatch}
-              >
-                <RotateCcw />
-              </Button>
-              <StartPause running={stopwatch.running} onStart={focus.startStopwatch} onPause={focus.pauseStopwatch} />
-              {/* Keeps Start in the middle, as on the pomodoro. */}
-              <span className="size-11" aria-hidden />
-            </div>
-          </div>
-        )}
+            <span className="h-2" aria-hidden />
+          </Ring>
+          <Controls
+            running={stopwatch.running}
+            onStart={focus.startStopwatch}
+            onPause={focus.pauseStopwatch}
+            onReset={stopwatch.running || stopwatch.elapsedMs > 0 ? focus.resetStopwatch : undefined}
+          />
+        </>
+      )}
 
-        <div className="flex items-center gap-3 border-t px-5 py-3">
-          <AudioLines className="size-[18px] text-icon" aria-hidden />
-          <span className="grow text-control text-foreground">Brown noise</span>
-          <Switch on={focus.noise} label="Brown noise" onChange={focus.toggleNoise} />
-        </div>
+      <Card className="flex w-full items-center gap-3 px-4 py-3">
+        <AudioLines className="size-[18px] text-icon" aria-hidden />
+        <span className="grow text-control text-foreground">Brown noise</span>
+        <Switch on={focus.noise} label="Brown noise" onChange={focus.toggleNoise} />
       </Card>
+    </div>
+  );
+}
 
-      <div className="flex items-baseline justify-between gap-3 px-1">
-        <span className="text-control text-foreground">Focused today</span>
-        <span className="text-heading font-medium text-ink tabular-nums">{duration(todaySeconds + inProgress / 1000)}</span>
-      </div>
-      <p className="-mt-3 px-1 text-meta text-muted-foreground">Last 7 days {duration(weekSeconds + inProgress / 1000)}</p>
+/** A circle that fills clockwise from the top as time passes. */
+function Ring({ progress, soft, children }: { progress: number; soft?: boolean; children: React.ReactNode }) {
+  const r = 46;
+  const length = 2 * Math.PI * r;
+  const p = Math.min(1, Math.max(0, progress || 0));
+  return (
+    <div className="relative aspect-square w-[min(300px,80vw)] md:w-[340px]">
+      <svg viewBox="0 0 100 100" className="absolute inset-0 size-full -rotate-90" aria-hidden>
+        <circle cx="50" cy="50" r={r} fill="none" strokeWidth="3" className="stroke-muted" />
+        <circle
+          cx="50"
+          cy="50"
+          r={r}
+          fill="none"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={length}
+          strokeDashoffset={length * (1 - p)}
+          className={cn(
+            "transition-[stroke-dashoffset] duration-300 ease-linear motion-reduce:transition-none",
+            soft ? "stroke-muted-foreground" : "stroke-foreground",
+            p === 0 && "opacity-0",
+          )}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">{children}</div>
+    </div>
+  );
+}
+
+function Controls({
+  running,
+  onStart,
+  onPause,
+  onReset,
+  onSkip,
+  skipLabel,
+}: {
+  running: boolean;
+  onStart: () => void;
+  onPause: () => void;
+  onReset?: () => void;
+  onSkip?: () => void;
+  skipLabel?: string;
+}) {
+  const side = "size-14 rounded-full";
+  return (
+    <div className="flex items-center gap-6">
+      <Button variant="outline" size="icon" className={side} aria-label="Restart" disabled={!onReset} onClick={onReset}>
+        <RotateCcw />
+      </Button>
+      <Button
+        className="size-[76px] rounded-full [&_svg]:size-7"
+        aria-label={running ? "Pause" : "Start"}
+        onClick={running ? onPause : onStart}
+      >
+        {running ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="translate-x-0.5" />}
+      </Button>
+      {onSkip ? (
+        <Button variant="outline" size="icon" className={side} aria-label={skipLabel} onClick={onSkip}>
+          <SkipForward />
+        </Button>
+      ) : (
+        <span className={side} aria-hidden />
+      )}
     </div>
   );
 }
@@ -105,10 +160,7 @@ export function LengthsButton() {
 
 function Face({ ms }: { ms: number }) {
   return (
-    <div
-      role="timer"
-      className="text-[72px] leading-none font-medium tracking-[-0.04em] text-ink tabular-nums md:text-[96px]"
-    >
+    <div role="timer" className="text-[64px] leading-none font-medium tracking-[-0.04em] text-ink tabular-nums md:text-[76px]">
       {clock(ms)}
     </div>
   );
@@ -116,20 +168,11 @@ function Face({ ms }: { ms: number }) {
 
 function Rounds({ done, of }: { done: number; of: number }) {
   return (
-    <div className="flex gap-2" aria-label={`${Math.min(done, of)} of ${of} rounds done`} role="img">
+    <div className="flex h-2 gap-2" aria-label={`${Math.min(done, of)} of ${of} rounds done`} role="img">
       {Array.from({ length: of }, (_, i) => (
         <span key={i} className={cn("size-2 rounded-full", i < done ? "bg-foreground" : "bg-grey-300")} />
       ))}
     </div>
-  );
-}
-
-function StartPause({ running, onStart, onPause }: { running: boolean; onStart: () => void; onPause: () => void }) {
-  return (
-    <Button className="w-32" onClick={running ? onPause : onStart}>
-      {running ? <Pause /> : <Play />}
-      {running ? "Pause" : "Start"}
-    </Button>
   );
 }
 

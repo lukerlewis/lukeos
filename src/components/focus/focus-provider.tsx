@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { op } from "@/lib/ops-client";
 import { clock, type FocusSettings } from "@/lib/focus";
 
 /**
@@ -39,7 +37,6 @@ type Stopwatch = {
 type Saved = { mode: "pomodoro" | "timer"; pomodoro: Pomodoro; stopwatch: Stopwatch };
 
 const STORAGE_KEY = "lukeos:focus";
-const MIN_LOGGED_MS = 60_000;
 
 const freshPomodoro = (phase: Phase = "focus", round = 0): Pomodoro => ({
   phase,
@@ -52,7 +49,7 @@ const freshPomodoro = (phase: Phase = "focus", round = 0): Pomodoro => ({
 const freshStopwatch = (): Stopwatch => ({ runningSince: null, elapsedMs: 0, startedAt: null });
 const initial: Saved = { mode: "pomodoro", pomodoro: freshPomodoro(), stopwatch: freshStopwatch() };
 
-export const phaseLabel: Record<Phase, string> = { focus: "Focus", short: "Short break", long: "Long break" };
+export const phaseLabel: Record<Phase, string> = { focus: "Focus", short: "Break", long: "Long break" };
 
 type FocusContextValue = {
   settings: FocusSettings;
@@ -64,7 +61,6 @@ type FocusContextValue = {
   pausePomodoro: () => void;
   resetPomodoro: () => void;
   skipPomodoro: () => void;
-  setPhase: (phase: Phase) => void;
   stopwatch: { running: boolean; elapsedMs: number };
   startStopwatch: () => void;
   pauseStopwatch: () => void;
@@ -83,7 +79,6 @@ export function useFocus() {
 }
 
 export function FocusProvider({ settings, children }: { settings: FocusSettings; children: React.ReactNode }) {
-  const router = useRouter();
   const [state, setState] = useState<Saved>(initial);
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -112,22 +107,6 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     (phase: Phase) =>
       (phase === "focus" ? settings.focusMinutes : phase === "short" ? settings.shortBreakMinutes : settings.longBreakMinutes) * 60_000,
     [settings],
-  );
-
-  const log = useCallback(
-    (kind: "pomodoro" | "timer", ms: number, startedAt: number | null, endedAt: number) => {
-      if (ms < MIN_LOGGED_MS) return;
-      const seconds = Math.round(ms / 1000);
-      op("log_focus_session", {
-        kind,
-        seconds,
-        startedAt: new Date(startedAt ?? endedAt - ms).toISOString(),
-        endedAt: new Date(endedAt).toISOString(),
-      })
-        .then(() => router.refresh())
-        .catch((err) => console.error("[focus] couldn't save the session", err));
-    },
-    [router],
   );
 
   /** The phase after this one: a break after focus (long every few rounds), then focus again. */
@@ -178,17 +157,16 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     } catch {}
   };
 
-  // A running pomodoro reaching its end: log the focus, ring, and line up the next phase.
+  // A running pomodoro reaching its end: ring, and line up the next phase, ready to start.
   const p = state.pomodoro;
   useEffect(() => {
     if (!p.endsAt || now < p.endsAt) return;
-    if (p.phase === "focus") log("pomodoro", p.lengthMs ?? lengthOf("focus"), p.startedAt, p.endsAt);
     const next = nextAfter(p);
     chime();
     notify(p.phase === "focus" ? "Focus done. Time for a break." : "Break over. Back to focus.");
     // eslint-disable-next-line react-hooks/set-state-in-effect -- the phase ends when the clock says so
     setState((s) => ({ ...s, pomodoro: next }));
-  }, [now, p, log, nextAfter, lengthOf, chime, notify]);
+  }, [now, p, nextAfter, chime, notify]);
 
   const pomodoroRunning = p.endsAt !== null;
   const stopwatchRunning = state.stopwatch.runningSince !== null;
@@ -233,16 +211,9 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
 
   const resetPomodoro = () => setState((s) => ({ ...s, pomodoro: freshPomodoro(s.pomodoro.phase, s.pomodoro.round) }));
 
-  /** Moving on early still counts the focus done so far. */
   const skipPomodoro = () => {
-    const at = Date.now();
-    const pp = state.pomodoro;
-    if (pp.phase === "focus" && pp.lengthMs) log("pomodoro", pp.lengthMs - left(pp, at), pp.startedAt, at);
     setState((s) => ({ ...s, pomodoro: nextAfter(s.pomodoro) }));
   };
-
-  const setPhase = (phase: Phase) =>
-    setState((s) => (s.pomodoro.phase === phase ? s : { ...s, pomodoro: freshPomodoro(phase, s.pomodoro.round) }));
 
   const startStopwatch = () => {
     const at = Date.now();
@@ -265,10 +236,7 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
 
   const stopwatchElapsed = (sw: Stopwatch, at: number) => sw.elapsedMs + (sw.runningSince ? at - sw.runningSince : 0);
 
-  /** Resetting the regular timer is how a run ends, so the time is saved. */
   const resetStopwatch = () => {
-    const at = Date.now();
-    log("timer", stopwatchElapsed(state.stopwatch, at), state.stopwatch.startedAt, at);
     setState((s) => ({ ...s, stopwatch: freshStopwatch() }));
   };
 
@@ -326,7 +294,6 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     pausePomodoro,
     resetPomodoro,
     skipPomodoro,
-    setPhase,
     stopwatch: { running: stopwatchRunning, elapsedMs: swElapsed },
     startStopwatch,
     pauseStopwatch,
