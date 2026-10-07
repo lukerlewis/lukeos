@@ -16,6 +16,9 @@ export function FocusScreen({ todaySeconds, weekSeconds }: { todaySeconds: numbe
   const focus = useFocus();
   if (!focus) return null;
   const { mode, setMode, pomodoro, stopwatch, settings } = focus;
+  // Time on a timer that hasn't finished yet counts straight away; brown noise on its own doesn't.
+  const inProgress =
+    (pomodoro.phase === "focus" && pomodoro.startedAt ? pomodoro.lengthMs - pomodoro.leftMs : 0) + stopwatch.elapsedMs;
 
   return (
     <div className="flex w-full max-w-xl flex-col gap-4 md:mx-auto">
@@ -76,11 +79,11 @@ export function FocusScreen({ todaySeconds, weekSeconds }: { todaySeconds: numbe
         </div>
       </Card>
 
-      {(todaySeconds > 0 || weekSeconds > 0) && (
-        <p className="px-1 text-meta text-muted-foreground">
-          Today {duration(todaySeconds)} · Last 7 days {duration(weekSeconds)}
-        </p>
-      )}
+      <div className="flex items-baseline justify-between gap-3 px-1">
+        <span className="text-control text-foreground">Focused today</span>
+        <span className="text-heading font-medium text-ink tabular-nums">{duration(todaySeconds + inProgress / 1000)}</span>
+      </div>
+      <p className="-mt-3 px-1 text-meta text-muted-foreground">Last 7 days {duration(weekSeconds + inProgress / 1000)}</p>
     </div>
   );
 }
