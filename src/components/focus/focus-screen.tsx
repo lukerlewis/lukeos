@@ -20,13 +20,22 @@ export function FocusScreen() {
   if (!focus) return null;
   const { mode, setMode, pomodoro, stopwatch, settings } = focus;
   const onBreak = pomodoro.phase !== "focus";
+  // On phones a running timer takes over the whole screen: just the timer and brown noise.
+  const running = mode === "pomodoro" ? pomodoro.running : stopwatch.running;
 
   return (
-    <div className="flex w-full max-w-md flex-col items-center gap-8 md:mx-auto">
+    <div
+      data-no-pull={running || undefined}
+      className={cn(
+        "flex w-full max-w-md flex-col items-center gap-8 md:mx-auto",
+        running &&
+          "max-md:fixed max-md:inset-0 max-md:z-50 max-md:max-w-none max-md:justify-center max-md:bg-background max-md:px-5 max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)]",
+      )}
+    >
       <Segmented
         value={mode}
         onChange={setMode}
-        className="w-full"
+        className={cn("w-full", running && "max-md:hidden")}
         options={[
           { value: "pomodoro", label: "Pomodoro" },
           { value: "timer", label: "Timer" },
@@ -66,13 +75,13 @@ export function FocusScreen() {
         </>
       )}
 
-      <Card className="w-full">
+      <Card className={cn("w-full", running && "max-md:max-w-md")}>
         <div className="flex items-center gap-3 px-4 py-3">
           <AudioLines className="size-[18px] text-icon" aria-hidden />
           <span className="grow text-control text-foreground">Brown noise</span>
           <Switch on={focus.noise} label="Brown noise" onChange={focus.toggleNoise} />
         </div>
-        <Link href="/focus/stats" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
+        <Link href="/focus/stats" className={cn(running && "max-md:hidden", "press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3")}>
           <ChartColumn className="size-[18px] text-icon" aria-hidden />
           <span className="grow text-control text-foreground">Stats</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
