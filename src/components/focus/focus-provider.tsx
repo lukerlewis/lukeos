@@ -277,6 +277,10 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
   const toggleNoise = () => {
     const audio = audioRef.current;
     if (!audio) return;
+    // Safari: a "playback" audio session keeps the noise going when Luke leaves
+    // the app or locks his phone, and plays even with the ring switch on silent.
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (session) session.type = "playback";
     if (audio.paused) audio.play().catch((err) => console.error("[focus] brown noise didn't start", err));
     else audio.pause();
   };
