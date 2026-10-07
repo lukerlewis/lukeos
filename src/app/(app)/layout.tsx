@@ -6,8 +6,10 @@ import { PushListener } from "@/components/shell/push-listener";
 import { Sidebar } from "@/components/shell/sidebar";
 import { TabBar } from "@/components/shell/tab-bar";
 import { Toaster } from "@/components/shell/toast";
+import { FocusProvider } from "@/components/focus/focus-provider";
 import { TaskEditorProvider } from "@/components/tasks/task-editor";
 import { TimeZoneSync } from "@/components/time-zone-sync";
+import { getFocusSettings } from "@/core/focus";
 import { newFromClaudeCount } from "@/core/from-claude";
 import { unreadMessageCount } from "@/core/messages";
 import { listProjects } from "@/core/projects";
@@ -34,11 +36,12 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 
 async function AppShell({ children }: { children: React.ReactNode }) {
   await requireSession();
-  const [projects, timeZone, newFromClaude, unreadMessages] = await Promise.all([
+  const [projects, timeZone, newFromClaude, unreadMessages, focusSettings] = await Promise.all([
     listProjects(),
     getTimeZone(),
     newFromClaudeCount(),
     unreadMessageCount(),
+    getFocusSettings(),
   ]);
   // Things over 30 days in Trash are deleted for good as the app is used.
   after(() => purgeExpiredTrash().catch((err) => console.error("[trash] purge failed", err)));
@@ -48,6 +51,7 @@ async function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <TaskEditorProvider projects={projects} today={today} timeZone={timeZone}>
       <CommandMenuProvider projects={menuProjects} today={today}>
+        <FocusProvider settings={focusSettings}>
         <TimeZoneSync saved={timeZone} />
         <PushListener />
         <PullToRefresh />
@@ -61,6 +65,7 @@ async function AppShell({ children }: { children: React.ReactNode }) {
           <TabBar unreadMessages={unreadMessages} />
         </div>
         <Toaster />
+        </FocusProvider>
       </CommandMenuProvider>
     </TaskEditorProvider>
   );

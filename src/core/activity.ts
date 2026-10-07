@@ -474,6 +474,13 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Unsent a message to you" };
     case "mark_messages_read":
       return null;
+    case "log_focus_session": {
+      const minutes = Math.round(Number(input.seconds ?? 0) / 60);
+      const label = typeof input.label === "string" && input.label.trim() ? ` on ${quote(input.label.trim())}` : "";
+      return { summary: `Logged ${minutes} min of focus${label}` };
+    }
+    case "update_focus_settings":
+      return { summary: "Changed your pomodoro lengths" };
     case "set_dashboard_view":
       return { summary: "Changed how your dashboard looks" };
     default:

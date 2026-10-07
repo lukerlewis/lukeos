@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useCommandMenu } from "@/components/command/command-menu";
+import { useFocus } from "@/components/focus/focus-provider";
 import { SEEN_EVENT } from "@/components/from-claude/mark-seen";
 import { useUnreadMessages } from "@/components/messages/unread";
 import { NewProjectIconButton } from "@/components/projects/project-dialog";
@@ -38,6 +39,7 @@ export function Sidebar({
     return () => window.removeEventListener(SEEN_EVENT, clear);
   }, [newFromClaude]);
   const unread = useUnreadMessages(unreadMessages);
+  const running = useFocus()?.runningClock;
   const counts: Record<string, number> = {
     "/documents": clearedAt === newFromClaude ? 0 : newFromClaude,
     "/messages": unread,
@@ -65,7 +67,9 @@ export function Sidebar({
 
       <nav className="flex flex-col gap-0.5" aria-label="Main">
         {mainNav.map((item) => (
-          <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]} />
+          <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]}
+            aside={item.href === "/focus" ? running : null}
+          />
         ))}
       </nav>
 
@@ -117,12 +121,15 @@ function NavLink({
   icon: Icon,
   active,
   count,
+  aside,
 }: {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   active: boolean;
   count?: number;
+  /** Quiet text at the end of the row, e.g. a running timer. */
+  aside?: string | null;
 }) {
   return (
     <Link
@@ -135,6 +142,7 @@ function NavLink({
     >
       <Icon className={cn("size-[18px]", active ? "text-foreground" : "text-icon")} aria-hidden />
       <span className="grow">{label}</span>
+      {aside && <span className="text-meta text-muted-foreground tabular-nums">{aside}</span>}
       {!!count && (
         <span className="min-w-5 rounded-full bg-notification px-1.5 text-center text-xs leading-5 font-medium text-on-notification">
           {count}

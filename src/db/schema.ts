@@ -643,3 +643,26 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
 });
+
+/**
+ * Time Luke spent focusing: a finished pomodoro, or the regular timer when he
+ * stops it. The timers themselves run on his device; only the results are kept.
+ */
+export const focusSessions = pgTable(
+  "focus_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(), // "pomodoro" | "timer"
+    /** What it was for, if anyone said. */
+    label: text("label"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    endedAt: timestamp("ended_at", { withTimezone: true }).notNull(),
+    /** Time actually focused, leaving out pauses. */
+    seconds: integer("seconds").notNull(),
+    createdByKind: text("created_by_kind").notNull().default("user"), // "user" | "agent"
+    createdByName: text("created_by_name"),
+    createdByRoutine: text("created_by_routine"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("focus_sessions_ended_idx").on(t.endedAt)],
+);

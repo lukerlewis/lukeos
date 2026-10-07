@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useFocus } from "@/components/focus/focus-provider";
 import { useUnreadMessages } from "@/components/messages/unread";
 import { cn } from "@/lib/utils";
 import { isActive, phoneTabs } from "./nav";
@@ -9,6 +10,7 @@ import { isActive, phoneTabs } from "./nav";
 export function TabBar({ unreadMessages = 0 }: { unreadMessages?: number }) {
   const pathname = usePathname();
   const unread = useUnreadMessages(unreadMessages);
+  const running = useFocus()?.runningClock;
 
   return (
     <nav
@@ -37,7 +39,8 @@ export function TabBar({ unreadMessages = 0 }: { unreadMessages?: number }) {
                 </span>
               )}
             </span>
-            {label}
+            {/* A running timer shows its time in place of "Focus". */}
+            {href === "/focus" && running ? <span className="tabular-nums">{running}</span> : label}
           </Link>
         );
       })}

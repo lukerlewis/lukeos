@@ -19,6 +19,7 @@ import {
   Bot,
   LayoutDashboard,
   Sun,
+  Timer,
   SquareKanban,
   Trash2,
   type LucideIcon,
@@ -121,6 +122,7 @@ type Item = {
 
 const pages: { href: string; label: string; icon: LucideIcon; keywords?: string }[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, keywords: "home today due board kanban" },
+  { href: "/focus", label: "Focus", icon: Timer, keywords: "pomodoro timer stopwatch brown noise concentrate deep work" },
   { href: "/tasks", label: "All tasks", icon: CheckSquare, keywords: "list" },
   { href: "/notes", label: "Notes", icon: NotebookPen, keywords: "pages jot" },
   { href: "/documents", label: "Documents", icon: FileText, keywords: "docs pages pdf print made by claude artifacts reports" },
