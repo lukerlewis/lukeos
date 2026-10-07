@@ -42,8 +42,10 @@ export function miniView(focus: Pick<NonNullable<ReturnType<typeof useFocus>>, "
 }
 
 // Safari: the timer is drawn on a canvas, which plays as a muted video that floats.
+// Laid out at 440×168, drawn 4× over so it stays sharp however big the window gets.
 const W = 440;
 const H = 168;
+const SCALE = 4;
 let video: HTMLVideoElement | null = null;
 let canvas: HTMLCanvasElement | null = null;
 
@@ -51,8 +53,8 @@ let canvas: HTMLCanvasElement | null = null;
 export function prepareMiniVideo(onFloatChange: (floating: boolean) => void) {
   if (video || !floatsVideo()) return;
   canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = W * SCALE;
+  canvas.height = H * SCALE;
   drawMiniVideo({ ms: 0, progress: 0, soft: false });
   video = document.createElement("video");
   video.muted = true;
@@ -102,18 +104,28 @@ export async function toggleMiniVideo() {
   }
 }
 
-/** Draws the ring and the time in the app's own colours and font. */
+/** Draws the ring and the time, centred together, in the app's own colours and font. */
 export function drawMiniVideo(view: MiniView) {
   const ctx = canvas?.getContext("2d");
   if (!ctx) return;
   const css = getComputedStyle(document.documentElement);
   const color = (name: string) => css.getPropertyValue(name).trim() || "#000";
+  ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   ctx.fillStyle = color("--background");
   ctx.fillRect(0, 0, W, H);
-  const r = 40;
-  const cx = 34 + r;
+
+  const text = clock(view.ms);
+  ctx.font = `500 72px ${getComputedStyle(document.body).fontFamily}`;
+  // Measured with every digit as 0, so the group doesn't shuffle as the seconds tick.
+  const textWidth = ctx.measureText(text.replace(/\d/g, "0")).width;
+  const r = 38;
+  const line = 12;
+  const gap = 28;
+  const left = (W - (r * 2 + line + gap + textWidth)) / 2;
+  const cx = left + line / 2 + r;
   const cy = H / 2;
-  ctx.lineWidth = 14;
+
+  ctx.lineWidth = line;
   ctx.strokeStyle = color("--muted");
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -124,10 +136,13 @@ export function drawMiniVideo(view: MiniView) {
     ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + view.progress * Math.PI * 2);
     ctx.stroke();
   }
+
   ctx.fillStyle = color("--ink");
-  ctx.font = `500 76px ${getComputedStyle(document.body).fontFamily}`;
-  ctx.textBaseline = "middle";
-  ctx.fillText(clock(view.ms), cx + r + 30, cy + 4);
+  ctx.textBaseline = "alphabetic";
+  const m = ctx.measureText("0");
+  // Centre the digits themselves (not the line box) on the ring.
+  const baseline = cy + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+  ctx.fillText(text, cx + r + line / 2 + gap, baseline);
 }
 
 /** Opens the floating window, styled like the app (same stylesheets, light or dark). Must be called from a click. */
