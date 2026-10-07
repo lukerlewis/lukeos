@@ -1,6 +1,7 @@
 "use client";
 
-import { AudioLines, Pause, Play, RotateCcw, SkipForward, SlidersHorizontal } from "lucide-react";
+import { AudioLines, ChartColumn, ChevronRight, Pause, Play, RotateCcw, SkipForward, SlidersHorizontal } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -65,10 +66,17 @@ export function FocusScreen() {
         </>
       )}
 
-      <Card className="flex w-full items-center gap-3 px-4 py-3">
-        <AudioLines className="size-[18px] text-icon" aria-hidden />
-        <span className="grow text-control text-foreground">Brown noise</span>
-        <Switch on={focus.noise} label="Brown noise" onChange={focus.toggleNoise} />
+      <Card className="w-full">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <AudioLines className="size-[18px] text-icon" aria-hidden />
+          <span className="grow text-control text-foreground">Brown noise</span>
+          <Switch on={focus.noise} label="Brown noise" onChange={focus.toggleNoise} />
+        </div>
+        <Link href="/focus/stats" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
+          <ChartColumn className="size-[18px] text-icon" aria-hidden />
+          <span className="grow text-control text-foreground">Stats</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
       </Card>
     </div>
   );

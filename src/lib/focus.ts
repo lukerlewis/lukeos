@@ -41,3 +41,12 @@ export function clock(ms: number) {
   const ss = String(s).padStart(2, "0");
   return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
+
+/** "0 min", "45 min", "1h 20m": an amount of focus time. */
+export function duration(seconds: number) {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
