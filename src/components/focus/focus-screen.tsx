@@ -29,7 +29,7 @@ export function FocusScreen() {
   if (!focus) return null;
   const { mode, setMode, pomodoro, stopwatch, settings } = focus;
   const onBreak = pomodoro.phase !== "focus";
-  // On phones a running timer takes over the whole screen: just the timer and brown noise.
+  // On phones a running timer takes over the whole screen: just the ring and its buttons.
   const running = mode === "pomodoro" ? pomodoro.running : stopwatch.running;
 
   return (
@@ -93,14 +93,7 @@ export function FocusScreen() {
         </>
       )}
 
-      <Card
-        className={cn(
-          "w-full",
-          // Pinned to the bottom, so the timer sits in the middle of the screen.
-          running &&
-            "max-md:absolute max-md:inset-x-5 max-md:bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] max-md:w-auto",
-        )}
-      >
+      <Card className={cn("w-full", running && "max-md:hidden")}>
         <div className="flex items-center gap-3 px-4 py-3">
           <AudioLines className="size-[18px] text-icon" aria-hidden />
           <span className="grow text-control text-foreground">Brown noise</span>
