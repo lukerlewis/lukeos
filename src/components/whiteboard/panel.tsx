@@ -157,6 +157,19 @@ export function Panel({
         </>
       ) : (
         <Section title="Arrow">
+          <Choice
+            value={item.elbow ? "elbow" : "straight"}
+            onChange={(v) => set(v === "elbow" ? { elbow: true } : { elbow: undefined, bends: undefined })}
+            options={[
+              { value: "straight", label: "Straight" },
+              { value: "elbow", label: "Elbow" },
+            ]}
+          />
+          {item.bends && (
+            <button type="button" onClick={() => set({ bends: undefined })} className="h-9 self-start rounded-[8px] px-2 text-preview text-muted-foreground hover:bg-muted">
+              Reset bends
+            </button>
+          )}
           <input
             value={item.text ?? ""}
             onChange={(e) => set({ text: e.target.value || undefined })}

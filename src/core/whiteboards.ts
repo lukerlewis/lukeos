@@ -111,12 +111,14 @@ const itemInput: z.ZodType<RawItem> = z.object({
   padY: num.min(0).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
+  elbow: z.boolean().optional(),
+  bends: z.array(z.tuple([num, num])).max(50).optional(),
   get children() {
     return z.array(itemInput).optional();
   },
 });
 
-const FORMAT = `Items: {id, type, ...}. Types: frame (a container: name, color fill, w/h, children; with layout "row" or "column" it's Figma-style auto layout using gap, padX, padY and align start|center|end, and hugs its contents unless w/h are set), text (text, style, weight regular|medium, color default|muted, align start|center|end, w to wrap), sticky (text, color, w/h; default 220x220 yellow), shape (shape rect|ellipse|diamond, text, color, w/h), arrow (from and to: item ids). Text styles (Luke's type scale, Geist): display 112px, h1 86, h2 66, h3 51, h4 39, sub-lg 30, sub-sm 23, body-lg 18 (default), body 14. Fills: white, grey, yellow, orange, red, pink, purple, blue, green, none. x/y are board pixels (inside a frame, relative to it; ignored in auto layout). Left-out fields use the defaults, so leave them out.`;
+const FORMAT = `Items: {id, type, ...}. Types: frame (a container: name, color fill, w/h, children; with layout "row" or "column" it's Figma-style auto layout using gap, padX, padY and align start|center|end, and hugs its contents unless w/h are set), text (text, style, weight regular|medium, color default|muted, align start|center|end, w to wrap), sticky (text, color, w/h; default 220x220 yellow), shape (shape rect|ellipse|diamond, text, color, w/h), arrow (from and to: item ids, text for a label; elbow: true runs it in horizontal and vertical lines with slightly rounded corners, routed for you, or through bends: [[x,y],...] corners in board pixels to steer it around things). Text styles (Luke's type scale, Geist): display 112px, h1 86, h2 66, h3 51, h4 39, sub-lg 30, sub-sm 23, body-lg 18 (default), body 14. Fills: white, grey, yellow, orange, red, pink, purple, blue, green, none. x/y are board pixels (inside a frame, relative to it; ignored in auto layout). Left-out fields use the defaults, so leave them out. Keep diagrams black and white (white, grey, none): add colour only when it means something the layout and words don't already show (Luke's SOP "Diagrams and visualizations").`;
 
 const boardId = z.uuid().describe("The whiteboard's id, from list_whiteboards.");
 
@@ -152,6 +154,8 @@ const changeInput = z.object({
   padY: num.min(0).nullable().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
+  elbow: z.boolean().nullable().optional(),
+  bends: z.array(z.tuple([num, num])).max(50).nullable().optional().describe("null resets an elbow arrow to its worked-out route."),
   parent: z.string().nullable().optional().describe("Move it into this frame (its id), or null for the board itself."),
   index: z.number().int().min(0).optional().describe("Where among its siblings, 0 first. With parent, or alone to reorder."),
 });
