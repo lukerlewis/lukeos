@@ -4,7 +4,7 @@ import { ArrowDown, ArrowRight, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { DEFAULTS, FILLS, TEXT_STYLE_KEYS, TEXT_STYLES, type Align, type Color, type Item, type TextStyle } from "@/lib/whiteboard";
-import { fillOf, textColorOf } from "./item-view";
+import { fillOf, stickyFillOf, textColorOf } from "./item-view";
 
 /** The small Figma-style panel for what's selected. */
 export function Panel({
@@ -77,9 +77,9 @@ export function Panel({
             {item.layout && (
               <>
                 <div className="grid grid-cols-3 gap-2">
-                  <NumberField label="Gap" value={item.gap ?? DEFAULTS.frame.gap} onChange={(gap) => set({ gap })} />
-                  <NumberField label="↔" title="Padding left and right" value={item.padX ?? DEFAULTS.frame.padX} onChange={(padX) => set({ padX })} />
-                  <NumberField label="↕" title="Padding top and bottom" value={item.padY ?? DEFAULTS.frame.padY} onChange={(padY) => set({ padY })} />
+                  <NumberField label={<GapIcon across={item.layout === "row"} />} title="Space between items" value={item.gap ?? DEFAULTS.frame.gap} onChange={(gap) => set({ gap })} />
+                  <NumberField label={<PadIcon sides="x" />} title="Padding left and right" value={item.padX ?? DEFAULTS.frame.padX} onChange={(padX) => set({ padX })} />
+                  <NumberField label={<PadIcon sides="y" />} title="Padding top and bottom" value={item.padY ?? DEFAULTS.frame.padY} onChange={(padY) => set({ padY })} />
                 </div>
                 <Choice<Align>
                   value={item.align ?? "start"}
@@ -152,7 +152,7 @@ export function Panel({
       ) : item.type === "sticky" ? (
         <>
           <Section title="Sticky">
-            <Swatches value={item.color ?? DEFAULTS.sticky.color} onChange={(color) => set({ color: color === DEFAULTS.sticky.color ? undefined : color })} />
+            <Swatches value={item.color ?? DEFAULTS.sticky.color} onChange={(color) => set({ color: color === DEFAULTS.sticky.color ? undefined : color })} sticky />
           </Section>
           <Size items={items} set={set} />
         </>
@@ -239,6 +239,41 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
+/** Figma's icon for the space between items: two items with a gap between them, across or down. */
+function GapIcon({ across }: { across: boolean }) {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden fill="currentColor">
+      {across ? (
+        <>
+          <rect x="2" y="3" width="3" height="10" rx="1" />
+          <rect x="11" y="3" width="3" height="10" rx="1" />
+          <rect x="7.25" y="6" width="1.5" height="4" rx="0.75" />
+        </>
+      ) : (
+        <>
+          <rect x="3" y="2" width="10" height="3" rx="1" />
+          <rect x="3" y="11" width="10" height="3" rx="1" />
+          <rect x="6" y="7.25" width="4" height="1.5" rx="0.75" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+/** Figma's padding icons: a box with its left and right (or top and bottom) edges drawn heavy. */
+function PadIcon({ sides }: { sides: "x" | "y" }) {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden fill="none" stroke="currentColor">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" strokeWidth="1" strokeOpacity="0.45" />
+      {sides === "x" ? (
+        <path d="M2.5 2.5v11M13.5 2.5v11" strokeWidth="2" strokeLinecap="round" />
+      ) : (
+        <path d="M2.5 2.5h11M2.5 13.5h11" strokeWidth="2" strokeLinecap="round" />
+      )}
+    </svg>
+  );
+}
+
 /** The value every item shares, or undefined when they differ. */
 function common<T>(items: Item[], get: (i: Item) => T): T | undefined {
   const first = get(items[0]);
@@ -269,7 +304,7 @@ function NumberField({
   placeholder,
   title,
 }: {
-  label: string;
+  label: React.ReactNode;
   title?: string;
   value: number | undefined;
   onChange: (v: number) => void;
@@ -334,7 +369,7 @@ function Choice<T extends string>({ value, onChange, options }: { value: T; onCh
   );
 }
 
-function Swatches({ value, onChange, withNone }: { value: Color; onChange: (c: Color) => void; withNone?: boolean }) {
+function Swatches({ value, onChange, withNone, sticky }: { value: Color; onChange: (c: Color) => void; withNone?: boolean; sticky?: boolean }) {
   const list: Color[] = withNone ? ["none", ...FILLS] : FILLS;
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -350,7 +385,7 @@ function Swatches({ value, onChange, withNone }: { value: Color; onChange: (c: C
             "relative size-7 overflow-hidden rounded-full border border-stroke",
             value === c && "outline-[1.5px] outline-offset-2 outline-[var(--wb-select)] outline-solid",
           )}
-          style={{ background: fillOf(c) }}
+          style={{ background: sticky ? stickyFillOf(c) : fillOf(c) }}
         >
           {c === "none" && <span className="absolute top-1/2 left-1/2 h-px w-8 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-stroke-strong" />}
         </button>
