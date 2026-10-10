@@ -27,6 +27,7 @@ import { sopOperations } from "./sops";
 import { contextOperations } from "./context";
 import { taskOperations } from "./tasks";
 import { trashOperations } from "./trash";
+import { whiteboardOperations } from "./whiteboards";
 
 export type { Actor, Operation } from "./define";
 
@@ -57,6 +58,7 @@ export const operations = {
   ...noteOperations,
   ...folderOperations,
   ...archiveOperations,
+  ...whiteboardOperations,
   ...inspirationOperations,
   ...artifactOperations,
   ...commentOperations,

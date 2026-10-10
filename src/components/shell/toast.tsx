@@ -27,11 +27,11 @@ function isTyping(target: EventTarget | null) {
 
 /** "Moved to Trash", with an Undo that brings it straight back. */
 export function showTrashedToast(
-  type: "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration",
+  type: "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration" | "whiteboard",
   id: string,
   onUndone?: () => void,
 ) {
-  const what = { card: "Card", task: "Task", note: "Note", artifact: "Artifact", document: "Document", project: "Project", sop: "SOP", context: "Context file", routine: "Routine", entry: "Entry", inspiration: "Item" }[type];
+  const what = { card: "Card", task: "Task", note: "Note", artifact: "Artifact", document: "Document", project: "Project", sop: "SOP", context: "Context file", routine: "Routine", entry: "Entry", inspiration: "Item", whiteboard: "Whiteboard" }[type];
   showToast(`${what} moved to Trash`, async () => {
     await op("restore_from_trash", { type, id });
     onUndone?.();

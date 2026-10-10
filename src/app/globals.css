@@ -753,3 +753,48 @@
     font-size: 11pt;
   }
 }
+
+/* Whiteboard fills: soft tints that sit well together, and their strong
+   versions for coloured text. Each has a dark mode twin. */
+:root {
+  --wb-white: var(--grey-0);
+  --wb-grey: #f0f0f0;
+  --wb-yellow: #fff0b3;
+  --wb-orange: #ffdfc2;
+  --wb-red: #ffd5d1;
+  --wb-pink: #ffd8ea;
+  --wb-purple: #e5dcff;
+  --wb-blue: #d5e5ff;
+  --wb-green: #d2f1da;
+  --wb-text-yellow: #8a6a00;
+  --wb-text-orange: #b45309;
+  --wb-text-red: #c2311f;
+  --wb-text-pink: #be2f74;
+  --wb-text-purple: #6b4fd0;
+  --wb-text-blue: #2563eb;
+  --wb-text-green: #1d7f42;
+  --wb-canvas: var(--grey-50);
+  --wb-dot: var(--grey-300);
+  --wb-select: var(--grey-950);
+}
+.dark {
+  --wb-white: var(--grey-100);
+  --wb-grey: #2b2b2b;
+  --wb-yellow: #4a4120;
+  --wb-orange: #4a3220;
+  --wb-red: #4a2522;
+  --wb-pink: #4a2338;
+  --wb-purple: #33294d;
+  --wb-blue: #1f3350;
+  --wb-green: #1f3d2a;
+  --wb-text-yellow: #f1cf5b;
+  --wb-text-orange: #f5a35c;
+  --wb-text-red: #f2847a;
+  --wb-text-pink: #f08cbf;
+  --wb-text-purple: #b9a6ff;
+  --wb-text-blue: #7fb0ff;
+  --wb-text-green: #7fd39c;
+  --wb-canvas: var(--grey-0);
+  --wb-dot: var(--grey-200);
+  --wb-select: var(--grey-950);
+}

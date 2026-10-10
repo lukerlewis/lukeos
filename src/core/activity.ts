@@ -6,9 +6,9 @@ import { statusLabel, type Status } from "@/lib/task-fields";
 import { defineOperation, type Actor } from "./define";
 import { inspirationLabel } from "./inspiration";
 
-const { activityLog, tasks, notes, artifacts, documents, cards, projects, sops, contextFiles, routines, archiveEntries, inspirationItems } = schema;
+const { activityLog, tasks, notes, artifacts, documents, cards, projects, sops, contextFiles, routines, archiveEntries, inspirationItems, whiteboards } = schema;
 
-type ItemType = "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration";
+type ItemType = "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration" | "whiteboard";
 
 /** One line of the activity log. */
 export type ActivityEntry = {
@@ -110,7 +110,9 @@ async function titleOf(type: ItemType, id: unknown) {
               ? routines
               : type === "entry"
                 ? archiveEntries
-                : artifacts;
+                : type === "whiteboard"
+                  ? whiteboards
+                  : artifacts;
     const [row] = await db.select({ t: table.title }).from(table).where(eq(table.id, id)).limit(1);
     return row?.t ?? null;
   } catch {
@@ -147,6 +149,13 @@ export async function titleBefore(tool: string, input: Record<string, unknown>) 
       return titleOf("routine", input.id);
     case "delete_archive_entry":
       return titleOf("entry", input.id);
+    case "update_whiteboard":
+    case "delete_whiteboard":
+    case "add_whiteboard_items":
+    case "update_whiteboard_items":
+    case "delete_whiteboard_items":
+    case "set_whiteboard_items":
+      return titleOf("whiteboard", input.id);
     case "add_archive_link":
     case "add_archive_file":
       return titleOf("entry", input.entryId);
@@ -325,6 +334,21 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     }
     case "delete_routine":
       return { summary: `Moved routine ${quote(before)} to Trash`, item: { type: "routine", id: String(input.id) } };
+    case "create_whiteboard":
+      return { summary: `Made whiteboard ${quote(task.title)}`, item: { type: "whiteboard", id: task.id } };
+    case "update_whiteboard":
+      return { summary: `Renamed whiteboard ${quote(before)} to ${quote(String(input.title))}`, item: { type: "whiteboard", id: String(input.id) } };
+    case "delete_whiteboard":
+      return { summary: `Moved whiteboard ${quote(before)} to Trash`, item: { type: "whiteboard", id: String(input.id) } };
+    case "add_whiteboard_items":
+    case "update_whiteboard_items":
+    case "delete_whiteboard_items":
+    case "set_whiteboard_items": {
+      const n = Array.isArray(input.items) ? input.items.length : Array.isArray(input.changes) ? input.changes.length : Array.isArray(input.ids) ? input.ids.length : 0;
+      const verb = tool.startsWith("add") ? "Added" : tool.startsWith("delete") ? "Removed" : tool.startsWith("set") ? "Redrew" : "Changed";
+      const what = tool.startsWith("set") ? "" : ` ${n} item${n === 1 ? "" : "s"} ${tool.startsWith("delete") ? "from" : "on"}`;
+      return { summary: `${verb}${what} whiteboard ${quote(before)}`, item: { type: "whiteboard", id: String(input.id) } };
+    }
     case "start_routine_run": {
       const run = r as { routine?: { id: string; title: string } };
       if (!run.routine) return null;
