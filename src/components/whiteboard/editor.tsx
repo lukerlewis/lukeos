@@ -2,6 +2,7 @@
 
 import {
   ChevronLeft,
+  CornerDownRight,
   Diamond,
   Frame,
   Hand,
@@ -28,14 +29,20 @@ import {
   ancestorsOf,
   cloneWithNewIds,
   DEFAULTS,
+  elbowRoute,
   insertItems,
   locate,
   mapItem,
   newId,
   removeItems,
+  routeMiddle,
+  routeToPath,
+  straightRoute,
+  tidyRoute,
   walk,
   type Item,
   type ItemType,
+  type Point,
 } from "@/lib/whiteboard";
 import { ItemView } from "./item-view";
 import { Panel } from "./panel";
@@ -53,7 +60,8 @@ type Gesture =
   | { kind: "marquee"; x0: number; y0: number; additive: boolean; before: string[] }
   | { kind: "resize"; id: string; handle: Handle; start: Rect; inLayout: boolean; text: boolean }
   | { kind: "create"; tool: "frame" | "shape" | "text" | "sticky"; x0: number; y0: number; parent: string | null }
-  | { kind: "arrow"; from: string };
+  | { kind: "arrow"; from: string }
+  | { kind: "bend"; id: string; work: Point[]; seg: number; level: boolean; start: Point };
 
 const MIN_Z = 0.1;
 const MAX_Z = 4;
@@ -61,6 +69,9 @@ const clampZ = (z: number) => Math.min(MAX_Z, Math.max(MIN_Z, z));
 
 /** Copied items, shared between boards in this tab. */
 let clipboard: Item[] = [];
+const setClipboard = (items: Item[]) => {
+  clipboard = items;
+};
 
 const isTyping = (el: EventTarget | null) => {
   const t = el as HTMLElement | null;
@@ -152,6 +163,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
   }, []);
   const [tool, setTool] = useState<Tool>("select");
   const [shapeKind, setShapeKind] = useState<"rect" | "ellipse" | "diamond">("rect");
+  const [arrowKind, setArrowKind] = useState<"straight" | "elbow">("straight");
   const [selection, setSelectionState] = useState<string[]>([]);
   const selectionRef = useRef<string[]>([]);
   const setSelection = useCallback((ids: string[]) => {
@@ -419,7 +431,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       const at = locate(next, id);
       if (!at) continue;
       const [copy] = cloneWithNewIds([at.item], taken);
-      const moved = at.parent?.layout ? copy : { ...copy, x: (copy.x ?? 0) + shift, y: (copy.y ?? 0) + shift };
+      const moved = at.parent?.layout ? copy : copy.type === "arrow" ? shiftBends(copy, shift, shift) : { ...copy, x: (copy.x ?? 0) + shift, y: (copy.y ?? 0) + shift };
       next = insertItems(next, at.parent?.id ?? null, at.index + 1, [moved]);
       made.push(copy.id);
     }
@@ -555,6 +567,24 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     const world = toWorld(e.clientX, e.clientY);
     if (tool === "hand" || spaceDown || e.button === 1) {
       gesture.current = { kind: "pan", sx: e.clientX, sy: e.clientY, cam: camRef.current };
+      return;
+    }
+    const bend = (e.target as HTMLElement).closest<HTMLElement>("[data-wb-bend]")?.dataset.wbBend;
+    if (bend !== undefined && selectionRef.current.length === 1) {
+      const id = selectionRef.current[0];
+      const route = routeOf(id, itemsRef.current, rectsRef.current);
+      if (route) {
+        // Dragging a line that touches a box: keep a short stub on the box and move the rest.
+        const work = route.map((p) => ({ ...p }));
+        let seg = Number(bend);
+        if (seg === 0) {
+          work.splice(1, 0, stub(work[0], work[1]));
+          seg = 1;
+        }
+        if (seg === work.length - 2) work.splice(work.length - 1, 0, stub(work[work.length - 1], work[work.length - 2]));
+        history.begin();
+        gesture.current = { kind: "bend", id, work, seg, level: Math.abs(work[seg].y - work[seg + 1].y) < 0.5, start: world };
+      }
       return;
     }
     const handle = (e.target as HTMLElement).closest<HTMLElement>("[data-wb-handle]")?.dataset.wbHandle as Handle | undefined;
@@ -733,6 +763,9 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       case "arrow":
         setArrowDraft({ from: g.from, ...world });
         break;
+      case "bend":
+        history.live(mapItem(itemsRef.current, g.id, (i) => ({ ...i, elbow: true, bends: bendsAfter(g, world) })));
+        break;
     }
   }
 
@@ -760,6 +793,14 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       case "resize":
         history.end();
         break;
+      case "bend": {
+        // Tidy away corners that no longer turn.
+        const bends = bendsAfter(g, world);
+        const tidy = tidyRoute([g.work[0], ...bends.map(([x, y]) => ({ x, y })), g.work[g.work.length - 1]]).slice(1, -1);
+        history.live(mapItem(itemsRef.current, g.id, (i) => ({ ...i, elbow: true, bends: tidy.map((p) => [p.x, p.y] as [number, number]) })));
+        history.end();
+        break;
+      }
       case "create": {
         const box = draft;
         setDraft(null);
@@ -795,7 +836,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
         const to = el ? pick(chainAt(el), false) : null;
         if (to && to !== g.from) {
           const id = newId(allIds(itemsRef.current));
-          commit(insertItems(itemsRef.current, null, itemsRef.current.length, [{ id, type: "arrow", from: g.from, to }]));
+          commit(insertItems(itemsRef.current, null, itemsRef.current.length, [{ id, type: "arrow", from: g.from, to, ...(arrowKind === "elbow" && { elbow: true }) }]));
           setSelection([id]);
         }
         setTool("select");
@@ -812,6 +853,15 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     const moving = g.ids.filter((id) => locate(itemsRef.current, id));
     const now = new Map(moving.map((id) => [id, rectsRef.current.get(id)]));
     let next = itemsRef.current;
+    // Elbow arrows whose two ends both moved take their bends along.
+    const moved = now.get(g.primary);
+    if (g.base && moved) {
+      const dx = moved.x - g.base.x;
+      const dy = moved.y - g.base.y;
+      walk(itemsRef.current, (i) => {
+        if (i.type === "arrow" && i.bends && g.all.has(i.from ?? "") && g.all.has(i.to ?? "")) next = mapItem(next, i.id, (a) => shiftBends(a, dx, dy));
+      });
+    }
     const sameParent = moving.every((id) => (locate(next, id)!.parent?.id ?? null) === target.parent);
     const targetFrame = target.parent ? locate(next, target.parent)!.item : null;
 
@@ -923,7 +973,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
 
   // ---- Keys ----
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => {});
-  keyHandler.current = (e: KeyboardEvent) => {
+  const onKey = (e: KeyboardEvent) => {
     const mod = e.metaKey || e.ctrlKey;
     const key = e.key.toLowerCase();
     if (editingId) {
@@ -986,7 +1036,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     if (mod && (key === "c" || key === "x")) {
       const ids = topSelected();
       if (!ids.length) return;
-      clipboard = ids.map((id) => locate(itemsRef.current, id)!.item);
+      setClipboard(ids.map((id) => locate(itemsRef.current, id)!.item));
       if (key === "x") deleteSelection();
       return;
     }
@@ -994,7 +1044,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       if (!clipboard.length) return;
       e.preventDefault();
       const taken = allIds(itemsRef.current);
-      const copies = cloneWithNewIds(clipboard, taken).map((c) => ({ ...c, x: (c.x ?? 0) + 24, y: (c.y ?? 0) + 24 }));
+      const copies = cloneWithNewIds(clipboard, taken).map((c) => (c.type === "arrow" ? shiftBends(c, 24, 24) : { ...c, x: (c.x ?? 0) + 24, y: (c.y ?? 0) + 24 }));
       // Arrows only come along if both ends did.
       const ids = allIds(copies);
       const keep = copies.filter((c) => c.type !== "arrow" || (ids.has(c.from ?? "") && ids.has(c.to ?? "")));
@@ -1052,6 +1102,9 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       setTool(tools[key]);
     }
   };
+  useLayoutEffect(() => {
+    keyHandler.current = onKey;
+  });
   useEffect(() => {
     const down = (e: KeyboardEvent) => keyHandler.current(e);
     const up = (e: KeyboardEvent) => {
@@ -1073,6 +1126,20 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     });
     return list;
   }, [items]);
+
+  /** The path an arrow takes, from the boxes it joins as they're drawn right now. */
+  function routeOf(id: string, list: Item[], boxes: Map<string, Rect>): Point[] | null {
+    const a = locate(list, id)?.item;
+    if (!a || a.type !== "arrow") return null;
+    const from = boxes.get(a.from ?? "");
+    const to = boxes.get(a.to ?? "");
+    if (!from || !to) return null;
+    if (!a.elbow) return straightRoute(from, to);
+    // While both ends are being dragged, the bends come along.
+    const moving = (id: string) => !!drag && (drag.ids.has(id) || ancestorsOf(list, id).some((f) => drag.ids.has(f)));
+    const bends = drag && a.bends && moving(a.from ?? "") && moving(a.to ?? "") ? shiftBends(a, drag.dx, drag.dy).bends : a.bends;
+    return elbowRoute(from, to, bends);
+  }
 
   const selectedItems = selection.map((id) => locate(items, id)?.item).filter(Boolean) as Item[];
   const single = selectedItems.length === 1 ? selectedItems[0] : null;
@@ -1174,28 +1241,27 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
               </marker>
             </defs>
             {arrows.map((a) => {
-              const from = rects.get(a.from ?? "");
-              const to = rects.get(a.to ?? "");
-              if (!from || !to) return null;
-              const [p, q] = joinRects(from, to);
+              const route = routeOf(a.id, items, rects);
+              if (!route) return null;
+              const d = routeToPath(route);
+              const mid = routeMiddle(route);
               const selected = selection.includes(a.id);
               return (
                 <g key={a.id} data-wb-arrow={a.id} className="pointer-events-auto">
-                  <line x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke="transparent" strokeWidth={14} />
-                  <line
-                    x1={p.x}
-                    y1={p.y}
-                    x2={q.x}
-                    y2={q.y}
+                  <path d={d} fill="none" stroke="transparent" strokeWidth={14} />
+                  <path
+                    d={d}
+                    fill="none"
                     stroke={selected ? "var(--wb-select)" : "var(--grey-600)"}
                     strokeWidth={selected ? 2.5 : 2}
                     strokeLinecap="round"
+                    strokeLinejoin="round"
                     markerEnd="url(#wb-head)"
                   />
                   {a.text && (
                     <text
-                      x={(p.x + q.x) / 2}
-                      y={(p.y + q.y) / 2}
+                      x={mid.x}
+                      y={mid.y}
                       textAnchor="middle"
                       dominantBaseline="central"
                       fontSize={14}
@@ -1236,6 +1302,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
           {single && !drag && !editingId && single.type !== "arrow" && rects.get(single.id) && (
             <Handles r={toScreen(rects.get(single.id)!)} textOnly={single.type === "text"} />
           )}
+          {single?.type === "arrow" && single.elbow && !drag && <BendHandles route={routeOf(single.id, items, rects)} toScreen={(p) => ({ x: p.x * cam.z + cam.x, y: p.y * cam.z + cam.y })} />}
           {marquee && <Box r={toScreen(marquee)} thin fill />}
           {draft && <Box r={toScreen(draft)} thin />}
           {dropLine && (
@@ -1278,7 +1345,15 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
             icon={shapeKind === "diamond" ? Diamond : Square}
             round={shapeKind === "ellipse"}
           />
-          <ToolButton label="Arrow (X)" active={tool === "arrow"} onClick={() => setTool("arrow")} icon={MoveRight} />
+          <ToolButton
+            label={arrowKind === "elbow" ? "Elbow arrow (X)" : "Arrow (X)"}
+            active={tool === "arrow"}
+            onClick={() => {
+              if (tool === "arrow") setArrowKind(arrowKind === "straight" ? "elbow" : "straight");
+              setTool("arrow");
+            }}
+            icon={arrowKind === "elbow" ? CornerDownRight : MoveRight}
+          />
           <span className="mx-1 h-6 w-px bg-border" />
           <ToolButton label="Undo" onClick={() => history.undo()} icon={Undo2} disabled={!history.canUndo} />
           <ToolButton label="Redo" onClick={() => history.redo()} icon={Redo2} disabled={!history.canRedo} className="hidden md:flex" />
@@ -1395,21 +1470,51 @@ function omit(item: Item, keys: (keyof Item)[]): Item {
   return copy;
 }
 
-/** Where an arrow between two boxes starts and ends: on each box's edge, along the line between their centres. */
-function joinRects(a: Rect, b: Rect): [{ x: number; y: number }, { x: number; y: number }] {
-  const ca = { x: a.x + a.w / 2, y: a.y + a.h / 2 };
-  const cb = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
-  const edge = (r: Rect, from: { x: number; y: number }, to: { x: number; y: number }, gap: number) => {
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    if (!dx && !dy) return from;
-    const tx = dx ? r.w / 2 / Math.abs(dx) : Infinity;
-    const ty = dy ? r.h / 2 / Math.abs(dy) : Infinity;
-    const t = Math.min(tx, ty);
-    const len = Math.hypot(dx, dy);
-    return { x: from.x + dx * t + (dx / len) * gap, y: from.y + dy * t + (dy / len) * gap };
-  };
-  return [edge(a, ca, cb, 6), edge(b, cb, ca, 8)];
+/** A point a short way along a line, for the stub left on a box when its line is dragged away. */
+function stub(from: Point, to: Point): Point {
+  const len = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+  const t = Math.min(24, len / 2) / len;
+  return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
+}
+
+/** An arrow with its bends moved along with what it joins. */
+function shiftBends(a: Item, dx: number, dy: number): Item {
+  return a.bends ? { ...a, bends: a.bends.map(([x, y]) => [Math.round(x + dx), Math.round(y + dy)] as [number, number]) } : a;
+}
+
+/** The bends of an elbow arrow while one of its lines is dragged: that line moves straight up and down, or side to side. */
+function bendsAfter(g: Extract<Gesture, { kind: "bend" }>, world: Point): [number, number][] {
+  const d = g.level ? world.y - g.start.y : world.x - g.start.x;
+  return g.work
+    .slice(1, -1)
+    .map((p, i) => (i + 1 === g.seg || i + 1 === g.seg + 1 ? (g.level ? { x: p.x, y: p.y + d } : { x: p.x + d, y: p.y }) : p))
+    .map((p) => [Math.round(p.x), Math.round(p.y)] as [number, number]);
+}
+
+/** Grips in the middle of each line of a selected elbow arrow: drag one to move that line. */
+function BendHandles({ route, toScreen }: { route: Point[] | null; toScreen: (p: Point) => Point }) {
+  if (!route) return null;
+  return (
+    <>
+      {route.slice(1).map((q, i) => {
+        const p = route[i];
+        const a = toScreen(p);
+        const b = toScreen(q);
+        if (Math.hypot(b.x - a.x, b.y - a.y) < 16) return null;
+        const level = Math.abs(p.y - q.y) < 0.5;
+        return (
+          <div
+            key={i}
+            data-wb-bend={i}
+            className="pointer-events-auto absolute flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center md:size-4"
+            style={{ left: (a.x + b.x) / 2, top: (a.y + b.y) / 2, cursor: level ? "ns-resize" : "ew-resize" }}
+          >
+            <span className={cn("rounded-full border-[1.5px] border-[var(--wb-select)] bg-[var(--grey-0)]", level ? "h-2 w-3.5" : "h-3.5 w-2")} />
+          </div>
+        );
+      })}
+    </>
+  );
 }
 
 export type { ItemType };

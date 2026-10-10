@@ -58,6 +58,10 @@ export type Item = {
   /** Arrows: the ids of the items it joins. */
   from?: string;
   to?: string;
+  /** Arrows: an elbow arrow runs in straight horizontal and vertical lines instead of one diagonal. */
+  elbow?: boolean;
+  /** Elbow arrows: the corners Luke set by dragging, in board coordinates. Left out, the route is worked out. */
+  bends?: [number, number][];
   /** Frames: what's inside, in order. */
   children?: Item[];
 };
@@ -263,6 +267,14 @@ export function cleanItem(raw: RawItem, taken: Set<string>): Item {
   if (t === "arrow") {
     if (raw.from) out.from = raw.from;
     if (raw.to) out.to = raw.to;
+    if (raw.elbow) {
+      out.elbow = true;
+      const bends = (raw.bends ?? [])
+        .filter((b) => Array.isArray(b) && b.length === 2 && b.every((n) => typeof n === "number" && Number.isFinite(n)))
+        .slice(0, 50)
+        .map(([x, y]) => [round(x), round(y)] as [number, number]);
+      if (bends.length) out.bends = bends;
+    }
   }
   return out;
 }
@@ -279,7 +291,7 @@ export function cleanBoard(items: RawItem[]): Item[] {
   return keep(cleaned);
 }
 
-const KEY_ORDER = ["id", "type", "name", "text", "x", "y", "w", "h", "style", "weight", "shape", "color", "layout", "gap", "padX", "padY", "align", "from", "to", "children"];
+const KEY_ORDER = ["id", "type", "name", "text", "x", "y", "w", "h", "style", "weight", "shape", "color", "layout", "gap", "padX", "padY", "align", "from", "to", "elbow", "bends", "children"];
 
 /** The same items with their fields in a readable order (the database sorts them by length). */
 export function orderKeys(items: Item[]): Item[] {
@@ -334,4 +346,153 @@ export function sizeGuess(i: Item): { w: number; h: number } {
     return { w, h };
   }
   return { w: 0, h: 0 };
+}
+
+// ---- Arrow routes ----
+
+export type Point = { x: number; y: number };
+export type Box = { x: number; y: number; w: number; h: number };
+
+/** How far an arrow stays off the edge of what it joins: a little more at the head end. */
+const START_GAP = 6;
+const END_GAP = 8;
+
+/** Where a straight arrow between two boxes starts and ends: on each box's edge, along the line between their centres. */
+export function straightRoute(a: Box, b: Box): Point[] {
+  const ca = { x: a.x + a.w / 2, y: a.y + a.h / 2 };
+  const cb = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+  const edge = (r: Box, from: Point, to: Point, gap: number) => {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    if (!dx && !dy) return from;
+    const tx = dx ? r.w / 2 / Math.abs(dx) : Infinity;
+    const ty = dy ? r.h / 2 / Math.abs(dy) : Infinity;
+    const t = Math.min(tx, ty);
+    const len = Math.hypot(dx, dy);
+    return { x: from.x + dx * t + (dx / len) * gap, y: from.y + dy * t + (dy / len) * gap };
+  };
+  return [edge(a, ca, cb, START_GAP), edge(b, cb, ca, END_GAP)];
+}
+
+/** The corners an elbow arrow takes when nobody has moved them: across, down and across (or the other way round). */
+function autoBends(a: Box, b: Box): Point[] {
+  const ca = { x: a.x + a.w / 2, y: a.y + a.h / 2 };
+  const cb = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+  const gapX = cb.x > ca.x ? b.x - (a.x + a.w) : a.x - (b.x + b.w);
+  const gapY = cb.y > ca.y ? b.y - (a.y + a.h) : a.y - (b.y + b.h);
+  if (gapX > 0 && gapX >= gapY) {
+    const midX = cb.x > ca.x ? a.x + a.w + gapX / 2 : b.x + b.w + gapX / 2;
+    // Side by side with some overlap: one straight line through the middle of it.
+    const top = Math.max(a.y, b.y);
+    const bottom = Math.min(a.y + a.h, b.y + b.h);
+    if (bottom - top > 0) return [{ x: midX, y: (top + bottom) / 2 }];
+    return [
+      { x: midX, y: ca.y },
+      { x: midX, y: cb.y },
+    ];
+  }
+  if (gapY > 0) {
+    const midY = cb.y > ca.y ? a.y + a.h + gapY / 2 : b.y + b.h + gapY / 2;
+    const left = Math.max(a.x, b.x);
+    const right = Math.min(a.x + a.w, b.x + b.w);
+    if (right - left > 0) return [{ x: (left + right) / 2, y: midY }];
+    return [
+      { x: ca.x, y: midY },
+      { x: cb.x, y: midY },
+    ];
+  }
+  // Overlapping boxes: one corner.
+  return [{ x: cb.x, y: ca.y }];
+}
+
+/** The way out of a box towards a point, in straight lines: the point on its edge, and a corner if one is needed. */
+function leave(r: Box, p: Point, gap: number): Point[] {
+  const cx = r.x + r.w / 2;
+  const cy = r.y + r.h / 2;
+  const inX = p.x > r.x && p.x < r.x + r.w;
+  const inY = p.y > r.y && p.y < r.y + r.h;
+  if (inY && !inX) return [{ x: p.x > cx ? r.x + r.w + gap : r.x - gap, y: p.y }];
+  if (inX && !inY) return [{ x: p.x, y: p.y > cy ? r.y + r.h + gap : r.y - gap }];
+  if (inX && inY) return [];
+  // Off a corner: go out of the side that faces it most, then turn.
+  if (Math.abs(p.x - cx) - r.w / 2 >= Math.abs(p.y - cy) - r.h / 2)
+    return [
+      { x: p.x > cx ? r.x + r.w + gap : r.x - gap, y: cy },
+      { x: p.x, y: cy },
+    ];
+  return [
+    { x: cx, y: p.y > cy ? r.y + r.h + gap : r.y - gap },
+    { x: cx, y: p.y },
+  ];
+}
+
+/** Drops repeated points and corners that don't turn. */
+export function tidyRoute(points: Point[]): Point[] {
+  const out: Point[] = [];
+  for (const p of points) {
+    const last = out[out.length - 1];
+    if (last && Math.abs(last.x - p.x) < 0.5 && Math.abs(last.y - p.y) < 0.5) continue;
+    out.push(p);
+    while (out.length >= 3) {
+      const [a, b, c] = out.slice(-3);
+      const straight = (Math.abs(a.x - b.x) < 0.5 && Math.abs(b.x - c.x) < 0.5) || (Math.abs(a.y - b.y) < 0.5 && Math.abs(b.y - c.y) < 0.5);
+      if (!straight) break;
+      out.splice(out.length - 2, 1);
+    }
+  }
+  return out;
+}
+
+/**
+ * An elbow arrow's path, from its start on one box to its end on the other,
+ * in horizontal and vertical lines only, through its bends if it has any.
+ */
+export function elbowRoute(a: Box, b: Box, bends?: [number, number][]): Point[] {
+  const corners = bends?.length ? bends.map(([x, y]) => ({ x, y })) : autoBends(a, b);
+  const raw = [...leave(a, corners[0], START_GAP), ...corners, ...leave(b, corners[corners.length - 1], END_GAP).reverse()];
+  // Anything that isn't level or upright gets a corner.
+  const square: Point[] = [];
+  for (const p of raw) {
+    const last = square[square.length - 1];
+    if (last && Math.abs(last.x - p.x) >= 0.5 && Math.abs(last.y - p.y) >= 0.5) square.push({ x: p.x, y: last.y });
+    square.push(p);
+  }
+  const route = tidyRoute(square);
+  if (route.length >= 2) return route;
+  return straightRoute(a, b);
+}
+
+/** An arrow's path through its points, with the corners slightly rounded. */
+export function routeToPath(points: Point[], radius = 6): string {
+  if (!points.length) return "";
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length - 1; i++) {
+    const p = points[i - 1];
+    const c = points[i];
+    const n = points[i + 1];
+    const r = Math.min(radius, Math.hypot(c.x - p.x, c.y - p.y) / 2, Math.hypot(n.x - c.x, n.y - c.y) / 2);
+    const towards = (from: Point, to: Point, dist: number) => {
+      const len = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+      return { x: from.x + ((to.x - from.x) / len) * dist, y: from.y + ((to.y - from.y) / len) * dist };
+    };
+    const a = towards(c, p, r);
+    const b = towards(c, n, r);
+    d += ` L ${a.x} ${a.y} Q ${c.x} ${c.y} ${b.x} ${b.y}`;
+  }
+  const last = points[points.length - 1];
+  return `${d} L ${last.x} ${last.y}`;
+}
+
+/** The point halfway along a path, for its label. */
+export function routeMiddle(points: Point[]): Point {
+  const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
+  let left = lengths.reduce((n, l) => n + l, 0) / 2;
+  for (let i = 0; i < lengths.length; i++) {
+    if (left <= lengths[i]) {
+      const t = lengths[i] ? left / lengths[i] : 0;
+      return { x: points[i].x + (points[i + 1].x - points[i].x) * t, y: points[i].y + (points[i + 1].y - points[i].y) * t };
+    }
+    left -= lengths[i];
+  }
+  return points[0];
 }
