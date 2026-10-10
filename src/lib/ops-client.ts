@@ -103,8 +103,8 @@ function undoFor(
       };
     case "add_inspiration":
       return { label: "saving to Inspiration", run: async () => void (await send("delete_inspiration", { id: r.id })) };
-    case "create_sop":
-      return { label: `adding SOP ${quote(r.title)}`, run: async () => void (await send("delete_sop", { id: r.id })) };
+    case "create_skill":
+      return { label: `adding skill ${quote(r.title)}`, run: async () => void (await send("delete_skill", { id: r.id })) };
     case "create_context":
       return { label: `adding context file ${quote(r.title)}`, run: async () => void (await send("delete_context", { id: r.id })) };
     case "create_whiteboard":
@@ -114,7 +114,7 @@ function undoFor(
     case "copy_artifact_to_note":
       return { label: "copying to a note", run: async () => void (await send("delete_note", { id: r.id })) };
     case "restore_from_trash": {
-      const { type, id } = input as { type: "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration" | "whiteboard"; id: string };
+      const { type, id } = input as { type: "task" | "note" | "artifact" | "document" | "card" | "project" | "skill" | "context" | "routine" | "entry" | "inspiration" | "whiteboard"; id: string };
       const del = (
         {
           task: "delete_task",
@@ -123,7 +123,7 @@ function undoFor(
           document: "delete_document",
           card: "delete_card",
           project: "delete_project",
-          sop: "delete_sop",
+          skill: "delete_skill",
           context: "delete_context",
           routine: "delete_routine",
           entry: "delete_archive_entry",

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { SopEditor } from "@/components/sops/sop-editor";
+import { SkillEditor } from "@/components/skills/skill-editor";
 import { OperationError } from "@/core/define";
 import { getContext } from "@/core/context";
 
@@ -43,7 +43,7 @@ export default async function ContextPage({ params, searchParams }: PageProps<"/
           {back.label}
         </Link>
         <div className="max-w-3xl min-w-0">
-          <SopEditor key={file.id} sop={file} kind="context" autoFocus={query.new === "1"} />
+          <SkillEditor key={file.id} skill={file} kind="context" autoFocus={query.new === "1"} />
         </div>
       </div>
     </div>

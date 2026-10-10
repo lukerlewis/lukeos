@@ -23,7 +23,7 @@ import { routineOperations } from "./routines";
 import { searchOperations } from "./search";
 import { rollOverLists } from "./rollover";
 import { getTimeZone, settingsOperations, today } from "./settings";
-import { sopOperations } from "./sops";
+import { skillOperations } from "./skills";
 import { contextOperations } from "./context";
 import { taskOperations } from "./tasks";
 import { trashOperations } from "./trash";
@@ -67,7 +67,7 @@ export const operations = {
   ...focusOperations,
   ...bulkOperations,
   ...fromClaudeOperations,
-  ...sopOperations,
+  ...skillOperations,
   ...contextOperations,
   ...routineOperations,
   ...activityOperations,
@@ -79,7 +79,27 @@ export const operations = {
 export type Operations = typeof operations;
 export type OperationName = keyof Operations;
 
-export async function runOperation(name: string, rawInput: unknown, actor: Actor) {
+/** Skills used to be called SOPs. Claude sessions that started before the rename still use the old tool names. */
+const renamed: Record<string, string> = {
+  list_sops: "list_skills",
+  get_sop: "get_skill",
+  create_sop: "create_skill",
+  update_sop: "update_skill",
+  delete_sop: "delete_skill",
+};
+
+/** Turns an old tool name and its old field names (sopId, type "sop") into today's. */
+export function resolveLegacy(name: string, input: unknown): { name: string; input: unknown } {
+  name = renamed[name] ?? name;
+  if (!input || typeof input !== "object" || Array.isArray(input)) return { name, input };
+  const { sopId, ...rest } = input as Record<string, unknown>;
+  const next: Record<string, unknown> = sopId !== undefined && rest.skillId === undefined ? { ...rest, skillId: sopId } : rest;
+  if (next.type === "sop") next.type = "skill";
+  return { name, input: next };
+}
+
+export async function runOperation(rawName: string, rawInputBefore: unknown, actor: Actor) {
+  const { name, input: rawInput } = resolveLegacy(rawName, rawInputBefore);
   const op = Object.hasOwn(operations, name) ? (operations as Record<string, Operation>)[name] : undefined;
   if (!op) return { ok: false as const, status: 404, error: `Unknown operation "${name}".` };
   const parsed = op.input.safeParse(rawInput ?? {});

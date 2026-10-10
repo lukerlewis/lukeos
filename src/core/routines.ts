@@ -23,7 +23,7 @@ import { CLAUDE_TAGGING_ON, TAGGING_HOW_TO, untaggedInspiration } from "./inspir
 import { listMentions } from "./mentions";
 import { listMessages } from "./messages";
 import { getTimeZone } from "./settings";
-import { listSops } from "./sops";
+import { listSkills } from "./skills";
 
 /**
  * Routines are things Luke wants done on a schedule, kept in LukeOS so any
@@ -33,7 +33,7 @@ import { listSops } from "./sops";
  * nobody picks up before the next check-in is skipped and shown as missed.
  */
 
-const { routines, routineRuns, sops, appSettings } = schema;
+const { routines, routineRuns, skills, appSettings } = schema;
 
 const CHECK_INS_KEY = "check_ins";
 /** A check-in that starts a touch early still counts things due a few minutes later. */
@@ -64,7 +64,7 @@ export type RoutineSummary = Schedule & {
   enabled: boolean;
   /** "Every day at 8pm". */
   scheduleLabel: string;
-  sop: { id: string; title: string } | null;
+  skill: { id: string; title: string } | null;
   /** The next time it's due, if it's on. */
   nextDueAt: Date | null;
   lastRun: RoutineRun | null;
@@ -143,13 +143,13 @@ async function runsFor(routineIds: string[], limit: number | "latest") {
   return rows.map(({ run, artifactTitle, documentTitle }) => ({ routineId: run.routineId, run: runOf(run, artifactTitle, documentTitle, now) }));
 }
 
-async function sopTitles(ids: string[]) {
+async function skillTitles(ids: string[]) {
   if (ids.length === 0) return new Map<string, string>();
   const rows = await db
-    .select({ id: sops.id, title: sops.title })
-    .from(sops)
-    .where(and(inArray(sops.id, ids), isNull(sops.deletedAt)));
-  return new Map(rows.map((r) => [r.id, r.title || "Untitled SOP"]));
+    .select({ id: skills.id, title: skills.title })
+    .from(skills)
+    .where(and(inArray(skills.id, ids), isNull(skills.deletedAt)));
+  return new Map(rows.map((r) => [r.id, r.title || "Untitled skill"]));
 }
 
 /** The next time a routine is due, after now. */
@@ -166,7 +166,7 @@ async function summaries(rows: Row[]): Promise<RoutineSummary[]> {
       rows.map((r) => r.id),
       "latest",
     ),
-    sopTitles(rows.flatMap((r) => (r.sopId ? [r.sopId] : []))),
+    skillTitles(rows.flatMap((r) => (r.skillId ? [r.skillId] : []))),
   ]);
   const now = new Date();
   return rows.map((r) => {
@@ -177,7 +177,7 @@ async function summaries(rows: Row[]): Promise<RoutineSummary[]> {
       enabled: r.enabled,
       ...s,
       scheduleLabel: scheduleLabel(s),
-      sop: r.sopId && titles.has(r.sopId) ? { id: r.sopId, title: titles.get(r.sopId)! } : null,
+      skill: r.skillId && titles.has(r.skillId) ? { id: r.skillId, title: titles.get(r.skillId)! } : null,
       nextDueAt: nextDue(r, timeZone, now),
       lastRun: last.find((l) => l.routineId === r.id)?.run ?? null,
       madeBy: madeByOf(r),
@@ -323,16 +323,16 @@ const instructions = z
   .string()
   .max(100_000)
   .describe("What to do each time, in Markdown. Say what to make (usually a document) and anything to check or include.");
-const sopId = z.uuid().nullable().describe("An SOP to follow while doing it (from list_sops), or null for none.");
+const skillId = z.uuid().nullable().describe("A skill to follow while doing it (from list_skills), or null for none.");
 
-async function assertSop(id: string | null | undefined) {
+async function assertSkill(id: string | null | undefined) {
   if (!id) return;
   const [row] = await db
-    .select({ id: sops.id })
-    .from(sops)
-    .where(and(eq(sops.id, id), isNull(sops.deletedAt)))
+    .select({ id: skills.id })
+    .from(skills)
+    .where(and(eq(skills.id, id), isNull(skills.deletedAt)))
     .limit(1);
-  if (!row) throw new OperationError("That SOP doesn't exist, or it's in Trash. list_sops shows them all.", 404);
+  if (!row) throw new OperationError("That skill doesn't exist, or it's in Trash. list_skills shows them all.", 404);
 }
 
 /** Compact shape for Claude, without the full run history. */
@@ -345,7 +345,7 @@ const forClaude = (r: RoutineSummary, timeZone: string) => ({
   time: r.time,
   days: r.days,
   dayOfMonth: r.dayOfMonth,
-  sop: r.sop,
+  skill: r.skill,
   next: r.nextDueAt ? whenLabel(r.nextDueAt, timeZone) : null,
   lastRun: r.lastRun ? { status: r.lastRun.status, dueAt: r.lastRun.dueAt, summary: r.lastRun.summary } : null,
 });
@@ -415,7 +415,7 @@ export const routineOperations = {
         }),
         ...(nothingToDo
           ? {}
-          : { sops: (await listSops()).map((s) => ({ title: s.title, description: s.description })) }),
+          : { skills: (await listSkills()).map((s) => ({ title: s.title, description: s.description })) }),
         checkIns: checkInsLabel(checkIns),
       };
     },
@@ -424,7 +424,7 @@ export const routineOperations = {
   list_routines: defineOperation({
     name: "list_routines",
     description:
-      "Luke's routines: things he wants done on a schedule (e.g. an end of day recap), with when each runs, the SOP it follows, when it's next due and how its last run went. Also says when agents check in. To do routines that are due, use get_inbox.",
+      "Luke's routines: things he wants done on a schedule (e.g. an end of day recap), with when each runs, the skill it follows, when it's next due and how its last run went. Also says when agents check in. To do routines that are due, use get_inbox.",
     input: z.object({}),
     run: async () => {
       const [list, timeZone, checkIns] = await Promise.all([listRoutines(), getTimeZone(), getCheckIns()]);
@@ -434,7 +434,7 @@ export const routineOperations = {
 
   get_routine: defineOperation({
     name: "get_routine",
-    description: "One routine in full: its instructions, schedule, SOP, and its recent runs (what was done, and any that were missed).",
+    description: "One routine in full: its instructions, schedule, skill, and its recent runs (what was done, and any that were missed).",
     input: z.object({ id }),
     run: async ({ id }) => getRoutine(id),
   }),
@@ -450,11 +450,11 @@ export const routineOperations = {
       time: time.optional(),
       days: days.optional(),
       dayOfMonth: dayOfMonth.optional(),
-      sopId: sopId.optional(),
+      skillId: skillId.optional(),
       enabled: z.boolean().optional().describe("false to add it switched off. Defaults to on."),
     }),
     run: async (input, { actor }) => {
-      await assertSop(input.sopId);
+      await assertSkill(input.skillId);
       const [row] = await db
         .insert(routines)
         .values({
@@ -464,7 +464,7 @@ export const routineOperations = {
           ...(input.time && { time: input.time }),
           ...(input.days && { days: [...new Set(input.days)].sort() }),
           ...(input.dayOfMonth && { dayOfMonth: input.dayOfMonth }),
-          sopId: input.sopId ?? null,
+          skillId: input.skillId ?? null,
           enabled: input.enabled ?? true,
           ...madeByColumns(actor),
         })
@@ -475,7 +475,7 @@ export const routineOperations = {
 
   update_routine: defineOperation({
     name: "update_routine",
-    description: "Change a routine: its name, instructions, schedule, SOP, or switch it on or off. Only when Luke asks. Fields left out stay as they are.",
+    description: "Change a routine: its name, instructions, schedule, skill, or switch it on or off. Only when Luke asks. Fields left out stay as they are.",
     input: z.object({
       id,
       title: z.string().trim().max(200).optional(),
@@ -484,12 +484,12 @@ export const routineOperations = {
       time: time.optional(),
       days: days.optional(),
       dayOfMonth: dayOfMonth.optional(),
-      sopId: sopId.optional(),
+      skillId: skillId.optional(),
       enabled: z.boolean().optional().describe("false switches it off: it won't be due until it's switched back on."),
     }),
-    run: async ({ id, title, instructions, frequency, time, days, dayOfMonth, sopId, enabled }) => {
+    run: async ({ id, title, instructions, frequency, time, days, dayOfMonth, skillId, enabled }) => {
       const before = await routineRow(id);
-      await assertSop(sopId);
+      await assertSkill(skillId);
       const scheduleChanged =
         (frequency !== undefined && frequency !== before.frequency) ||
         (time !== undefined && time !== before.time) ||
@@ -505,7 +505,7 @@ export const routineOperations = {
           ...(time !== undefined && { time }),
           ...(days !== undefined && { days: [...new Set(days)].sort() }),
           ...(dayOfMonth !== undefined && { dayOfMonth }),
-          ...(sopId !== undefined && { sopId }),
+          ...(skillId !== undefined && { skillId }),
           ...(enabled !== undefined && { enabled }),
           // A new time from now on: earlier times under the old schedule don't become due or missed.
           ...(scheduleChanged && { scheduledFrom: new Date() }),
@@ -530,7 +530,7 @@ export const routineOperations = {
   start_routine_run: defineOperation({
     name: "start_routine_run",
     description:
-      "Claim a due routine before doing it, so no other check-in does it too. Returns its instructions and the SOP to follow (read it with get_sop). If it's already been started or done, you'll get an error: skip it. When you're finished, call finish_routine_run with the run's id. Pass now: true only when Luke asks for a routine to run right away.",
+      "Claim a due routine before doing it, so no other check-in does it too. Returns its instructions and the skill to follow (read it with get_skill). If it's already been started or done, you'll get an error: skip it. When you're finished, call finish_routine_run with the run's id. Pass now: true only when Luke asks for a routine to run right away.",
     input: z.object({
       id,
       now: z.boolean().optional().describe("Run it now even though it isn't due (only when Luke asks)."),
@@ -565,18 +565,18 @@ export const routineOperations = {
         .onConflictDoNothing()
         .returning({ id: routineRuns.id });
       if (!run) throw new OperationError(`"${routine.title || "Untitled"}" has already been started for that time. Skip it.`, 409);
-      const [sop] = routine.sopId
+      const [skill] = routine.skillId
         ? await db
-            .select({ id: sops.id, title: sops.title })
-            .from(sops)
-            .where(and(eq(sops.id, routine.sopId), isNull(sops.deletedAt)))
+            .select({ id: skills.id, title: skills.title })
+            .from(skills)
+            .where(and(eq(skills.id, routine.skillId), isNull(skills.deletedAt)))
             .limit(1)
         : [];
       return {
         runId: run.id,
         routine: { id: routine.id, title: routine.title, due: whenLabel(dueAt, timeZone) },
         instructions: routine.instructions || "(No instructions written yet. Do what the title suggests, briefly.)",
-        sop: sop ?? null,
+        skill: skill ?? null,
         reminder: `Pass routine: "${routine.title}" on everything you create or change, then call finish_routine_run with runId.`,
       };
     },

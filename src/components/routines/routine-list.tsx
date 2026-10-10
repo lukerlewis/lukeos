@@ -28,7 +28,7 @@ export function RoutineList({ routines, timeZone }: { routines: RoutineSummary[]
               </span>
               <span className="truncate text-meta text-muted-foreground">
                 {r.scheduleLabel}
-                {r.sop && ` · follows ${r.sop.title}`}
+                {r.skill && ` · follows ${r.skill.title}`}
               </span>
               {(r.lastRun || r.madeBy.kind === "agent") && (
                 <span className="mt-1 flex min-w-0 items-center gap-2 text-meta text-muted-foreground">
