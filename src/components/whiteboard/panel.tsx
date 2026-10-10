@@ -165,6 +165,14 @@ export function Panel({
               { value: "elbow", label: "Elbow" },
             ]}
           />
+          <Choice
+            value={item.head === "none" ? "line" : "arrow"}
+            onChange={(v) => set({ head: v === "line" ? "none" : undefined })}
+            options={[
+              { value: "arrow", label: "Arrow" },
+              { value: "line", label: "Line" },
+            ]}
+          />
           {item.bends && (
             <button type="button" onClick={() => set({ bends: undefined })} className="h-9 self-start rounded-[8px] px-2 text-preview text-muted-foreground hover:bg-muted">
               Reset bends

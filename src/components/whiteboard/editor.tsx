@@ -29,16 +29,17 @@ import {
   ancestorsOf,
   cloneWithNewIds,
   DEFAULTS,
-  elbowRoute,
   insertItems,
   locate,
   mapItem,
   newId,
   removeItems,
   arrowHead,
+  arrowRoute,
+  arrowsAmong,
+  shiftArrow,
   routeMiddle,
   routeToPath,
-  straightRoute,
   tidyRoute,
   walk,
   type Item,
@@ -61,7 +62,9 @@ type Gesture =
   | { kind: "marquee"; x0: number; y0: number; additive: boolean; before: string[] }
   | { kind: "resize"; id: string; handle: Handle; start: Rect; inLayout: boolean; text: boolean }
   | { kind: "create"; tool: "frame" | "shape" | "text" | "sticky"; x0: number; y0: number; parent: string | null }
-  | { kind: "arrow"; from: string }
+  | { kind: "arrow"; from: string | null; start: Point; sx: number; sy: number }
+  | { kind: "end"; id: string; which: "from" | "to" }
+  | { kind: "slide"; id: string; start: Point; orig: Item }
   | { kind: "bend"; id: string; work: Point[]; seg: number; level: boolean; start: Point };
 
 const MIN_Z = 0.1;
@@ -165,6 +168,8 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
   const [tool, setTool] = useState<Tool>("select");
   const [shapeKind, setShapeKind] = useState<"rect" | "ellipse" | "diamond">("rect");
   const [arrowKind, setArrowKind] = useState<"straight" | "elbow">("straight");
+  /** Whether new arrows get a head: the last choice made in the panel. */
+  const [lineOnly, setLineOnly] = useState(false);
   const [selection, setSelectionState] = useState<string[]>([]);
   const selectionRef = useRef<string[]>([]);
   const setSelection = useCallback((ids: string[]) => {
@@ -177,7 +182,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
   const [drag, setDrag] = useState<{ ids: Set<string>; dx: number; dy: number } | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [draft, setDraft] = useState<Rect | null>(null);
-  const [arrowDraft, setArrowDraft] = useState<{ from: string; x: number; y: number } | null>(null);
+  const [arrowDraft, setArrowDraft] = useState<{ from: string | null; start: Point; x: number; y: number } | null>(null);
   const [dropLine, setDropLine] = useState<Rect | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [spaceDown, setSpaceDown] = useState(false);
@@ -339,6 +344,12 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     }
     return chain;
   };
+  /** The innermost item under a point on screen, for joining an arrow to it. */
+  const itemUnder = (cx: number, cy: number) => {
+    const el = document.elementsFromPoint(cx, cy).find((n) => worldRef.current?.contains(n) && n.closest("[data-wb-id]"));
+    const chain = el ? chainAt(el) : [];
+    return chain.length ? chain[chain.length - 1] : null;
+  };
   /** Like Figma: a click picks the top-level item, or a sibling of what's selected; Cmd picks the deepest. */
   const pick = (chain: string[], deep: boolean) => {
     if (!chain.length) return null;
@@ -428,16 +439,21 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     let next = itemsRef.current;
     const taken = allIds(next);
     const made: string[] = [];
-    for (const id of topSelected(ids)) {
-      const at = locate(next, id);
-      if (!at) continue;
-      const [copy] = cloneWithNewIds([at.item], taken);
-      const moved = at.parent?.layout ? copy : copy.type === "arrow" ? shiftBends(copy, shift, shift) : { ...copy, x: (copy.x ?? 0) + shift, y: (copy.y ?? 0) + shift };
+    const picked = topSelected(ids).map((id) => locate(next, id)!.item);
+    const extra = arrowsAmong(next, picked);
+    const copies = cloneWithNewIds([...picked, ...extra], taken);
+    picked.forEach((item, n) => {
+      const at = locate(next, item.id)!;
+      const copy = copies[n];
+      const moved = at.parent?.layout ? copy : copy.type === "arrow" ? shiftArrow(copy, shift, shift) : { ...copy, x: (copy.x ?? 0) + shift, y: (copy.y ?? 0) + shift };
       next = insertItems(next, at.parent?.id ?? null, at.index + 1, [moved]);
       made.push(copy.id);
-    }
+    });
+    // Arrows between the copies come along, joined to the copies.
+    const arrows = copies.slice(picked.length).map((a) => shiftArrow(a, shift, shift));
+    next = insertItems(next, null, next.length, arrows);
     commit(next);
-    setSelection(made);
+    setSelection([...made, ...arrows.map((a) => a.id)]);
   };
 
   /** Shift+A: wrap the selection in an auto layout frame, or turn auto layout on for a selected frame. */
@@ -570,6 +586,12 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       gesture.current = { kind: "pan", sx: e.clientX, sy: e.clientY, cam: camRef.current };
       return;
     }
+    const end = (e.target as HTMLElement).closest<HTMLElement>("[data-wb-end]")?.dataset.wbEnd as "from" | "to" | undefined;
+    if (end && selectionRef.current.length === 1) {
+      history.begin();
+      gesture.current = { kind: "end", id: selectionRef.current[0], which: end };
+      return;
+    }
     const bend = (e.target as HTMLElement).closest<HTMLElement>("[data-wb-bend]")?.dataset.wbBend;
     if (bend !== undefined && selectionRef.current.length === 1) {
       const id = selectionRef.current[0];
@@ -602,11 +624,10 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     const chain = chainAt(e.target);
 
     if (tool === "arrow") {
-      const from = pick(chain, false);
-      if (from) {
-        gesture.current = { kind: "arrow", from };
-        setArrowDraft({ from, ...world });
-      }
+      // An arrow joins the innermost thing it starts on, or starts on the board itself.
+      const from = itemUnder(e.clientX, e.clientY);
+      gesture.current = { kind: "arrow", from, start: world, sx: e.clientX, sy: e.clientY };
+      setArrowDraft({ from, start: world, ...world });
       return;
     }
     if (tool === "frame" || tool === "shape" || tool === "text" || tool === "sticky") {
@@ -618,6 +639,12 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     const arrowId = (e.target as Element).closest?.("[data-wb-arrow]")?.getAttribute("data-wb-arrow");
     if (arrowId) {
       setSelection(e.shiftKey ? [...selectionRef.current, arrowId] : [arrowId]);
+      // An arrow with an end left on the board can be dragged by its line.
+      const a = locate(itemsRef.current, arrowId)?.item;
+      if (!e.shiftKey && a && (a.start || a.end)) {
+        history.begin();
+        gesture.current = { kind: "slide", id: arrowId, start: world, orig: a };
+      }
       return;
     }
     const hit = pick(chain, e.metaKey || e.ctrlKey);
@@ -684,14 +711,16 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
           let next = itemsRef.current;
           const taken = allIds(next);
           const copies: string[] = [];
-          for (const id of ids) {
-            const at = locate(next, id);
-            if (!at) continue;
-            const [copy] = cloneWithNewIds([at.item], taken);
-            next = insertItems(next, at.parent?.id ?? null, at.index + 1, [copy]);
-            copies.push(copy.id);
-            if (id === g.primary) primary = copy.id;
-          }
+          const picked = ids.map((id) => locate(next, id)?.item).filter((i): i is Item => !!i);
+          // Arrows between the copied items are copied too, joined to the copies.
+          const made = cloneWithNewIds([...picked, ...arrowsAmong(next, picked)], taken);
+          picked.forEach((item, n) => {
+            const at = locate(next, item.id)!;
+            next = insertItems(next, at.parent?.id ?? null, at.index + 1, [made[n]]);
+            copies.push(made[n].id);
+            if (item.id === g.primary) primary = made[n].id;
+          });
+          next = insertItems(next, null, next.length, made.slice(picked.length));
           commit(next);
           ids = copies;
           setSelection(ids);
@@ -762,7 +791,13 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
         break;
       }
       case "arrow":
-        setArrowDraft({ from: g.from, ...world });
+        setArrowDraft({ from: g.from, start: g.start, ...world });
+        break;
+      case "end":
+        history.live(mapItem(itemsRef.current, g.id, (a) => withEnd(a, g.which, null, world)));
+        break;
+      case "slide":
+        history.live(mapItem(itemsRef.current, g.id, () => shiftArrow(g.orig, world.x - g.start.x, world.y - g.start.y)));
         break;
       case "bend":
         history.live(mapItem(itemsRef.current, g.id, (i) => ({ ...i, elbow: true, bends: bendsAfter(g, world) })));
@@ -833,16 +868,33 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       }
       case "arrow": {
         setArrowDraft(null);
-        const el = document.elementsFromPoint(e.clientX, e.clientY).find((n) => worldRef.current?.contains(n) && n.closest("[data-wb-id]"));
-        const to = el ? pick(chainAt(el), false) : null;
-        if (to && to !== g.from) {
+        const under = itemUnder(e.clientX, e.clientY);
+        const to = under && under !== g.from ? under : null;
+        // A click on its own makes nothing; a drag across empty board makes a free-standing arrow.
+        if (to || Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 8) {
           const id = newId(allIds(itemsRef.current));
-          commit(insertItems(itemsRef.current, null, itemsRef.current.length, [{ id, type: "arrow", from: g.from, to, ...(arrowKind === "elbow" && { elbow: true }) }]));
+          let a: Item = { id, type: "arrow", ...(arrowKind === "elbow" && { elbow: true }), ...(lineOnly && { head: "none" as const }) };
+          a = withEnd(a, "from", g.from, g.start);
+          a = withEnd(a, "to", to, world);
+          commit(insertItems(itemsRef.current, null, itemsRef.current.length, [a]));
           setSelection([id]);
         }
         setTool("select");
         break;
       }
+      case "end": {
+        const at = locate(itemsRef.current, g.id)?.item;
+        if (at) {
+          const under = itemUnder(e.clientX, e.clientY);
+          const other = g.which === "from" ? at.to : at.from;
+          history.live(mapItem(itemsRef.current, g.id, (a) => withEnd(a, g.which, under && under !== other ? under : null, world)));
+        }
+        history.end();
+        break;
+      }
+      case "slide":
+        history.end();
+        break;
     }
     void world;
   }
@@ -854,13 +906,13 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     const moving = g.ids.filter((id) => locate(itemsRef.current, id));
     const now = new Map(moving.map((id) => [id, rectsRef.current.get(id)]));
     let next = itemsRef.current;
-    // Elbow arrows whose two ends both moved take their bends along.
+    // Arrows whose joined ends all moved take their bends and free ends along.
     const moved = now.get(g.primary);
     if (g.base && moved) {
       const dx = moved.x - g.base.x;
       const dy = moved.y - g.base.y;
       walk(itemsRef.current, (i) => {
-        if (i.type === "arrow" && i.bends && g.all.has(i.from ?? "") && g.all.has(i.to ?? "")) next = mapItem(next, i.id, (a) => shiftBends(a, dx, dy));
+        if (i.type === "arrow" && travels(i, (id) => g.all.has(id))) next = mapItem(next, i.id, (a) => shiftArrow(a, dx, dy));
       });
     }
     const sameParent = moving.every((id) => (locate(next, id)!.parent?.id ?? null) === target.parent);
@@ -892,7 +944,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
 
   function cancelGesture() {
     const g = gesture.current;
-    if (g?.kind === "resize") history.end();
+    if (g?.kind === "resize" || g?.kind === "end" || g?.kind === "slide") history.end();
     gesture.current = null;
     setDrag(null);
     setDropLine(null);
@@ -948,14 +1000,40 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       } else setCam({ ...c, x: c.x - e.deltaX, y: c.y - e.deltaY });
     };
     view.addEventListener("wheel", onWheel, { passive: false });
-    // Safari's own pinch gesture would zoom the whole page.
-    const stop = (e: Event) => e.preventDefault();
-    view.addEventListener("gesturestart", stop);
-    view.addEventListener("gesturechange", stop);
+    // Safari on a Mac reports a trackpad pinch as gesture events (with a running scale), not as Ctrl+wheel.
+    type Pinch = Event & { scale: number; clientX: number; clientY: number };
+    let start: { cam: Camera; scale: number } | null = null;
+    const onGestureStart = (e: Event) => {
+      e.preventDefault();
+      start = { cam: camRef.current, scale: (e as Pinch).scale || 1 };
+    };
+    const onGestureChange = (e: Event) => {
+      e.preventDefault();
+      if (!start) return;
+      const g = e as Pinch;
+      const c = start.cam;
+      const r = view.getBoundingClientRect();
+      const z = clampZ(c.z * (g.scale / start.scale));
+      const px = g.clientX - r.left;
+      const py = g.clientY - r.top;
+      // Keep the board point that was under the fingers when the pinch began under them.
+      const cur = camRef.current;
+      const wx = (px - cur.x) / cur.z;
+      const wy = (py - cur.y) / cur.z;
+      setCam({ z, x: px - wx * z, y: py - wy * z });
+    };
+    const onGestureEnd = (e: Event) => {
+      e.preventDefault();
+      start = null;
+    };
+    view.addEventListener("gesturestart", onGestureStart);
+    view.addEventListener("gesturechange", onGestureChange);
+    view.addEventListener("gestureend", onGestureEnd);
     return () => {
       view.removeEventListener("wheel", onWheel);
-      view.removeEventListener("gesturestart", stop);
-      view.removeEventListener("gesturechange", stop);
+      view.removeEventListener("gesturestart", onGestureStart);
+      view.removeEventListener("gesturechange", onGestureChange);
+      view.removeEventListener("gestureend", onGestureEnd);
     };
   }, [setCam]);
 
@@ -1037,7 +1115,8 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     if (mod && (key === "c" || key === "x")) {
       const ids = topSelected();
       if (!ids.length) return;
-      setClipboard(ids.map((id) => locate(itemsRef.current, id)!.item));
+      const picked = ids.map((id) => locate(itemsRef.current, id)!.item);
+      setClipboard([...picked, ...arrowsAmong(itemsRef.current, picked)]);
       if (key === "x") deleteSelection();
       return;
     }
@@ -1045,10 +1124,10 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       if (!clipboard.length) return;
       e.preventDefault();
       const taken = allIds(itemsRef.current);
-      const copies = cloneWithNewIds(clipboard, taken).map((c) => (c.type === "arrow" ? shiftBends(c, 24, 24) : { ...c, x: (c.x ?? 0) + 24, y: (c.y ?? 0) + 24 }));
-      // Arrows only come along if both ends did.
-      const ids = allIds(copies);
-      const keep = copies.filter((c) => c.type !== "arrow" || (ids.has(c.from ?? "") && ids.has(c.to ?? "")));
+      const copies = cloneWithNewIds(clipboard, taken).map((c) => (c.type === "arrow" ? shiftArrow(c, 24, 24) : { ...c, x: (c.x ?? 0) + 24, y: (c.y ?? 0) + 24 }));
+      // An arrow comes along if each end did, or is on the board, or is still here to join to.
+      const ids = new Set([...allIds(copies), ...taken]);
+      const keep = copies.filter((c) => c.type !== "arrow" || ((!c.from || ids.has(c.from)) && (!c.to || ids.has(c.to))));
       commit(insertItems(itemsRef.current, null, itemsRef.current.length, keep));
       setSelection(keep.map((c) => c.id));
       return;
@@ -1132,14 +1211,14 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
   function routeOf(id: string, list: Item[], boxes: Map<string, Rect>): Point[] | null {
     const a = locate(list, id)?.item;
     if (!a || a.type !== "arrow") return null;
-    const from = boxes.get(a.from ?? "");
-    const to = boxes.get(a.to ?? "");
-    if (!from || !to) return null;
-    if (!a.elbow) return straightRoute(from, to);
-    // While both ends are being dragged, the bends come along.
+    // While what it joins is being dragged, its bends and free ends come along.
     const moving = (id: string) => !!drag && (drag.ids.has(id) || ancestorsOf(list, id).some((f) => drag.ids.has(f)));
-    const bends = drag && a.bends && moving(a.from ?? "") && moving(a.to ?? "") ? shiftBends(a, drag.dx, drag.dy).bends : a.bends;
-    return elbowRoute(from, to, bends);
+    const shown = drag && travels(a, moving) ? shiftArrow(a, drag.dx, drag.dy) : a;
+    const box = (joined?: string, at?: [number, number]) => (joined ? boxes.get(joined) : at ? { x: at[0], y: at[1], w: 0, h: 0 } : undefined);
+    const from = box(a.from, shown.start);
+    const to = box(a.to, shown.end);
+    if (!from || !to) return null;
+    return arrowRoute(shown, from, to);
   }
 
   const selectedItems = selection.map((id) => locate(items, id)?.item).filter(Boolean) as Item[];
@@ -1240,7 +1319,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
               const route = routeOf(a.id, items, rects);
               if (!route) return null;
               // The head is drawn as its own line rather than an SVG marker, which Safari leaves out.
-              const d = `${routeToPath(route)} ${arrowHead(route)}`;
+              const d = a.head === "none" ? routeToPath(route) : `${routeToPath(route)} ${arrowHead(route)}`;
               const mid = routeMiddle(route);
               const selected = selection.includes(a.id);
               return (
@@ -1272,13 +1351,13 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
                 </g>
               );
             })}
-            {arrowDraft && rects.get(arrowDraft.from) && (() => {
-              const r = rects.get(arrowDraft.from)!;
-              const route = [{ x: r.x + r.w / 2, y: r.y + r.h / 2 }, { x: arrowDraft.x, y: arrowDraft.y }];
+            {arrowDraft && (() => {
+              const r = arrowDraft.from ? rects.get(arrowDraft.from) : null;
+              const route = [r ? { x: r.x + r.w / 2, y: r.y + r.h / 2 } : arrowDraft.start, { x: arrowDraft.x, y: arrowDraft.y }];
               return (
                 <g fill="none" stroke="var(--grey-600)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d={routeToPath(route)} strokeDasharray="6 6" />
-                  <path d={arrowHead(route)} />
+                  {!lineOnly && <path d={arrowHead(route)} />}
                 </g>
               );
             })()}
@@ -1297,6 +1376,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
             <Handles r={toScreen(rects.get(single.id)!)} textOnly={single.type === "text"} />
           )}
           {single?.type === "arrow" && single.elbow && !drag && <BendHandles route={routeOf(single.id, items, rects)} toScreen={(p) => ({ x: p.x * cam.z + cam.x, y: p.y * cam.z + cam.y })} />}
+          {single?.type === "arrow" && !drag && <EndHandles route={routeOf(single.id, items, rects)} toScreen={(p) => ({ x: p.x * cam.z + cam.x, y: p.y * cam.z + cam.y })} />}
           {marquee && <Box r={toScreen(marquee)} thin fill />}
           {draft && <Box r={toScreen(draft)} thin />}
           {dropLine && (
@@ -1316,7 +1396,10 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
           <Panel
             items={selectedItems}
             parent={singleParent}
-            onChange={update}
+            onChange={(id, patch) => {
+              if ("head" in patch) setLineOnly(patch.head === "none");
+              update(id, patch);
+            }}
             onLayout={setLayout}
             onAutoLayout={addAutoLayout}
             onDelete={deleteSelection}
@@ -1471,9 +1554,43 @@ function stub(from: Point, to: Point): Point {
   return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
 }
 
-/** An arrow with its bends moved along with what it joins. */
-function shiftBends(a: Item, dx: number, dy: number): Item {
-  return a.bends ? { ...a, bends: a.bends.map(([x, y]) => [Math.round(x + dx), Math.round(y + dy)] as [number, number]) } : a;
+/** Whether an arrow moves along with a move: everything it's joined to is moving. */
+function travels(a: Item, moving: (id: string) => boolean): boolean {
+  const ends = [a.from, a.to].filter((e): e is string => !!e);
+  return ends.length > 0 && ends.every(moving);
+}
+
+/** An arrow with one end joined to an item, or (with no item) left on the board at a point. */
+function withEnd(a: Item, which: "from" | "to", joined: string | null, at: Point): Item {
+  const place = which === "from" ? "start" : "end";
+  const out = omit(a, [which, place]);
+  return joined ? { ...out, [which]: joined } : { ...out, [place]: [Math.round(at.x), Math.round(at.y)] };
+}
+
+/** Round grips on the two ends of a selected arrow: drag one onto something to join it, or anywhere to leave it there. */
+function EndHandles({ route, toScreen }: { route: Point[] | null; toScreen: (p: Point) => Point }) {
+  if (!route || route.length < 2) return null;
+  const ends: ["from" | "to", Point][] = [
+    ["from", route[0]],
+    ["to", route[route.length - 1]],
+  ];
+  return (
+    <>
+      {ends.map(([which, p]) => {
+        const s = toScreen(p);
+        return (
+          <div
+            key={which}
+            data-wb-end={which}
+            className="pointer-events-auto absolute flex size-7 -translate-x-1/2 -translate-y-1/2 cursor-crosshair items-center justify-center md:size-5"
+            style={{ left: s.x, top: s.y }}
+          >
+            <span className="size-2.5 rounded-full border-[1.5px] border-[var(--wb-select)] bg-[var(--grey-0)]" />
+          </div>
+        );
+      })}
+    </>
+  );
 }
 
 /** The bends of an elbow arrow while one of its lines is dragged: that line moves straight up and down, or side to side. */

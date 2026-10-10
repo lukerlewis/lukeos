@@ -58,6 +58,11 @@ export type Item = {
   /** Arrows: the ids of the items it joins. */
   from?: string;
   to?: string;
+  /** Arrows: where an end that isn't joined to anything sits, in board coordinates. */
+  start?: [number, number];
+  end?: [number, number];
+  /** Arrows: "none" draws a plain line with no arrowhead. */
+  head?: "none";
   /** Arrows: an elbow arrow runs in straight horizontal and vertical lines instead of one diagonal. */
   elbow?: boolean;
   /** Elbow arrows: the corners Luke set by dragging, in board coordinates. Left out, the route is worked out. */
@@ -213,10 +218,37 @@ export function cloneWithNewIds(add: Item[], taken: Set<string>): Item[] {
     list.map((i) => ({
       ...i,
       id: map.get(i.id)!,
-      ...(i.type === "arrow" && { from: map.get(i.from ?? "") ?? i.from, to: map.get(i.to ?? "") ?? i.to }),
+      ...(i.type === "arrow" && i.from && { from: map.get(i.from) ?? i.from }),
+      ...(i.type === "arrow" && i.to && { to: map.get(i.to) ?? i.to }),
       ...(i.children && { children: copy(i.children) }),
     }));
   return copy(add);
+}
+
+/**
+ * The arrows that should be copied along with these items: those joined to them at both ends,
+ * or at one end with the other left on the board. Arrows already among the items aren't repeated.
+ */
+export function arrowsAmong(board: Item[], picked: Item[]): Item[] {
+  const inside = allIds(picked);
+  const out: Item[] = [];
+  walk(board, (i) => {
+    if (i.type !== "arrow" || inside.has(i.id)) return;
+    const ends = [i.from, i.to].filter((e): e is string => !!e);
+    if (ends.length && ends.every((e) => inside.has(e))) out.push(i);
+  });
+  return out;
+}
+
+/** An arrow moved along with what it joins: its bends and any ends left on the board shift too. */
+export function shiftArrow(a: Item, dx: number, dy: number): Item {
+  const by = ([x, y]: [number, number]) => [Math.round(x + dx), Math.round(y + dy)] as [number, number];
+  return {
+    ...a,
+    ...(a.bends && { bends: a.bends.map(by) }),
+    ...(a.start && { start: by(a.start) }),
+    ...(a.end && { end: by(a.end) }),
+  };
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -265,8 +297,13 @@ export function cleanItem(raw: RawItem, taken: Set<string>): Item {
     out.children = (raw.children ?? []).map((c) => cleanItem(c, taken));
   }
   if (t === "arrow") {
+    const point = (p: unknown) =>
+      Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === "number" && Number.isFinite(n)) ? ([round(p[0]), round(p[1])] as [number, number]) : null;
     if (raw.from) out.from = raw.from;
+    else if (point(raw.start)) out.start = point(raw.start)!;
     if (raw.to) out.to = raw.to;
+    else if (point(raw.end)) out.end = point(raw.end)!;
+    if (raw.head === "none") out.head = "none";
     if (raw.elbow) {
       out.elbow = true;
       const bends = (raw.bends ?? [])
@@ -279,6 +316,13 @@ export function cleanItem(raw: RawItem, taken: Set<string>): Item {
   return out;
 }
 
+/** Whether each end of an arrow is joined to an item that exists or sits at a point, and it doesn't join an item to itself. */
+export function arrowEndsOk(a: RawItem, ids: Set<string>): boolean {
+  const from = a.from ? ids.has(a.from) : !!a.start;
+  const to = a.to ? ids.has(a.to) : !!a.end;
+  return from && to && !(a.from && a.from === a.to);
+}
+
 /** Tidies a whole board, and drops arrows whose ends are missing. */
 export function cleanBoard(items: RawItem[]): Item[] {
   const taken = new Set<string>();
@@ -286,12 +330,12 @@ export function cleanBoard(items: RawItem[]): Item[] {
   const ids = allIds(cleaned);
   const keep = (list: Item[]): Item[] =>
     list
-      .filter((i) => i.type !== "arrow" || (i.from && i.to && ids.has(i.from) && ids.has(i.to) && i.from !== i.to))
+      .filter((i) => i.type !== "arrow" || arrowEndsOk(i, ids))
       .map((i) => (i.children ? { ...i, children: keep(i.children) } : i));
   return keep(cleaned);
 }
 
-const KEY_ORDER = ["id", "type", "name", "text", "x", "y", "w", "h", "style", "weight", "shape", "color", "layout", "gap", "padX", "padY", "align", "from", "to", "elbow", "bends", "children"];
+const KEY_ORDER = ["id", "type", "name", "text", "x", "y", "w", "h", "style", "weight", "shape", "color", "layout", "gap", "padX", "padY", "align", "from", "start", "to", "end", "head", "elbow", "bends", "children"];
 
 /** The same items with their fields in a readable order (the database sorts them by length). */
 export function orderKeys(items: Item[]): Item[] {
@@ -358,7 +402,7 @@ const START_GAP = 6;
 const END_GAP = 8;
 
 /** Where a straight arrow between two boxes starts and ends: on each box's edge, along the line between their centres. */
-export function straightRoute(a: Box, b: Box): Point[] {
+export function straightRoute(a: Box, b: Box, gaps: [number, number] = [START_GAP, END_GAP]): Point[] {
   const ca = { x: a.x + a.w / 2, y: a.y + a.h / 2 };
   const cb = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
   const edge = (r: Box, from: Point, to: Point, gap: number) => {
@@ -371,7 +415,7 @@ export function straightRoute(a: Box, b: Box): Point[] {
     const len = Math.hypot(dx, dy);
     return { x: from.x + dx * t + (dx / len) * gap, y: from.y + dy * t + (dy / len) * gap };
   };
-  return [edge(a, ca, cb, START_GAP), edge(b, cb, ca, END_GAP)];
+  return [edge(a, ca, cb, gaps[0]), edge(b, cb, ca, gaps[1])];
 }
 
 /** The corners an elbow arrow takes when nobody has moved them: across, down and across (or the other way round). */
@@ -447,9 +491,9 @@ export function tidyRoute(points: Point[]): Point[] {
  * An elbow arrow's path, from its start on one box to its end on the other,
  * in horizontal and vertical lines only, through its bends if it has any.
  */
-export function elbowRoute(a: Box, b: Box, bends?: [number, number][]): Point[] {
+export function elbowRoute(a: Box, b: Box, bends?: [number, number][], gaps: [number, number] = [START_GAP, END_GAP]): Point[] {
   const corners = bends?.length ? bends.map(([x, y]) => ({ x, y })) : autoBends(a, b);
-  const raw = [...leave(a, corners[0], START_GAP), ...corners, ...leave(b, corners[corners.length - 1], END_GAP).reverse()];
+  const raw = [...leave(a, corners[0], gaps[0]), ...corners, ...leave(b, corners[corners.length - 1], gaps[1]).reverse()];
   // Anything that isn't level or upright gets a corner.
   const square: Point[] = [];
   for (const p of raw) {
@@ -459,7 +503,16 @@ export function elbowRoute(a: Box, b: Box, bends?: [number, number][]): Point[] 
   }
   const route = tidyRoute(square);
   if (route.length >= 2) return route;
-  return straightRoute(a, b);
+  return straightRoute(a, b, gaps);
+}
+
+/**
+ * An arrow's path between its two ends. Each end is the box of the item it's joined to,
+ * or a point (a box with no size) where it's left on the board.
+ */
+export function arrowRoute(a: Item, from: Box, to: Box): Point[] {
+  const gaps: [number, number] = [a.from ? START_GAP : 0, a.to ? (a.head === "none" ? START_GAP : END_GAP) : 0];
+  return a.elbow ? elbowRoute(from, to, a.bends, gaps) : straightRoute(from, to, gaps);
 }
 
 /** An arrow's path through its points, with the corners slightly rounded. */
