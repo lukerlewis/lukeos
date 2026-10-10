@@ -6,6 +6,7 @@ import {
   allIds,
   arrowEndsOk,
   cleanBoard,
+  SIDES,
   cleanItem,
   COLORS,
   countItems,
@@ -112,6 +113,8 @@ const itemInput: z.ZodType<RawItem> = z.object({
   padY: num.min(0).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
+  fromSide: z.enum(SIDES).optional(),
+  toSide: z.enum(SIDES).optional(),
   start: z.tuple([num, num]).optional(),
   end: z.tuple([num, num]).optional(),
   head: z.enum(["none"]).optional(),
@@ -122,7 +125,7 @@ const itemInput: z.ZodType<RawItem> = z.object({
   },
 });
 
-const FORMAT = `Items: {id, type, ...}. Types: frame (a container: name, color fill, w/h, children; with layout "row" or "column" it's Figma-style auto layout using gap, padX, padY and align start|center|end, and hugs its contents unless w/h are set), text (text, style, weight regular|medium, color default|muted, align start|center|end, w to wrap), sticky (text, color, w/h; default 220x220 yellow), shape (shape rect|ellipse|diamond, text, color, w/h), arrow (from and to: item ids it joins, or start/end: [x,y] board pixels for an end left on the board; text for a label; head: "none" makes it a plain line; elbow: true runs it in horizontal and vertical lines with slightly rounded corners, routed for you, or through bends: [[x,y],...] corners in board pixels to steer it around things). Text styles (Luke's type scale, Geist): display 112px, h1 86, h2 66, h3 51, h4 39, sub-lg 30, sub-sm 23, body-lg 18 (default), body 14. Fills: white, grey, yellow, orange, red, pink, purple, blue, green, none. x/y are board pixels (inside a frame, relative to it; ignored in auto layout). Left-out fields use the defaults, so leave them out. Keep diagrams black and white (white, grey, none): add colour only when it means something the layout and words don't already show (Luke's skill "Diagrams and visualizations").`;
+const FORMAT = `Items: {id, type, ...}. Types: frame (a container: name, color fill, w/h, children; with layout "row" or "column" it's Figma-style auto layout using gap, padX, padY and align start|center|end, and hugs its contents unless w/h are set), text (text, style, weight regular|medium, color default|muted, align start|center|end, w to wrap), sticky (text, color, w/h; default 220x220 yellow), shape (shape rect|ellipse|diamond, text, color, w/h), arrow (from and to: item ids it joins, or start/end: [x,y] board pixels for an end left on the board; fromSide/toSide top|right|bottom|left pins a joined end to the middle of that side, otherwise it uses the side facing the other end; text for a label; head: "none" makes it a plain line; elbow: true runs it in horizontal and vertical lines with slightly rounded corners, routed for you, or through bends: [[x,y],...] corners in board pixels to steer it around things). Text styles (Luke's type scale, Geist): display 112px, h1 86, h2 66, h3 51, h4 39, sub-lg 30, sub-sm 23, body-lg 18 (default), body 14. Fills: white, grey, yellow, orange, red, pink, purple, blue, green, none. x/y are board pixels (inside a frame, relative to it; ignored in auto layout). Left-out fields use the defaults, so leave them out. Keep diagrams black and white (white, grey, none): add colour only when it means something the layout and words don't already show (Luke's skill "Diagrams and visualizations").`;
 
 const boardId = z.uuid().describe("The whiteboard's id, from list_whiteboards.");
 
@@ -158,6 +161,8 @@ const changeInput = z.object({
   padY: num.min(0).nullable().optional(),
   from: z.string().nullable().optional().describe("null leaves that end on the board, at start."),
   to: z.string().nullable().optional().describe("null leaves that end on the board, at end."),
+  fromSide: z.enum(SIDES).nullable().optional().describe("null lets that end pick the side facing the other end."),
+  toSide: z.enum(SIDES).nullable().optional(),
   start: z.tuple([num, num]).nullable().optional(),
   end: z.tuple([num, num]).nullable().optional(),
   head: z.enum(["none"]).nullable().optional().describe("null puts the arrowhead back."),
