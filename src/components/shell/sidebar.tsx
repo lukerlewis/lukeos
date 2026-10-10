@@ -28,7 +28,10 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(startCollapsed);
+  // Only animates after a toggle, so it doesn't slide in on every page load.
+  const [toggled, setToggled] = useState(false);
   const toggle = useCallback(() => {
+    setToggled(true);
     setCollapsed((c) => {
       document.cookie = `${SIDEBAR_COOKIE}=${c ? "open" : "collapsed"}; path=/; max-age=31536000; samesite=lax`;
       return !c;
@@ -70,7 +73,12 @@ export function Sidebar({
 
   if (collapsed)
     return (
-      <aside className="hidden w-16 shrink-0 flex-col items-center gap-4 border-r bg-sidebar px-2 py-3.5 md:flex">
+      <aside
+        className={cn(
+          "hidden w-16 shrink-0 flex-col items-center gap-4 overflow-hidden border-r bg-sidebar px-2 py-3.5 md:flex",
+          toggled && "sidebar-closing",
+        )}
+      >
         <button
           type="button"
           onClick={toggle}
@@ -129,7 +137,12 @@ export function Sidebar({
     );
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col gap-4 border-r bg-sidebar px-3 py-3.5 md:flex">
+    <aside
+      className={cn(
+        "hidden w-60 shrink-0 flex-col gap-4 overflow-hidden border-r bg-sidebar px-3 py-3.5 md:flex",
+        toggled && "sidebar-opening",
+      )}
+    >
       <div className="flex items-center gap-2.5 py-1.5 pl-2">
         <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-medium text-primary-foreground">
           L

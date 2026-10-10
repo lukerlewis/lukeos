@@ -312,6 +312,23 @@
     }
   }
 
+  /* The sidebar glides between full width and the slim row of icons, and its
+     contents fade in. While it grows, rows keep their full width and are
+     uncovered rather than squashed. */
+  .sidebar-opening {
+    animation: sidebar-open 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .sidebar-opening > * {
+    min-width: 13.5rem;
+  }
+  .sidebar-closing {
+    animation: sidebar-close 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .sidebar-opening > *,
+  .sidebar-closing > * {
+    animation: fade-in 180ms 40ms ease-out both;
+  }
+
   /* Each new screen fades in. Opacity only, so nothing on it shifts. */
   main > * {
     animation: fade-in 180ms ease-out;
@@ -339,6 +356,16 @@
 @keyframes fade-in {
   from {
     opacity: 0;
+  }
+}
+@keyframes sidebar-open {
+  from {
+    width: 4rem;
+  }
+}
+@keyframes sidebar-close {
+  from {
+    width: 15rem;
   }
 }
 @keyframes pop-in {
