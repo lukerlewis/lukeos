@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type { Item as WhiteboardItem } from "@/lib/whiteboard";
 import { boolean, customType, date, index, integer, jsonb, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
@@ -665,4 +666,21 @@ export const focusSessions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("focus_sessions_ended_idx").on(t.endedAt)],
+);
+
+/**
+ * A whiteboard: frames, text, stickies, shapes and arrows, kept as one compact
+ * JSON tree (see src/lib/whiteboard.ts). `version` goes up with every save, so
+ * the screen can tell when Claude has changed the board while it's open.
+ */
+export const whiteboards = pgTable(
+  "whiteboards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull().default(""),
+    items: jsonb("items").$type<WhiteboardItem[]>().notNull().default([]),
+    version: integer("version").notNull().default(1),
+    ...madeBy,
+  },
+  (t) => [index("whiteboards_updated_idx").on(t.updatedAt)],
 );

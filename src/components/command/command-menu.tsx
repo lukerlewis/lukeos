@@ -22,6 +22,7 @@ import {
   Timer,
   SquareKanban,
   Trash2,
+  Shapes,
   type LucideIcon,
   NotebookPen,
 } from "lucide-react";
@@ -126,6 +127,7 @@ const pages: { href: string; label: string; icon: LucideIcon; keywords?: string 
   { href: "/tasks", label: "All tasks", icon: CheckSquare, keywords: "list" },
   { href: "/notes", label: "Notes", icon: NotebookPen, keywords: "pages jot" },
   { href: "/documents", label: "Documents", icon: FileText, keywords: "docs pages pdf print made by claude artifacts reports" },
+  { href: "/whiteboard", label: "Whiteboard", icon: Shapes, keywords: "figjam miro canvas board diagram sketch frames stickies" },
   { href: "/inspiration", label: "Inspiration", icon: Lightbulb, keywords: "mymind gallery moodboard pictures images references ideas" },
   { href: "/archive", label: "Work archive", icon: Archive, keywords: "portfolio case studies wins stories career" },
   { href: "/agents", label: "Agents", icon: Bot, keywords: "ai claude routines made activity from" },

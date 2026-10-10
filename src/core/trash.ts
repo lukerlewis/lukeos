@@ -10,10 +10,10 @@ import { inspirationLabel } from "./inspiration";
 import { deleteOrphanMentions } from "./mentions";
 import { defineOperation, madeByOf, OperationError, type MadeBy } from "./define";
 
-const { tasks, notes, artifacts, documents, cards, projects, sops, contextFiles, routines, archiveEntries, inspirationItems, messages } = schema;
+const { tasks, notes, artifacts, documents, cards, projects, sops, contextFiles, routines, archiveEntries, inspirationItems, messages, whiteboards } = schema;
 
-type Kind = "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration" | "message";
-type OwnKind = "sop" | "context" | "routine" | "entry" | "inspiration" | "message";
+type Kind = "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration" | "message" | "whiteboard";
+type OwnKind = "sop" | "context" | "routine" | "entry" | "inspiration" | "message" | "whiteboard";
 /** Things that stand alone, outside any project. */
 const ownTable = (type: OwnKind) =>
   type === "sop"
@@ -26,9 +26,11 @@ const ownTable = (type: OwnKind) =>
           ? inspirationItems
           : type === "message"
             ? messages
-            : archiveEntries;
+            : type === "whiteboard"
+              ? whiteboards
+              : archiveEntries;
 const isOwn = (type: Kind): type is OwnKind =>
-  type === "sop" || type === "context" || type === "routine" || type === "entry" || type === "inspiration" || type === "message";
+  type === "sop" || type === "context" || type === "routine" || type === "entry" || type === "inspiration" || type === "message" || type === "whiteboard";
 const tableOf = (type: "task" | "note" | "artifact" | "document" | "card") =>
   type === "task" ? tasks : type === "note" ? notes : type === "document" ? documents : type === "card" ? cards : artifacts;
 
@@ -54,8 +56,8 @@ export type TrashItem = {
 };
 
 const itemType = z
-  .enum(["task", "note", "artifact", "document", "card", "project", "sop", "context", "routine", "entry", "inspiration", "message"])
-  .describe("task, note, artifact, document, card (a pipeline card), project, sop, context (a context file), routine, entry (a Work archive entry), inspiration (an Inspiration item) or message (an unsent message).");
+  .enum(["task", "note", "artifact", "document", "card", "project", "sop", "context", "routine", "entry", "inspiration", "message", "whiteboard"])
+  .describe("task, note, artifact, document, card (a pipeline card), project, sop, context (a context file), routine, entry (a Work archive entry), inspiration (an Inspiration item) message (an unsent message) or whiteboard.");
 
 function deletesOn(deletedAt: Date) {
   return new Date(deletedAt.getTime() + TRASH_DAYS * DAY_MS);
@@ -85,6 +87,7 @@ export async function purgeExpiredTrash({ force = false } = {}) {
     await tx.delete(archiveEntries).where(lt(archiveEntries.deletedAt, cutoff));
     await tx.delete(inspirationItems).where(lt(inspirationItems.deletedAt, cutoff));
     await tx.delete(messages).where(lt(messages.deletedAt, cutoff));
+    await tx.delete(whiteboards).where(lt(whiteboards.deletedAt, cutoff));
   });
   await deleteOrphanComments();
   await deleteOrphanMentions();
@@ -120,7 +123,7 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
   const onItsOwn = (deletedAt: AnyColumn) =>
     sql`(${parent.id} is null or ${parent.deletedAt} is null or ${parent.deletedAt} <> ${deletedAt})`;
 
-  const [taskRows, noteRows, artifactRows, documentRows, cardRows, projectRows, sopRows, contextRows, routineRows, entryRows, inspirationRows, messageRows] = await Promise.all([
+  const [taskRows, noteRows, artifactRows, documentRows, cardRows, projectRows, sopRows, contextRows, routineRows, entryRows, inspirationRows, messageRows, whiteboardRows] = await Promise.all([
     want("task")
       ? db
           .select({ task: tasks, parent })
@@ -300,6 +303,19 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
           .from(messages)
           .where(isNotNull(messages.deletedAt))
       : [],
+    want("whiteboard")
+      ? db
+          .select({
+            id: whiteboards.id,
+            title: whiteboards.title,
+            deletedAt: whiteboards.deletedAt,
+            createdByKind: whiteboards.createdByKind,
+            createdByName: whiteboards.createdByName,
+            createdByRoutine: whiteboards.createdByRoutine,
+          })
+          .from(whiteboards)
+          .where(isNotNull(whiteboards.deletedAt))
+      : [],
   ]);
 
   const parentOf = (p: typeof parent.$inferSelect | null) =>
@@ -438,6 +454,17 @@ export async function listTrash(filter: { type?: TrashItem["type"] } = {}) {
       deletedAt: m.deletedAt!,
       deletesOn: deletesOn(m.deletedAt!),
     })),
+    ...whiteboardRows.map((b) => ({
+      type: "whiteboard" as const,
+      id: b.id,
+      title: b.title || "Untitled",
+      project: null,
+      contains: null,
+      format: null,
+      madeBy: madeByOf(b),
+      deletedAt: b.deletedAt!,
+      deletesOn: deletesOn(b.deletedAt!),
+    })),
   ];
   items.sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
   return items;
@@ -568,6 +595,7 @@ export async function emptyTrash() {
     const e = await tx.delete(archiveEntries).where(isNotNull(archiveEntries.deletedAt)).returning({ id: archiveEntries.id });
     const i = await tx.delete(inspirationItems).where(isNotNull(inspirationItems.deletedAt)).returning({ id: inspirationItems.id });
     const m = await tx.delete(messages).where(isNotNull(messages.deletedAt)).returning({ id: messages.id });
+    const w = await tx.delete(whiteboards).where(isNotNull(whiteboards.deletedAt)).returning({ id: whiteboards.id });
     return {
       tasks: t.length,
       notes: n.length,
@@ -581,6 +609,7 @@ export async function emptyTrash() {
       entries: e.length,
       inspiration: i.length,
       messages: m.length,
+      whiteboards: w.length,
     };
   });
   await deleteOrphanComments();
@@ -601,7 +630,8 @@ export async function trashCount() {
          + (select count(*) from routines where deleted_at is not null)
          + (select count(*) from archive_entries where deleted_at is not null)
          + (select count(*) from inspiration_items where deleted_at is not null)
-         + (select count(*) from messages where deleted_at is not null) as n`).then((r) => r.rows);
+         + (select count(*) from messages where deleted_at is not null)
+         + (select count(*) from whiteboards where deleted_at is not null) as n`).then((r) => r.rows);
   return Number(row.n);
 }
 
@@ -618,7 +648,7 @@ export const trashOperations = {
   restore_from_trash: defineOperation({
     name: "restore_from_trash",
     description:
-      "Bring a task, note, document, pipeline card, artifact, project, SOP, context file, routine, Work archive entry, Inspiration item or unsent message back from Trash (a message goes back where it was in the chain). Restoring a project also brings back the tasks, notes, documents, cards and artifacts that went to Trash with it. A task, note, document or artifact whose project is still in Trash comes back on its own, outside the project; a card needs its project brought back first.",
+      "Bring a task, note, document, pipeline card, artifact, project, SOP, context file, routine, Work archive entry, Inspiration item, whiteboard or unsent message back from Trash (a message goes back where it was in the chain). Restoring a project also brings back the tasks, notes, documents, cards and artifacts that went to Trash with it. A task, note, document or artifact whose project is still in Trash comes back on its own, outside the project; a card needs its project brought back first.",
     input: z.object({ type: itemType, id }),
     run: async ({ type, id }) => restoreFromTrash(type, id),
   }),

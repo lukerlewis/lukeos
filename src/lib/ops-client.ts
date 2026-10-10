@@ -107,12 +107,14 @@ function undoFor(
       return { label: `adding SOP ${quote(r.title)}`, run: async () => void (await send("delete_sop", { id: r.id })) };
     case "create_context":
       return { label: `adding context file ${quote(r.title)}`, run: async () => void (await send("delete_context", { id: r.id })) };
+    case "create_whiteboard":
+      return { label: `adding whiteboard ${quote(r.title)}`, run: async () => void (await send("delete_whiteboard", { id: r.id })) };
     case "create_project":
       return { label: `adding project ${quote(r.name)}`, run: async () => void (await send("delete_project", { id: r.id })) };
     case "copy_artifact_to_note":
       return { label: "copying to a note", run: async () => void (await send("delete_note", { id: r.id })) };
     case "restore_from_trash": {
-      const { type, id } = input as { type: "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration"; id: string };
+      const { type, id } = input as { type: "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration" | "whiteboard"; id: string };
       const del = (
         {
           task: "delete_task",
@@ -126,6 +128,7 @@ function undoFor(
           routine: "delete_routine",
           entry: "delete_archive_entry",
           inspiration: "delete_inspiration",
+          whiteboard: "delete_whiteboard",
         } as const
       )[type];
       return { label: `bringing back a ${type === "context" ? "context file" : type}`, run: async () => void (await send(del, { id })) };
