@@ -1,8 +1,10 @@
+import { cookies } from "next/headers";
 import { after } from "next/server";
 import { Suspense } from "react";
 import { CommandMenuProvider } from "@/components/command/command-menu";
 import { PullToRefresh } from "@/components/shell/pull-to-refresh";
 import { PushListener } from "@/components/shell/push-listener";
+import { SIDEBAR_COOKIE } from "@/components/shell/nav";
 import { Sidebar } from "@/components/shell/sidebar";
 import { TabBar } from "@/components/shell/tab-bar";
 import { Toaster } from "@/components/shell/toast";
@@ -43,6 +45,7 @@ async function AppShell({ children }: { children: React.ReactNode }) {
     unreadMessageCount(),
     getFocusSettings(),
   ]);
+  const sidebarCollapsed = (await cookies()).get(SIDEBAR_COOKIE)?.value === "collapsed";
   // Things over 30 days in Trash are deleted for good as the app is used.
   after(() => purgeExpiredTrash().catch((err) => console.error("[trash] purge failed", err)));
   const today = todayIn(timeZone);
@@ -60,6 +63,7 @@ async function AppShell({ children }: { children: React.ReactNode }) {
             projects={projects.map((p) => ({ id: p.id, name: p.name, hex: colorHex(p.color), open: p.openTasks }))}
             newFromClaude={newFromClaude}
             unreadMessages={unreadMessages}
+            collapsed={sidebarCollapsed}
           />
           <main className="flex min-w-0 grow md:overflow-y-auto">{children}</main>
           <TabBar unreadMessages={unreadMessages} />
