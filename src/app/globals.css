@@ -312,21 +312,25 @@
     }
   }
 
-  /* The sidebar glides between full width and the slim row of icons, and its
-     contents fade in. While it grows, rows keep their full width and are
-     uncovered rather than squashed. */
+  /* The sidebar glides open, its contents fading in; while it grows, rows keep
+     their full width and are uncovered rather than squashed. Collapsed, it
+     slides away off the left edge and the page closes up the gap; it slides
+     back out over the page when the pointer reaches that edge. */
   .sidebar-opening {
     animation: sidebar-open 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .sidebar-opening > * {
     min-width: 13.5rem;
+    animation: fade-in 180ms 40ms ease-out both;
   }
   .sidebar-closing {
     animation: sidebar-close 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .sidebar-opening > *,
-  .sidebar-closing > * {
-    animation: fade-in 180ms 40ms ease-out both;
+  .sidebar-float {
+    transition: translate 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .sidebar-slide-away {
+    animation: sidebar-slide-away 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   /* Each new screen fades in. Opacity only, so nothing on it shifts. */
@@ -360,12 +364,17 @@
 }
 @keyframes sidebar-open {
   from {
-    width: 4rem;
+    width: 0;
   }
 }
 @keyframes sidebar-close {
   from {
     width: 15rem;
+  }
+}
+@keyframes sidebar-slide-away {
+  from {
+    translate: 0;
   }
 }
 @keyframes pop-in {
