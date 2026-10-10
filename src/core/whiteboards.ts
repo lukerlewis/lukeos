@@ -172,7 +172,41 @@ const changeInput = z.object({
   index: z.number().int().min(0).optional().describe("Where among its siblings, 0 first. With parent, or alone to reorder."),
 });
 
+const SETTINGS_KEY = "whiteboard";
+
+/** Luke's whiteboard settings, the same on every board and device. */
+export type WhiteboardSettings = { snap: boolean };
+
+export async function getWhiteboardSettings(): Promise<WhiteboardSettings> {
+  const [row] = await db.select().from(schema.appSettings).where(eq(schema.appSettings.key, SETTINGS_KEY)).limit(1);
+  let saved: Partial<WhiteboardSettings> = {};
+  try {
+    saved = row ? JSON.parse(row.value) : {};
+  } catch {}
+  return { snap: saved.snap !== false };
+}
+
 export const whiteboardOperations = {
+  get_whiteboard_settings: defineOperation({
+    name: "get_whiteboard_settings",
+    description: "Luke's whiteboard settings. snap: dragged things line up with the edges and centres of things nearby, with guide lines (on unless he turns it off).",
+    input: z.object({}),
+    run: () => getWhiteboardSettings(),
+  }),
+
+  update_whiteboard_settings: defineOperation({
+    name: "update_whiteboard_settings",
+    description: "Change Luke's whiteboard settings, like the switches in a board's settings menu. Only change these when Luke asks. Fields left out stay as they are.",
+    input: z.object({ snap: z.boolean().optional().describe("Line dragged things up with things nearby, with guides.") }),
+    run: async (changes) => {
+      const next: WhiteboardSettings = { ...(await getWhiteboardSettings()), ...(changes.snap !== undefined && { snap: changes.snap }) };
+      const value = JSON.stringify(next);
+      await db.insert(schema.appSettings).values({ key: SETTINGS_KEY, value }).onConflictDoUpdate({ target: schema.appSettings.key, set: { value } });
+      return next;
+    },
+  }),
+
+
   list_whiteboards: defineOperation({
     name: "list_whiteboards",
     description: "Luke's whiteboards (FigJam-style boards), most recently changed first: id, title and how many items each has.",

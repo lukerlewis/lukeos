@@ -14,6 +14,7 @@ import {
   Redo2,
   Square,
   StickyNote,
+  Settings2,
   Trash2,
   Type,
   Undo2,
@@ -61,7 +62,7 @@ type Gesture =
   | { kind: "pan"; sx: number; sy: number; cam: Camera }
   | { kind: "pinch"; dist: number; mid: { x: number; y: number }; cam: Camera }
   | { kind: "press"; ids: string[]; primary: string; sx: number; sy: number; alt: boolean; world: { x: number; y: number }; rect: Rect }
-  | { kind: "drag"; ids: string[]; all: Set<string>; primary: string; grab: { x: number; y: number }; base: Rect | null }
+  | { kind: "drag"; ids: string[]; all: Set<string>; primary: string; grab: { x: number; y: number }; base: Rect | null; box: Rect | null }
   | { kind: "marquee"; x0: number; y0: number; additive: boolean; before: string[] }
   | { kind: "resize"; id: string; handle: Handle; start: Rect; inLayout: boolean; text: boolean }
   | { kind: "create"; tool: "frame" | "shape" | "text" | "sticky"; x0: number; y0: number; parent: string | null }
@@ -157,7 +158,13 @@ function useHistory(initial: Item[]) {
   );
 }
 
-export function WhiteboardEditor({ board }: { board: { id: string; title: string; version: number; items: Item[] } }) {
+export function WhiteboardEditor({
+  board,
+  settings,
+}: {
+  board: { id: string; title: string; version: number; items: Item[] };
+  settings: { snap: boolean };
+}) {
   const router = useRouter();
   const history = useHistory(board.items);
   const { items, itemsRef, commit, replace } = history;
@@ -196,6 +203,11 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
   };
   const [dropLine, setDropLine] = useState<Rect | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+  const [snap, setSnap] = useState(settings.snap);
+  const snapRef = useRef(snap);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  /** Alignment guides showing what a dragged selection snapped to, in board coordinates. */
+  const [guides, setGuides] = useState<Guide[]>([]);
   const [spaceDown, setSpaceDown] = useState(false);
 
   const viewRef = useRef<HTMLDivElement>(null);
@@ -766,7 +778,15 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
           const at = locate(itemsRef.current, id);
           if (at?.item.children) walk(at.item.children, (c) => all.add(c.id));
         }
-        gesture.current = { kind: "drag", ids, all, primary, grab: { x: g.world.x - g.rect.x, y: g.world.y - g.rect.y }, base: g.alt ? null : g.rect };
+        gesture.current = {
+          kind: "drag",
+          ids,
+          all,
+          primary,
+          grab: { x: g.world.x - g.rect.x, y: g.world.y - g.rect.y },
+          base: g.alt ? null : g.rect,
+          box: g.alt ? null : unionOf(ids.map((id) => rectsRef.current.get(id))),
+        };
         setDrag({ ids: new Set(ids), dx: 0, dy: 0 });
         setHover(null);
         break;
@@ -774,8 +794,25 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       case "drag": {
         const base = g.base ?? rectsRef.current.get(g.primary);
         if (!base) break;
-        if (!g.base) g.base = base;
-        setDrag({ ids: new Set(g.ids), dx: world.x - g.grab.x - base.x, dy: world.y - g.grab.y - base.y });
+        if (!g.base) {
+          g.base = base;
+          g.box = unionOf(g.ids.map((id) => rectsRef.current.get(id)));
+        }
+        let dx = world.x - g.grab.x - base.x;
+        let dy = world.y - g.grab.y - base.y;
+        // Like Figma: line up with the edges and centres of things nearby. Cmd (Ctrl) while dragging lets go of them.
+        if (snapRef.current && g.box && !(e.metaKey || e.ctrlKey)) {
+          const targets: Rect[] = [];
+          walk(itemsRef.current, (i) => {
+            const r = i.type !== "arrow" && !g.all.has(i.id) ? rectsRef.current.get(i.id) : undefined;
+            if (r) targets.push(r);
+          });
+          const s = snapBox({ ...g.box, x: g.box.x + dx, y: g.box.y + dy }, targets, SNAP_PX / camRef.current.z);
+          dx += s.dx;
+          dy += s.dy;
+          setGuides(s.guides);
+        } else setGuides([]);
+        setDrag({ ids: new Set(g.ids), dx, dy });
         const target = dropTargetAt(e.clientX, e.clientY, g.all);
         setDropLine(target.line);
         break;
@@ -942,6 +979,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
 
   function finishDrag(g: Extract<Gesture, { kind: "drag" }>, cx: number, cy: number) {
     setDrag(null);
+    setGuides([]);
     setDropLine(null);
     const target = dropTargetAt(cx, cy, g.all);
     const moving = g.ids.filter((id) => locate(itemsRef.current, id));
@@ -988,6 +1026,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     if (g?.kind === "resize" || g?.kind === "end" || g?.kind === "slide") history.end();
     gesture.current = null;
     setDrag(null);
+    setGuides([]);
     setDropLine(null);
     setMarquee(null);
     setDraft(null);
@@ -1307,6 +1346,53 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
           aria-label="Whiteboard name"
           className="h-9 min-w-0 grow rounded-lg bg-transparent px-2 text-base font-medium text-foreground outline-none placeholder:text-muted-foreground hover:bg-selected focus:bg-card md:text-control"
         />
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(!settingsOpen)}
+            aria-label="Whiteboard settings"
+            aria-expanded={settingsOpen}
+            className={cn(
+              "flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-selected hover:text-foreground md:size-9",
+              settingsOpen && "bg-selected text-foreground",
+            )}
+          >
+            <Settings2 className="size-4" aria-hidden />
+          </button>
+          {settingsOpen && (
+            <>
+              <button type="button" aria-label="Close settings" className="fixed inset-0 z-20 cursor-default" onClick={() => setSettingsOpen(false)} />
+              <div className="absolute top-full right-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-xl border border-stroke bg-card p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex flex-col">
+                    <span className="text-control">Snap</span>
+                    <span className="text-meta text-muted-foreground">Line things up as you drag</span>
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={snap}
+                    aria-label="Snap"
+                    onClick={() => {
+                      const next = !snap;
+                      setSnap(next);
+                      snapRef.current = next;
+                      void op("update_whiteboard_settings", { snap: next }).catch(() => showToast("Couldn't save that setting."));
+                    }}
+                    className={cn("relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors", snap ? "bg-primary" : "bg-grey-300")}
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-[2px] left-[2px] size-[27px] rounded-full bg-grey-0 transition-transform dark:bg-on-solid",
+                        snap && "translate-x-5",
+                      )}
+                    />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
         <button
           type="button"
           onClick={remove}
@@ -1427,6 +1513,17 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
           )}
           {marquee && <Box r={toScreen(marquee)} thin fill />}
           {draft && <Box r={toScreen(draft)} thin />}
+          {guides.map((l, i) => (
+            <div
+              key={i}
+              className="absolute bg-[var(--wb-select)]"
+              style={
+                l.x !== undefined
+                  ? { left: l.x * cam.z + cam.x - 0.5, top: l.from * cam.z + cam.y, width: 1, height: (l.to - l.from) * cam.z }
+                  : { top: l.y! * cam.z + cam.y - 0.5, left: l.from * cam.z + cam.x, height: 1, width: (l.to - l.from) * cam.z }
+              }
+            />
+          ))}
           {dropLine && (
             <div
               className="absolute bg-[var(--wb-select)]"
@@ -1600,6 +1697,51 @@ function stub(from: Point, to: Point): Point {
   const len = Math.hypot(to.x - from.x, to.y - from.y) || 1;
   const t = Math.min(24, len / 2) / len;
   return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
+}
+
+/** How close, in screen pixels, something has to come to an edge or centre to snap to it. */
+const SNAP_PX = 6;
+
+/** A guide line: upright at x, or level at y, running from one board coordinate to another. */
+type Guide = { x?: number; y?: number; from: number; to: number };
+
+/** The box around several boxes, or null if any is missing. */
+function unionOf(rs: (Rect | undefined)[]): Rect | null {
+  if (!rs.length || rs.some((r) => !r)) return null;
+  const x = Math.min(...rs.map((r) => r!.x));
+  const y = Math.min(...rs.map((r) => r!.y));
+  return { x, y, w: Math.max(...rs.map((r) => r!.x + r!.w)) - x, h: Math.max(...rs.map((r) => r!.y + r!.h)) - y };
+}
+
+/**
+ * How far to nudge a box so its nearest edge or centre lines up with one of the targets' (within a tolerance),
+ * on each axis separately, and the guides to draw for what it lined up with.
+ */
+function snapBox(box: Rect, targets: Rect[], tol: number): { dx: number; dy: number; guides: Guide[] } {
+  const xs = (r: Rect) => [r.x, r.x + r.w / 2, r.x + r.w];
+  const ys = (r: Rect) => [r.y, r.y + r.h / 2, r.y + r.h];
+  const nearest = (mine: number[], theirs: (r: Rect) => number[]) => {
+    let best: number | null = null;
+    for (const t of targets) for (const b of theirs(t)) for (const a of mine) if (Math.abs(b - a) <= tol && (best === null || Math.abs(b - a) < Math.abs(best))) best = b - a;
+    return best;
+  };
+  const dx = nearest(xs(box), xs) ?? 0;
+  const dy = nearest(ys(box), ys) ?? 0;
+  const moved = { ...box, x: box.x + dx, y: box.y + dy };
+  const guides: Guide[] = [];
+  const on = (a: number, b: number) => Math.abs(a - b) < 0.5;
+  // A guide for every line the moved box now shares with a target, spanning both.
+  if (dx || nearest(xs(box), xs) === 0)
+    for (const x of xs(moved)) {
+      const hits = targets.filter((t) => xs(t).some((v) => on(v, x)));
+      if (hits.length) guides.push({ x, from: Math.min(moved.y, ...hits.map((t) => t.y)), to: Math.max(moved.y + moved.h, ...hits.map((t) => t.y + t.h)) });
+    }
+  if (dy || nearest(ys(box), ys) === 0)
+    for (const y of ys(moved)) {
+      const hits = targets.filter((t) => ys(t).some((v) => on(v, y)));
+      if (hits.length) guides.push({ y, from: Math.min(moved.x, ...hits.map((t) => t.x)), to: Math.max(moved.x + moved.w, ...hits.map((t) => t.x + t.w)) });
+    }
+  return { dx, dy, guides };
 }
 
 /** Whether an arrow moves along with a move: everything it's joined to is moving. */

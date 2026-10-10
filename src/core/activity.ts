@@ -507,6 +507,8 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Changed your pomodoro lengths" };
     case "set_dashboard_view":
       return { summary: "Changed how your dashboard looks" };
+    case "update_whiteboard_settings":
+      return { summary: `Turned whiteboard snapping ${input.snap === false ? "off" : "on"}` };
     default:
       return { summary: `Used ${tool.replace(/_/g, " ")}` };
   }
