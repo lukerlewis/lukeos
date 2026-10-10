@@ -25,3 +25,6 @@ export const phoneTabs = [
 export function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
+
+/** Remembers whether the computer sidebar is collapsed. A cookie, so the first draw is already right. */
+export const SIDEBAR_COOKIE = "lukeos_sidebar";
