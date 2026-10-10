@@ -13,21 +13,21 @@ import { Toolbar, useAutosave } from "@/components/notes/note-editor";
 import { showTrashedToast } from "@/components/shell/toast";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
-import type { Sop } from "@/core/sops";
+import type { Skill } from "@/core/skills";
 
-/** The editor is shared by SOPs and context files, which work the same way. */
+/** The editor is shared by skills and context files, which work the same way. */
 const kinds = {
-  sop: {
-    type: "sop",
-    update: "update_sop",
-    remove: "delete_sop",
-    href: "/agents/sops",
-    list: "/agents?view=sops",
-    untitled: "Untitled SOP",
+  skill: {
+    type: "skill",
+    update: "update_skill",
+    remove: "delete_skill",
+    href: "/agents/skills",
+    list: "/agents?view=skills",
+    untitled: "Untitled skill",
     label: "When to use it",
     ask: "When should Claude use this?",
     body: "Instructions…",
-    long: "Long instructions. Consider splitting rarely needed detail into another SOP.",
+    long: "Long instructions. Consider splitting rarely needed detail into another skill.",
   },
   context: {
     type: "context",
@@ -49,22 +49,22 @@ import { cn } from "@/lib/utils";
 const DESCRIPTION_MAX = 1024;
 /** Past this, a description is costing Claude more than it needs to on every request. */
 const DESCRIPTION_LONG = 300;
-/** Roughly 500 lines: the point where splitting an SOP in two starts to pay off. */
+/** Roughly 500 lines: the point where splitting a skill in two starts to pay off. */
 const BODY_LONG_TOKENS = 5000;
 
 const tokens = (text: string) => Math.ceil(text.trim().length / 4);
 
-export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocus?: boolean; kind?: keyof typeof kinds }) {
+export function SkillEditor({ skill, autoFocus, kind = "skill" }: { skill: Skill; autoFocus?: boolean; kind?: keyof typeof kinds }) {
   const k = kinds[kind];
   const router = useRouter();
-  const { state, queue, flush } = useAutosave(sop.id, k.update);
-  const [title, setTitle] = useState(sop.title);
-  const [description, setDescription] = useState(sop.description);
-  const [bodyTokens, setBodyTokens] = useState(tokens(sop.body));
+  const { state, queue, flush } = useAutosave(skill.id, k.update);
+  const [title, setTitle] = useState(skill.title);
+  const [description, setDescription] = useState(skill.description);
+  const [bodyTokens, setBodyTokens] = useState(tokens(skill.body));
   const titleRef = useRef<HTMLTextAreaElement>(null);
 
-  // A new SOP left completely empty isn't worth keeping, so it's deleted for good when Luke leaves it.
-  const hasText = useRef({ title: !!sop.title.trim(), description: !!sop.description.trim(), body: !!sop.body.trim() });
+  // A new skill left completely empty isn't worth keeping, so it's deleted for good when Luke leaves it.
+  const hasText = useRef({ title: !!skill.title.trim(), description: !!skill.description.trim(), body: !!skill.body.trim() });
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -73,12 +73,12 @@ export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocu
       mounted.current = false;
       setTimeout(() => {
         if (!mounted.current && !text.title && !text.description && !text.body)
-          op(k.remove, { id: sop.id })
-            .then(() => op("delete_forever", { type: k.type, id: sop.id }))
+          op(k.remove, { id: skill.id })
+            .then(() => op("delete_forever", { type: k.type, id: skill.id }))
             .catch(() => {});
       }, 0);
     };
-  }, [sop.id, k]);
+  }, [skill.id, k]);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -95,7 +95,7 @@ export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocu
       }),
       Markdown,
     ],
-    content: sop.body,
+    content: skill.body,
     contentType: "markdown",
     editorProps: { attributes: { class: "note-body", "aria-label": k.body.replace("…", "") } },
     onUpdate: ({ editor }) => {
@@ -113,8 +113,8 @@ export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocu
   async function remove() {
     await flush();
     try {
-      await op(k.remove, { id: sop.id });
-      showTrashedToast(k.type, sop.id, () => router.push(`${k.href}/${sop.id}`));
+      await op(k.remove, { id: skill.id });
+      showTrashedToast(k.type, skill.id, () => router.push(`${k.href}/${skill.id}`));
       router.push(k.list);
       router.refresh();
     } catch (err) {
@@ -138,7 +138,7 @@ export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocu
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            document.getElementById("sop-description")?.focus();
+            document.getElementById("skill-description")?.focus();
           }
         }}
         placeholder={k.untitled}
@@ -149,7 +149,7 @@ export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocu
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted-foreground">
         <span>
-          <MadeByLabel madeBy={sop.madeBy} createdAt={sop.createdAt} />
+          <MadeByLabel madeBy={skill.madeBy} createdAt={skill.createdAt} />
         </span>
         <span aria-live="polite" className={cn(state === "error" && "text-danger")}>
           {state === "saving" ? "Saving..." : state === "error" ? "Not saved yet, retrying" : "Saved"}
@@ -172,7 +172,7 @@ export function SopEditor({ sop, autoFocus, kind = "sop" }: { sop: Sop; autoFocu
           </span>
         </span>
         <textarea
-          id="sop-description"
+          id="skill-description"
           value={description}
           rows={2}
           maxLength={DESCRIPTION_MAX}

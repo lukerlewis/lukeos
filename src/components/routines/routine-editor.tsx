@@ -24,13 +24,13 @@ const MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0];
 
 export function RoutineEditor({
   routine,
-  sops,
+  skills,
   checkIns,
   next,
   autoFocus,
 }: {
   routine: Omit<Routine, "runs">;
-  sops: { id: string; title: string }[];
+  skills: { id: string; title: string }[];
   checkIns: CheckIns;
   /** "Today 8pm", worked out on the server. */
   next: string | null;
@@ -44,7 +44,7 @@ export function RoutineEditor({
   const [time, setTime] = useState(routine.time);
   const [days, setDays] = useState(routine.days);
   const [dayOfMonth, setDayOfMonth] = useState(routine.dayOfMonth);
-  const [sopId, setSopId] = useState(routine.sop?.id ?? null);
+  const [skillId, setSkillId] = useState(routine.skill?.id ?? null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
 
   // A new routine left completely empty isn't worth keeping, so it's deleted for good when Luke leaves it.
@@ -274,27 +274,27 @@ export function RoutineEditor({
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-meta font-medium">Follow an SOP</span>
+          <span className="text-meta font-medium">Follow a skill</span>
           <select
-            value={sopId ?? ""}
+            value={skillId ?? ""}
             onChange={(e) => {
               const next = e.target.value || null;
-              setSopId(next);
-              queue({ sopId: next }, 0);
+              setSkillId(next);
+              queue({ skillId: next }, 0);
             }}
-            aria-label="SOP"
+            aria-label="Skill"
             className="h-9 w-full rounded-lg border bg-card px-2.5 text-body border-stroke-strong sm:w-auto sm:min-w-56 sm:self-start md:text-meta"
           >
             <option value="">None</option>
-            {sops.map((s) => (
+            {skills.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.title || "Untitled SOP"}
+                {s.title || "Untitled skill"}
               </option>
             ))}
           </select>
-          {sopId && (
-            <Link href={`/agents/sops/${sopId}`} className="self-start text-meta text-muted-foreground underline-offset-2 hover:underline">
-              Open this SOP
+          {skillId && (
+            <Link href={`/agents/skills/${skillId}`} className="self-start text-meta text-muted-foreground underline-offset-2 hover:underline">
+              Open this skill
             </Link>
           )}
         </label>

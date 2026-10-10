@@ -8,7 +8,7 @@ const { contextFiles } = schema;
 
 /**
  * Context files are background for Claude: who Luke is, who his audience is,
- * how his business works. Like SOPs, Claude only sees each one's title and
+ * how his business works. Like skills, Claude only sees each one's title and
  * description up front and reads the rest with get_context when it's relevant.
  */
 
@@ -24,7 +24,7 @@ export type ContextSummary = {
 
 export type ContextFile = ContextSummary & { body: string };
 
-/** The longest description allowed, the same as for SOPs. */
+/** The longest description allowed, the same as for skills. */
 export const CONTEXT_DESCRIPTION_MAX = 1024;
 
 const live = isNull(contextFiles.deletedAt);

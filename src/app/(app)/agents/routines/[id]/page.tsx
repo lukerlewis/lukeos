@@ -8,7 +8,7 @@ import { whenShort } from "@/components/routines/when";
 import { OperationError } from "@/core/define";
 import { getCheckIns, getRoutine, settleMissed } from "@/core/routines";
 import { getTimeZone } from "@/core/settings";
-import { listSops } from "@/core/sops";
+import { listSkills } from "@/core/skills";
 
 async function load(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: PageProps<"/agents/routines/[
 export default async function RoutinePage({ params, searchParams }: PageProps<"/agents/routines/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   await settleMissed();
-  const [{ runs, ...routine }, sops, checkIns, timeZone] = await Promise.all([load(id), listSops(), getCheckIns(), getTimeZone()]);
+  const [{ runs, ...routine }, skills, checkIns, timeZone] = await Promise.all([load(id), listSkills(), getCheckIns(), getTimeZone()]);
   const back = { href: "/agents?view=routines", label: "Routines" };
 
   return (
@@ -51,7 +51,7 @@ export default async function RoutinePage({ params, searchParams }: PageProps<"/
           <RoutineEditor
             key={routine.id}
             routine={routine}
-            sops={sops.map((s) => ({ id: s.id, title: s.title }))}
+            skills={skills.map((s) => ({ id: s.id, title: s.title }))}
             checkIns={checkIns}
             next={routine.nextDueAt ? whenShort(routine.nextDueAt, timeZone) : null}
             autoFocus={query.new === "1"}

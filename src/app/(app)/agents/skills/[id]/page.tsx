@@ -2,29 +2,29 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { SopEditor } from "@/components/sops/sop-editor";
+import { SkillEditor } from "@/components/skills/skill-editor";
 import { OperationError } from "@/core/define";
-import { getSop } from "@/core/sops";
+import { getSkill } from "@/core/skills";
 
 async function load(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   try {
-    return await getSop(id);
+    return await getSkill(id);
   } catch (err) {
     if (err instanceof OperationError) notFound();
     throw err;
   }
 }
 
-export async function generateMetadata({ params }: PageProps<"/agents/sops/[id]">): Promise<Metadata> {
-  const sop = await load((await params).id);
-  return { title: `${sop.title || "Untitled SOP"} · LukeOS` };
+export async function generateMetadata({ params }: PageProps<"/agents/skills/[id]">): Promise<Metadata> {
+  const skill = await load((await params).id);
+  return { title: `${skill.title || "Untitled skill"} · LukeOS` };
 }
 
-export default async function SopPage({ params, searchParams }: PageProps<"/agents/sops/[id]">) {
+export default async function SkillPage({ params, searchParams }: PageProps<"/agents/skills/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const sop = await load(id);
-  const back = { href: "/agents?view=sops", label: "SOPs" };
+  const skill = await load(id);
+  const back = { href: "/agents?view=skills", label: "Skills" };
 
   return (
     <div className="flex min-w-0 grow flex-col">
@@ -43,7 +43,7 @@ export default async function SopPage({ params, searchParams }: PageProps<"/agen
           {back.label}
         </Link>
         <div className="max-w-3xl min-w-0">
-          <SopEditor key={sop.id} sop={sop} autoFocus={query.new === "1"} />
+          <SkillEditor key={skill.id} skill={skill} autoFocus={query.new === "1"} />
         </div>
       </div>
     </div>

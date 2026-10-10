@@ -48,7 +48,7 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
           ? FileText
           : item.type === "card"
           ? SquareKanban
-          : item.type === "sop"
+          : item.type === "skill"
             ? ScrollText
             : item.type === "context"
               ? UserRound
@@ -65,7 +65,7 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
                 : item.format === "html"
                 ? Globe
                 : NotebookPen;
-  const kind = { project: "Project", card: "Card", task: "Task", note: "Note", artifact: "Artifact", document: "Document", sop: "SOP", context: "Context", routine: "Routine", entry: "Work archive", inspiration: "Inspiration", message: "Message", whiteboard: "Whiteboard" }[item.type];
+  const kind = { project: "Project", card: "Card", task: "Task", note: "Note", artifact: "Artifact", document: "Document", skill: "Skill", context: "Context", routine: "Routine", entry: "Work archive", inspiration: "Inspiration", message: "Message", whiteboard: "Whiteboard" }[item.type];
   const containsText =
     item.contains &&
     [

@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
     // Agents used to be called From Claude, then Agent log.
     { source: "/from-claude", destination: "/agents", permanent: true },
     { source: "/agent-log", destination: "/agents", permanent: true },
+    // SOPs are now called skills.
+    { source: "/agents/sops/:id", destination: "/agents/skills/:id", permanent: true },
     // The board is now a layout on the dashboard.
     { source: "/board", destination: "/", permanent: true },
   ],

@@ -6,9 +6,9 @@ import { statusLabel, type Status } from "@/lib/task-fields";
 import { defineOperation, type Actor } from "./define";
 import { inspirationLabel } from "./inspiration";
 
-const { activityLog, tasks, notes, artifacts, documents, cards, projects, sops, contextFiles, routines, archiveEntries, inspirationItems, whiteboards } = schema;
+const { activityLog, tasks, notes, artifacts, documents, cards, projects, skills, contextFiles, routines, archiveEntries, inspirationItems, whiteboards } = schema;
 
-type ItemType = "task" | "note" | "artifact" | "document" | "card" | "project" | "sop" | "context" | "routine" | "entry" | "inspiration" | "whiteboard";
+type ItemType = "task" | "note" | "artifact" | "document" | "card" | "project" | "skill" | "context" | "routine" | "entry" | "inspiration" | "whiteboard";
 
 /** One line of the activity log. */
 export type ActivityEntry = {
@@ -52,7 +52,7 @@ const fieldLabel: Record<string, string> = {
   time: "time",
   days: "days",
   dayOfMonth: "day of the month",
-  sopId: "SOP",
+  skillId: "skill",
   enabled: "on",
   pinned: "pin",
   story: "story",
@@ -71,7 +71,7 @@ const quote = (title: string | null | undefined) => {
 };
 
 const kindLabel = (type: ItemType) =>
-  type === "sop" ? "SOP" : type === "context" ? "context file" : type === "entry" ? "Work archive entry" : type === "inspiration" ? "Inspiration item" : type;
+  type === "skill" ? "skill" : type === "context" ? "context file" : type === "entry" ? "Work archive entry" : type === "inspiration" ? "Inspiration item" : type;
 
 const changed = (input: Record<string, unknown>) =>
   Object.keys(input)
@@ -102,8 +102,8 @@ async function titleOf(type: ItemType, id: unknown) {
           ? documents
         : type === "note"
           ? notes
-          : type === "sop"
-            ? sops
+          : type === "skill"
+            ? skills
             : type === "context"
               ? contextFiles
             : type === "routine"
@@ -141,8 +141,8 @@ export async function titleBefore(tool: string, input: Record<string, unknown>) 
       return titleOf("project", input.id);
     case "delete_artifact":
       return titleOf("artifact", input.id);
-    case "delete_sop":
-      return titleOf("sop", input.id);
+    case "delete_skill":
+      return titleOf("skill", input.id);
     case "delete_context":
       return titleOf("context", input.id);
     case "delete_routine":
@@ -303,14 +303,14 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     }
     case "delete_artifact":
       return { summary: `Moved artifact ${quote(before)} to Trash`, item: { type: "artifact", id: String(input.id) } };
-    case "create_sop":
-      return { summary: `Added SOP ${quote(task.title)}`, item: { type: "sop", id: task.id } };
-    case "update_sop": {
+    case "create_skill":
+      return { summary: `Added skill ${quote(task.title)}`, item: { type: "skill", id: task.id } };
+    case "update_skill": {
       const fields = changed(input);
-      return { summary: `Edited SOP ${quote(task.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`, item: { type: "sop", id: task.id } };
+      return { summary: `Edited skill ${quote(task.title)}${fields.length ? ` (${fields.join(", ")})` : ""}`, item: { type: "skill", id: task.id } };
     }
-    case "delete_sop":
-      return { summary: `Moved SOP ${quote(before)} to Trash`, item: { type: "sop", id: String(input.id) } };
+    case "delete_skill":
+      return { summary: `Moved skill ${quote(before)} to Trash`, item: { type: "skill", id: String(input.id) } };
     case "create_context":
       return { summary: `Added context file ${quote(task.title)}`, item: { type: "context", id: task.id } };
     case "update_context": {
@@ -445,7 +445,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: `Deleted ${kindLabel(input.type as ItemType)} ${quote(before)} forever` };
     case "empty_trash": {
       const c = (r.deletedForever ?? {}) as Record<string, number>;
-      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.documents ?? 0) + (c.cards ?? 0) + (c.projects ?? 0) + (c.sops ?? 0) + (c.context ?? 0) + (c.routines ?? 0) + (c.entries ?? 0) + (c.inspiration ?? 0);
+      const n = (c.tasks ?? 0) + (c.notes ?? 0) + (c.artifacts ?? 0) + (c.documents ?? 0) + (c.cards ?? 0) + (c.projects ?? 0) + (c.skills ?? 0) + (c.context ?? 0) + (c.routines ?? 0) + (c.entries ?? 0) + (c.inspiration ?? 0);
       return { summary: `Emptied Trash (${n} ${n === 1 ? "item" : "items"})` };
     }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { activityDays, dayAndTime } from "@/components/from-claude/activity-days";
 import { ActivityList } from "@/components/from-claude/activity-list";
 import { MarkFromClaudeSeen } from "@/components/from-claude/mark-seen";
@@ -13,13 +14,13 @@ import { claudeRoutines, listFromClaude } from "@/core/from-claude";
 import { listMentions } from "@/core/mentions";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
-import { listSops } from "@/core/sops";
+import { listSkills } from "@/core/skills";
 import { NewRoutineButton } from "@/components/routines/new-routine-button";
 import { RoutineList } from "@/components/routines/routine-list";
 import { getCheckIns, listRoutines } from "@/core/routines";
 import { checkInsLabel } from "@/lib/schedule";
-import { NewSopButton } from "@/components/sops/new-sop-button";
-import { SopList } from "@/components/sops/sop-list";
+import { NewSkillButton } from "@/components/skills/new-skill-button";
+import { SkillList } from "@/components/skills/skill-list";
 import { ContextList } from "@/components/context/context-list";
 import { NewContextButton } from "@/components/context/new-context-button";
 import { listContext } from "@/core/context";
@@ -31,7 +32,7 @@ export const metadata: Metadata = { title: "Agents · LukeOS" };
 const views = [
   ...(ARTIFACTS_ON ? [{ value: undefined, label: "Artifacts" }] : []),
   { value: "claude", label: "@claude" },
-  { value: "sops", label: "SOPs" },
+  { value: "skills", label: "Skills" },
   { value: "context", label: "Context" },
   { value: "routines", label: "Routines" },
   { value: "activity", label: "Activity log" },
@@ -53,7 +54,9 @@ export default async function FromClaudePage({ searchParams }: PageProps<"/agent
   );
   if (view === "activity") return <ActivityPage viewSwitch={viewSwitch("activity")} />;
   if (view === "claude") return <MentionsPage viewSwitch={viewSwitch("claude")} />;
-  if (view === "sops") return <SopsPage viewSwitch={viewSwitch("sops")} />;
+  // Skills used to be called SOPs.
+  if (view === "sops") redirect("/agents?view=skills");
+  if (view === "skills") return <SkillsPage viewSwitch={viewSwitch("skills")} />;
   if (view === "context") return <ContextPage viewSwitch={viewSwitch("context")} />;
   if (view === "routines") return <RoutinesPage viewSwitch={viewSwitch("routines")} />;
 
@@ -132,20 +135,20 @@ async function MentionsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
   );
 }
 
-/** Luke's SOPs: instructions Claude checks before doing what he asks. */
-async function SopsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
-  const [sops, timeZone] = await Promise.all([listSops(), getTimeZone()]);
-  const when = Object.fromEntries(sops.map((s) => [s.id, editedLabel(s.updatedAt, timeZone)]));
+/** Luke's skills: instructions Claude checks before doing what he asks. */
+async function SkillsPage({ viewSwitch }: { viewSwitch: React.ReactNode }) {
+  const [skills, timeZone] = await Promise.all([listSkills(), getTimeZone()]);
+  const when = Object.fromEntries(skills.map((s) => [s.id, editedLabel(s.updatedAt, timeZone)]));
 
   return (
-    <Page title="Agents" newTask={false} actions={<NewSopButton />}>
+    <Page title="Agents" newTask={false} actions={<NewSkillButton />}>
       <div className="flex max-w-3xl flex-col gap-4">
         {viewSwitch}
         <Card>
-          {sops.length === 0 ? (
-            <EmptyState>No SOPs yet.</EmptyState>
+          {skills.length === 0 ? (
+            <EmptyState>No skills yet.</EmptyState>
           ) : (
-            <SopList sops={sops} when={when} />
+            <SkillList skills={skills} when={when} />
           )}
         </Card>
       </div>
