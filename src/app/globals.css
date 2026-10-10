@@ -803,6 +803,8 @@
   --wb-canvas: var(--grey-50);
   --wb-dot: var(--grey-300);
   --wb-select: var(--grey-950);
+  /* Snap guides and Option measurements: red, as in Figma. */
+  --wb-guide: #f24822;
 }
 .dark {
   --wb-white: var(--grey-100);
@@ -824,4 +826,6 @@
   --wb-canvas: var(--grey-0);
   --wb-dot: var(--grey-200);
   --wb-select: var(--grey-950);
+  /* Snap guides and Option measurements: red, as in Figma. */
+  --wb-guide: #f24822;
 }
