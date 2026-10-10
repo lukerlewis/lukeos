@@ -38,6 +38,9 @@ import {
   arrowRoute,
   arrowsAmong,
   shiftArrow,
+  sidePoint,
+  SIDES,
+  type Side,
   routeMiddle,
   routeToPath,
   tidyRoute,
@@ -62,7 +65,7 @@ type Gesture =
   | { kind: "marquee"; x0: number; y0: number; additive: boolean; before: string[] }
   | { kind: "resize"; id: string; handle: Handle; start: Rect; inLayout: boolean; text: boolean }
   | { kind: "create"; tool: "frame" | "shape" | "text" | "sticky"; x0: number; y0: number; parent: string | null }
-  | { kind: "arrow"; from: string | null; start: Point; sx: number; sy: number }
+  | { kind: "arrow"; from: string | null; fromSide: Side | null; start: Point; sx: number; sy: number }
   | { kind: "end"; id: string; which: "from" | "to" }
   | { kind: "slide"; id: string; start: Point; orig: Item }
   | { kind: "bend"; id: string; work: Point[]; seg: number; level: boolean; start: Point };
@@ -182,7 +185,15 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
   const [drag, setDrag] = useState<{ ids: Set<string>; dx: number; dy: number } | null>(null);
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [draft, setDraft] = useState<Rect | null>(null);
-  const [arrowDraft, setArrowDraft] = useState<{ from: string | null; start: Point; x: number; y: number } | null>(null);
+  const [arrowDraft, setArrowDraft] = useState<{ from: string | null; fromSide: Side | null; start: Point; x: number; y: number } | null>(null);
+  /** The item an arrow end would join right now, and the side it would pin to if the pointer is on one of its side dots. */
+  const [anchor, setAnchorState] = useState<{ id: string; side: Side | null } | null>(null);
+  const anchorRef = useRef(anchor);
+  const setAnchor = (next: { id: string; side: Side | null } | null) => {
+    if (next?.id === anchorRef.current?.id && next?.side === anchorRef.current?.side) return;
+    anchorRef.current = next;
+    setAnchorState(next);
+  };
   const [dropLine, setDropLine] = useState<Rect | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [spaceDown, setSpaceDown] = useState(false);
@@ -349,6 +360,26 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     const el = document.elementsFromPoint(cx, cy).find((n) => worldRef.current?.contains(n) && n.closest("[data-wb-id]"));
     const chain = el ? chainAt(el) : [];
     return chain.length ? chain[chain.length - 1] : null;
+  };
+  /** What an arrow end at this point would join: the item under it, and a side if the pointer is on one of its side dots. */
+  const anchorAt = (cx: number, cy: number, skip: string | null) => {
+    const world = toWorld(cx, cy);
+    // On a side dot of anything (the dots sit on the edge, where the pointer may be over what's behind): pin to that side.
+    let best: { id: string; side: Side } | null = null;
+    let dist = 16 / camRef.current.z;
+    walk(itemsRef.current, (i) => {
+      const r = i.type !== "arrow" && i.id !== skip ? rectsRef.current.get(i.id) : undefined;
+      if (!r) return;
+      for (const side of SIDES) {
+        const p = sidePoint(r, side);
+        const d = Math.hypot(p.x - world.x, p.y - world.y);
+        // Inner items come later in the walk, so they win a tie with the frame around them.
+        if (d <= dist) [best, dist] = [{ id: i.id, side }, d];
+      }
+    });
+    if (best) return best;
+    const id = itemUnder(cx, cy);
+    return id && id !== skip ? { id, side: null } : null;
   };
   /** Like Figma: a click picks the top-level item, or a sibling of what's selected; Cmd picks the deepest. */
   const pick = (chain: string[], deep: boolean) => {
@@ -624,10 +655,13 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
     const chain = chainAt(e.target);
 
     if (tool === "arrow") {
-      // An arrow joins the innermost thing it starts on, or starts on the board itself.
-      const from = itemUnder(e.clientX, e.clientY);
-      gesture.current = { kind: "arrow", from, start: world, sx: e.clientX, sy: e.clientY };
-      setArrowDraft({ from, start: world, ...world });
+      // An arrow joins the innermost thing it starts on (pinned to a side if it starts on a side dot), or starts on the board itself.
+      const at = anchorAt(e.clientX, e.clientY, null);
+      const from = at?.id ?? null;
+      const fromSide = at?.side ?? null;
+      gesture.current = { kind: "arrow", from, fromSide, start: world, sx: e.clientX, sy: e.clientY };
+      setArrowDraft({ from, fromSide, start: world, ...world });
+      setAnchor(null);
       return;
     }
     if (tool === "frame" || tool === "shape" || tool === "text" || tool === "sticky") {
@@ -681,6 +715,7 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
         const id = pick(chainAt(e.target), e.metaKey || e.ctrlKey);
         if (id !== hover) setHover(id);
       }
+      setAnchor(e.pointerType === "mouse" && tool === "arrow" ? anchorAt(e.clientX, e.clientY, null) : null);
       return;
     }
     const world = toWorld(e.clientX, e.clientY);
@@ -791,11 +826,15 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
         break;
       }
       case "arrow":
-        setArrowDraft({ from: g.from, start: g.start, ...world });
+        setArrowDraft({ from: g.from, fromSide: g.fromSide, start: g.start, ...world });
+        setAnchor(anchorAt(e.clientX, e.clientY, g.from));
         break;
-      case "end":
+      case "end": {
         history.live(mapItem(itemsRef.current, g.id, (a) => withEnd(a, g.which, null, world)));
+        const a = locate(itemsRef.current, g.id)?.item;
+        setAnchor(anchorAt(e.clientX, e.clientY, (g.which === "from" ? a?.to : a?.from) ?? null));
         break;
+      }
       case "slide":
         history.live(mapItem(itemsRef.current, g.id, () => shiftArrow(g.orig, world.x - g.start.x, world.y - g.start.y)));
         break;
@@ -868,14 +907,15 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       }
       case "arrow": {
         setArrowDraft(null);
-        const under = itemUnder(e.clientX, e.clientY);
-        const to = under && under !== g.from ? under : null;
+        setAnchor(null);
+        const target = anchorAt(e.clientX, e.clientY, g.from);
+        const to = target?.id ?? null;
         // A click on its own makes nothing; a drag across empty board makes a free-standing arrow.
         if (to || Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 8) {
           const id = newId(allIds(itemsRef.current));
           let a: Item = { id, type: "arrow", ...(arrowKind === "elbow" && { elbow: true }), ...(lineOnly && { head: "none" as const }) };
-          a = withEnd(a, "from", g.from, g.start);
-          a = withEnd(a, "to", to, world);
+          a = withEnd(a, "from", g.from, g.start, g.fromSide);
+          a = withEnd(a, "to", to, world, target?.side ?? null);
           commit(insertItems(itemsRef.current, null, itemsRef.current.length, [a]));
           setSelection([id]);
         }
@@ -884,10 +924,11 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
       }
       case "end": {
         const at = locate(itemsRef.current, g.id)?.item;
+        setAnchor(null);
         if (at) {
-          const under = itemUnder(e.clientX, e.clientY);
           const other = g.which === "from" ? at.to : at.from;
-          history.live(mapItem(itemsRef.current, g.id, (a) => withEnd(a, g.which, under && under !== other ? under : null, world)));
+          const target = anchorAt(e.clientX, e.clientY, other ?? null);
+          history.live(mapItem(itemsRef.current, g.id, (a) => withEnd(a, g.which, target?.id ?? null, world, target?.side ?? null)));
         }
         history.end();
         break;
@@ -1294,7 +1335,10 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
           pointers.current.delete(e.pointerId);
           cancelGesture();
         }}
-        onPointerLeave={() => setHover(null)}
+        onPointerLeave={() => {
+          setHover(null);
+          if (!gesture.current) setAnchor(null);
+        }}
         onDoubleClick={onDoubleClick}
       >
         <div
@@ -1353,7 +1397,8 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
             })}
             {arrowDraft && (() => {
               const r = arrowDraft.from ? rects.get(arrowDraft.from) : null;
-              const route = [r ? { x: r.x + r.w / 2, y: r.y + r.h / 2 } : arrowDraft.start, { x: arrowDraft.x, y: arrowDraft.y }];
+              const start = r ? (arrowDraft.fromSide ? sidePoint(r, arrowDraft.fromSide) : { x: r.x + r.w / 2, y: r.y + r.h / 2 }) : arrowDraft.start;
+              const route = [start, { x: arrowDraft.x, y: arrowDraft.y }];
               return (
                 <g fill="none" stroke="var(--grey-600)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d={routeToPath(route)} strokeDasharray="6 6" />
@@ -1377,6 +1422,9 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
           )}
           {single?.type === "arrow" && single.elbow && !drag && <BendHandles route={routeOf(single.id, items, rects)} toScreen={(p) => ({ x: p.x * cam.z + cam.x, y: p.y * cam.z + cam.y })} />}
           {single?.type === "arrow" && !drag && <EndHandles route={routeOf(single.id, items, rects)} toScreen={(p) => ({ x: p.x * cam.z + cam.x, y: p.y * cam.z + cam.y })} />}
+          {anchor && rects.get(anchor.id) && (
+            <SideDots r={toScreen(rects.get(anchor.id)!)} active={anchor.side} />
+          )}
           {marquee && <Box r={toScreen(marquee)} thin fill />}
           {draft && <Box r={toScreen(draft)} thin />}
           {dropLine && (
@@ -1561,10 +1609,37 @@ function travels(a: Item, moving: (id: string) => boolean): boolean {
 }
 
 /** An arrow with one end joined to an item, or (with no item) left on the board at a point. */
-function withEnd(a: Item, which: "from" | "to", joined: string | null, at: Point): Item {
+function withEnd(a: Item, which: "from" | "to", joined: string | null, at: Point, side: Side | null = null): Item {
   const place = which === "from" ? "start" : "end";
-  const out = omit(a, [which, place]);
-  return joined ? { ...out, [which]: joined } : { ...out, [place]: [Math.round(at.x), Math.round(at.y)] };
+  const pin = which === "from" ? "fromSide" : "toSide";
+  const out = omit(a, [which, place, pin]);
+  if (!joined) return { ...out, [place]: [Math.round(at.x), Math.round(at.y)] };
+  return { ...out, [which]: joined, ...(side && { [pin]: side }) };
+}
+
+/** An outline and a dot in the middle of each side of what an arrow end is over: drop on a dot to pin the end to that side. */
+function SideDots({ r, active }: { r: Rect; active: Side | null }) {
+  const dots: [Side, number, number][] = [
+    ["top", r.x + r.w / 2, r.y],
+    ["right", r.x + r.w, r.y + r.h / 2],
+    ["bottom", r.x + r.w / 2, r.y + r.h],
+    ["left", r.x, r.y + r.h / 2],
+  ];
+  return (
+    <>
+      <Box r={r} thin />
+      {dots.map(([side, x, y]) => (
+        <span
+          key={side}
+          className={cn(
+            "absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-[var(--wb-select)]",
+            side === active ? "size-3.5 bg-[var(--wb-select)]" : "bg-[var(--grey-0)]",
+          )}
+          style={{ left: x, top: y }}
+        />
+      ))}
+    </>
+  );
 }
 
 /** Round grips on the two ends of a selected arrow: drag one onto something to join it, or anywhere to leave it there. */
