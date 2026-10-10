@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WhiteboardEditor } from "@/components/whiteboard/editor";
 import { OperationError } from "@/core/define";
-import { getWhiteboard } from "@/core/whiteboards";
+import { getWhiteboard, getWhiteboardSettings } from "@/core/whiteboards";
 
 async function load(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -20,6 +20,6 @@ export async function generateMetadata({ params }: PageProps<"/whiteboard/[id]">
 }
 
 export default async function WhiteboardPage({ params }: PageProps<"/whiteboard/[id]">) {
-  const board = await load((await params).id);
-  return <WhiteboardEditor key={board.id} board={{ id: board.id, title: board.title, version: board.version, items: board.items }} />;
+  const [board, settings] = await Promise.all([load((await params).id), getWhiteboardSettings()]);
+  return <WhiteboardEditor key={board.id} board={{ id: board.id, title: board.title, version: board.version, items: board.items }} settings={settings} />;
 }
