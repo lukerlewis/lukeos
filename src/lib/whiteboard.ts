@@ -496,3 +496,16 @@ export function routeMiddle(points: Point[]): Point {
   }
   return points[0];
 }
+
+/** The two short strokes of an arrowhead at the end of a path, pointing along its last line. */
+export function arrowHead(points: Point[], length = 11, spread = 7): string {
+  const tip = points[points.length - 1];
+  const from = points[points.length - 2] ?? tip;
+  const len = Math.hypot(tip.x - from.x, tip.y - from.y);
+  if (!len) return "";
+  const ux = (tip.x - from.x) / len;
+  const uy = (tip.y - from.y) / len;
+  const bx = tip.x - ux * length;
+  const by = tip.y - uy * length;
+  return `M ${bx - uy * spread} ${by + ux * spread} L ${tip.x} ${tip.y} L ${bx + uy * spread} ${by - ux * spread}`;
+}

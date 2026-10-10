@@ -35,6 +35,7 @@ import {
   mapItem,
   newId,
   removeItems,
+  arrowHead,
   routeMiddle,
   routeToPath,
   straightRoute,
@@ -1235,15 +1236,11 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
             />
           ))}
           <svg className="pointer-events-none absolute top-0 left-0 overflow-visible" width={1} height={1}>
-            <defs>
-              <marker id="wb-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-                <path d="M 0 1 L 9 5 L 0 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </marker>
-            </defs>
             {arrows.map((a) => {
               const route = routeOf(a.id, items, rects);
               if (!route) return null;
-              const d = routeToPath(route);
+              // The head is drawn as its own line rather than an SVG marker, which Safari leaves out.
+              const d = `${routeToPath(route)} ${arrowHead(route)}`;
               const mid = routeMiddle(route);
               const selected = selection.includes(a.id);
               return (
@@ -1256,7 +1253,6 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
                     strokeWidth={selected ? 2.5 : 2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    markerEnd="url(#wb-head)"
                   />
                   {a.text && (
                     <text
@@ -1276,18 +1272,16 @@ export function WhiteboardEditor({ board }: { board: { id: string; title: string
                 </g>
               );
             })}
-            {arrowDraft && rects.get(arrowDraft.from) && (
-              <line
-                x1={rects.get(arrowDraft.from)!.x + rects.get(arrowDraft.from)!.w / 2}
-                y1={rects.get(arrowDraft.from)!.y + rects.get(arrowDraft.from)!.h / 2}
-                x2={arrowDraft.x}
-                y2={arrowDraft.y}
-                stroke="var(--grey-600)"
-                strokeWidth={2}
-                strokeDasharray="6 6"
-                markerEnd="url(#wb-head)"
-              />
-            )}
+            {arrowDraft && rects.get(arrowDraft.from) && (() => {
+              const r = rects.get(arrowDraft.from)!;
+              const route = [{ x: r.x + r.w / 2, y: r.y + r.h / 2 }, { x: arrowDraft.x, y: arrowDraft.y }];
+              return (
+                <g fill="none" stroke="var(--grey-600)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d={routeToPath(route)} strokeDasharray="6 6" />
+                  <path d={arrowHead(route)} />
+                </g>
+              );
+            })()}
           </svg>
         </div>
 
