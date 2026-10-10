@@ -814,6 +814,17 @@
   --wb-select: var(--grey-950);
   /* Snap guides and Option measurements: red, as in Figma. */
   --wb-guide: #f24822;
+  /* Stickies: brighter, paper-like colours with dark writing, in both modes. */
+  --wb-sticky-white: #ffffff;
+  --wb-sticky-grey: #e8e8e6;
+  --wb-sticky-yellow: #ffe28a;
+  --wb-sticky-orange: #ffc796;
+  --wb-sticky-red: #ffb3a8;
+  --wb-sticky-pink: #ffbfdb;
+  --wb-sticky-purple: #d6c6ff;
+  --wb-sticky-blue: #b5d5ff;
+  --wb-sticky-green: #b3e8c1;
+  --wb-sticky-ink: #1d1d1b;
 }
 .dark {
   --wb-white: var(--grey-100);
@@ -837,4 +848,15 @@
   --wb-select: var(--grey-950);
   /* Snap guides and Option measurements: red, as in Figma. */
   --wb-guide: #f24822;
+  /* Stickies stay light in dark mode, a touch softer so they don't glare. */
+  --wb-sticky-white: #e9e9e7;
+  --wb-sticky-grey: #c9c9c6;
+  --wb-sticky-yellow: #f2d47a;
+  --wb-sticky-orange: #f0b585;
+  --wb-sticky-red: #eda398;
+  --wb-sticky-pink: #eeadca;
+  --wb-sticky-purple: #c3b3f0;
+  --wb-sticky-blue: #a5c5ef;
+  --wb-sticky-green: #a2d6b0;
+  --wb-sticky-ink: #1d1d1b;
 }

@@ -11,6 +11,8 @@ import { DEFAULTS, TEXT_STYLES, type Color, type Item } from "@/lib/whiteboard";
  */
 
 export const fillOf = (c: Color | undefined) => (!c || c === "none" ? "transparent" : c === "default" || c === "muted" ? "var(--wb-white)" : `var(--wb-${c})`);
+/** Stickies have their own brighter colours, the same in light and dark mode. */
+export const stickyFillOf = (c: Color | undefined) => (!c || c === "none" || c === "default" || c === "muted" ? "var(--wb-sticky-yellow)" : `var(--wb-sticky-${c})`);
 
 export const textColorOf = (c: Color | undefined) =>
   !c || c === "default" || c === "none"
@@ -136,11 +138,11 @@ export const ItemView = memo(function ItemView(props: ViewProps) {
       width: item.w ?? DEFAULTS.sticky.w,
       minHeight: item.h ?? DEFAULTS.sticky.h,
       padding: 20,
-      background: fillOf(fill),
+      background: stickyFillOf(fill),
       outline: fill === "white" ? "1px solid var(--stroke)" : undefined,
       outlineOffset: -1,
       borderRadius: 6,
-      color: "var(--ink)",
+      color: "var(--wb-sticky-ink)",
       fontSize: STICKY_TEXT.size,
       lineHeight: STICKY_TEXT.lineHeight,
       letterSpacing: `${STICKY_TEXT.tracking}em`,
