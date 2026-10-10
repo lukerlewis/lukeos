@@ -25,18 +25,19 @@ import Loading from "./loading";
 // Every screen shows Luke's own data, so none is built ahead of time.
 export const dynamic = "force-dynamic";
 
-export default function AppLayout({ children }: LayoutProps<"/">) {
+export default async function AppLayout({ children }: LayoutProps<"/">) {
+  const sidebarCollapsed = (await cookies()).get(SIDEBAR_COOKIE)?.value === "collapsed";
   // The frame and a loading outline go out straight away; the sidebar's data
   // and the screen fill in once the database answers, so opening the app
   // after a break never shows a blank page.
   return (
-    <Suspense fallback={<ShellLoading />}>
-      <AppShell>{children}</AppShell>
+    <Suspense fallback={<ShellLoading sidebarCollapsed={sidebarCollapsed} />}>
+      <AppShell sidebarCollapsed={sidebarCollapsed}>{children}</AppShell>
     </Suspense>
   );
 }
 
-async function AppShell({ children }: { children: React.ReactNode }) {
+async function AppShell({ children, sidebarCollapsed }: { children: React.ReactNode; sidebarCollapsed: boolean }) {
   await requireSession();
   const [projects, timeZone, newFromClaude, unreadMessages, focusSettings] = await Promise.all([
     listProjects(),
@@ -45,7 +46,6 @@ async function AppShell({ children }: { children: React.ReactNode }) {
     unreadMessageCount(),
     getFocusSettings(),
   ]);
-  const sidebarCollapsed = (await cookies()).get(SIDEBAR_COOKIE)?.value === "collapsed";
   // Things over 30 days in Trash are deleted for good as the app is used.
   after(() => purgeExpiredTrash().catch((err) => console.error("[trash] purge failed", err)));
   const today = todayIn(timeZone);
@@ -76,10 +76,10 @@ async function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 /** The app's frame with grey placeholders, shown while the first screen loads. */
-function ShellLoading() {
+function ShellLoading({ sidebarCollapsed }: { sidebarCollapsed: boolean }) {
   return (
     <div className="flex min-h-dvh md:h-dvh">
-      <aside className="hidden w-60 shrink-0 flex-col gap-4 border-r bg-sidebar px-3 py-3.5 md:flex" aria-hidden>
+      <aside className={sidebarCollapsed ? "hidden" : "hidden w-60 shrink-0 flex-col gap-4 border-r bg-sidebar px-3 py-3.5 md:flex"} aria-hidden>
         <div className="flex items-center gap-2.5 px-2 py-1.5">
           <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-medium text-primary-foreground">
             L

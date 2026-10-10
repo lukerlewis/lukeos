@@ -3,7 +3,7 @@
 import { PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useCommandMenu } from "@/components/command/command-menu";
 import { useFocus } from "@/components/focus/focus-provider";
 import { SEEN_EVENT } from "@/components/from-claude/mark-seen";
@@ -23,20 +23,34 @@ export function Sidebar({
   projects: SidebarProject[];
   newFromClaude: number;
   unreadMessages: number;
-  /** Starts as a slim row of icons. */
+  /** Starts hidden off the left edge. */
   collapsed?: boolean;
 }) {
-  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(startCollapsed);
-  // Only animates after a toggle, so it doesn't slide in on every page load.
-  const [toggled, setToggled] = useState(false);
+  // Animates only after a toggle, so it doesn't slide about on every page load.
+  const [animate, setAnimate] = useState(false);
+  // While collapsed it's hidden off the left edge, and slides out over the page
+  // when the pointer reaches that edge, like the Mac's Dock.
+  const [peek, setPeek] = useState(false);
+  const hideTimer = useRef<number | undefined>(undefined);
+  const show = useCallback(() => {
+    window.clearTimeout(hideTimer.current);
+    setPeek(true);
+  }, []);
+  const hideSoon = useCallback(() => {
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => setPeek(false), 300);
+  }, []);
+  useEffect(() => () => window.clearTimeout(hideTimer.current), []);
   const toggle = useCallback(() => {
-    setToggled(true);
+    // Pinning it while it's slid out keeps it where it is, so no animation.
+    setAnimate(!peek);
+    setPeek(false);
     setCollapsed((c) => {
       document.cookie = `${SIDEBAR_COOKIE}=${c ? "open" : "collapsed"}; path=/; max-age=31536000; samesite=lax`;
       return !c;
     });
-  }, []);
+  }, [peek]);
   // Cmd+. (Ctrl+. elsewhere) collapses or expands it from anywhere.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -48,6 +62,65 @@ export function Sidebar({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle]);
+
+  const contents = (
+    <SidebarContents
+      projects={projects}
+      newFromClaude={newFromClaude}
+      unreadMessages={unreadMessages}
+      pinned={!collapsed}
+      onToggle={toggle}
+    />
+  );
+
+  if (!collapsed)
+    return (
+      <aside
+        className={cn(
+          "hidden w-60 shrink-0 flex-col gap-4 overflow-hidden border-r bg-sidebar px-3 py-3.5 md:flex",
+          animate && "sidebar-opening",
+        )}
+      >
+        {contents}
+      </aside>
+    );
+
+  return (
+    <>
+      {/* Closes up the space the sidebar left, rather than the page jumping. */}
+      {animate && <div className="sidebar-closing hidden w-0 shrink-0 md:block" aria-hidden />}
+      <div className="fixed inset-y-0 left-0 z-40 hidden w-2 md:block" onMouseEnter={show} onClick={show} aria-hidden />
+      <aside
+        inert={!peek}
+        onMouseEnter={show}
+        onMouseLeave={hideSoon}
+        className={cn(
+          "sidebar-float fixed inset-y-0 left-0 z-50 hidden w-60 flex-col gap-4 border-r bg-sidebar px-3 py-3.5 md:flex",
+          !peek && "-translate-x-full",
+          animate && "sidebar-slide-away",
+        )}
+      >
+        {contents}
+      </aside>
+    </>
+  );
+}
+
+function SidebarContents({
+  projects,
+  newFromClaude,
+  unreadMessages,
+  pinned,
+  onToggle,
+}: {
+  projects: SidebarProject[];
+  newFromClaude: number;
+  unreadMessages: number;
+  /** In place beside the page, rather than slid out over it. */
+  pinned: boolean;
+  onToggle: () => void;
+}) {
+  const pathname = usePathname();
   const { openMenu } = useCommandMenu();
   // Macs use ⌘K; Windows and others Ctrl+K. Only known in the browser.
   const isMac = useSyncExternalStore(
@@ -69,80 +142,10 @@ export function Sidebar({
     "/messages": unread,
   };
 
-  const shortcut = isMac ? "⌘." : "Ctrl+.";
-
-  if (collapsed)
-    return (
-      <aside
-        className={cn(
-          "hidden w-16 shrink-0 flex-col items-center gap-4 overflow-hidden border-r bg-sidebar px-2 py-3.5 md:flex",
-          toggled && "sidebar-closing",
-        )}
-      >
-        <button
-          type="button"
-          onClick={toggle}
-          title={`Expand sidebar (${shortcut})`}
-          aria-label="Expand sidebar"
-          aria-keyshortcuts={isMac ? "Meta+." : "Control+."}
-          className="group relative flex size-10 items-center justify-center rounded-lg hover:bg-muted"
-        >
-          <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-medium text-primary-foreground group-hover:hidden">
-            L
-          </span>
-          <PanelLeftOpen className="hidden size-[18px] text-icon group-hover:block" aria-hidden />
-        </button>
-
-        <button
-          type="button"
-          onClick={openMenu}
-          title={`Search (${isMac ? "⌘K" : "Ctrl K"})`}
-          aria-label="Search"
-          className="flex size-10 items-center justify-center rounded-lg border border-stroke-strong bg-card text-icon hover:text-foreground"
-        >
-          <Search className="size-4" aria-hidden />
-        </button>
-
-        <nav className="flex flex-col gap-0.5" aria-label="Main">
-          {mainNav.map((item) => (
-            <RailLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]} />
-          ))}
-        </nav>
-
-        <div className="-mx-1 flex min-h-0 flex-col items-center gap-0.5 overflow-y-auto px-1">
-          {projects.map((p) => {
-            const href = `/projects/${p.id}`;
-            const active = pathname === href;
-            return (
-              <Link
-                key={p.id}
-                href={href}
-                title={p.name}
-                aria-label={p.name}
-                aria-current={active ? "page" : undefined}
-                className={cn("pressable flex size-11 items-center justify-center rounded-lg hover:bg-muted", active && "bg-selected")}
-              >
-                <span className="size-2.5 rounded-[3px]" style={{ background: p.hex }} aria-hidden />
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="grow" />
-        <div className="flex flex-col gap-0.5">
-          <RailLink href="/trash" label="Trash" icon={Trash2} active={isActive(pathname, "/trash")} />
-          <RailLink href="/settings" label="Settings" icon={SlidersHorizontal} active={isActive(pathname, "/settings")} />
-        </div>
-      </aside>
-    );
+  const toggleLabel = pinned ? "Collapse sidebar" : "Keep sidebar open";
 
   return (
-    <aside
-      className={cn(
-        "hidden w-60 shrink-0 flex-col gap-4 overflow-hidden border-r bg-sidebar px-3 py-3.5 md:flex",
-        toggled && "sidebar-opening",
-      )}
-    >
+    <>
       <div className="flex items-center gap-2.5 py-1.5 pl-2">
         <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-medium text-primary-foreground">
           L
@@ -150,13 +153,13 @@ export function Sidebar({
         <span className="grow font-medium text-ink">Luke&apos;s space</span>
         <button
           type="button"
-          onClick={toggle}
-          title={`Collapse sidebar (${shortcut})`}
-          aria-label="Collapse sidebar"
+          onClick={onToggle}
+          title={`${toggleLabel} (${isMac ? "⌘." : "Ctrl+."})`}
+          aria-label={toggleLabel}
           aria-keyshortcuts={isMac ? "Meta+." : "Control+."}
           className="-my-1.5 flex size-9 items-center justify-center rounded-lg text-icon hover:bg-muted hover:text-foreground"
         >
-          <PanelLeftClose className="size-[18px]" aria-hidden />
+          {pinned ? <PanelLeftClose className="size-[18px]" aria-hidden /> : <PanelLeftOpen className="size-[18px]" aria-hidden />}
         </button>
       </div>
 
@@ -215,7 +218,7 @@ export function Sidebar({
         <NavLink href="/trash" label="Trash" icon={Trash2} active={isActive(pathname, "/trash")} />
         <NavLink href="/settings" label="Settings" icon={SlidersHorizontal} active={isActive(pathname, "/settings")} />
       </div>
-    </aside>
+    </>
   );
 }
 
@@ -255,34 +258,6 @@ function NavLink({
           <span className="sr-only"> new</span>
         </span>
       )}
-    </Link>
-  );
-}
-
-/** A sidebar row as just its icon, with its name on hover. */
-function RailLink({
-  href,
-  label,
-  icon: Icon,
-  active,
-  count,
-}: {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  active: boolean;
-  count?: number;
-}) {
-  return (
-    <Link
-      href={href}
-      title={label}
-      aria-label={count ? `${label}, ${count} new` : label}
-      aria-current={active ? "page" : undefined}
-      className={cn("pressable relative flex size-11 items-center justify-center rounded-lg hover:bg-muted", active && "bg-selected")}
-    >
-      <Icon className={cn("size-[18px]", active ? "text-foreground" : "text-icon")} aria-hidden />
-      {!!count && <span className="absolute top-2 right-2 size-2 rounded-full bg-notification" aria-hidden />}
     </Link>
   );
 }
