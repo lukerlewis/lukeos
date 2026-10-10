@@ -37,10 +37,10 @@ export function Sidebar({
       return !c;
     });
   }, []);
-  // Cmd+\ (Ctrl+\ elsewhere) collapses or expands it from anywhere.
+  // Cmd+. (Ctrl+. elsewhere) collapses or expands it from anywhere.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "\\" && (e.metaKey || e.ctrlKey) && !e.altKey) {
+      if (e.key === "." && (e.metaKey || e.ctrlKey) && !e.altKey) {
         e.preventDefault();
         toggle();
       }
@@ -69,7 +69,7 @@ export function Sidebar({
     "/messages": unread,
   };
 
-  const shortcut = isMac ? "⌘\\" : "Ctrl+\\";
+  const shortcut = isMac ? "⌘." : "Ctrl+.";
 
   if (collapsed)
     return (
@@ -84,7 +84,7 @@ export function Sidebar({
           onClick={toggle}
           title={`Expand sidebar (${shortcut})`}
           aria-label="Expand sidebar"
-          aria-keyshortcuts={isMac ? "Meta+\\" : "Control+\\"}
+          aria-keyshortcuts={isMac ? "Meta+." : "Control+."}
           className="group relative flex size-10 items-center justify-center rounded-lg hover:bg-muted"
         >
           <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-medium text-primary-foreground group-hover:hidden">
@@ -153,7 +153,7 @@ export function Sidebar({
           onClick={toggle}
           title={`Collapse sidebar (${shortcut})`}
           aria-label="Collapse sidebar"
-          aria-keyshortcuts={isMac ? "Meta+\\" : "Control+\\"}
+          aria-keyshortcuts={isMac ? "Meta+." : "Control+."}
           className="-my-1.5 flex size-9 items-center justify-center rounded-lg text-icon hover:bg-muted hover:text-foreground"
         >
           <PanelLeftClose className="size-[18px]" aria-hidden />
