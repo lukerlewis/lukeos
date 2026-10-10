@@ -64,7 +64,7 @@ type Gesture =
   | { kind: "press"; ids: string[]; primary: string; sx: number; sy: number; alt: boolean; world: { x: number; y: number }; rect: Rect }
   | { kind: "drag"; ids: string[]; all: Set<string>; primary: string; grab: { x: number; y: number }; base: Rect | null; box: Rect | null }
   | { kind: "marquee"; x0: number; y0: number; additive: boolean; before: string[] }
-  | { kind: "resize"; id: string; handle: Handle; start: Rect; inLayout: boolean; text: boolean }
+  | { kind: "resize"; id: string; handle: Handle; start: Rect; all: { id: string; start: Rect; inLayout: boolean; text: boolean }[] }
   | { kind: "create"; tool: "frame" | "shape" | "text" | "sticky"; x0: number; y0: number; parent: string | null }
   | { kind: "arrow"; from: string | null; fromSide: Side | null; start: Point; sx: number; sy: number }
   | { kind: "end"; id: string; which: "from" | "to" }
@@ -209,6 +209,9 @@ export function WhiteboardEditor({
   /** Alignment guides showing what a dragged selection snapped to, in board coordinates. */
   const [guides, setGuides] = useState<Guide[]>([]);
   const [spaceDown, setSpaceDown] = useState(false);
+  /** While Option is held: what to measure the selection's distance to. */
+  const [measure, setMeasure] = useState<string | null>(null);
+  const pointerAt = useRef<{ x: number; y: number } | null>(null);
 
   const viewRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
@@ -373,6 +376,14 @@ export function WhiteboardEditor({
     const chain = el ? chainAt(el) : [];
     return chain.length ? chain[chain.length - 1] : null;
   };
+  /** What Option measures the selection against: the thing under the pointer, or the frame around the selection when over the selection itself. */
+  const measureTargetAt = (cx: number, cy: number) => {
+    const sel = selectionRef.current.filter((id) => locate(itemsRef.current, id)?.item.type !== "arrow");
+    if (!sel.length) return null;
+    const id = itemUnder(cx, cy);
+    if (id && !sel.includes(id)) return id;
+    return locate(itemsRef.current, sel[0])?.parent?.id ?? null;
+  };
   /** What an arrow end at this point would join: the item under it, and a side if the pointer is on one of its side dots. */
   const anchorAt = (cx: number, cy: number, skip: string | null) => {
     const world = toWorld(cx, cy);
@@ -470,6 +481,15 @@ export function WhiteboardEditor({
     if (!selectionRef.current.length) return;
     commit(removeItems(itemsRef.current, new Set(selectionRef.current)));
     setSelection([]);
+  };
+
+  /** Selected items that can be resized: anything but arrows, and nothing inside another selected item. */
+  const resizable = (ids: string[], list = itemsRef.current, boxes = rectsRef.current) => {
+    const set = new Set(ids);
+    return ids.filter((id) => {
+      const it = locate(list, id)?.item;
+      return it && it.type !== "arrow" && boxes.has(id) && !ancestorsOf(list, id).some((a) => set.has(a));
+    });
   };
 
   /** Selected items that aren't inside another selected item. */
@@ -578,17 +598,20 @@ export function WhiteboardEditor({
     }
   };
 
-  const update = (id: string, patch: Partial<Item>) =>
-    commit(
-      mapItem(itemsRef.current, id, (item) => {
-        const next: Item = { ...item };
+  /** One change to several items, as one step to undo. */
+  const update = (ids: string[], patch: Partial<Item>) => {
+    let next = itemsRef.current;
+    for (const id of ids)
+      next = mapItem(next, id, (item) => {
+        const out: Item = { ...item };
         for (const [k, v] of Object.entries(patch) as [keyof Item, unknown][]) {
-          if (v === undefined) delete next[k];
-          else (next as Record<string, unknown>)[k] = v;
+          if (v === undefined) delete out[k];
+          else (out as Record<string, unknown>)[k] = v;
         }
-        return next;
-      }),
-    );
+        return out;
+      });
+    commit(next);
+  };
 
   const onEdited = useCallback(
     (id: string, text: string) => {
@@ -653,14 +676,19 @@ export function WhiteboardEditor({
       }
       return;
     }
-    const handle = (e.target as HTMLElement).closest<HTMLElement>("[data-wb-handle]")?.dataset.wbHandle as Handle | undefined;
-    if (handle && selectionRef.current.length === 1) {
-      const id = selectionRef.current[0];
-      const at = locate(itemsRef.current, id);
+    const grip = (e.target as HTMLElement).closest<HTMLElement>("[data-wb-handle]");
+    const handle = grip?.dataset.wbHandle as Handle | undefined;
+    if (grip && handle) {
+      // A handle on any selected item resizes every selected item by the same amount.
+      const id = grip.dataset.wbHandleOf ?? selectionRef.current[0];
       const start = rectsRef.current.get(id);
-      if (at && start) {
+      const all = resizable(selectionRef.current).map((sid) => {
+        const at = locate(itemsRef.current, sid)!;
+        return { id: sid, start: rectsRef.current.get(sid)!, inLayout: !!at.parent?.layout, text: at.item.type === "text" };
+      });
+      if (start && all.length) {
         history.begin();
-        gesture.current = { kind: "resize", id, handle, start, inLayout: !!at.parent?.layout, text: at.item.type === "text" };
+        gesture.current = { kind: "resize", id, handle, start, all };
       }
       return;
     }
@@ -728,6 +756,9 @@ export function WhiteboardEditor({
         if (id !== hover) setHover(id);
       }
       setAnchor(e.pointerType === "mouse" && tool === "arrow" ? anchorAt(e.clientX, e.clientY, null) : null);
+      pointerAt.current = { x: e.clientX, y: e.clientY };
+      const m = e.altKey ? measureTargetAt(e.clientX, e.clientY) : null;
+      if (m !== measure) setMeasure(m);
       return;
     }
     const world = toWorld(e.clientX, e.clientY);
@@ -843,16 +874,31 @@ export function WhiteboardEditor({
           h = Math.max(20, start.y + start.h - world.y);
           y = start.y + start.h - h;
         }
-        const at = locate(itemsRef.current, g.id);
-        if (!at) break;
-        const patch: Partial<Item> = {};
-        if (handle.includes("e") || handle.includes("w")) patch.w = Math.round(w);
-        if (!g.text && (handle.includes("n") || handle.includes("s"))) patch.h = Math.round(h);
-        if (!g.inLayout) {
-          if (handle.includes("w")) patch.x = Math.round((at.item.x ?? 0) + (x - (rectsRef.current.get(g.id)?.x ?? x)));
-          if (handle.includes("n") && !g.text) patch.y = Math.round((at.item.y ?? 0) + (y - (rectsRef.current.get(g.id)?.y ?? y)));
+        // How far each side moved, applied to every selected item.
+        const dl = x - start.x;
+        const dt = y - start.y;
+        const dr = x + w - (start.x + start.w);
+        const db = y + h - (start.y + start.h);
+        let next = itemsRef.current;
+        for (const one of g.all) {
+          const at = locate(next, one.id);
+          if (!at) continue;
+          const s0 = one.start;
+          const nw = Math.max(20, s0.w + dr - dl);
+          const nh = Math.max(20, s0.h + db - dt);
+          const nx = s0.x + s0.w - nw;
+          const ny = s0.y + s0.h - nh;
+          const now = rectsRef.current.get(one.id);
+          const patch: Partial<Item> = {};
+          if (handle.includes("e") || handle.includes("w")) patch.w = Math.round(nw);
+          if (!one.text && (handle.includes("n") || handle.includes("s"))) patch.h = Math.round(nh);
+          if (!one.inLayout) {
+            if (handle.includes("w")) patch.x = Math.round((at.item.x ?? 0) + (nx - (now?.x ?? s0.x)));
+            if (handle.includes("n") && !one.text) patch.y = Math.round((at.item.y ?? 0) + (ny - (now?.y ?? s0.y)));
+          }
+          next = mapItem(next, one.id, (i) => ({ ...i, ...patch }));
         }
-        history.live(mapItem(itemsRef.current, g.id, (i) => ({ ...i, ...patch })));
+        history.live(next);
         break;
       }
       case "create": {
@@ -1140,6 +1186,10 @@ export function WhiteboardEditor({
       return;
     }
     if (isTyping(e.target)) return;
+    if (e.key === "Alt" && pointerAt.current) {
+      setMeasure(measureTargetAt(pointerAt.current.x, pointerAt.current.y));
+      return;
+    }
     // The board has its own undo, so the app-wide one stays out of the way here.
     if (mod && key === "z") {
       e.preventDefault();
@@ -1269,12 +1319,16 @@ export function WhiteboardEditor({
     const down = (e: KeyboardEvent) => keyHandler.current(e);
     const up = (e: KeyboardEvent) => {
       if (e.key === " ") setSpaceDown(false);
+      if (e.key === "Alt") setMeasure(null);
     };
+    const away = () => setMeasure(null);
     window.addEventListener("keydown", down, { capture: true });
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", away);
     return () => {
       window.removeEventListener("keydown", down, { capture: true });
       window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", away);
     };
   }, []);
 
@@ -1503,9 +1557,11 @@ export function WhiteboardEditor({
             if (!r || locate(items, id)?.item.type === "arrow") return null;
             return <Box key={id} r={toScreen(r)} />;
           })}
-          {single && !drag && !editingId && single.type !== "arrow" && rects.get(single.id) && (
-            <Handles r={toScreen(rects.get(single.id)!)} textOnly={single.type === "text"} />
-          )}
+          {!drag &&
+            !editingId &&
+            resizable(selection, items, rects).map((id) => (
+              <Handles key={id} of={id} r={toScreen(rects.get(id)!)} textOnly={locate(items, id)?.item.type === "text"} />
+            ))}
           {single?.type === "arrow" && single.elbow && !drag && <BendHandles route={routeOf(single.id, items, rects)} toScreen={(p) => ({ x: p.x * cam.z + cam.x, y: p.y * cam.z + cam.y })} />}
           {single?.type === "arrow" && !drag && <EndHandles route={routeOf(single.id, items, rects)} toScreen={(p) => ({ x: p.x * cam.z + cam.x, y: p.y * cam.z + cam.y })} />}
           {anchor && rects.get(anchor.id) && (
@@ -1513,10 +1569,34 @@ export function WhiteboardEditor({
           )}
           {marquee && <Box r={toScreen(marquee)} thin fill />}
           {draft && <Box r={toScreen(draft)} thin />}
+          {measure && !drag && (() => {
+            const box = unionOf(selection.filter((id) => locate(items, id)?.item.type !== "arrow").map((id) => rects.get(id)));
+            const target = rects.get(measure);
+            if (!box || !target) return null;
+            return measurements(box, target).map((m, i) => {
+              const a = { x: m.x1 * cam.z + cam.x, y: m.y1 * cam.z + cam.y };
+              const b = { x: m.x2 * cam.z + cam.x, y: m.y2 * cam.z + cam.y };
+              const level = m.y1 === m.y2;
+              return (
+                <div key={i}>
+                  <div
+                    className="absolute bg-[var(--wb-guide)]"
+                    style={level ? { left: Math.min(a.x, b.x), top: a.y - 0.5, width: Math.abs(b.x - a.x), height: 1 } : { left: a.x - 0.5, top: Math.min(a.y, b.y), width: 1, height: Math.abs(b.y - a.y) }}
+                  />
+                  <span
+                    className="absolute -translate-x-1/2 -translate-y-1/2 rounded-[4px] bg-[var(--wb-guide)] px-1 text-tag leading-[18px] text-white tabular-nums"
+                    style={{ left: (a.x + b.x) / 2, top: (a.y + b.y) / 2 }}
+                  >
+                    {Math.round(m.length)}
+                  </span>
+                </div>
+              );
+            });
+          })()}
           {guides.map((l, i) => (
             <div
               key={i}
-              className="absolute bg-[var(--wb-select)]"
+              className="absolute bg-[var(--wb-guide)]"
               style={
                 l.x !== undefined
                   ? { left: l.x * cam.z + cam.x - 0.5, top: l.from * cam.z + cam.y, width: 1, height: (l.to - l.from) * cam.z }
@@ -1541,9 +1621,9 @@ export function WhiteboardEditor({
           <Panel
             items={selectedItems}
             parent={singleParent}
-            onChange={(id, patch) => {
+            onChange={(ids, patch) => {
               if ("head" in patch) setLineOnly(patch.head === "none");
-              update(id, patch);
+              update(ids, patch);
             }}
             onLayout={setLayout}
             onAutoLayout={addAutoLayout}
@@ -1617,7 +1697,7 @@ function Box({ r, thin, fill }: { r: Rect; thin?: boolean; fill?: boolean }) {
   );
 }
 
-function Handles({ r, textOnly }: { r: Rect; textOnly: boolean }) {
+function Handles({ of, r, textOnly }: { of: string; r: Rect; textOnly: boolean }) {
   const spots: [Handle, number, number, string][] = textOnly
     ? [
         ["w", 0, 0.5, "ew-resize"],
@@ -1639,6 +1719,7 @@ function Handles({ r, textOnly }: { r: Rect; textOnly: boolean }) {
         <div
           key={h}
           data-wb-handle={h}
+          data-wb-handle-of={of}
           className="pointer-events-auto absolute flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center md:size-4"
           style={{ left: r.x + r.w * fx, top: r.y + r.h * fy, cursor }}
         >
@@ -1704,6 +1785,30 @@ const SNAP_PX = 6;
 
 /** A guide line: upright at x, or level at y, running from one board coordinate to another. */
 type Guide = { x?: number; y?: number; from: number; to: number };
+
+/**
+ * The distances Option shows between the selection (a) and another box (b), as lines in board coordinates:
+ * to each side of b when one is inside the other, otherwise across the gap on each axis where they're apart.
+ */
+function measurements(a: Rect, b: Rect): { x1: number; y1: number; x2: number; y2: number; length: number }[] {
+  const inside = (o: Rect, i: Rect) => o.x <= i.x && o.y <= i.y && o.x + o.w >= i.x + i.w && o.y + o.h >= i.y + i.h;
+  const line = (x1: number, y1: number, x2: number, y2: number) => ({ x1, y1, x2, y2, length: Math.abs(x2 - x1) + Math.abs(y2 - y1) });
+  if (inside(b, a) || inside(a, b)) {
+    const [o, i] = inside(b, a) ? [b, a] : [a, b];
+    const cx = i.x + i.w / 2;
+    const cy = i.y + i.h / 2;
+    return [line(o.x, cy, i.x, cy), line(i.x + i.w, cy, o.x + o.w, cy), line(cx, o.y, cx, i.y), line(cx, i.y + i.h, cx, o.y + o.h)].filter((l) => l.length >= 0.5);
+  }
+  const out = [];
+  // Where they overlap on the other axis, the line runs through the middle of the overlap; otherwise through a's middle.
+  const midY = Math.max(a.y, b.y) < Math.min(a.y + a.h, b.y + b.h) ? (Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2 : a.y + a.h / 2;
+  const midX = Math.max(a.x, b.x) < Math.min(a.x + a.w, b.x + b.w) ? (Math.max(a.x, b.x) + Math.min(a.x + a.w, b.x + b.w)) / 2 : a.x + a.w / 2;
+  if (a.x + a.w <= b.x) out.push(line(a.x + a.w, midY, b.x, midY));
+  else if (b.x + b.w <= a.x) out.push(line(b.x + b.w, midY, a.x, midY));
+  if (a.y + a.h <= b.y) out.push(line(midX, a.y + a.h, midX, b.y));
+  else if (b.y + b.h <= a.y) out.push(line(midX, b.y + b.h, midX, a.y));
+  return out.filter((l) => l.length >= 0.5);
+}
 
 /** The box around several boxes, or null if any is missing. */
 function unionOf(rs: (Rect | undefined)[]): Rect | null {

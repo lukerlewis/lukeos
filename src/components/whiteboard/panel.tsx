@@ -17,13 +17,17 @@ export function Panel({
 }: {
   items: Item[];
   parent: Item | null;
-  onChange: (id: string, patch: Partial<Item>) => void;
+  onChange: (ids: string[], patch: Partial<Item>) => void;
   onLayout: (id: string, layout: "row" | "column" | null) => void;
   onAutoLayout: () => void;
   onDelete: () => void;
 }) {
-  const item = items.length === 1 ? items[0] : null;
-  const set = (patch: Partial<Item>) => item && onChange(item.id, patch);
+  // Several selected: settings they share change all of them at once, showing the first one's values.
+  const item = items[0];
+  const single = items.length === 1;
+  const sameType = items.every((i) => i.type === item.type);
+  const set = (patch: Partial<Item>) => onChange(items.map((i) => i.id), patch);
+  const sized = items.every((i) => i.type === "frame" || i.type === "shape" || i.type === "sticky");
 
   return (
     <div
@@ -31,29 +35,39 @@ export function Panel({
       className="absolute inset-x-2 bottom-16 flex max-h-[45%] flex-col gap-4 overflow-y-auto rounded-xl border border-stroke bg-card p-3 md:inset-x-auto md:top-3 md:right-3 md:bottom-auto md:max-h-[calc(100%-5rem)] md:w-60"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      {!item ? (
+      {!single && (
+        <Row label={`${items.length} selected`}>
+          <button type="button" onClick={onAutoLayout} className="h-9 rounded-[8px] px-3 text-preview font-medium text-subtle-foreground hover:bg-muted" title="Shift+A">
+            Add auto layout
+          </button>
+        </Row>
+      )}
+      {!sameType ? (
         <>
-          <Row label={`${items.length} selected`}>
-            <button type="button" onClick={onAutoLayout} className="h-9 rounded-[8px] px-3 text-preview font-medium text-subtle-foreground hover:bg-muted" title="Shift+A">
-              Add auto layout
-            </button>
-          </Row>
+          {sized && (
+            <Section title="Fill">
+              <Swatches value={common(items, (i) => i.color ?? DEFAULTS[i.type as "frame"].color) ?? "none"} onChange={(color) => set({ color })} />
+            </Section>
+          )}
+          {sized && <Size items={items} set={set} />}
         </>
       ) : item.type === "frame" ? (
         <>
           <Section title="Frame">
-            <input
-              value={item.name ?? ""}
-              onChange={(e) => set({ name: e.target.value || undefined })}
-              placeholder="Name"
-              className="h-9 w-full rounded-lg border border-stroke-strong bg-card px-2.5 text-base outline-none md:text-preview"
-            />
+            {single && (
+              <input
+                value={item.name ?? ""}
+                onChange={(e) => set({ name: e.target.value || undefined })}
+                placeholder="Name"
+                className="h-9 w-full rounded-lg border border-stroke-strong bg-card px-2.5 text-base outline-none md:text-preview"
+              />
+            )}
             <Swatches value={item.color ?? DEFAULTS.frame.color} onChange={(color) => set({ color: color === DEFAULTS.frame.color ? undefined : color })} withNone />
           </Section>
           <Section title="Auto layout" aside={<span className="text-tag text-muted-foreground">Shift+A</span>}>
             <Choice
               value={item.layout ?? "none"}
-              onChange={(v) => onLayout(item.id, v === "none" ? null : v)}
+              onChange={(v) => items.forEach((i) => onLayout(i.id, v === "none" ? null : v))}
               options={[
                 { value: "none", label: "Off" },
                 { value: "column", label: <ArrowDown className="size-4" aria-label="Down" /> },
@@ -87,7 +101,7 @@ export function Panel({
               </>
             )}
           </Section>
-          <Size item={item} set={set} hug={!!item.layout} />
+          <Size items={items} set={set} hug={!!item.layout} />
         </>
       ) : item.type === "text" ? (
         <>
@@ -132,13 +146,16 @@ export function Panel({
                 { value: "fixed", label: "Fixed" },
               ]}
             />
-            {item.w !== undefined && <NumberField label="W" value={item.w} onChange={(w) => set({ w: Math.max(1, w) })} />}
+            {item.w !== undefined && <NumberField label="W" value={common(items, (i) => i.w)} placeholder="Mixed" onChange={(w) => set({ w: Math.max(1, w) })} />}
           </Section>
         </>
       ) : item.type === "sticky" ? (
-        <Section title="Sticky">
-          <Swatches value={item.color ?? DEFAULTS.sticky.color} onChange={(color) => set({ color: color === DEFAULTS.sticky.color ? undefined : color })} />
-        </Section>
+        <>
+          <Section title="Sticky">
+            <Swatches value={item.color ?? DEFAULTS.sticky.color} onChange={(color) => set({ color: color === DEFAULTS.sticky.color ? undefined : color })} />
+          </Section>
+          <Size items={items} set={set} />
+        </>
       ) : item.type === "shape" ? (
         <>
           <Section title="Shape">
@@ -153,7 +170,7 @@ export function Panel({
             />
             <Swatches value={item.color ?? DEFAULTS.shape.color} onChange={(color) => set({ color: color === DEFAULTS.shape.color ? undefined : color })} />
           </Section>
-          <Size item={item} set={set} />
+          <Size items={items} set={set} />
         </>
       ) : (
         <Section title="Arrow">
@@ -178,15 +195,17 @@ export function Panel({
               Reset bends
             </button>
           )}
-          <input
-            value={item.text ?? ""}
-            onChange={(e) => set({ text: e.target.value || undefined })}
-            placeholder="Label"
-            className="h-9 w-full rounded-lg border border-stroke-strong bg-card px-2.5 text-base outline-none md:text-preview"
-          />
+          {single && (
+            <input
+              value={item.text ?? ""}
+              onChange={(e) => set({ text: e.target.value || undefined })}
+              placeholder="Label"
+              className="h-9 w-full rounded-lg border border-stroke-strong bg-card px-2.5 text-base outline-none md:text-preview"
+            />
+          )}
         </Section>
       )}
-      {item && parent?.layout && item.type !== "arrow" && <p className="-mt-2 text-tag text-muted-foreground">In auto layout</p>}
+      {single && parent?.layout && item.type !== "arrow" && <p className="-mt-2 text-tag text-muted-foreground">In auto layout</p>}
       <button
         type="button"
         onClick={onDelete}
@@ -220,13 +239,22 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function Size({ item, set, hug }: { item: Item; set: (p: Partial<Item>) => void; hug?: boolean }) {
-  const fallback = item.type === "frame" ? DEFAULTS.frame : DEFAULTS.shape;
+/** The value every item shares, or undefined when they differ. */
+function common<T>(items: Item[], get: (i: Item) => T): T | undefined {
+  const first = get(items[0]);
+  return items.every((i) => get(i) === first) ? first : undefined;
+}
+
+function Size({ items, set, hug }: { items: Item[]; set: (p: Partial<Item>) => void; hug?: boolean }) {
+  const fallback = (i: Item) => (i.type === "frame" ? DEFAULTS.frame : i.type === "sticky" ? DEFAULTS.sticky : DEFAULTS.shape);
+  const w = common(items, (i) => i.w ?? (hug ? undefined : fallback(i).w));
+  const h = common(items, (i) => i.h ?? (hug ? undefined : fallback(i).h));
+  const mixed = (k: "w" | "h") => common(items, (i) => i[k] ?? (hug ? -1 : fallback(i)[k])) === undefined;
   return (
     <Section title="Size">
       <div className="grid grid-cols-2 gap-2">
-        <NumberField label="W" value={item.w ?? (hug ? undefined : fallback.w)} placeholder="Hug" onChange={(w) => set({ w: Math.max(1, w) })} onClear={hug ? () => set({ w: undefined }) : undefined} />
-        <NumberField label="H" value={item.h ?? (hug ? undefined : fallback.h)} placeholder="Hug" onChange={(h) => set({ h: Math.max(1, h) })} onClear={hug ? () => set({ h: undefined }) : undefined} />
+        <NumberField label="W" value={w} placeholder={mixed("w") ? "Mixed" : "Hug"} onChange={(w) => set({ w: Math.max(1, w) })} onClear={hug ? () => set({ w: undefined }) : undefined} />
+        <NumberField label="H" value={h} placeholder={mixed("h") ? "Mixed" : "Hug"} onChange={(h) => set({ h: Math.max(1, h) })} onClear={hug ? () => set({ h: undefined }) : undefined} />
       </div>
     </Section>
   );
