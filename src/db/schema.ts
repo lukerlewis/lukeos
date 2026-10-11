@@ -421,9 +421,48 @@ export const archiveEntries = pgTable(
     outcome: text("outcome"),
     /** Names a client or has internal numbers, so it needs disguising before it's shared. */
     confidential: boolean("confidential").notNull().default(false),
+    /**
+     * Shown on Luke's portfolio site when he publishes it (never while
+     * confidential). The fields below are what the site uses: the card's
+     * title, button name, summary, kind and year, and the facts its AI may tell visitors.
+     * The story itself never leaves LukeOS.
+     */
+    onPortfolio: boolean("on_portfolio").notNull().default(false),
+    portfolioOrder: integer("portfolio_order").notNull().default(0),
+    /** The card's title on the site, if not the entry's own. */
+    portfolioTitle: text("portfolio_title"),
+    portfolioShort: text("portfolio_short"),
+    portfolioSummary: text("portfolio_summary"),
+    portfolioKind: text("portfolio_kind"),
+    portfolioYear: text("portfolio_year"),
+    portfolioFacts: text("portfolio_facts").notNull().default(""),
     ...madeBy,
   },
   (t) => [index("archive_entries_updated_idx").on(t.updatedAt)],
+);
+
+/**
+ * A question a visitor asked the AI on Luke's portfolio site, with the
+ * answer it gave. The site sends these after answering, signed with the
+ * portfolio key.
+ */
+export const visitorPrompts = pgTable(
+  "visitor_prompts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** "ask" (a question) or "fit" (a job description checked against Luke's work). */
+    kind: text("kind").notNull().default("ask"),
+    question: text("question").notNull(),
+    reply: text("reply").notNull().default(""),
+    /** The site's tab the visitor was on, e.g. "chat" or "evaluate". */
+    tab: text("tab"),
+    /** The site's look and reply style at the time, as JSON. */
+    settings: text("settings"),
+    /** Groups the questions from one visit. Random, so it says nothing about who they are. */
+    visit: text("visit"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("visitor_prompts_created_idx").on(t.createdAt)],
 );
 
 /**

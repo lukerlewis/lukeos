@@ -18,6 +18,7 @@ import { mentionOperations } from "./mentions";
 import { messageOperations } from "./messages";
 import { noteOperations } from "./notes";
 import { pipelineOperations } from "./pipeline";
+import { portfolioOperations } from "./portfolio";
 import { projectOperations } from "./projects";
 import { routineOperations } from "./routines";
 import { searchOperations } from "./search";
@@ -58,6 +59,7 @@ export const operations = {
   ...noteOperations,
   ...folderOperations,
   ...archiveOperations,
+  ...portfolioOperations,
   ...whiteboardOperations,
   ...inspirationOperations,
   ...artifactOperations,

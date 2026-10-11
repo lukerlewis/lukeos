@@ -71,6 +71,21 @@ the app, Claude can do too, through a connector (roadmap step 3).
   `/api/files/<id>`, downloading rather than opening unless they're a PDF,
   photo, video or audio); anything bigger goes in as a link. Operations in
   `src/core/archive.ts`.
+- **Portfolio** (`/portfolio`): runs Luke's portfolio site
+  (lukerlewis/portfolio). The site keeps its own copy of what its AI needs,
+  so visitors never wait on LukeOS: the AI instructions, About Luke (both in
+  `app_settings`, starting from the site's original text in
+  `src/lib/portfolio.ts`), and the Work archive entries that are on the
+  portfolio, with their portfolio fields (button name, summary, kind, year,
+  and what the AI may say; the story never leaves LukeOS; confidential
+  entries can't go on). Publish (`publish_portfolio`) builds
+  `src/content/lukeos.json` and commits it to the site's main branch through
+  the GitHub API (`PORTFOLIO_GITHUB_TOKEN`, a fine-grained token with
+  Contents write on that repo only; `PORTFOLIO_REPO` and `PORTFOLIO_BRANCH`
+  override the defaults), and Vercel redeploys the site. The site sends each
+  visitor's question and answer back to `/api/portfolio/prompts`, signed with
+  a key made under Portfolio > Setup (only its hash is kept), and they show as
+  Visitor prompts. Operations in `src/core/portfolio.ts`.
 - **Inspiration** (`/inspiration`): a gallery like mymind of pictures,
   links (saved with their preview picture), videos (as links), quotes and
   PDFs, in uneven-height columns. Add with the Add sheet, by dropping or
