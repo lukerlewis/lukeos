@@ -1,4 +1,4 @@
-import { Archive, Bot, FileText, Lightbulb, CheckSquare, Ellipsis, LayoutDashboard, MessagesSquare, NotebookPen, Shapes, Timer } from "lucide-react";
+import { Archive, Bot, Globe, FileText, Lightbulb, CheckSquare, Ellipsis, LayoutDashboard, MessagesSquare, NotebookPen, Shapes, Timer } from "lucide-react";
 
 export const mainNav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -10,16 +10,17 @@ export const mainNav = [
   { href: "/whiteboard", label: "Whiteboard", icon: Shapes },
   { href: "/inspiration", label: "Inspiration", icon: Lightbulb },
   { href: "/archive", label: "Work archive", icon: Archive },
+  { href: "/portfolio", label: "Portfolio", icon: Globe },
   { href: "/agents", label: "Agents", icon: Bot },
 ] as const;
 
-/** On phones, Search, Projects, All tasks, Documents, Whiteboard, Inspiration, Work archive, Agents and Trash live under More. */
+/** On phones, Search, Projects, All tasks, Documents, Whiteboard, Inspiration, Work archive, Portfolio, Agents and Trash live under More. */
 export const phoneTabs = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, also: [] },
   { href: "/focus", label: "Focus", icon: Timer, also: [] },
   { href: "/notes", label: "Notes", icon: NotebookPen, also: [] },
   { href: "/messages", label: "Messages", icon: MessagesSquare, also: [] },
-  { href: "/projects", label: "More", icon: Ellipsis, also: ["/search", "/tasks", "/documents", "/whiteboard", "/inspiration", "/archive", "/agents", "/trash", "/artifacts", "/claude"] },
+  { href: "/projects", label: "More", icon: Ellipsis, also: ["/search", "/tasks", "/documents", "/whiteboard", "/inspiration", "/archive", "/portfolio", "/agents", "/trash", "/artifacts", "/claude"] },
 ] as const;
 
 export function isActive(pathname: string, href: string) {
