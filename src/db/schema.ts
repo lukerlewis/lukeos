@@ -436,6 +436,11 @@ export const archiveEntries = pgTable(
     portfolioKind: text("portfolio_kind"),
     portfolioYear: text("portfolio_year"),
     portfolioFacts: text("portfolio_facts").notNull().default(""),
+    /**
+     * When the portfolio fields were last written. A story changed after
+     * this (updatedAt is later) means the facts may be out of date.
+     */
+    portfolioSyncedAt: timestamp("portfolio_synced_at", { withTimezone: true }),
     ...madeBy,
   },
   (t) => [index("archive_entries_updated_idx").on(t.updatedAt)],

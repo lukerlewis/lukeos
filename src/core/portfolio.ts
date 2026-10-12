@@ -60,9 +60,21 @@ export type PortfolioEntry = {
   facts: string;
   /** What's missing before it can go on the site. Empty when it's ready. */
   missing: string[];
+  /**
+   * "new": its portfolio fields were never written. "story changed": the
+   * entry changed after they were. Null when they're up to date (or it's
+   * confidential, so it can't go on the site anyway).
+   */
+  needsUpdate: "new" | "story changed" | null;
 };
 
 const live = isNull(archiveEntries.deletedAt);
+
+function needsUpdate(row: typeof archiveEntries.$inferSelect): PortfolioEntry["needsUpdate"] {
+  if (row.confidential) return null;
+  if (!row.portfolioSyncedAt) return "new";
+  return row.updatedAt > row.portfolioSyncedAt ? "story changed" : null;
+}
 
 function missingFrom(row: typeof archiveEntries.$inferSelect) {
   const missing: string[] = [];
@@ -94,6 +106,7 @@ export async function listPortfolioEntries(): Promise<PortfolioEntry[]> {
     year: row.portfolioYear,
     facts: row.portfolioFacts,
     missing: missingFrom(row),
+    needsUpdate: needsUpdate(row),
   }));
 }
 
@@ -275,7 +288,7 @@ export const portfolioOperations = {
   get_portfolio: defineOperation({
     name: "get_portfolio",
     description:
-      "Luke's portfolio site as LukeOS holds it: the AI instructions (how the site's AI should answer), About Luke (what it knows about him, in his words), every Work archive entry with its portfolio fields and whether it's on the site, and the publish status (when it was last published, whether there are unpublished changes, and anything stopping a publish).",
+      "Luke's portfolio site as LukeOS holds it: the AI instructions (how the site's AI should answer), About Luke (what it knows about him, in his words), every Work archive entry with its portfolio fields, whether it's on the site and whether its fields need updating from its story (needsUpdate), and the publish status (when it was last published, whether there are unpublished changes, and anything stopping a publish).",
     input: z.object({}),
     run: async () => {
       const [text, work, status] = await Promise.all([getPortfolioText(), listPortfolioEntries(), portfolioStatus()]);
@@ -332,7 +345,13 @@ export const portfolioOperations = {
         ...(year !== undefined && { portfolioYear: blank(year) }),
         ...(facts !== undefined && { portfolioFacts: facts }),
       };
-      if (Object.keys(set).length) await db.update(archiveEntries).set(set).where(eq(archiveEntries.id, id));
+      // Writing what the site says about it (not just moving it) brings it up to date with the story.
+      const wrote = [cardTitle, short, summary, kind, year, facts].some((v) => v !== undefined);
+      if (Object.keys(set).length)
+        await db
+          .update(archiveEntries)
+          .set({ ...set, ...(wrote && { portfolioSyncedAt: new Date() }) })
+          .where(eq(archiveEntries.id, id));
       return (await listPortfolioEntries()).find((e) => e.id === id)!;
     },
   }),
