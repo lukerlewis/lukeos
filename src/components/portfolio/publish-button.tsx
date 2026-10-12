@@ -16,7 +16,8 @@ const when = (iso: string) =>
 /**
  * Sends the AI instructions, About Luke and the work on the portfolio to the
  * site's repo, which redeploys the live site. Says when it last went out and
- * whether anything has changed since.
+ * what has changed since, so Luke checks it first: only he can publish, never
+ * Claude.
  */
 export function PublishButton({ status }: { status: Status }) {
   const router = useRouter();
@@ -25,7 +26,8 @@ export function PublishButton({ status }: { status: Status }) {
   async function publish() {
     if (status.problems.length) return alert(`Fix these first:\n\n${status.problems.join("\n")}`);
     if (!status.canPublish) return alert("Publishing isn't set up yet. See Setup.");
-    if (!confirm("Publish to the live portfolio? The site redeploys in about a minute.")) return;
+    const what = status.changes?.length ? `\n\nChanged since the last publish:\n${status.changes.map((c) => `- ${c}`).join("\n")}` : "";
+    if (!confirm(`Publish to the live portfolio? The site redeploys in about a minute.${what}`)) return;
     setBusy(true);
     try {
       const result = await op("publish_portfolio", {});
@@ -40,14 +42,16 @@ export function PublishButton({ status }: { status: Status }) {
 
   const note = status.unpublishedChanges
     ? status.lastPublished
-      ? "Unpublished changes"
+      ? status.changes?.length
+        ? `Changed: ${status.changes.join(", ")}`
+        : "Unpublished changes"
       : "Never published"
     : status.lastPublished && `Published ${when(status.lastPublished.at)}`;
 
   return (
     <div className="flex items-center gap-3">
       {note && (
-        <span className="text-meta text-muted-foreground max-sm:hidden">
+        <span className="max-w-80 truncate text-meta text-muted-foreground max-sm:hidden" title={note || undefined}>
           {status.lastPublished?.commitUrl && !status.unpublishedChanges ? (
             <a href={status.lastPublished.commitUrl} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
               {note}

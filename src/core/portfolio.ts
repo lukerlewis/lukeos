@@ -12,7 +12,7 @@ import {
   type PortfolioContent,
   type PortfolioWork,
 } from "@/lib/portfolio";
-import { defineOperation, OperationError } from "./define";
+import { defineOperation, OperationError, type Actor } from "./define";
 
 /**
  * Luke's portfolio site, run from LukeOS. The site keeps its own copy of
@@ -134,7 +134,31 @@ export async function buildPortfolioContent(): Promise<{ content: PortfolioConte
 const fileText = (content: PortfolioContent) => `${JSON.stringify(content, null, 2)}\n`;
 const hashOf = (text: string) => createHash("sha256").update(text).digest("hex");
 
-export type PublishInfo = { at: string; commitUrl: string | null; hash: string };
+export type PublishInfo = {
+  at: string;
+  commitUrl: string | null;
+  hash: string;
+  /** What went out, so the next Publish can say what changed. Missing on publishes from before it was kept. */
+  content?: PortfolioContent;
+};
+
+/** What differs between the last publish and now, in words Luke can check before publishing. */
+function changesSince(last: PortfolioContent, now: PortfolioContent) {
+  const changes: string[] = [];
+  if (last.instructions !== now.instructions) changes.push("AI instructions");
+  if (last.about !== now.about) changes.push("About Luke");
+  const before = new Map(last.work.map((w) => [w.id, w]));
+  const after = new Map(now.work.map((w) => [w.id, w]));
+  for (const w of now.work) {
+    const old = before.get(w.id);
+    if (!old) changes.push(`${w.title} (added)`);
+    else if (JSON.stringify(old) !== JSON.stringify(w)) changes.push(w.title);
+  }
+  for (const w of last.work) if (!after.has(w.id)) changes.push(`${w.title} (taken off)`);
+  const order = (list: PortfolioContent["work"]) => list.map((w) => w.id).filter((id) => before.has(id) && after.has(id)).join();
+  if (order(last.work) !== order(now.work)) changes.push("Order of work");
+  return changes;
+}
 
 async function lastPublish(): Promise<PublishInfo | null> {
   const raw = await setting(PUBLISHED);
@@ -160,6 +184,8 @@ export async function portfolioStatus() {
     lastPublished: last,
     /** True when something changed since the last publish (or it was never published). */
     unpublishedChanges: !last || last.hash !== hash,
+    /** What changed since the last publish, or null when that publish didn't keep its content. */
+    changes: last?.content && last.hash !== hash ? changesSince(last.content, content) : null,
     problems,
     canPublish: Boolean(github()),
     repo: github()?.repo ?? process.env.PORTFOLIO_REPO ?? "lukerlewis/portfolio",
@@ -181,8 +207,17 @@ async function gh(path: string, init: RequestInit & { token: string }) {
   return { res, body };
 }
 
-/** Commits the portfolio file to the site's repo. The site redeploys from there on its own. */
-export async function publishPortfolio() {
+/**
+ * Commits the portfolio file to the site's repo. The site redeploys from there on its own.
+ * Only Luke can do this, from the app: Claude reads strangers' words in visitor prompts,
+ * so nothing it's told there can reach the live site without Luke pressing Publish.
+ */
+export async function publishPortfolio(actor: Actor) {
+  if (actor.kind !== "user")
+    throw new OperationError(
+      "Only Luke can publish the portfolio, with the Publish button in LukeOS (Portfolio). Tell him what you changed so he can check it and publish.",
+      403,
+    );
   const target = github();
   if (!target)
     throw new OperationError(
@@ -214,7 +249,12 @@ export async function publishPortfolio() {
     if (!put.res.ok) throw new OperationError(`GitHub didn't take it (${put.res.status}): ${String(put.body.message ?? "")}`, 502);
     commitUrl = String((put.body.commit as { html_url?: string } | undefined)?.html_url ?? "") || null;
   }
-  const info: PublishInfo = { at: new Date().toISOString(), commitUrl: commitUrl ?? (await lastPublish())?.commitUrl ?? null, hash: hashOf(text) };
+  const info: PublishInfo = {
+    at: new Date().toISOString(),
+    commitUrl: commitUrl ?? (await lastPublish())?.commitUrl ?? null,
+    hash: hashOf(text),
+    content,
+  };
   await setSetting(PUBLISHED, JSON.stringify(info));
   return {
     published: true,
@@ -286,7 +326,7 @@ export const portfolioOperations = {
   update_portfolio: defineOperation({
     name: "update_portfolio",
     description:
-      "Change the portfolio site's AI instructions or About Luke. Both are Markdown. About Luke is in Luke's own words (the site's AI retells it in the third person) and anything in it can be told to any visitor, so keep it to things he's happy to have public. Changes reach the site when Luke publishes (publish_portfolio).",
+      "Change the portfolio site's AI instructions or About Luke. Both are Markdown. About Luke is in Luke's own words (the site's AI retells it in the third person) and anything in it can be told to any visitor, so keep it to things he's happy to have public. Changes reach the site only when Luke presses Publish in the app, so tell him what you changed.",
     input: z.object({
       instructions: z.string().max(20_000).optional().describe("How the site's AI should answer: rules, tone, what to do when something isn't covered."),
       about: z.string().max(50_000).optional().describe("What the AI knows about Luke apart from his work: now, point of view, strengths, contact."),
@@ -301,7 +341,7 @@ export const portfolioOperations = {
   update_portfolio_work: defineOperation({
     name: "update_portfolio_work",
     description:
-      "Put a Work archive entry on the portfolio site or take it off, and set what the site shows for it: cardTitle (its title on the site, if not the entry's own), short (a short name for buttons), summary (one sentence for its card), kind (e.g. Shipped app, Client work), year, and facts (what the site's AI may tell visitors about it, in Luke's words; the entry's story itself never leaves LukeOS). Confidential entries can't go on the site. Changes reach the site when Luke publishes.",
+      "Put a Work archive entry on the portfolio site or take it off, and set what the site shows for it: cardTitle (its title on the site, if not the entry's own), short (a short name for buttons), summary (one sentence for its card), kind (e.g. Shipped app, Client work), year, and facts (what the site's AI may tell visitors about it, in Luke's words; the entry's story itself never leaves LukeOS). Confidential entries can't go on the site. Changes reach the site only when Luke presses Publish in the app, so tell him what you changed.",
     input: z.object({
       id: entryId,
       onPortfolio: z.boolean().optional(),
@@ -352,9 +392,9 @@ export const portfolioOperations = {
   publish_portfolio: defineOperation({
     name: "publish_portfolio",
     description:
-      "Publish the portfolio: commit the AI instructions, About Luke and the work that's on the site to the portfolio's GitHub repo (main), which redeploys the live site in about a minute. Only when Luke asks.",
+      "Publish the portfolio: commit the AI instructions, About Luke and the work that's on the site to the portfolio's GitHub repo (main), which redeploys the live site in about a minute. Only Luke can publish, from the app.",
     input: z.object({}),
-    run: async () => publishPortfolio(),
+    run: async (_input, { actor }) => publishPortfolio(actor),
   }),
 
   list_visitor_prompts: defineOperation({
