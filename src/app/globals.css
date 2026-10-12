@@ -76,6 +76,17 @@
   --danger: var(--notification);
 }
 
+/* A card is always at least a step lighter than the surface it sits on.
+   Light already does this (white cards on grey fills); in dark, anything
+   inside a step-50 fill (board columns, the sidebar) lifts its cards to 100,
+   and inside a step-100 fill (page headers) to 200. */
+.dark :where(.bg-sidebar, .bg-grey-50) {
+  --card: var(--grey-100);
+}
+.dark :where(.bg-muted, .bg-grey-100) {
+  --card: var(--grey-200);
+}
+
 @theme inline {
   --color-grey-0: var(--grey-0);
   --color-grey-50: var(--grey-50);
