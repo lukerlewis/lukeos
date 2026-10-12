@@ -1,4 +1,4 @@
-import { Globe, Pin, NotebookPen } from "lucide-react";
+import { Pin } from "lucide-react";
 import Link from "next/link";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import type { NoteSummary } from "@/core/notes";
@@ -27,36 +27,32 @@ export function NoteList({
   if (notes.length === 0 && empty) return <>{empty}</>;
   return (
     <ul>
-      {notes.map((n) => {
-        const Icon = n.format === "html" ? Globe : NotebookPen;
-        return (
-          <li key={n.id} className="border-b last:border-b-0">
-            <Link href={`/notes/${n.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
-              <Icon className="mt-0.5 size-[18px] shrink-0 text-muted-foreground md:size-4" aria-hidden />
-              <span className="flex min-w-0 grow flex-col gap-0.5">
-                <span className="flex items-baseline gap-3">
-                  <span className="min-w-0 grow truncate text-control font-medium">{n.title || "Untitled"}</span>
-                  {n.pinned && <Pin className="size-3.5 shrink-0 self-center text-muted-foreground" aria-label="Pinned" />}
-                  <span className="shrink-0 text-meta text-muted-foreground">{editedLabel(n.updatedAt, timeZone)}</span>
-                </span>
-                {n.excerpt && <span className="line-clamp-2 text-meta text-muted-foreground">{n.excerpt}</span>}
-                {(n.madeBy.kind === "agent" || (showProject && n.project)) && (
-                  <span className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-foreground">
-                    <ClaudeBadge madeBy={n.madeBy} />
-                    {n.madeBy.routine && <span>{n.madeBy.routine}</span>}
-                    {showProject && n.project && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="size-2 rounded-[3px]" style={{ background: n.project.hex }} aria-hidden />
-                        {n.project.name}
-                      </span>
-                    )}
-                  </span>
-                )}
+      {notes.map((n) => (
+        <li key={n.id} className="border-b last:border-b-0">
+          <Link href={`/notes/${n.id}`} className="press-tint flex items-start px-4 py-3 hover:bg-muted/50">
+            <span className="flex min-w-0 grow flex-col gap-0.5">
+              <span className="flex items-baseline gap-3">
+                <span className="min-w-0 grow truncate text-control font-medium">{n.title || "Untitled"}</span>
+                {n.pinned && <Pin className="size-3.5 shrink-0 self-center text-muted-foreground" aria-label="Pinned" />}
+                <span className="shrink-0 text-meta text-muted-foreground">{editedLabel(n.updatedAt, timeZone)}</span>
               </span>
-            </Link>
-          </li>
-        );
-      })}
+              {n.excerpt && <span className="line-clamp-2 text-meta text-muted-foreground">{n.excerpt}</span>}
+              {(n.madeBy.kind === "agent" || (showProject && n.project)) && (
+                <span className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-foreground">
+                  <ClaudeBadge madeBy={n.madeBy} />
+                  {n.madeBy.routine && <span>{n.madeBy.routine}</span>}
+                  {showProject && n.project && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="size-2 rounded-[3px]" style={{ background: n.project.hex }} aria-hidden />
+                      {n.project.name}
+                    </span>
+                  )}
+                </span>
+              )}
+            </span>
+          </Link>
+        </li>
+      ))}
     </ul>
   );
 }
