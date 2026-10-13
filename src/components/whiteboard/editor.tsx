@@ -365,7 +365,7 @@ export function WhiteboardEditor({
     const poll = async () => {
       if (document.hidden || saving.current || gesture.current || itemsRef.current !== saved.current) return;
       try {
-        const res = await op("get_whiteboard", { id: board.id, ifNewerThan: version.current });
+        const res = await op("get_whiteboard", { id: board.id, ifNewerThan: version.current, points: true });
         if ("unchanged" in res || gesture.current || itemsRef.current !== saved.current || res.version <= version.current) return;
         version.current = res.version;
         saved.current = res.items;
