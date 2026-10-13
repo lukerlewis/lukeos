@@ -79,6 +79,7 @@ type FocusContextValue = {
   startStopwatch: () => void;
   pauseStopwatch: () => void;
   resetStopwatch: () => void;
+  discardStopwatch: () => void;
   noise: boolean;
   toggleNoise: () => void;
   /** What a running timer shows, for the tab bar and sidebar. */
@@ -355,11 +356,26 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     );
   };
 
-  /** Done (or Restart) is how a regular timer run ends, so its time is saved. */
+  /** Done is how a regular timer run ends, so its time is saved. */
   const resetStopwatch = () => {
     const at = Date.now();
     save("timer", stopwatchElapsed(state.stopwatch, at), at);
     setState((s) => ({ ...s, stopwatch: freshStopwatch() }));
+  };
+
+  /** Restart clears the regular timer without keeping its time, taking back anything already saved. */
+  const discardStopwatch = () => {
+    const { sessionId, savedSeconds } = state.stopwatch;
+    setState((s) => ({ ...s, stopwatch: freshStopwatch() }));
+    if (!sessionId || !savedSeconds) return;
+    fetch("/api/ops/delete_focus_session", {
+      method: "POST",
+      keepalive: true,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: sessionId }),
+    })
+      .then(() => router.refresh())
+      .catch((err) => console.error("[focus] couldn't remove the session", err));
   };
 
   // Brown noise: the <audio> element below, looping. Its own events keep the
@@ -420,6 +436,7 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     startStopwatch,
     pauseStopwatch,
     resetStopwatch,
+    discardStopwatch,
     noise,
     toggleNoise,
     runningClock,
