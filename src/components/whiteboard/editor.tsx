@@ -199,8 +199,8 @@ export function WhiteboardEditor({
       if (saved && typeof saved.size === "number") setPenState({ color: saved.color ?? "default", size: saved.size });
     } catch {}
   }, []);
-  /** Once an Apple Pencil has drawn, a finger on its own moves the board instead of drawing (so a resting hand doesn't scribble). */
-  const pencilSeen = useRef(false);
+  /** When the Apple Pencil last touched the screen (or is touching it now: Infinity), so a hand resting near it is ignored. */
+  const pencilAt = useRef(0);
   /** The line being drawn right now, drawn straight onto the page so the board doesn't redraw on every movement. */
   const inkRef = useRef<SVGPathElement>(null);
   const [selection, setSelectionState] = useState<string[]>([]);
@@ -656,10 +656,20 @@ export function WhiteboardEditor({
   function onPointerDown(e: React.PointerEvent) {
     if ((e.target as HTMLElement).closest("[data-wb-ui]")) return;
     if ((e.target as HTMLElement).closest("[data-wb-editor]")) return;
-    // While the Pencil draws or erases, a hand resting on the screen is ignored.
     const now = gesture.current;
-    if ((now?.kind === "draw" || now?.kind === "erase") && now.pointer !== e.pointerId && e.pointerType === "touch" && pencilSeen.current) return;
-    if (e.pointerType === "pen") pencilSeen.current = true;
+    if (e.pointerType === "touch") {
+      // A hand on the screen while the Pencil draws or erases, or just after, is ignored.
+      if (now?.kind === "draw" || now?.kind === "erase" || Date.now() - pencilAt.current < 600) return;
+    }
+    if (e.pointerType === "pen") {
+      pencilAt.current = Infinity;
+      // The Pencil wins over a hand that landed first: forget its touches, and undo any zoom it caused.
+      if (now?.kind === "pinch" || (now?.kind === "pan" && [...pointers.current.values()].some((p) => p.type === "touch"))) {
+        setCam(now.cam);
+        gesture.current = null;
+      }
+      for (const [id, p] of pointers.current) if (p.type === "touch") pointers.current.delete(id);
+    }
     if (editingId) (document.activeElement as HTMLElement | null)?.blur?.();
     viewRef.current!.setPointerCapture(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
@@ -722,11 +732,9 @@ export function WhiteboardEditor({
     const chain = chainAt(e.target);
 
     if (tool === "pen" || tool === "eraser") {
-      // With a Pencil about, a finger moves the board; two fingers still pinch.
-      if (e.pointerType === "touch" && pencilSeen.current) {
-        gesture.current = { kind: "pan", sx: e.clientX, sy: e.clientY, cam: camRef.current };
-        return;
-      }
+      // Only the Pencil (or a mouse) draws, so a resting hand can't. One finger does nothing; two fingers still pinch and pan.
+      // On a phone, where there's no Pencil, a finger draws.
+      if (e.pointerType === "touch" && !window.matchMedia("(max-width: 767px)").matches) return;
       if (tool === "eraser") {
         history.begin();
         gesture.current = { kind: "erase", pointer: e.pointerId, last: world };
@@ -1003,6 +1011,7 @@ export function WhiteboardEditor({
   }
 
   function onPointerUp(e: React.PointerEvent) {
+    if (e.pointerType === "pen") pencilAt.current = Date.now();
     pointers.current.delete(e.pointerId);
     const g = gesture.current;
     if (!g) return;
@@ -1619,6 +1628,7 @@ export function WhiteboardEditor({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={(e) => {
+          if (e.pointerType === "pen") pencilAt.current = Date.now();
           pointers.current.delete(e.pointerId);
           // A resting hand that the Pencil's line ignored doesn't stop the line.
           const g = gesture.current;
