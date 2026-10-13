@@ -17,8 +17,8 @@ export const mainNav = [
 /** On phones, Search, Projects, All tasks, Documents, Whiteboard, Inspiration, Work archive, Portfolio, Agents and Trash live under More. */
 export const phoneTabs = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, also: [] },
-  { href: "/focus", label: "Focus", icon: Timer, also: [] },
   { href: "/notes", label: "Notes", icon: NotebookPen, also: [] },
+  { href: "/focus", label: "Focus", icon: Timer, also: [] },
   { href: "/messages", label: "Messages", icon: MessagesSquare, also: [] },
   { href: "/projects", label: "More", icon: Ellipsis, also: ["/search", "/tasks", "/documents", "/whiteboard", "/inspiration", "/archive", "/portfolio", "/agents", "/trash", "/artifacts", "/claude"] },
 ] as const;
