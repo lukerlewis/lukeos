@@ -27,6 +27,7 @@ const { appSettings, archiveEntries, visitorPrompts } = schema;
 
 const INSTRUCTIONS = "portfolio_instructions";
 const ABOUT = "portfolio_about";
+const TOPICS = "portfolio_topics";
 const PUBLISHED = "portfolio_published";
 
 async function setting(key: string) {
@@ -39,8 +40,8 @@ async function setSetting(key: string, value: string) {
 }
 
 export async function getPortfolioText() {
-  const [instructions, about] = await Promise.all([setting(INSTRUCTIONS), setting(ABOUT)]);
-  return { instructions: instructions ?? DEFAULT_INSTRUCTIONS, about: about ?? DEFAULT_ABOUT };
+  const [instructions, about, topics] = await Promise.all([setting(INSTRUCTIONS), setting(ABOUT), setting(TOPICS)]);
+  return { instructions: instructions ?? DEFAULT_INSTRUCTIONS, about: about ?? DEFAULT_ABOUT, topics: topics ?? "" };
 }
 
 /** One Work archive entry as the portfolio sees it. */
@@ -127,7 +128,8 @@ export async function buildPortfolioContent(): Promise<{ content: PortfolioConte
     });
   }
   if (!shown.length) problems.push("No work is on the portfolio. Turn on at least one entry under Work.");
-  return { content: { instructions: text.instructions.trim(), about: text.about.trim(), work }, problems };
+  const topics = text.topics.trim();
+  return { content: { instructions: text.instructions.trim(), about: text.about.trim(), ...(topics && { topics }), work }, problems };
 }
 
 /** Exactly what goes in the file, so an unchanged publish is a no-op. */
@@ -290,10 +292,18 @@ export const portfolioOperations = {
     input: z.object({
       instructions: z.string().max(20_000).optional().describe("How the site's AI should answer: rules, tone, what to do when something isn't covered."),
       about: z.string().max(50_000).optional().describe("What the AI knows about Luke apart from his work: now, point of view, strengths, contact."),
+      topics: z
+        .string()
+        .max(100_000)
+        .optional()
+        .describe(
+          "Luke's answers to the questions visitors ask most that About Luke and his work don't cover (weaknesses, how he works with engineers, his process, what he wants next), as Markdown with a ## heading per topic and bullets in his own words. The site's AI uses it for longer answers. Only write what Luke said; never fill a topic in from guesses.",
+        ),
     }),
-    run: async ({ instructions, about }) => {
+    run: async ({ instructions, about, topics }) => {
       if (instructions !== undefined) await setSetting(INSTRUCTIONS, instructions);
       if (about !== undefined) await setSetting(ABOUT, about);
+      if (topics !== undefined) await setSetting(TOPICS, topics);
       return getPortfolioText();
     },
   }),

@@ -24,14 +24,17 @@ export type PortfolioWork = {
 export type PortfolioContent = {
   instructions: string;
   about: string;
+  /** Luke's answers to common questions beyond his work. Left out of the file while empty. */
+  topics?: string;
   work: PortfolioWork[];
 };
 
-export const portfolioTabs = ["prompts", "work", "instructions", "about", "setup"] as const;
+export const portfolioTabs = ["prompts", "work", "topics", "instructions", "about", "setup"] as const;
 export type PortfolioTab = (typeof portfolioTabs)[number];
 export const portfolioTabLabel: Record<PortfolioTab, string> = {
   prompts: "Visitor prompts",
   work: "Work",
+  topics: "Topics",
   instructions: "AI instructions",
   about: "About Luke",
   setup: "Setup",
@@ -79,3 +82,20 @@ export const DEFAULT_ABOUT = `# Luke Lewis, product designer
 
 ## Contact
 - X, YouTube and LinkedIn: lukerlewis. Email: lukerobertlewis@gmail.com. Use /contact for details.`;
+
+/**
+ * What Topics starts with: the questions visitors ask most that About Luke
+ * and his work don't answer. Headings only; each gets bullets in Luke's words.
+ */
+export const TOPICS_PLACEHOLDER = `## Strengths
+## Weaknesses and what I'm working on
+## How I work with engineers
+## How I work with PMs and research
+## My design process
+## Leadership and mentoring
+## A failure and what I changed
+## Why AI, and how I use it
+## What I'm looking for next
+## Tools I use
+## Taste and references
+## Opinions on design and the industry`;
