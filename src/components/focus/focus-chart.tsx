@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { duration } from "@/lib/focus";
 import { cn } from "@/lib/utils";
 
@@ -11,11 +10,19 @@ const long = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", 
 const asDate = (day: string) => new Date(`${day}T00:00:00Z`);
 
 /**
- * Hours focused per day as bars. Tap or point at a bar to see that day; today
- * is picked to start with.
+ * Hours focused per day as bars. Tap or point at a bar to see that day.
  */
-export function FocusChart({ days, today }: { days: { date: string; seconds: number }[]; today: string }) {
-  const [picked, setPicked] = useState(days.length - 1);
+export function FocusChart({
+  days,
+  today,
+  picked,
+  onPick: setPicked,
+}: {
+  days: { date: string; seconds: number }[];
+  today: string;
+  picked: number;
+  onPick: (index: number) => void;
+}) {
   const top = Math.max(1, Math.ceil(Math.max(...days.map((d) => d.seconds)) / HOUR)); // whole hours, at least 1
   const step = top <= 4 ? 1 : Math.ceil(top / 4);
   const lines = Array.from({ length: Math.floor(top / step) + 1 }, (_, i) => i * step).filter((h) => h <= top);

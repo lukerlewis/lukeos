@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { op } from "@/lib/ops-client";
 import { clock, type FocusSettings } from "@/lib/focus";
 
 /**
@@ -10,6 +9,10 @@ import { clock, type FocusSettings } from "@/lib/focus";
  * going while Luke moves around the app. Timers count from timestamps (not
  * ticks), and are saved in the browser, so a reload or a locked phone doesn't
  * lose them: the time catches up when the app is back on screen.
+ *
+ * Focus time is saved for the stats as it goes, finished or not: every minute
+ * while a timer runs, and whenever it's paused, restarted, skipped or the app
+ * is left. Each run keeps one id, so saving again updates its line.
  */
 
 export type Phase = "focus" | "short" | "long";
@@ -26,6 +29,9 @@ type Pomodoro = {
   lengthMs: number | null;
   /** When the current focus round was first started. */
   startedAt: number | null;
+  /** The focus round's line in the stats, and the seconds last saved to it. */
+  sessionId?: string | null;
+  savedSeconds?: number;
 };
 
 type Stopwatch = {
@@ -34,6 +40,8 @@ type Stopwatch = {
   /** Time counted before the current stretch. */
   elapsedMs: number;
   startedAt: number | null;
+  sessionId?: string | null;
+  savedSeconds?: number;
 };
 
 type Saved = { mode: "pomodoro" | "timer"; pomodoro: Pomodoro; stopwatch: Stopwatch };
@@ -41,6 +49,8 @@ type Saved = { mode: "pomodoro" | "timer"; pomodoro: Pomodoro; stopwatch: Stopwa
 const STORAGE_KEY = "lukeos:focus";
 /** Shorter runs aren't worth a line in the stats. */
 const MIN_LOGGED_MS = 60_000;
+/** How often a running timer's time is saved. */
+const SAVE_EVERY_MS = 60_000;
 
 const freshPomodoro = (phase: Phase = "focus", round = 0): Pomodoro => ({
   phase,
@@ -85,6 +95,7 @@ export function useFocus() {
 export function FocusProvider({ settings, children }: { settings: FocusSettings; children: React.ReactNode }) {
   const router = useRouter();
   const [state, setState] = useState<Saved>(initial);
+  const stateRef = useRef(state);
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [noise, setNoise] = useState(false);
@@ -102,6 +113,7 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
   }, []);
 
   useEffect(() => {
+    stateRef.current = state;
     if (!loaded) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -114,17 +126,42 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     [settings],
   );
 
-  /** Saves focus time for the stats. Breaks and brown noise on its own never count. */
-  const log = useCallback(
-    (kind: "pomodoro" | "timer", ms: number, startedAt: number | null, endedAt: number) => {
-      if (ms < MIN_LOGGED_MS) return;
-      op("log_focus_session", {
-        kind,
-        seconds: Math.round(ms / 1000),
-        startedAt: new Date(startedAt ?? endedAt - ms).toISOString(),
-        endedAt: new Date(endedAt).toISOString(),
+  /**
+   * Saves a run's focus time so far for the stats. Breaks and brown noise on
+   * its own never count. Nothing is sent when the time hasn't changed since
+   * the last save, so a fix made under Stats isn't undone by pressing Restart.
+   * `keepalive` lets the save finish while the app is being closed.
+   */
+  const save = useCallback(
+    (kind: "pomodoro" | "timer", ms: number, endedAt: number, { refresh = true } = {}) => {
+      const run = kind === "pomodoro" ? stateRef.current.pomodoro : stateRef.current.stopwatch;
+      const seconds = Math.round(ms / 1000);
+      if (ms < MIN_LOGGED_MS || seconds === run.savedSeconds) return;
+      const id = run.sessionId ?? crypto.randomUUID();
+      const key = kind === "pomodoro" ? "pomodoro" : "stopwatch";
+      const mark = (s: Saved): Saved => {
+        const current = s[key];
+        if ((current.sessionId ?? null) !== (run.sessionId ?? null) || current.startedAt !== run.startedAt) return s;
+        return { ...s, [key]: { ...current, sessionId: id, savedSeconds: seconds } };
+      };
+      stateRef.current = mark(stateRef.current);
+      setState(mark);
+      fetch("/api/ops/log_focus_session", {
+        method: "POST",
+        keepalive: true,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          id,
+          kind,
+          seconds,
+          startedAt: new Date(run.startedAt ?? endedAt - ms).toISOString(),
+          endedAt: new Date(endedAt).toISOString(),
+        }),
       })
-        .then(() => router.refresh())
+        .then((res) => {
+          if (!res.ok) throw new Error(`status ${res.status}`);
+          if (refresh) router.refresh();
+        })
         .catch((err) => console.error("[focus] couldn't save the session", err));
     },
     [router],
@@ -182,13 +219,13 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
   const p = state.pomodoro;
   useEffect(() => {
     if (!p.endsAt || now < p.endsAt) return;
-    if (p.phase === "focus") log("pomodoro", p.lengthMs ?? lengthOf("focus"), p.startedAt, p.endsAt);
+    if (p.phase === "focus") save("pomodoro", p.lengthMs ?? lengthOf("focus"), p.endsAt);
     const next = nextAfter(p);
     chime();
     notify(p.phase === "focus" ? "Focus done. Time for a break." : "Break over. Back to focus.");
     // eslint-disable-next-line react-hooks/set-state-in-effect -- the phase ends when the clock says so
     setState((s) => ({ ...s, pomodoro: next }));
-  }, [now, p, log, lengthOf, nextAfter, chime, notify]);
+  }, [now, p, save, lengthOf, nextAfter, chime, notify]);
 
   const pomodoroRunning = p.endsAt !== null;
   const stopwatchRunning = state.stopwatch.runningSince !== null;
@@ -206,8 +243,44 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     };
   }, [pomodoroRunning, stopwatchRunning]);
 
-  const left = (pp: Pomodoro, at: number) =>
-    pp.endsAt !== null ? Math.max(0, pp.endsAt - at) : (pp.leftMs ?? lengthOf(pp.phase));
+  const left = useCallback(
+    (pp: Pomodoro, at: number) => (pp.endsAt !== null ? Math.max(0, pp.endsAt - at) : (pp.leftMs ?? lengthOf(pp.phase))),
+    [lengthOf],
+  );
+  /** Focus done so far in this pomodoro round (none in a break). */
+  const focusedMs = useCallback(
+    (pp: Pomodoro, at: number) => (pp.phase === "focus" && pp.lengthMs ? pp.lengthMs - left(pp, at) : 0),
+    [left],
+  );
+  const stopwatchElapsed = (sw: Stopwatch, at: number) => sw.elapsedMs + (sw.runningSince ? at - sw.runningSince : 0);
+
+  /** Saves whatever is running, e.g. on the minute or as the app is left. */
+  const saveRunning = useCallback(
+    (opts?: { refresh?: boolean }) => {
+      const at = Date.now();
+      const { pomodoro: pp, stopwatch: sw } = stateRef.current;
+      if (pp.endsAt && pp.phase === "focus") save("pomodoro", focusedMs(pp, Math.min(at, pp.endsAt)), Math.min(at, pp.endsAt), opts);
+      if (sw.runningSince) save("timer", sw.elapsedMs + at - sw.runningSince, at, opts);
+    },
+    [save, focusedMs],
+  );
+
+  // Every minute while a timer runs, and when the app is hidden or closed.
+  useEffect(() => {
+    if (!pomodoroRunning && !stopwatchRunning) return;
+    const id = window.setInterval(() => saveRunning({ refresh: false }), SAVE_EVERY_MS);
+    const onHide = () => {
+      if (document.visibilityState === "hidden") saveRunning({ refresh: false });
+    };
+    const onLeave = () => saveRunning({ refresh: false });
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onLeave);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onLeave);
+    };
+  }, [pomodoroRunning, stopwatchRunning, saveRunning]);
 
   const startPomodoro = () => {
     wakeChime();
@@ -219,25 +292,38 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
       const lengthMs = pp.lengthMs ?? lengthOf(pp.phase);
       return {
         ...s,
-        pomodoro: { ...pp, lengthMs, endsAt: at + (pp.leftMs ?? lengthMs), leftMs: null, startedAt: pp.startedAt ?? at },
+        pomodoro: {
+          ...pp,
+          lengthMs,
+          endsAt: at + (pp.leftMs ?? lengthMs),
+          leftMs: null,
+          startedAt: pp.startedAt ?? at,
+          sessionId: pp.sessionId ?? (pp.phase === "focus" ? crypto.randomUUID() : null),
+        },
       };
     });
   };
 
   const pausePomodoro = () => {
     const at = Date.now();
+    const pp = state.pomodoro;
+    if (pp.endsAt) save("pomodoro", focusedMs(pp, at), at);
     setState((s) =>
       s.pomodoro.endsAt ? { ...s, pomodoro: { ...s.pomodoro, endsAt: null, leftMs: Math.max(0, s.pomodoro.endsAt - at) } } : s,
     );
   };
 
-  const resetPomodoro = () => setState((s) => ({ ...s, pomodoro: freshPomodoro(s.pomodoro.phase, s.pomodoro.round) }));
+  /** Restarting a round part way still counts the focus done so far. */
+  const resetPomodoro = () => {
+    const at = Date.now();
+    save("pomodoro", focusedMs(state.pomodoro, at), at);
+    setState((s) => ({ ...s, pomodoro: freshPomodoro(s.pomodoro.phase, s.pomodoro.round) }));
+  };
 
   /** Moving on early still counts the focus done so far. */
   const skipPomodoro = () => {
     const at = Date.now();
-    const pp = state.pomodoro;
-    if (pp.phase === "focus" && pp.lengthMs) log("pomodoro", pp.lengthMs - left(pp, at), pp.startedAt, at);
+    save("pomodoro", focusedMs(state.pomodoro, at), at);
     setState((s) => ({ ...s, pomodoro: nextAfter(s.pomodoro) }));
   };
 
@@ -247,12 +333,21 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     setState((s) =>
       s.stopwatch.runningSince
         ? s
-        : { ...s, stopwatch: { ...s.stopwatch, runningSince: at, startedAt: s.stopwatch.startedAt ?? at } },
+        : {
+            ...s,
+            stopwatch: {
+              ...s.stopwatch,
+              runningSince: at,
+              startedAt: s.stopwatch.startedAt ?? at,
+              sessionId: s.stopwatch.sessionId ?? crypto.randomUUID(),
+            },
+          },
     );
   };
 
   const pauseStopwatch = () => {
     const at = Date.now();
+    if (state.stopwatch.runningSince) save("timer", stopwatchElapsed(state.stopwatch, at), at);
     setState((s) =>
       s.stopwatch.runningSince
         ? { ...s, stopwatch: { ...s.stopwatch, runningSince: null, elapsedMs: s.stopwatch.elapsedMs + at - s.stopwatch.runningSince } }
@@ -260,12 +355,10 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     );
   };
 
-  const stopwatchElapsed = (sw: Stopwatch, at: number) => sw.elapsedMs + (sw.runningSince ? at - sw.runningSince : 0);
-
-  /** Restarting the regular timer is how a run ends, so its time is saved. */
+  /** Done (or Restart) is how a regular timer run ends, so its time is saved. */
   const resetStopwatch = () => {
     const at = Date.now();
-    log("timer", stopwatchElapsed(state.stopwatch, at), state.stopwatch.startedAt, at);
+    save("timer", stopwatchElapsed(state.stopwatch, at), at);
     setState((s) => ({ ...s, stopwatch: freshStopwatch() }));
   };
 

@@ -2,6 +2,7 @@
 
 import {
   AudioLines,
+  Check,
   ChartColumn,
   ChevronRight,
   Pause,
@@ -13,16 +14,15 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { showToast } from "@/components/shell/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
-import { clock, FOCUS_LIMITS, type FocusSettings } from "@/lib/focus";
+import { clock, duration, FOCUS_LIMITS, type FocusSettings } from "@/lib/focus";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { phaseLabel, useFocus } from "./focus-provider";
-
-const HOUR = 3_600_000;
 
 export function FocusScreen() {
   const focus = useFocus();
@@ -74,8 +74,8 @@ export function FocusScreen() {
         </>
       ) : (
         <>
-          {/* The ring goes round once an hour. */}
-          <Ring progress={(stopwatch.elapsedMs % HOUR) / HOUR}>
+          {/* No ring: the timer just keeps counting. */}
+          <Ring>
             <span className="text-control text-muted-foreground">Timer</span>
             <Face ms={stopwatch.elapsedMs} />
             <span className="h-2" aria-hidden />
@@ -84,11 +84,19 @@ export function FocusScreen() {
             running={stopwatch.running}
             onStart={focus.startStopwatch}
             onPause={focus.pauseStopwatch}
-            onReset={
+            onSkip={
               stopwatch.running || stopwatch.elapsedMs > 0
-                ? focus.resetStopwatch
+                ? () => {
+                    // Done ends the session: its time is saved and the timer clears.
+                    const ms = stopwatch.elapsedMs;
+                    focus.resetStopwatch();
+                    if (ms >= 60_000) showToast(`Saved ${duration(ms / 1000)}`);
+                  }
                 : undefined
             }
+            skipLabel="Done"
+            skipIcon={<Check />}
+            noReset
           />
         </>
       )}
@@ -125,7 +133,8 @@ function Ring({
   soft,
   children,
 }: {
-  progress: number;
+  /** Left out: no ring, just what's inside, at the same size. */
+  progress?: number;
   soft?: boolean;
   children: React.ReactNode;
 }) {
@@ -134,35 +143,37 @@ function Ring({
   const p = Math.min(1, Math.max(0, progress || 0));
   return (
     <div className="relative aspect-square w-[min(300px,80vw)] md:w-[340px]">
-      <svg
-        viewBox="0 0 100 100"
-        className="absolute inset-0 size-full -rotate-90"
-        aria-hidden
-      >
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
-          fill="none"
-          strokeWidth="3"
-          className="stroke-muted"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
-          fill="none"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray={length}
-          strokeDashoffset={length * (1 - p)}
-          className={cn(
-            "transition-[stroke-dashoffset] duration-300 ease-linear motion-reduce:transition-none",
-            soft ? "stroke-muted-foreground" : "stroke-foreground",
-            p === 0 && "opacity-0",
-          )}
-        />
-      </svg>
+      {progress !== undefined && (
+        <svg
+          viewBox="0 0 100 100"
+          className="absolute inset-0 size-full -rotate-90"
+          aria-hidden
+        >
+          <circle
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            strokeWidth="3"
+            className="stroke-muted"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray={length}
+            strokeDashoffset={length * (1 - p)}
+            className={cn(
+              "transition-[stroke-dashoffset] duration-300 ease-linear motion-reduce:transition-none",
+              soft ? "stroke-muted-foreground" : "stroke-foreground",
+              p === 0 && "opacity-0",
+            )}
+          />
+        </svg>
+      )}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
         {children}
       </div>
@@ -177,6 +188,8 @@ function Controls({
   onReset,
   onSkip,
   skipLabel,
+  skipIcon = <SkipForward />,
+  noReset,
 }: {
   running: boolean;
   onStart: () => void;
@@ -184,20 +197,27 @@ function Controls({
   onReset?: () => void;
   onSkip?: () => void;
   skipLabel?: string;
+  skipIcon?: React.ReactNode;
+  /** No Restart button (the regular timer ends with Done instead). */
+  noReset?: boolean;
 }) {
   const side = "size-14 rounded-full";
   return (
     <div className="flex items-center gap-6">
-      <Button
-        variant="outline"
-        size="icon"
-        className={side}
-        aria-label="Restart"
-        disabled={!onReset}
-        onClick={onReset}
-      >
-        <RotateCcw />
-      </Button>
+      {noReset ? (
+        <span className={side} aria-hidden />
+      ) : (
+        <Button
+          variant="outline"
+          size="icon"
+          className={side}
+          aria-label="Restart"
+          disabled={!onReset}
+          onClick={onReset}
+        >
+          <RotateCcw />
+        </Button>
+      )}
       <Button
         className="size-[76px] rounded-full [&_svg]:size-7"
         aria-label={running ? "Pause" : "Start"}
@@ -217,7 +237,7 @@ function Controls({
           aria-label={skipLabel}
           onClick={onSkip}
         >
-          <SkipForward />
+          {skipIcon}
         </Button>
       ) : (
         <span className={side} aria-hidden />

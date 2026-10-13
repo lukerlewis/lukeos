@@ -132,3 +132,43 @@ export function dayAndMonth(day: string) {
 export function weekdayDayAndMonth(day: string) {
   return `${weekdays[toUtc(day).getUTCDay()]} ${dayAndMonth(day)}`;
 }
+
+/** The time of day ("14:05") a moment falls at in the given time zone. */
+export function timeIn(timeZone: string, at: Date) {
+  try {
+    return new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(at);
+  } catch {
+    return at.toISOString().slice(11, 16);
+  }
+}
+
+/** How far ahead of UTC the time zone is at that moment, in ms. */
+function offsetAt(timeZone: string, at: number) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+    })
+      .formatToParts(new Date(at))
+      .map((p) => [p.type, Number(p.value)]),
+  );
+  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second) - Math.floor(at / 1000) * 1000;
+}
+
+/** The moment a day ("2026-10-13") and time ("14:05") in the given time zone stand for. */
+export function momentIn(timeZone: string, day: string, time: string) {
+  const wall = Date.parse(`${day}T${time}:00Z`);
+  try {
+    let at = wall - offsetAt(timeZone, wall);
+    at = wall - offsetAt(timeZone, at); // once more, for days the clocks change
+    return new Date(at);
+  } catch {
+    return new Date(wall);
+  }
+}
