@@ -21,7 +21,7 @@ export function DocumentList({
     <ul>
       {documents.map((d) => (
         <li key={d.id} className="border-b last:border-b-0">
-          <Link href={`/documents/${d.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
+          <Link href={`/documents/${d.id}`} className="press-tint flex items-start gap-3 px-4 py-4.5 hover:bg-muted/50">
             <span className="relative mt-0.5 shrink-0">
               <FileText className="size-[18px] text-muted-foreground md:size-4" aria-hidden />
               {d.isNew && <span className="absolute -top-1 -right-1 size-2 rounded-full bg-unread ring-2 ring-card" aria-label="New" />}
