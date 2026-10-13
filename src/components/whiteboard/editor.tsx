@@ -4,12 +4,14 @@ import {
   ChevronLeft,
   CornerDownRight,
   Diamond,
+  Eraser,
   Frame,
   Hand,
   Maximize,
   Minus,
   MousePointer2,
   MoveRight,
+  Pencil,
   Plus,
   Redo2,
   Square,
@@ -30,6 +32,7 @@ import {
   ancestorsOf,
   cloneWithNewIds,
   DEFAULTS,
+  drawBox,
   insertItems,
   locate,
   mapItem,
@@ -46,16 +49,17 @@ import {
   routeToPath,
   tidyRoute,
   walk,
+  type Color,
   type Item,
   type ItemType,
   type Point,
 } from "@/lib/whiteboard";
-import { ItemView } from "./item-view";
-import { Panel } from "./panel";
+import { inkOf, ItemView, strokePath } from "./item-view";
+import { Inks, Panel, PenSizes } from "./panel";
 
 type Rect = { x: number; y: number; w: number; h: number };
 type Camera = { x: number; y: number; z: number };
-type Tool = "select" | "hand" | "frame" | "text" | "sticky" | "shape" | "arrow";
+type Tool = "select" | "hand" | "frame" | "text" | "sticky" | "shape" | "arrow" | "pen" | "eraser";
 type Handle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 
 type Gesture =
@@ -69,7 +73,9 @@ type Gesture =
   | { kind: "arrow"; from: string | null; fromSide: Side | null; start: Point; sx: number; sy: number }
   | { kind: "end"; id: string; which: "from" | "to" }
   | { kind: "slide"; id: string; start: Point; orig: Item }
-  | { kind: "bend"; id: string; work: Point[]; seg: number; level: boolean; start: Point };
+  | { kind: "bend"; id: string; work: Point[]; seg: number; level: boolean; start: Point }
+  | { kind: "draw"; pointer: number; pen: boolean; points: number[][]; parent: string | null }
+  | { kind: "erase"; pointer: number; last: Point };
 
 const MIN_Z = 0.1;
 const MAX_Z = 4;
@@ -180,6 +186,23 @@ export function WhiteboardEditor({
   const [arrowKind, setArrowKind] = useState<"straight" | "elbow">("straight");
   /** Whether new arrows get a head: the last choice made in the panel. */
   const [lineOnly, setLineOnly] = useState(false);
+  const [pen, setPenState] = useState<{ color: Color; size: number }>({ color: "default", size: DEFAULTS.draw.size });
+  const setPen = (next: { color: Color; size: number }) => {
+    setPenState(next);
+    try {
+      localStorage.setItem("wb-pen", JSON.stringify(next));
+    } catch {}
+  };
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("wb-pen") ?? "null");
+      if (saved && typeof saved.size === "number") setPenState({ color: saved.color ?? "default", size: saved.size });
+    } catch {}
+  }, []);
+  /** Once an Apple Pencil has drawn, a finger on its own moves the board instead of drawing (so a resting hand doesn't scribble). */
+  const pencilSeen = useRef(false);
+  /** The line being drawn right now, drawn straight onto the page so the board doesn't redraw on every movement. */
+  const inkRef = useRef<SVGPathElement>(null);
   const [selection, setSelectionState] = useState<string[]>([]);
   const selectionRef = useRef<string[]>([]);
   const setSelection = useCallback((ids: string[]) => {
@@ -633,6 +656,10 @@ export function WhiteboardEditor({
   function onPointerDown(e: React.PointerEvent) {
     if ((e.target as HTMLElement).closest("[data-wb-ui]")) return;
     if ((e.target as HTMLElement).closest("[data-wb-editor]")) return;
+    // While the Pencil draws or erases, a hand resting on the screen is ignored.
+    const now = gesture.current;
+    if ((now?.kind === "draw" || now?.kind === "erase") && now.pointer !== e.pointerId && e.pointerType === "touch" && pencilSeen.current) return;
+    if (e.pointerType === "pen") pencilSeen.current = true;
     if (editingId) (document.activeElement as HTMLElement | null)?.blur?.();
     viewRef.current!.setPointerCapture(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
@@ -693,6 +720,25 @@ export function WhiteboardEditor({
       return;
     }
     const chain = chainAt(e.target);
+
+    if (tool === "pen" || tool === "eraser") {
+      // With a Pencil about, a finger moves the board; two fingers still pinch.
+      if (e.pointerType === "touch" && pencilSeen.current) {
+        gesture.current = { kind: "pan", sx: e.clientX, sy: e.clientY, cam: camRef.current };
+        return;
+      }
+      if (tool === "eraser") {
+        history.begin();
+        gesture.current = { kind: "erase", pointer: e.pointerId, last: world };
+        eraseAt([world]);
+        return;
+      }
+      const frame = frameAt(e.clientX, e.clientY, new Set());
+      const parent = frame && !locate(itemsRef.current, frame)?.item.layout ? frame : null;
+      gesture.current = { kind: "draw", pointer: e.pointerId, pen: e.pointerType === "pen", points: [inkPoint(world, e)], parent };
+      inkRef.current?.setAttribute("d", strokePath(gesture.current.points, pen.size, false));
+      return;
+    }
 
     if (tool === "arrow") {
       // An arrow joins the innermost thing it starts on (pinned to a side if it starts on a side dot), or starts on the board itself.
@@ -762,7 +808,36 @@ export function WhiteboardEditor({
       return;
     }
     const world = toWorld(e.clientX, e.clientY);
+    if ((g.kind === "draw" || g.kind === "erase") && g.pointer !== e.pointerId) return;
     switch (g.kind) {
+      case "draw": {
+        // Every movement since the last event (the Pencil reports many), each eased a little towards the last for a smooth line.
+        const events = e.nativeEvent.getCoalescedEvents?.() ?? [];
+        const min = 1.5 / camRef.current.z;
+        for (const ev of events.length ? events : [e.nativeEvent]) {
+          const raw = inkPoint(toWorld(ev.clientX, ev.clientY), ev);
+          const last = g.points[g.points.length - 1];
+          if (Math.hypot(raw[0] - last[0], raw[1] - last[1]) < min) continue;
+          const eased = [last[0] + (raw[0] - last[0]) * 0.6, last[1] + (raw[1] - last[1]) * 0.6, ...(raw.length > 2 ? [raw[2]] : [])];
+          g.points.push(eased);
+        }
+        inkRef.current?.setAttribute("d", strokePath(g.points, pen.size, false));
+        break;
+      }
+      case "erase": {
+        const events = e.nativeEvent.getCoalescedEvents?.() ?? [];
+        // Every few pixels along the way, so a quick swipe can't jump over a thin line.
+        const along: Point[] = [];
+        const step = 4 / camRef.current.z;
+        for (const ev of events.length ? events : [e.nativeEvent]) {
+          const p = toWorld(ev.clientX, ev.clientY);
+          const n = Math.max(1, Math.ceil(Math.hypot(p.x - g.last.x, p.y - g.last.y) / step));
+          for (let k = 1; k <= n; k++) along.push({ x: g.last.x + ((p.x - g.last.x) * k) / n, y: g.last.y + ((p.y - g.last.y) * k) / n });
+          g.last = p;
+        }
+        eraseAt(along);
+        break;
+      }
       case "pan":
         setCam({ ...g.cam, x: g.cam.x + e.clientX - g.sx, y: g.cam.y + e.clientY - g.sy });
         break;
@@ -935,9 +1010,16 @@ export function WhiteboardEditor({
       if (pointers.current.size === 0) gesture.current = null;
       return;
     }
+    if ((g.kind === "draw" || g.kind === "erase") && g.pointer !== e.pointerId) return;
     gesture.current = null;
     const world = toWorld(e.clientX, e.clientY);
     switch (g.kind) {
+      case "draw":
+        finishInk(g, inkPoint(world, e));
+        break;
+      case "erase":
+        history.end();
+        break;
       case "press": {
         // A click without a drag on something already selected: nothing more to do.
         break;
@@ -1067,9 +1149,68 @@ export function WhiteboardEditor({
     commit(next);
   }
 
+  /** A point of the pen's line, with how hard the Pencil was pressed. */
+  function inkPoint(world: Point, e: { pointerType: string; pressure: number }): number[] {
+    const at = [Math.round(world.x * 10) / 10, Math.round(world.y * 10) / 10];
+    return e.pointerType === "pen" ? [...at, Math.round((e.pressure || 0.5) * 100) / 100] : at;
+  }
+
+  /** Puts a finished pen line on the board (inside the frame it was started on, if any). */
+  function finishInk(g: Extract<Gesture, { kind: "draw" }>, end: number[]) {
+    const last = g.points[g.points.length - 1];
+    if (g.points.length > 1 && Math.hypot(end[0] - last[0], end[1] - last[1]) > 0.5) g.points.push(end);
+    inkRef.current?.setAttribute("d", "");
+    const pad = pen.size / 2;
+    const left = Math.min(...g.points.map((p) => p[0])) - pad;
+    const top = Math.min(...g.points.map((p) => p[1])) - pad;
+    const r1 = (n: number) => Math.round(n * 10) / 10;
+    const points = g.points.map((p) => [r1(p[0] - left), r1(p[1] - top), ...(g.pen ? [p[2] ?? 0.5] : [])]);
+    const item: Item = {
+      id: newId(allIds(itemsRef.current)),
+      type: "draw",
+      ...(pen.color !== "default" && { color: pen.color }),
+      ...(pen.size !== DEFAULTS.draw.size && { size: pen.size }),
+      points,
+    };
+    const fr = g.parent ? rectsRef.current.get(g.parent) : null;
+    const parent = fr && locate(itemsRef.current, g.parent!) ? g.parent : null;
+    const placed = { ...item, x: r1(left - (parent ? fr!.x : 0)), y: r1(top - (parent ? fr!.y : 0)) };
+    const siblings = parent ? (locate(itemsRef.current, parent)!.item.children ?? []) : itemsRef.current;
+    commit(insertItems(itemsRef.current, parent, siblings.length, [placed]));
+  }
+
+  /** Rubs out every pen line the eraser touches at these points. */
+  function eraseAt(at: Point[]) {
+    const reach = 10 / camRef.current.z;
+    const hit = new Set<string>();
+    walk(itemsRef.current, (i) => {
+      if (i.type !== "draw" || !i.points?.length) return;
+      const r = rectsRef.current.get(i.id);
+      if (!r) return;
+      const n = drawBox(i);
+      const sx = r.w / n.w;
+      const sy = r.h / n.h;
+      const near = reach + ((i.size ?? DEFAULTS.draw.size) / 2) * Math.max(sx, sy);
+      // Skip lines whose box is nowhere near.
+      if (at.every((p) => p.x < r.x - near || p.x > r.x + r.w + near || p.y < r.y - near || p.y > r.y + r.h + near)) return;
+      const pts = i.points.map((p) => ({ x: r.x + p[0] * sx, y: r.y + p[1] * sy }));
+      for (const p of at)
+        for (let k = 0; k < pts.length; k++) {
+          const a = pts[k];
+          const b = pts[k + 1] ?? a;
+          if (distToSegment(p, a, b) <= near) {
+            hit.add(i.id);
+            return;
+          }
+        }
+    });
+    if (hit.size) history.live(removeItems(itemsRef.current, hit));
+  }
+
   function cancelGesture() {
     const g = gesture.current;
-    if (g?.kind === "resize" || g?.kind === "end" || g?.kind === "slide") history.end();
+    if (g?.kind === "draw") inkRef.current?.setAttribute("d", "");
+    if (g?.kind === "resize" || g?.kind === "end" || g?.kind === "slide" || g?.kind === "erase") history.end();
     gesture.current = null;
     setDrag(null);
     setGuides([]);
@@ -1099,13 +1240,13 @@ export function WhiteboardEditor({
       if (chain[i + 1]) {
         const child = locate(itemsRef.current, chain[i + 1])!.item;
         setSelection([child.id]);
-        if (child.type !== "frame" && child.type !== "arrow" && child.id === chain[chain.length - 1]) setEditingId(child.id);
+        if (child.type !== "frame" && child.type !== "arrow" && child.type !== "draw" && child.id === chain[chain.length - 1]) setEditingId(child.id);
       }
       return;
     }
     if (at.item.type !== "arrow") {
       setSelection([at.item.id]);
-      setEditingId(at.item.id);
+      if (at.item.type !== "draw") setEditingId(at.item.id);
     }
   }
 
@@ -1226,7 +1367,7 @@ export function WhiteboardEditor({
     if (e.key === "Enter" && selectionRef.current.length === 1) {
       const at = locate(itemsRef.current, selectionRef.current[0]);
       if (at?.item.type === "frame" && at.item.children?.length) setSelection(at.item.children.map((c) => c.id));
-      else if (at && at.item.type !== "frame" && at.item.type !== "arrow") {
+      else if (at && at.item.type !== "frame" && at.item.type !== "arrow" && at.item.type !== "draw") {
         e.preventDefault();
         setEditingId(at.item.id);
       }
@@ -1305,11 +1446,11 @@ export function WhiteboardEditor({
       return;
     }
     if (mod || e.altKey) return;
-    const tools: Record<string, Tool> = { v: "select", h: "hand", f: "frame", t: "text", s: "sticky", r: "shape", o: "shape", x: "arrow" };
+    const tools: Record<string, Tool> = { v: "select", h: "hand", f: "frame", t: "text", s: "sticky", r: "shape", o: "shape", x: "arrow", p: "pen", e: "eraser" };
     if (tools[key] && !e.shiftKey) {
       if (key === "r") setShapeKind("rect");
       if (key === "o") setShapeKind("ellipse");
-      setTool(tools[key]);
+      chooseTool(tools[key]);
     }
   };
   useLayoutEffect(() => {
@@ -1353,6 +1494,12 @@ export function WhiteboardEditor({
     const to = box(a.to, shown.end);
     if (!from || !to) return null;
     return arrowRoute(shown, from, to);
+  }
+
+  /** Picking the pen or eraser lets go of what's selected, so its panel is out of the way. */
+  function chooseTool(next: Tool) {
+    if (next === "pen" || next === "eraser") setSelection([]);
+    setTool(next);
   }
 
   const selectedItems = selection.map((id) => locate(items, id)?.item).filter(Boolean) as Item[];
@@ -1473,6 +1620,9 @@ export function WhiteboardEditor({
         onPointerUp={onPointerUp}
         onPointerCancel={(e) => {
           pointers.current.delete(e.pointerId);
+          // A resting hand that the Pencil's line ignored doesn't stop the line.
+          const g = gesture.current;
+          if ((g?.kind === "draw" || g?.kind === "erase") && g.pointer !== e.pointerId) return;
           cancelGesture();
         }}
         onPointerLeave={() => {
@@ -1535,6 +1685,7 @@ export function WhiteboardEditor({
                 </g>
               );
             })}
+            <path ref={inkRef} fill={inkOf(pen.color)} />
             {arrowDraft && (() => {
               const r = arrowDraft.from ? rects.get(arrowDraft.from) : null;
               const start = r ? (arrowDraft.fromSide ? sidePoint(r, arrowDraft.fromSide) : { x: r.x + r.w / 2, y: r.y + r.h / 2 }) : arrowDraft.start;
@@ -1656,10 +1807,36 @@ export function WhiteboardEditor({
             }}
             icon={arrowKind === "elbow" ? CornerDownRight : MoveRight}
           />
+          <ToolButton label="Pen (P)" active={tool === "pen" || tool === "eraser"} onClick={() => chooseTool("pen")} icon={Pencil} />
           <span className="mx-1 h-6 w-px bg-border" />
           <ToolButton label="Undo" onClick={() => history.undo()} icon={Undo2} disabled={!history.canUndo} />
           <ToolButton label="Redo" onClick={() => history.redo()} icon={Redo2} disabled={!history.canRedo} className="hidden md:flex" />
         </div>
+
+        {(tool === "pen" || tool === "eraser") && (
+          <div
+            data-wb-ui
+            className="absolute bottom-[4.25rem] left-1/2 flex max-w-[calc(100%-1rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-xl border border-stroke bg-card p-1.5"
+          >
+            <Inks
+              value={tool === "eraser" ? "none" : pen.color}
+              onChange={(color) => {
+                setPen({ ...pen, color });
+                setTool("pen");
+              }}
+              className="flex-nowrap gap-0.5"
+            />
+            <PenSizes
+              value={tool === "eraser" ? undefined : pen.size}
+              onChange={(size) => {
+                setPen({ ...pen, size });
+                setTool("pen");
+              }}
+              className="w-32"
+            />
+            <ToolButton label="Eraser (E)" active={tool === "eraser"} onClick={() => setTool(tool === "eraser" ? "pen" : "eraser")} icon={Eraser} />
+          </div>
+        )}
 
         <div data-wb-ui className="absolute right-3 bottom-3 hidden items-center gap-0.5 rounded-xl border border-stroke bg-card p-1 md:flex">
           <ToolButton label="Zoom out" onClick={() => zoomBy(0.8)} icon={Minus} />
@@ -1771,6 +1948,15 @@ function omit(item: Item, keys: (keyof Item)[]): Item {
   const copy = { ...item };
   for (const k of keys) delete copy[k];
   return copy;
+}
+
+/** How far a point is from a line between two others. */
+function distToSegment(p: Point, a: Point, b: Point): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = dx * dx + dy * dy;
+  const t = len ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len)) : 0;
+  return Math.hypot(p.x - (a.x + dx * t), p.y - (a.y + dy * t));
 }
 
 /** A point a short way along a line, for the stub left on a box when its line is dragged away. */

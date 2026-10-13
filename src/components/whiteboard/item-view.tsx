@@ -1,7 +1,8 @@
 "use client";
 
-import { memo } from "react";
-import { DEFAULTS, TEXT_STYLES, type Color, type Item } from "@/lib/whiteboard";
+import { getStroke } from "perfect-freehand";
+import { memo, useMemo } from "react";
+import { DEFAULTS, drawBox, TEXT_STYLES, type Color, type Item } from "@/lib/whiteboard";
 
 /**
  * Draws whiteboard items as plain HTML. Used by the editor and by the small
@@ -24,6 +25,43 @@ export const textColorOf = (c: Color | undefined) =>
         : c === "grey"
           ? "var(--grey-700)"
           : `var(--wb-text-${c})`;
+
+/** Pen ink: black by default, a mid grey, or the deeper text shade of a colour. */
+export const inkOf = (c: Color | undefined) =>
+  !c || c === "default" || c === "none" || c === "muted" ? "var(--ink)" : c === "grey" ? "var(--grey-500)" : c === "white" ? "var(--grey-0)" : `var(--wb-text-${c})`;
+
+/**
+ * The filled outline of a pen line through these points, as an SVG path.
+ * Points with pressure (from an Apple Pencil) get thicker as he presses harder;
+ * points without it make an even line.
+ */
+export function strokePath(points: number[][], size: number, done = true): string {
+  if (!points.length) return "";
+  const pressured = points.some((p) => p.length > 2);
+  const outline = getStroke(
+    points.map((p) => (pressured ? [p[0], p[1], p[2] ?? 0.5] : [p[0], p[1]])),
+    {
+      size: pressured ? size * 1.4 : size,
+      thinning: pressured ? 0.6 : 0,
+      smoothing: 0.5,
+      streamline: 0,
+      simulatePressure: false,
+      last: done,
+      start: { cap: true },
+      end: { cap: true },
+    },
+  );
+  if (outline.length < 2) return "";
+  // Smooth curves through the outline's points.
+  const avg = (a: number, b: number) => (a + b) / 2;
+  let d = `M${outline[0][0].toFixed(1)},${outline[0][1].toFixed(1)} Q`;
+  for (let i = 0; i < outline.length; i++) {
+    const [x0, y0] = outline[i];
+    const [x1, y1] = outline[(i + 1) % outline.length];
+    d += `${x0.toFixed(1)},${y0.toFixed(1)} ${avg(x0, x1).toFixed(1)},${avg(y0, y1).toFixed(1)} `;
+  }
+  return `${d}Z`;
+}
 
 const ALIGN = { start: "flex-start", center: "center", end: "flex-end" } as const;
 const TEXT_ALIGN = { start: "left", center: "center", end: "right" } as const;
@@ -58,6 +96,8 @@ export const ItemView = memo(function ItemView(props: ViewProps) {
     ? { transform: `translate(${offset.dx}px, ${offset.dy}px)`, zIndex: 10, pointerEvents: "none" }
     : {};
   const editing = props.editingId === item.id;
+
+  if (item.type === "draw") return <DrawView item={item} position={position} moved={moved} />;
 
   if (item.type === "frame") {
     const fill = item.color ?? DEFAULTS.frame.color;
@@ -204,6 +244,25 @@ export const ItemView = memo(function ItemView(props: ViewProps) {
     </div>
   );
 });
+
+/**
+ * A pen drawing. Only the ink itself can be clicked, so a circle drawn round
+ * something doesn't get in the way of clicking what's inside it.
+ */
+function DrawView({ item, position, moved }: { item: Item; position: React.CSSProperties; moved: React.CSSProperties }) {
+  const size = item.size ?? DEFAULTS.draw.size;
+  const natural = drawBox(item);
+  const w = item.w ?? natural.w;
+  const h = item.h ?? natural.h;
+  const d = useMemo(() => strokePath(item.points ?? [], size), [item.points, size]);
+  return (
+    <div data-wb-id={item.id} data-wb-type="draw" style={{ ...position, width: w, height: h, pointerEvents: "none", ...moved }}>
+      <svg className="absolute inset-0 overflow-visible" width={w} height={h} viewBox={`0 0 ${natural.w} ${natural.h}`} preserveAspectRatio="none" aria-hidden>
+        <path d={d} fill={inkOf(item.color)} stroke="transparent" strokeWidth={14} strokeLinejoin="round" style={{ pointerEvents: moved.pointerEvents ? "none" : "visible" }} />
+      </svg>
+    </div>
+  );
+}
 
 /** The words on an item, or a box to type them in. */
 function Words({

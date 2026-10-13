@@ -3,8 +3,8 @@
 import { ArrowDown, ArrowRight, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { DEFAULTS, FILLS, TEXT_STYLE_KEYS, TEXT_STYLES, type Align, type Color, type Item, type TextStyle } from "@/lib/whiteboard";
-import { fillOf, stickyFillOf, textColorOf } from "./item-view";
+import { DEFAULTS, FILLS, INKS, PEN_SIZES, TEXT_STYLE_KEYS, TEXT_STYLES, type Align, type Color, type Item, type TextStyle } from "@/lib/whiteboard";
+import { fillOf, inkOf, stickyFillOf, textColorOf } from "./item-view";
 
 /** The small Figma-style panel for what's selected. */
 export function Panel({
@@ -172,6 +172,11 @@ export function Panel({
           </Section>
           <Size items={items} set={set} />
         </>
+      ) : item.type === "draw" ? (
+        <Section title="Drawing">
+          <Inks value={common(items, (i) => i.color ?? "default") ?? "none"} onChange={(color) => set({ color: color === "default" ? undefined : color })} />
+          <PenSizes value={common(items, (i) => i.size ?? DEFAULTS.draw.size)} onChange={(size) => set({ size: size === DEFAULTS.draw.size ? undefined : size })} />
+        </Section>
       ) : (
         <Section title="Arrow">
           <Choice
@@ -388,6 +393,49 @@ function Swatches({ value, onChange, withNone, sticky }: { value: Color; onChang
           style={{ background: sticky ? stickyFillOf(c) : fillOf(c) }}
         >
           {c === "none" && <span className="absolute top-1/2 left-1/2 h-px w-8 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-stroke-strong" />}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** The pen's colours, as dots of ink. */
+export function Inks({ value, onChange, className }: { value: Color; onChange: (c: Color) => void; className?: string }) {
+  return (
+    <div className={cn("flex flex-wrap gap-1.5", className)}>
+      {INKS.map((c) => (
+        <button
+          key={c}
+          type="button"
+          title={c === "default" ? "Black" : c[0].toUpperCase() + c.slice(1)}
+          aria-label={c === "default" ? "Black" : c}
+          aria-pressed={value === c}
+          onClick={() => onChange(c)}
+          className={cn("flex size-7 shrink-0 items-center justify-center rounded-full", value === c && "outline-[1.5px] outline-offset-1 outline-[var(--wb-select)] outline-solid")}
+        >
+          <span className="size-5 rounded-full" style={{ background: inkOf(c) }} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** The pen's thicknesses, shown as dots that get bigger. */
+export function PenSizes({ value, onChange, className }: { value: number | undefined; onChange: (size: number) => void; className?: string }) {
+  return (
+    <div role="radiogroup" className={cn("seg-track flex gap-0.5 rounded-lg p-[3px]", className)}>
+      {PEN_SIZES.map((o, n) => (
+        <button
+          key={o.size}
+          type="button"
+          role="radio"
+          title={o.label}
+          aria-label={o.label}
+          aria-checked={value === o.size}
+          onClick={() => onChange(o.size)}
+          className={cn("flex h-8 min-w-9 grow basis-0 items-center justify-center rounded-[8px] text-muted-foreground", value === o.size && "seg-on text-foreground")}
+        >
+          <span className="rounded-full bg-current" style={{ width: 4 + n * 4, height: 4 + n * 4 }} />
         </button>
       ))}
     </div>
