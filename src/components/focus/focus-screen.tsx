@@ -2,6 +2,7 @@
 
 import {
   AudioLines,
+  Check,
   ChartColumn,
   ChevronRight,
   Pause,
@@ -13,11 +14,12 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { showToast } from "@/components/shell/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
-import { clock, FOCUS_LIMITS, type FocusSettings } from "@/lib/focus";
+import { clock, duration, FOCUS_LIMITS, type FocusSettings } from "@/lib/focus";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { phaseLabel, useFocus } from "./focus-provider";
@@ -82,11 +84,19 @@ export function FocusScreen() {
             running={stopwatch.running}
             onStart={focus.startStopwatch}
             onPause={focus.pauseStopwatch}
-            onReset={
+            onSkip={
               stopwatch.running || stopwatch.elapsedMs > 0
-                ? focus.resetStopwatch
+                ? () => {
+                    // Done ends the session: its time is saved and the timer clears.
+                    const ms = stopwatch.elapsedMs;
+                    focus.resetStopwatch();
+                    if (ms >= 60_000) showToast(`Saved ${duration(ms / 1000)}`);
+                  }
                 : undefined
             }
+            skipLabel="Done"
+            skipIcon={<Check />}
+            noReset
           />
         </>
       )}
@@ -178,6 +188,8 @@ function Controls({
   onReset,
   onSkip,
   skipLabel,
+  skipIcon = <SkipForward />,
+  noReset,
 }: {
   running: boolean;
   onStart: () => void;
@@ -185,20 +197,27 @@ function Controls({
   onReset?: () => void;
   onSkip?: () => void;
   skipLabel?: string;
+  skipIcon?: React.ReactNode;
+  /** No Restart button (the regular timer ends with Done instead). */
+  noReset?: boolean;
 }) {
   const side = "size-14 rounded-full";
   return (
     <div className="flex items-center gap-6">
-      <Button
-        variant="outline"
-        size="icon"
-        className={side}
-        aria-label="Restart"
-        disabled={!onReset}
-        onClick={onReset}
-      >
-        <RotateCcw />
-      </Button>
+      {noReset ? (
+        <span className={side} aria-hidden />
+      ) : (
+        <Button
+          variant="outline"
+          size="icon"
+          className={side}
+          aria-label="Restart"
+          disabled={!onReset}
+          onClick={onReset}
+        >
+          <RotateCcw />
+        </Button>
+      )}
       <Button
         className="size-[76px] rounded-full [&_svg]:size-7"
         aria-label={running ? "Pause" : "Start"}
@@ -218,7 +237,7 @@ function Controls({
           aria-label={skipLabel}
           onClick={onSkip}
         >
-          <SkipForward />
+          {skipIcon}
         </Button>
       ) : (
         <span className={side} aria-hidden />

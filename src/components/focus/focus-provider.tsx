@@ -355,7 +355,7 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     );
   };
 
-  /** Restarting the regular timer is how a run ends, so its time is saved. */
+  /** Done (or Restart) is how a regular timer run ends, so its time is saved. */
   const resetStopwatch = () => {
     const at = Date.now();
     save("timer", stopwatchElapsed(state.stopwatch, at), at);
