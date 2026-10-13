@@ -10,6 +10,7 @@ import {
   cleanItem,
   COLORS,
   countItems,
+  drawBox,
   insertItems,
   ITEM_TYPES,
   locate,
@@ -29,7 +30,7 @@ const { whiteboards } = schema;
 const live = isNull(whiteboards.deletedAt);
 
 /** Big enough for a busy board, small enough that a runaway write can't fill the database. */
-const MAX_BYTES = 1_000_000;
+const MAX_BYTES = 3_000_000;
 
 export type WhiteboardSummary = {
   id: string;
@@ -120,12 +121,14 @@ const itemInput: z.ZodType<RawItem> = z.object({
   head: z.enum(["none"]).optional(),
   elbow: z.boolean().optional(),
   bends: z.array(z.tuple([num, num])).max(50).optional(),
+  points: z.array(z.array(num).min(2).max(3)).max(5000).optional(),
+  size: num.positive().max(100).optional(),
   get children() {
     return z.array(itemInput).optional();
   },
 });
 
-const FORMAT = `Items: {id, type, ...}. Types: frame (a container: name, color fill, w/h, children; with layout "row" or "column" it's Figma-style auto layout using gap, padX, padY and align start|center|end, and hugs its contents unless w/h are set), text (text, style, weight regular|medium, color default|muted, align start|center|end, w to wrap), sticky (text, color, w/h; default 220x220 yellow), shape (shape rect|ellipse|diamond, text, color, w/h), arrow (from and to: item ids it joins, or start/end: [x,y] board pixels for an end left on the board; fromSide/toSide top|right|bottom|left pins a joined end to the middle of that side, otherwise it uses the side facing the other end; text for a label; head: "none" makes it a plain line; elbow: true runs it in horizontal and vertical lines with slightly rounded corners, routed for you, or through bends: [[x,y],...] corners in board pixels to steer it around things). Text styles (Luke's type scale, Geist): display 112px, h1 86, h2 66, h3 51, h4 39, sub-lg 30, sub-sm 23, body-lg 18 (default), body 14. Fills: white, grey, yellow, orange, red, pink, purple, blue, green, none. x/y are board pixels (inside a frame, relative to it; ignored in auto layout). Left-out fields use the defaults, so leave them out. Keep diagrams black and white (white, grey, none): add colour only when it means something the layout and words don't already show (Luke's skill "Diagrams and visualizations").`;
+const FORMAT = `Items: {id, type, ...}. Types: frame (a container: name, color fill, w/h, children; with layout "row" or "column" it's Figma-style auto layout using gap, padX, padY and align start|center|end, and hugs its contents unless w/h are set), text (text, style, weight regular|medium, color default|muted, align start|center|end, w to wrap), sticky (text, color, w/h; default 220x220 yellow), shape (shape rect|ellipse|diamond, text, color, w/h), draw (a freehand pen line Luke drew: points [[x,y] or [x,y,pressure 0-1], ...] measured from the item's x/y, size its thickness (default 4; the pen offers 2, 4, 10), color default (black)|grey|red|orange|green|blue|purple; w/h stretch it, left out it's drawn at its natural size), arrow (from and to: item ids it joins, or start/end: [x,y] board pixels for an end left on the board; fromSide/toSide top|right|bottom|left pins a joined end to the middle of that side, otherwise it uses the side facing the other end; text for a label; head: "none" makes it a plain line; elbow: true runs it in horizontal and vertical lines with slightly rounded corners, routed for you, or through bends: [[x,y],...] corners in board pixels to steer it around things). Text styles (Luke's type scale, Geist): display 112px, h1 86, h2 66, h3 51, h4 39, sub-lg 30, sub-sm 23, body-lg 18 (default), body 14. Fills: white, grey, yellow, orange, red, pink, purple, blue, green, none. x/y are board pixels (inside a frame, relative to it; ignored in auto layout). Left-out fields use the defaults, so leave them out. Keep diagrams black and white (white, grey, none): add colour only when it means something the layout and words don't already show (Luke's skill "Diagrams and visualizations").`;
 
 const boardId = z.uuid().describe("The whiteboard's id, from list_whiteboards.");
 
@@ -168,6 +171,8 @@ const changeInput = z.object({
   head: z.enum(["none"]).nullable().optional().describe("null puts the arrowhead back."),
   elbow: z.boolean().nullable().optional(),
   bends: z.array(z.tuple([num, num])).max(50).nullable().optional().describe("null resets an elbow arrow to its worked-out route."),
+  points: z.array(z.array(num).min(2).max(3)).min(1).max(5000).optional().describe("A drawing's new points."),
+  size: num.positive().max(100).nullable().optional().describe("A drawing's thickness; null for the default."),
   parent: z.string().nullable().optional().describe("Move it into this frame (its id), or null for the board itself."),
   index: z.number().int().min(0).optional().describe("Where among its siblings, 0 first. With parent, or alone to reorder."),
 });
@@ -221,11 +226,15 @@ export const whiteboardOperations = {
     input: z.object({
       id: boardId,
       ifNewerThan: z.number().int().optional().describe("Only return the items if the board's version is higher than this."),
+      points: z
+        .boolean()
+        .optional()
+        .describe("Include every point of Luke's pen drawings. Left out, each drawing shows its box and a pointCount instead, which saves a lot of tokens."),
     }),
-    run: async ({ id, ifNewerThan }) => {
+    run: async ({ id, ifNewerThan, points }) => {
       const board = await getWhiteboard(id);
       if (ifNewerThan !== undefined && board.version <= ifNewerThan) return { id, version: board.version, unchanged: true as const };
-      return { id: board.id, title: board.title, version: board.version, items: board.items };
+      return { id: board.id, title: board.title, version: board.version, items: points ? board.items : withoutPoints(board.items) };
     },
   }),
 
@@ -371,7 +380,7 @@ export const whiteboardOperations = {
         .describe("The version these items were based on. If the board has changed since, nothing is saved and the current board is returned."),
     }),
     run: async ({ id, items, baseVersion }) => {
-      const cleaned = cleanBoard(items);
+      let cleaned = cleanBoard(items);
       checkSize(cleaned);
       return db.transaction(async (tx) => {
         const [row] = await tx
@@ -382,6 +391,12 @@ export const whiteboardOperations = {
         if (!row) throw new OperationError("That whiteboard doesn't exist, or it's in Trash.", 404);
         if (baseVersion !== undefined && baseVersion !== row.version)
           return { saved: false as const, version: row.version, items: orderKeys(row.items) };
+        // Drawings read without their points (get_whiteboard's default) keep the points they have.
+        const before = new Map<string, Item>();
+        walk(row.items, (i) => i.type === "draw" && before.set(i.id, i));
+        const missing = new Set<string>();
+        walk(items as Item[], (i) => i.type === "draw" && !i.points?.length && before.has(i.id) && missing.add(i.id));
+        if (missing.size) cleaned = cleanBoard(fillPoints(items as Item[], before));
         const version = row.version + 1;
         await tx.update(whiteboards).set({ items: cleaned, version, updatedAt: new Date() }).where(eq(whiteboards.id, id));
         return { saved: true as const, version };
@@ -389,6 +404,26 @@ export const whiteboardOperations = {
     },
   }),
 };
+
+/** A board with each drawing's points swapped for how many there are. */
+function withoutPoints(items: Item[]): Item[] {
+  return items.map((i) => {
+    if (i.type === "draw") {
+      const { points, ...rest } = i;
+      const box = drawBox(i);
+      return { ...rest, w: i.w ?? Math.round(box.w), h: i.h ?? Math.round(box.h), pointCount: points?.length ?? 0 } as Item;
+    }
+    return i.children ? { ...i, children: withoutPoints(i.children) } : i;
+  });
+}
+
+/** Puts back the points of drawings that came without them. */
+function fillPoints(items: Item[], from: Map<string, Item>): Item[] {
+  return items.map((i) => {
+    if (i.type === "draw" && !i.points?.length && from.has(i.id)) return { ...i, points: from.get(i.id)!.points };
+    return i.children ? { ...i, children: fillPoints(i.children, from) } : i;
+  });
+}
 
 /** Takes one item out of the tree without touching arrows (it's being moved, not deleted). */
 function removeItemOnly(items: Item[], id: string): Item[] {

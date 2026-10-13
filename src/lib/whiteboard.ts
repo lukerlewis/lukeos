@@ -10,7 +10,7 @@
  * board small for Claude to read.
  */
 
-export type ItemType = "frame" | "text" | "sticky" | "shape" | "arrow";
+export type ItemType = "frame" | "text" | "sticky" | "shape" | "arrow" | "draw";
 export type TextStyle = "display" | "h1" | "h2" | "h3" | "h4" | "sub-lg" | "sub-sm" | "body-lg" | "body";
 export type Color =
   | "default"
@@ -72,6 +72,10 @@ export type Item = {
   elbow?: boolean;
   /** Elbow arrows: the corners Luke set by dragging, in board coordinates. Left out, the route is worked out. */
   bends?: [number, number][];
+  /** Drawings: the line's points from the top left of its box, each [x, y] or [x, y, pressure 0 to 1]. */
+  points?: number[][];
+  /** Drawings: how thick the line is. */
+  size?: number;
   /** Frames: what's inside, in order. */
   children?: Item[];
 };
@@ -93,10 +97,15 @@ export const TEXT_STYLES: Record<TextStyle, { label: string; size: number; lineH
 };
 export const TEXT_STYLE_KEYS = Object.keys(TEXT_STYLES) as TextStyle[];
 
-export const ITEM_TYPES: ItemType[] = ["frame", "text", "sticky", "shape", "arrow"];
+export const ITEM_TYPES: ItemType[] = ["frame", "text", "sticky", "shape", "arrow", "draw"];
 export const COLORS: Color[] = ["default", "muted", "white", "grey", "yellow", "orange", "red", "pink", "purple", "blue", "green", "none"];
 /** The fills offered for stickies, shapes and frames, in order. */
 export const FILLS: Color[] = ["white", "grey", "yellow", "orange", "red", "pink", "purple", "blue", "green"];
+
+/** The pen's colours, in order: black first. */
+export const INKS: Color[] = ["default", "grey", "red", "orange", "green", "blue", "purple"];
+/** The pen's thicknesses. */
+export const PEN_SIZES = [{ label: "Thin", size: 2 }, { label: "Medium", size: 4 }, { label: "Thick", size: 10 }] as const;
 
 /** What an item looks like when a field is left out. */
 export const DEFAULTS = {
@@ -104,7 +113,24 @@ export const DEFAULTS = {
   sticky: { w: 220, h: 220, color: "yellow" as Color },
   shape: { w: 180, h: 120, color: "white" as Color, shape: "rect" as ShapeKind },
   frame: { w: 480, h: 320, color: "white" as Color, gap: 16, padX: 24, padY: 24, align: "start" as Align },
+  draw: { size: 4, color: "default" as Color },
 };
+
+/**
+ * A drawing's own size: its points, plus half the line's thickness on the
+ * right and bottom (the points start that far in from the top left).
+ * Its w and h stretch this to fit, so resizing a drawing just works.
+ */
+export function drawBox(i: Item): { w: number; h: number } {
+  const pad = (i.size ?? DEFAULTS.draw.size) / 2;
+  let w = 0,
+    h = 0;
+  for (const p of i.points ?? []) {
+    w = Math.max(w, p[0]);
+    h = Math.max(h, p[1]);
+  }
+  return { w: Math.max(1, w + pad), h: Math.max(1, h + pad) };
+}
 
 /** Short random ids, a few characters each, so Claude reads fewer tokens. */
 export function newId(taken?: Set<string>) {
@@ -275,9 +301,9 @@ export function cleanItem(raw: RawItem, taken: Set<string>): Item {
     num("y");
   }
   const t = raw.type;
-  if (t === "frame" || t === "sticky" || t === "shape" || t === "text") num("w", 1);
-  if (t === "frame" || t === "sticky" || t === "shape") num("h", 1);
-  if (t !== "frame" && raw.text) out.text = raw.text;
+  if (t === "frame" || t === "sticky" || t === "shape" || t === "text" || t === "draw") num("w", 1);
+  if (t === "frame" || t === "sticky" || t === "shape" || t === "draw") num("h", 1);
+  if (t !== "frame" && t !== "draw" && raw.text) out.text = raw.text;
   if (t === "text") {
     if (raw.style && raw.style !== DEFAULTS.text.style) out.style = raw.style;
     if (raw.weight === "medium") out.weight = "medium";
@@ -300,6 +326,18 @@ export function cleanItem(raw: RawItem, taken: Set<string>): Item {
       if (raw.align && raw.align !== "start") out.align = raw.align;
     }
     out.children = (raw.children ?? []).map((c) => cleanItem(c, taken));
+  }
+  if (t === "draw") {
+    if (raw.color && raw.color !== "default" && raw.color !== "none" && raw.color !== "muted") out.color = raw.color;
+    if (typeof raw.size === "number" && Number.isFinite(raw.size) && raw.size !== DEFAULTS.draw.size) out.size = Math.min(100, Math.max(0.5, round(raw.size)));
+    out.points = (Array.isArray(raw.points) ? raw.points : [])
+      .filter((p) => Array.isArray(p) && p.length >= 2 && p.slice(0, 3).every((n) => typeof n === "number" && Number.isFinite(n)))
+      .slice(0, 5000)
+      .map((p) => (p.length >= 3 ? [round(p[0]), round(p[1]), Math.round(Math.min(1, Math.max(0, p[2])) * 100) / 100] : [round(p[0]), round(p[1])]));
+    // Without a size of its own, it's drawn at its natural size.
+    const natural = drawBox(out);
+    if (out.w !== undefined && Math.abs(out.w - round(natural.w)) < 0.2) delete out.w;
+    if (out.h !== undefined && Math.abs(out.h - round(natural.h)) < 0.2) delete out.h;
   }
   if (t === "arrow") {
     const point = (p: unknown) =>
@@ -333,19 +371,19 @@ export function arrowEndsOk(a: RawItem, ids: Set<string>): boolean {
   return from && to && !(a.from && a.from === a.to);
 }
 
-/** Tidies a whole board, and drops arrows whose ends are missing. */
+/** Tidies a whole board, and drops arrows whose ends are missing and drawings with no points. */
 export function cleanBoard(items: RawItem[]): Item[] {
   const taken = new Set<string>();
   const cleaned = items.map((i) => cleanItem(i, taken));
   const ids = allIds(cleaned);
   const keep = (list: Item[]): Item[] =>
     list
-      .filter((i) => i.type !== "arrow" || arrowEndsOk(i, ids))
+      .filter((i) => (i.type !== "arrow" || arrowEndsOk(i, ids)) && (i.type !== "draw" || !!i.points?.length))
       .map((i) => (i.children ? { ...i, children: keep(i.children) } : i));
   return keep(cleaned);
 }
 
-const KEY_ORDER = ["id", "type", "name", "text", "x", "y", "w", "h", "style", "weight", "shape", "color", "layout", "gap", "padX", "padY", "align", "from", "fromSide", "start", "to", "toSide", "end", "head", "elbow", "bends", "children"];
+const KEY_ORDER = ["id", "type", "name", "text", "x", "y", "w", "h", "style", "weight", "shape", "color", "layout", "gap", "padX", "padY", "align", "from", "fromSide", "start", "to", "toSide", "end", "head", "elbow", "bends", "size", "points", "children"];
 
 /** The same items with their fields in a readable order (the database sorts them by length). */
 export function orderKeys(items: Item[]): Item[] {
@@ -379,6 +417,10 @@ export function roughBounds(items: Item[]) {
 export function sizeGuess(i: Item): { w: number; h: number } {
   if (i.type === "sticky") return { w: i.w ?? DEFAULTS.sticky.w, h: i.h ?? DEFAULTS.sticky.h };
   if (i.type === "shape") return { w: i.w ?? DEFAULTS.shape.w, h: i.h ?? DEFAULTS.shape.h };
+  if (i.type === "draw") {
+    const n = drawBox(i);
+    return { w: i.w ?? n.w, h: i.h ?? n.h };
+  }
   if (i.type === "text") {
     const s = TEXT_STYLES[i.style ?? DEFAULTS.text.style];
     const lines = (i.text ?? "").split("\n");
