@@ -192,6 +192,9 @@ function WorkCard({
           className="field-sizing-content min-h-24 resize-none bg-transparent font-mono text-meta leading-relaxed outline-none placeholder:text-disabled"
         />
       </label>
+      {entry.needsUpdate === "story changed" && (
+        <p className="border-t px-4 py-2 text-meta text-muted-foreground">The story changed since this was written. Claude updates it at the next portfolio sync.</p>
+      )}
       {entry.missing.length > 0 && (
         <p className="border-t px-4 py-2 text-meta text-danger">Needs {listOf(entry.missing)} before it can be published.</p>
       )}
