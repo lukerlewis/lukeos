@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { FocusChart } from "@/components/focus/focus-chart";
+import { FocusStats } from "@/components/focus/focus-stats";
 import { Page } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
 import { SegmentedLinks } from "@/components/ui/segmented-links";
@@ -16,7 +16,7 @@ const ranges = [7, 30] as const;
 export default async function FocusStatsPage({ searchParams }: PageProps<"/focus/stats">) {
   const { range } = await searchParams;
   const days = range === "30" ? 30 : 7;
-  const { today, days: list, totalSeconds } = await focusByDay(days);
+  const { today, timeZone, days: list, totalSeconds, sessions } = await focusByDay(days);
 
   return (
     <Page
@@ -40,9 +40,7 @@ export default async function FocusStatsPage({ searchParams }: PageProps<"/focus
           <Stat label={`${days} days`} value={duration(totalSeconds)} />
           <Stat label="Average" value={duration(totalSeconds / days)} />
         </div>
-        <Card className="px-4 pt-5 pb-4">
-          <FocusChart days={list} today={today} />
-        </Card>
+        <FocusStats key={days} days={list} today={today} timeZone={timeZone} sessions={sessions} />
       </div>
     </Page>
   );

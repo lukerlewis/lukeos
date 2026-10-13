@@ -503,6 +503,10 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       const label = typeof input.label === "string" && input.label.trim() ? ` on ${quote(input.label.trim())}` : "";
       return { summary: `Logged ${minutes} min of focus${label}` };
     }
+    case "update_focus_session":
+      return { summary: "Edited a focus session" };
+    case "delete_focus_session":
+      return { summary: "Deleted a focus session" };
     case "update_focus_settings":
       return { summary: "Changed your pomodoro lengths" };
     case "set_dashboard_view":
