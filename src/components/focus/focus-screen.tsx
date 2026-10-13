@@ -22,8 +22,6 @@ import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { phaseLabel, useFocus } from "./focus-provider";
 
-const HOUR = 3_600_000;
-
 export function FocusScreen() {
   const focus = useFocus();
   if (!focus) return null;
@@ -74,8 +72,8 @@ export function FocusScreen() {
         </>
       ) : (
         <>
-          {/* The ring goes round once an hour. */}
-          <Ring progress={(stopwatch.elapsedMs % HOUR) / HOUR}>
+          {/* No ring: the timer just keeps counting. */}
+          <Ring>
             <span className="text-control text-muted-foreground">Timer</span>
             <Face ms={stopwatch.elapsedMs} />
             <span className="h-2" aria-hidden />
@@ -125,7 +123,8 @@ function Ring({
   soft,
   children,
 }: {
-  progress: number;
+  /** Left out: no ring, just what's inside, at the same size. */
+  progress?: number;
   soft?: boolean;
   children: React.ReactNode;
 }) {
@@ -134,35 +133,37 @@ function Ring({
   const p = Math.min(1, Math.max(0, progress || 0));
   return (
     <div className="relative aspect-square w-[min(300px,80vw)] md:w-[340px]">
-      <svg
-        viewBox="0 0 100 100"
-        className="absolute inset-0 size-full -rotate-90"
-        aria-hidden
-      >
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
-          fill="none"
-          strokeWidth="3"
-          className="stroke-muted"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
-          fill="none"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray={length}
-          strokeDashoffset={length * (1 - p)}
-          className={cn(
-            "transition-[stroke-dashoffset] duration-300 ease-linear motion-reduce:transition-none",
-            soft ? "stroke-muted-foreground" : "stroke-foreground",
-            p === 0 && "opacity-0",
-          )}
-        />
-      </svg>
+      {progress !== undefined && (
+        <svg
+          viewBox="0 0 100 100"
+          className="absolute inset-0 size-full -rotate-90"
+          aria-hidden
+        >
+          <circle
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            strokeWidth="3"
+            className="stroke-muted"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray={length}
+            strokeDashoffset={length * (1 - p)}
+            className={cn(
+              "transition-[stroke-dashoffset] duration-300 ease-linear motion-reduce:transition-none",
+              soft ? "stroke-muted-foreground" : "stroke-foreground",
+              p === 0 && "opacity-0",
+            )}
+          />
+        </svg>
+      )}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
         {children}
       </div>
