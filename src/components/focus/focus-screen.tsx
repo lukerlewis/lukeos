@@ -85,7 +85,8 @@ export function FocusScreen() {
             onStart={focus.startStopwatch}
             onPause={focus.pauseStopwatch}
             onSkip={
-              stopwatch.running || stopwatch.elapsedMs > 0
+              // Done shows once the timer is paused, like the rest of the screen.
+              !stopwatch.running && stopwatch.elapsedMs > 0
                 ? () => {
                     // Done ends the session: its time is saved and the timer clears.
                     const ms = stopwatch.elapsedMs;
@@ -96,7 +97,11 @@ export function FocusScreen() {
             }
             skipLabel="Done"
             skipIcon={<Check />}
-            noReset
+            onReset={
+              stopwatch.running || stopwatch.elapsedMs > 0
+                ? focus.discardStopwatch
+                : undefined
+            }
           />
         </>
       )}
@@ -189,7 +194,6 @@ function Controls({
   onSkip,
   skipLabel,
   skipIcon = <SkipForward />,
-  noReset,
 }: {
   running: boolean;
   onStart: () => void;
@@ -198,26 +202,20 @@ function Controls({
   onSkip?: () => void;
   skipLabel?: string;
   skipIcon?: React.ReactNode;
-  /** No Restart button (the regular timer ends with Done instead). */
-  noReset?: boolean;
 }) {
   const side = "size-14 rounded-full";
   return (
     <div className="flex items-center gap-6">
-      {noReset ? (
-        <span className={side} aria-hidden />
-      ) : (
-        <Button
-          variant="outline"
-          size="icon"
-          className={side}
-          aria-label="Restart"
-          disabled={!onReset}
-          onClick={onReset}
-        >
-          <RotateCcw />
-        </Button>
-      )}
+      <Button
+        variant="outline"
+        size="icon"
+        className={side}
+        aria-label="Restart"
+        disabled={!onReset}
+        onClick={onReset}
+      >
+        <RotateCcw />
+      </Button>
       <Button
         className="size-[76px] rounded-full [&_svg]:size-7"
         aria-label={running ? "Pause" : "Start"}
