@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
@@ -7,30 +8,41 @@ import { DocumentEditor } from "@/components/documents/document-editor";
 import { documentFont } from "@/components/documents/fonts";
 import { listComments } from "@/core/comments";
 import { OperationError } from "@/core/define";
-import { getDocument } from "@/core/documents";
+import { getDocument, makeNewDocument } from "@/core/documents";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { COMMENTABLE } from "@/lib/comments";
 
-async function load(id: string) {
+type Query = Record<string, string | string[] | undefined>;
+const one = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
+
+/**
+ * A brand-new document (?new=1) is made here, with the id the browser picked, so it
+ * opens in one trip. Shared by the title and the page, so it's only made once.
+ */
+const load = cache(async (id: string, create: string | null) => {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   try {
+    if (create) await makeNewDocument(id, JSON.parse(create));
     return await getDocument(id);
   } catch (err) {
     if (err instanceof OperationError) notFound();
     throw err;
   }
-}
+});
 
-export async function generateMetadata({ params }: PageProps<"/documents/[id]">): Promise<Metadata> {
-  const doc = await load((await params).id);
+/** What a new document starts with, from its address. Only read when it's ?new=1. */
+const createFrom = (query: Query) => (query.new === "1" ? JSON.stringify({ title: one(query.title), projectId: one(query.project) }) : null);
+
+export async function generateMetadata({ params, searchParams }: PageProps<"/documents/[id]">): Promise<Metadata> {
+  const doc = await load((await params).id, createFrom(await searchParams));
   return { title: `${doc.title || "Untitled"} · LukeOS` };
 }
 
 export default async function DocumentPage({ params, searchParams }: PageProps<"/documents/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const [doc, projects, threads, timeZone] = await Promise.all([
-    load(id),
+    load(id, createFrom(query)),
     listProjects(),
     listComments({ targetType: "document", targetId: id }),
     getTimeZone(),
