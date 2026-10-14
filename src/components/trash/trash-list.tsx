@@ -8,7 +8,7 @@ import { ClaudeBadge } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { TrashItem } from "@/core/trash";
 import { daysBetween, dayAndMonth, todayIn } from "@/lib/dates";
-import { hide, inBackground, unhide, useHidden } from "@/lib/background";
+import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 
 function plural(n: number, word: string) {
@@ -37,7 +37,8 @@ export function TrashList({ items, timeZone }: { items: TrashItem[]; timeZone: s
 
 function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
   const router = useRouter();
-  const gone = useHidden(item.id);
+  // The row leaves at once (just here: the thing itself should show again elsewhere once restored).
+  const [gone, setGone] = useState(false);
   const Icon =
     item.type === "project"
       ? Folder
@@ -79,7 +80,7 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
 
   // The row leaves at once; the toast comes when the server's done.
   function restore() {
-    hide(item.id);
+    setGone(true);
     void inBackground(() => op("restore_from_trash", { type: item.type, id: item.id }), {
       then: ({ movedOutOfProject }) => {
         showToast(
@@ -89,7 +90,7 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
         );
         router.refresh();
       },
-      failed: () => unhide(item.id),
+      failed: () => setGone(false),
     });
   }
 
@@ -97,13 +98,13 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
     const extra =
       containsText && containsText.length > 0 ? ` and the ${containsText.join(" and ")} in it` : "";
     if (!confirm(`Delete "${item.title}"${extra} for good? This can't be undone.`)) return;
-    hide(item.id);
+    setGone(true);
     void inBackground(() => op("delete_forever", { type: item.type, id: item.id }), {
       then: () => {
         showToast(`${kind} deleted for good`);
         router.refresh();
       },
-      failed: () => unhide(item.id),
+      failed: () => setGone(false),
     });
   }
 

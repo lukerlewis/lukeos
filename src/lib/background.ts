@@ -39,9 +39,12 @@ const notify = () => {
 export function hide(...ids: string[]) {
   ids.forEach((id) => hidden.add(id));
   notify();
+  // By then the screen has the server's fresh list, so anything brought back later (from Trash, say) shows again.
+  setTimeout(() => unhide(...ids.filter((id) => hidden.has(id))), 15000);
 }
 
 export function unhide(...ids: string[]) {
+  if (!ids.length) return;
   ids.forEach((id) => hidden.delete(id));
   notify();
 }

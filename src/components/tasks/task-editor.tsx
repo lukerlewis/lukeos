@@ -137,7 +137,8 @@ export function TaskEditorProvider({
           today={today}
           timeZone={timeZone}
           onClose={() => setDraft(null)}
-          onFailed={(d) => setDraft(d)}
+          // Unless another task is open by then: the toast has already said it didn't save.
+          onFailed={(d) => setDraft((open) => open ?? d)}
         />
       )}
     </EditorContext>
