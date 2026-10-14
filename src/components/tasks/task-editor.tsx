@@ -190,8 +190,62 @@ function TaskDialog({
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }));
 
+  const fields = {
+    title: parsed.title,
+    projectId: draft.projectId,
+    status: draft.status,
+    bucket,
+    dueDate,
+    priority: draft.priority,
+    effort: draft.effort,
+    repeat,
+    notes: draft.notes.trim() || null,
+  };
+
+  // An existing task saves itself a moment after each change; there's no Save button.
+  const fieldsKey = JSON.stringify(fields);
+  const savedKey = useRef(fieldsKey);
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saving = useRef<Promise<void>>(Promise.resolve());
+  const changed = useRef(false);
+
+  const flush = useCallback(() => {
+    if (pending.current) clearTimeout(pending.current);
+    pending.current = null;
+    const id = initial.id;
+    const key = fieldsKey;
+    if (!id || key === savedKey.current) return saving.current;
+    savedKey.current = key;
+    changed.current = true;
+    const { title, ...rest } = JSON.parse(key) as typeof fields;
+    // A cleared name isn't saved; the rest still is.
+    const update = title ? { id, title, ...rest } : { id, ...rest };
+    saving.current = saving.current
+      .then(() => op("update_task", update))
+      .then(
+        () => setError(null),
+        (err) => setError((err as Error).message),
+      );
+    return saving.current;
+  }, [initial.id, fieldsKey]);
+
+  useEffect(() => {
+    if (isNew || fieldsKey === savedKey.current) return;
+    pending.current = setTimeout(flush, 600);
+    return () => {
+      if (pending.current) clearTimeout(pending.current);
+    };
+  }, [isNew, fieldsKey, flush]);
+
+  async function close() {
+    await flush();
+    if (changed.current) router.refresh();
+    onClose();
+  }
+
   async function save(e?: React.FormEvent) {
     e?.preventDefault();
+    if (!isNew) return close();
     if (!parsed.title) {
       setError("Give the task a name.");
       titleRef.current?.focus();
@@ -199,20 +253,8 @@ function TaskDialog({
     }
     setBusy(true);
     setError(null);
-    const fields = {
-      title: parsed.title,
-      projectId: draft.projectId,
-      status: draft.status,
-      bucket,
-      dueDate,
-      priority: draft.priority,
-      effort: draft.effort,
-      repeat,
-      notes: draft.notes.trim() || null,
-    };
     try {
-      if (draft.id) await op("update_task", { id: draft.id, ...fields });
-      else await op("create_task", fields);
+      await op("create_task", fields);
       router.refresh();
       onClose();
     } catch (err) {
@@ -223,6 +265,7 @@ function TaskDialog({
 
   async function remove() {
     if (!draft.id) return;
+    if (pending.current) clearTimeout(pending.current);
     setBusy(true);
     try {
       await op("delete_task", { id: draft.id });
@@ -243,7 +286,7 @@ function TaskDialog({
   ];
 
   return (
-    <Dialog label={isNew ? "New task" : "Task"} onClose={onClose} focusFirstField={isNew}>
+    <Dialog label={isNew ? "New task" : "Task"} onClose={close} focusFirstField={isNew}>
       <form onSubmit={save} className="flex flex-col">
         <div className="flex items-start gap-2 px-5 pt-4">
           <div className="grid min-w-0 grow">
@@ -274,7 +317,7 @@ function TaskDialog({
               )}
             />
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="-mr-2 shrink-0">
+          <Button variant="ghost" size="icon" onClick={close} aria-label="Close" className="-mr-2 shrink-0">
             <X className="size-5" aria-hidden />
           </Button>
         </div>
@@ -422,12 +465,20 @@ function TaskDialog({
             </Button>
           )}
           <div className="grow" />
-          <Button variant="outline" onClick={onClose} disabled={busy}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={busy}>
-            {busy ? "Saving…" : isNew ? "Add task" : "Save"}
-          </Button>
+          {isNew ? (
+            <>
+              <Button variant="outline" onClick={onClose} disabled={busy}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={busy}>
+                {busy ? "Adding…" : "Add task"}
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={close} disabled={busy}>
+              Done
+            </Button>
+          )}
         </div>
       </form>
     </Dialog>
