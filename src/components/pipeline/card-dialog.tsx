@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Comments } from "@/components/comments/comments";
-import { showToast, showTrashedToast } from "@/components/shell/toast";
+import { showToast } from "@/components/shell/toast";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { StatusIcon } from "@/components/tasks/status-circle";
 import { useTaskEditor } from "@/components/tasks/task-editor";
@@ -15,6 +15,7 @@ import type { Comment } from "@/core/comments";
 import type { AttachableType, Card, PipelineColumn } from "@/core/pipeline";
 import { friendlyDay } from "@/lib/dates";
 import { isInbox } from "@/lib/inbox";
+import { inBackground, trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
@@ -31,12 +32,18 @@ export function CardDialog({
   timeZone,
   today,
   onClose,
+  inBoard,
+  onReview,
 }: {
   initial: CardDraft;
   columns: PipelineColumn[];
   timeZone: string;
   today: string;
   onClose: () => void;
+  /** Saves behind the board, moving the card there at once if `change` says where. */
+  inBoard: (change: { id: string; to: string | null } | null, request: () => Promise<unknown>) => void;
+  /** Approve or Reject, done the same way as on the board. */
+  onReview: (id: string, action: "approve" | "reject") => void;
 }) {
   const router = useRouter();
   const isNew = !initial.id;
@@ -44,7 +51,6 @@ export function CardDialog({
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [columnId, setColumnId] = useState(initial.id ? "" : (initial.columnId ?? columns[0]?.id ?? ""));
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
 
@@ -67,13 +73,17 @@ export function CardDialog({
 
   useEffect(() => load(true), [load]);
 
+  /** Shows a change inside the card at once, before it's saved. */
+  const edit = useCallback((change: (card: Card) => Card) => setCard((c) => c && change(c)), []);
+
   /** Reloads the card and the board behind it after a change inside the card. */
   const changed = useCallback(() => {
     load();
     router.refresh();
   }, [load, router]);
 
-  async function save(e?: React.FormEvent) {
+  // Everything below closes the card at once and saves behind the board.
+  function save(e?: React.FormEvent) {
     e?.preventDefault();
     const name = title.trim();
     if (!name) {
@@ -81,59 +91,37 @@ export function CardDialog({
       titleRef.current?.focus();
       return;
     }
-    setBusy(true);
-    setError(null);
-    try {
-      if (card) {
-        await op("update_card", {
-          id: card.id,
-          title: name,
-          notes: notes.trim() || null,
-          ...(columnId && columnId !== card.columnId && { column: columnId }),
-        });
-      } else if (initial.projectId) {
-        await op("create_card", { projectId: initial.projectId, title: name, notes: notes.trim() || undefined, column: columnId || undefined });
-      }
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
+    if (card) {
+      const moved = !!columnId && columnId !== card.columnId;
+      const fields = { id: card.id, title: name, notes: notes.trim() || null, ...(moved && { column: columnId }) };
+      if (name !== card.title || fields.notes !== (card.notes ?? null) || moved)
+        inBoard(moved ? { id: card.id, to: columnId } : null, () => op("update_card", fields));
+    } else if (initial.projectId) {
+      const fields = { projectId: initial.projectId, title: name, notes: notes.trim() || undefined, column: columnId || undefined };
+      inBoard(null, () =>
+        op("create_card", fields).then(
+          () => showToast("Card added"),
+          (err: Error) => {
+            throw new Error(`Couldn't add “${name}”. ${err.message}`);
+          },
+        ),
+      );
     }
+    onClose();
   }
 
-  async function remove() {
+  function remove() {
     if (!card) return;
-    setBusy(true);
-    try {
-      await op("delete_card", { id: card.id });
-      showTrashedToast("card", card.id);
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
-    }
+    const id = card.id;
+    trashInBackground("card", id, () => op("delete_card", { id }), { then: () => router.refresh() });
+    onClose();
   }
 
   /** Inbox: Approve moves the idea on to the next column; Reject hides it (Claude keeps it). */
-  async function review(action: "approve" | "reject") {
+  function review(action: "approve" | "reject") {
     if (!card) return;
-    setBusy(true);
-    try {
-      await op(action === "approve" ? "approve_card" : "reject_card", { id: card.id });
-      if (action === "reject") {
-        showToast("Idea rejected", async () => {
-          await op("unreject_card", { id: card.id });
-          router.refresh();
-        });
-      }
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
-    }
+    onReview(card.id, action);
+    onClose();
   }
 
   const loading = !isNew && !card;
@@ -166,12 +154,12 @@ export function CardDialog({
 
         {inInbox && (
           <div className="flex gap-2 px-5 pt-3">
-            <Button variant="outline" onClick={() => review("reject")} disabled={busy} className="grow">
+            <Button variant="outline" onClick={() => review("reject")} className="grow">
               <X className="size-4" aria-hidden />
               Reject idea
             </Button>
             {canApprove && (
-              <Button onClick={() => review("approve")} disabled={busy} className="grow">
+              <Button onClick={() => review("approve")} className="grow">
                 <Check className="size-4" aria-hidden />
                 Approve idea
               </Button>
@@ -210,8 +198,8 @@ export function CardDialog({
 
           {card && (
             <>
-              <CardTasks card={card} today={today} onChanged={changed} />
-              <CardAttachments card={card} onChanged={changed} />
+              <CardTasks card={card} today={today} onChanged={changed} onEdit={edit} />
+              <CardAttachments card={card} onChanged={changed} onEdit={edit} />
               <CardComments cardId={card.id} timeZone={timeZone} />
               <p className="text-meta text-muted-foreground">
                 <MadeByLabel madeBy={card.madeBy} createdAt={card.createdAt} />
@@ -228,17 +216,17 @@ export function CardDialog({
 
         <div className="sticky bottom-0 flex items-center gap-2 border-t bg-card px-5 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
           {card && (
-            <Button variant="danger" onClick={remove} disabled={busy} className="-ml-2">
+            <Button variant="danger" onClick={remove} className="-ml-2">
               <Trash2 className="size-4" aria-hidden />
               Delete
             </Button>
           )}
           <div className="grow" />
-          <Button variant="outline" onClick={onClose} disabled={busy}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={busy || loading}>
-            {busy ? "Saving…" : isNew ? "Add card" : "Save"}
+          <Button type="submit" disabled={loading}>
+            {isNew ? "Add card" : "Save"}
           </Button>
         </div>
       </form>
@@ -268,42 +256,55 @@ function Section({ title, action, children }: { title: string; action?: React.Re
 }
 
 /** The tasks inside the card. They're normal tasks, so they show in Luke's lists too. */
-function CardTasks({ card, today, onChanged }: { card: Card; today: string; onChanged: () => void }) {
+function CardTasks({
+  card,
+  today,
+  onChanged,
+  onEdit,
+}: {
+  card: Card;
+  today: string;
+  onChanged: () => void;
+  onEdit: (change: (card: Card) => Card) => void;
+}) {
   const { openTask } = useTaskEditor();
   const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
 
-  async function act(request: () => Promise<unknown>) {
-    setBusy(true);
-    try {
-      await request();
-      onChanged();
-    } catch (err) {
-      alert((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function add() {
+  function add() {
     const title = text.trim();
     if (!title) return;
     setText("");
-    await act(() => op("create_task", { title, cardId: card.id }));
+    // Shown at once (faded) until it's saved and the card reloads.
+    const ghost = { ...card.tasks[0], id: `pending-${Date.now()}`, title, status: "todo", dueDate: null } as Card["tasks"][number];
+    onEdit((c) => ({ ...c, tasks: [...c.tasks, ghost] }));
+    act(() => op("create_task", { title, cardId: card.id }), onChanged, "Couldn't add the task.");
   }
+
+  const toggle = (t: Card["tasks"][number]) => {
+    const status = t.status === "done" ? "todo" : "done";
+    onEdit((c) => ({ ...c, tasks: c.tasks.map((x) => (x.id === t.id ? { ...x, status } : x)) }));
+    act(() => op("update_task", { id: t.id, status }), onChanged);
+  };
+
+  const takeOut = (t: Card["tasks"][number]) => {
+    onEdit((c) => ({ ...c, tasks: c.tasks.filter((x) => x.id !== t.id) }));
+    act(() => op("detach_from_card", { cardId: card.id, type: "task", id: t.id }), onChanged);
+  };
 
   return (
     <Section title="Tasks">
       {card.tasks.length > 0 && (
         <ul className="flex flex-col rounded-lg border">
           {card.tasks.map((t) => (
-            <li key={t.id} className="flex items-center gap-1 border-b px-1.5 last:border-b-0">
+            <li
+              key={t.id}
+              className={cn("flex items-center gap-1 border-b px-1.5 last:border-b-0", t.id.startsWith("pending-") && "pointer-events-none opacity-60")}
+            >
               <button
                 type="button"
-                onClick={() => act(() => op("update_task", { id: t.id, status: t.status === "done" ? "todo" : "done" }))}
+                onClick={() => toggle(t)}
                 aria-label={t.status === "done" ? `Mark "${t.title}" as not done` : `Mark "${t.title}" as done`}
                 className="flex size-10 shrink-0 items-center justify-center"
-                disabled={busy}
               >
                 <StatusIcon status={t.status} className="size-[22px] md:size-[18px]" />
               </button>
@@ -323,10 +324,9 @@ function CardTasks({ card, today, onChanged }: { card: Card; today: string; onCh
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => act(() => op("detach_from_card", { cardId: card.id, type: "task", id: t.id }))}
+                onClick={() => takeOut(t)}
                 aria-label={`Take "${t.title}" out of this card`}
                 title="Take out of this card"
-                disabled={busy}
               >
                 <X className="size-4" aria-hidden />
               </Button>
@@ -341,14 +341,14 @@ function CardTasks({ card, today, onChanged }: { card: Card; today: string; onCh
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              void add();
+              add();
             }
           }}
           placeholder="Add a task"
           aria-label="Add a task to this card"
           className={cn(field, "h-9 py-0")}
         />
-        <Button variant="outline" onClick={add} disabled={busy || !text.trim()}>
+        <Button variant="outline" onClick={add} disabled={!text.trim()}>
           Add
         </Button>
       </div>
@@ -366,21 +366,21 @@ const kinds: { type: AttachableType; label: string; icon: React.ComponentType<{ 
 const iconOf = (type: AttachableType) => kinds.find((k) => k.type === type)!.icon;
 
 /** Documents, notes, Inspiration items and Work archive entries on the card, and a picker to add more (tasks too). */
-function CardAttachments({ card, onChanged }: { card: Card; onChanged: () => void }) {
+function CardAttachments({
+  card,
+  onChanged,
+  onEdit,
+}: {
+  card: Card;
+  onChanged: () => void;
+  onEdit: (change: (card: Card) => Card) => void;
+}) {
   const [picking, setPicking] = useState(false);
-  const [busy, setBusy] = useState(false);
 
-  async function act(request: () => Promise<unknown>) {
-    setBusy(true);
-    try {
-      await request();
-      onChanged();
-    } catch (err) {
-      alert((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const takeOff = (a: Card["attachments"][number]) => {
+    onEdit((c) => ({ ...c, attachments: c.attachments.filter((x) => !(x.type === a.type && x.id === a.id)) }));
+    act(() => op("detach_from_card", { cardId: card.id, type: a.type, id: a.id }), onChanged);
+  };
 
   return (
     <Section
@@ -407,10 +407,9 @@ function CardAttachments({ card, onChanged }: { card: Card; onChanged: () => voi
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => act(() => op("detach_from_card", { cardId: card.id, type: a.type, id: a.id }))}
+                  onClick={() => takeOff(a)}
                   aria-label={`Take "${a.title}" off this card`}
                   title="Take off this card"
-                  disabled={busy}
                 >
                   <X className="size-4" aria-hidden />
                 </Button>
@@ -423,7 +422,11 @@ function CardAttachments({ card, onChanged }: { card: Card; onChanged: () => voi
       {picking && (
         <Picker
           card={card}
-          onPick={(type, id) => act(() => op("attach_to_card", { cardId: card.id, type, id }))}
+          onPick={(type, found) => {
+            if (type !== "task" && !card.attachments.some((a) => a.type === type && a.id === found.id))
+              onEdit((c) => ({ ...c, attachments: [...c.attachments, { type, id: found.id, title: found.title, href: "#" }] }));
+            act(() => op("attach_to_card", { cardId: card.id, type, id: found.id }), onChanged);
+          }}
           onDone={() => setPicking(false)}
         />
       )}
@@ -431,10 +434,18 @@ function CardAttachments({ card, onChanged }: { card: Card; onChanged: () => voi
   );
 }
 
+/**
+ * Saves a change made inside the card behind the scenes. The card reloads
+ * afterwards either way, so a change that didn't save goes back.
+ */
+function act(request: () => Promise<unknown>, reload: () => void, failure?: string) {
+  void inBackground(request, { then: reload, failed: reload, failure });
+}
+
 type Found = { id: string; title: string; detail?: string };
 
 /** Finds something to attach: the latest of a kind, or what matches the words typed. */
-function Picker({ card, onPick, onDone }: { card: Card; onPick: (type: AttachableType, id: string) => Promise<void>; onDone: () => void }) {
+function Picker({ card, onPick, onDone }: { card: Card; onPick: (type: AttachableType, found: Found) => void; onDone: () => void }) {
   const [type, setType] = useState<AttachableType>("document");
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<Found[] | null>(null);
@@ -511,8 +522,8 @@ function Picker({ card, onPick, onDone }: { card: Card; onPick: (type: Attachabl
               <li key={r.id}>
                 <button
                   type="button"
-                  onClick={async () => {
-                    await onPick(type, r.id);
+                  onClick={() => {
+                    onPick(type, r);
                     onDone();
                   }}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-control hover:bg-muted"

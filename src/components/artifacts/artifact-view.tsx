@@ -4,12 +4,13 @@ import { FilePlus2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MarkdownView } from "@/components/notes/markdown-view";
-import { showToast, showTrashedToast } from "@/components/shell/toast";
+import { showToast } from "@/components/shell/toast";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Artifact } from "@/core/artifacts";
 import { COMMENTABLE } from "@/lib/comments";
 import { shortDate } from "@/lib/dates";
+import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
@@ -47,15 +48,13 @@ export function ArtifactView({ artifact, projects }: { artifact: Artifact; proje
     }
   }
 
-  async function remove() {
-    try {
-      await op("delete_artifact", { id: artifact.id });
-      showTrashedToast("artifact", artifact.id, () => router.push(base));
-      router.push(projectId ? `/projects/${projectId}?view=notes` : "/agents");
-      router.refresh();
-    } catch (err) {
-      alert((err as Error).message);
-    }
+  // Goes back at once; the delete (and any last save) finishes behind the scenes.
+  function remove() {
+    trashInBackground("artifact", artifact.id, () => op("delete_artifact", { id: artifact.id }), {
+      then: () => router.refresh(),
+      onUndone: () => router.push(base),
+    });
+    router.push(projectId ? `/projects/${projectId}?view=notes` : "/agents");
   }
 
   return (

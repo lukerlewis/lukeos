@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ProjectDialog } from "@/components/projects/project-dialog";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import { Button } from "@/components/ui/button";
-import { op } from "@/lib/ops-client";
+import { newDocumentHref, newNoteHref } from "@/lib/new-items";
 import { cn } from "@/lib/utils";
 
 type Open = null | "menu" | "project";
@@ -38,26 +38,12 @@ export function AddNew() {
     {
       label: "Note",
       icon: NotebookPen,
-      run: async () => {
-        try {
-          const note = await op("create_note", {});
-          router.push(`/notes/${note.id}?new=1`);
-        } catch (err) {
-          alert((err as Error).message);
-        }
-      },
+      run: () => router.push(newNoteHref()),
     },
     {
       label: "Document",
       icon: FilePlus,
-      run: async () => {
-        try {
-          const doc = await op("create_document", { title: "" });
-          router.push(`/documents/${doc.id}?new=1`);
-        } catch (err) {
-          alert((err as Error).message);
-        }
-      },
+      run: () => router.push(newDocumentHref()),
     },
     { label: "Project", icon: FolderPlus, run: () => setOpen("project") },
   ];

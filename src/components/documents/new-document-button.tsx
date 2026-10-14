@@ -2,28 +2,15 @@
 
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { Fab } from "@/components/shell/fab";
 import { Button } from "@/components/ui/button";
-import { op } from "@/lib/ops-client";
+import { newDocumentHref } from "@/lib/new-items";
 
-/** Makes an empty document (in a project, if given) and opens it. */
+/** Opens an empty document (in a project, if given) at once; its page makes it as it opens. */
 function useNewDocument(projectId?: string | null) {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
-
-  async function create() {
-    setBusy(true);
-    try {
-      const doc = await op("create_document", { title: "", projectId: projectId ?? null });
-      router.push(`/documents/${doc.id}?new=1`);
-    } catch (err) {
-      alert((err as Error).message);
-      setBusy(false);
-    }
-  }
-
-  return { create, busy };
+  const create = () => router.push(newDocumentHref({ projectId }));
+  return create;
 }
 
 export function NewDocumentButton({
@@ -35,9 +22,9 @@ export function NewDocumentButton({
   variant?: "primary" | "outline";
   className?: string;
 }) {
-  const { create, busy } = useNewDocument(projectId);
+  const create = useNewDocument(projectId);
   return (
-    <Button size="sm" variant={variant} onClick={create} disabled={busy} className={className}>
+    <Button size="sm" variant={variant} onClick={create} className={className}>
       <Plus className="size-4" aria-hidden />
       New document
     </Button>
@@ -46,6 +33,6 @@ export function NewDocumentButton({
 
 /** The round "+" on phones. */
 export function NewDocumentFab() {
-  const { create, busy } = useNewDocument();
-  return <Fab label="New document" onClick={create} disabled={busy} />;
+  const create = useNewDocument();
+  return <Fab label="New document" onClick={create} />;
 }

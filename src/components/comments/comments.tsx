@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { Comment, CommentTarget } from "@/core/comments";
 import type { MadeBy } from "@/core/define";
 import { COMMENTABLE } from "@/lib/comments";
+import { hide, inBackground, unhide, useWithoutHidden } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,22 @@ function usePickedWords() {
     return () => document.removeEventListener("selectionchange", onChange);
   }, []);
   return [picked, setPicked] as const;
+}
+
+type CommentEntry = Omit<Comment, "replies" | "target">;
+
+/** A comment Luke just wrote, shown at once while it saves. `saved` once the server has it. */
+function draftEntry(body: string, quote: string | null): CommentEntry & { saved?: boolean } {
+  return {
+    id: `pending-${Date.now()}`,
+    version: null,
+    quote,
+    body,
+    resolved: false,
+    resolvedAt: null,
+    madeBy: { kind: "user", name: null, routine: null },
+    createdAt: new Date(),
+  };
 }
 
 const who = (m: MadeBy) => (m.kind === "user" ? "You" : m.routine ? `${m.name ?? "Claude"} (${m.routine})` : (m.name ?? "Claude"));
@@ -57,25 +74,56 @@ export function Comments({
   const changed = onChanged ?? (() => router.refresh());
   const [picked, setPicked] = usePickedWords();
   const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
-  const open = threads.filter((t) => !t.resolved);
-  const resolved = threads.filter((t) => t.resolved);
-
-  async function add() {
-    const body = text.trim();
-    if (!body || busy) return;
-    setBusy(true);
-    try {
-      await op("add_comment", { targetType: target.type, targetId: target.id, body, quote: picked ?? undefined });
-      setText("");
-      setPicked(null);
-      changed();
-    } catch (err) {
-      alert((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
+  // New comments and resolve/reopen show at once; the server catches up behind them.
+  const [pending, setPending] = useState<(Comment & { saved?: boolean })[]>([]);
+  const [flipped, setFlipped] = useState<Record<string, boolean>>({});
+  const [seen, setSeen] = useState(threads);
+  if (seen !== threads) {
+    // Fresh comments from the server: anything saved is in them now.
+    setSeen(threads);
+    setPending((p) => p.filter((c) => !c.saved));
+    setFlipped({});
   }
+  const all = useWithoutHidden([...threads, ...pending]).map((t) => (t.id in flipped ? { ...t, resolved: flipped[t.id] } : t));
+  const open = all.filter((t) => !t.resolved);
+  const resolved = all.filter((t) => t.resolved);
+
+  function add() {
+    const body = text.trim();
+    if (!body) return;
+    const quote = picked;
+    const entry = { ...draftEntry(body, quote), target: { ...target, title: "" }, replies: [] };
+    setPending((p) => [...p, entry]);
+    setText("");
+    setPicked(null);
+    void inBackground(() => op("add_comment", { targetType: target.type, targetId: target.id, body, quote: quote ?? undefined }), {
+      then: () => {
+        setPending((p) => p.map((c) => (c.id === entry.id ? { ...c, saved: true } : c)));
+        changed();
+      },
+      failed: () => {
+        setPending((p) => p.filter((c) => c.id !== entry.id));
+        setText((t) => t || body);
+      },
+      failure: "Couldn't save the comment.",
+    });
+  }
+
+  function resolve(thread: Comment, next: boolean) {
+    setFlipped((f) => ({ ...f, [thread.id]: next }));
+    void inBackground(() => op("resolve_comment", { id: thread.id, resolved: next }), {
+      then: changed,
+      failed: () => setFlipped((f) => Object.fromEntries(Object.entries(f).filter(([id]) => id !== thread.id))),
+    });
+  }
+
+  function remove(thread: Comment) {
+    if (!confirm("Delete this comment and its replies?")) return;
+    hide(thread.id);
+    void inBackground(() => op("delete_comment", { id: thread.id }), { then: changed, failed: () => unhide(thread.id) });
+  }
+
+  const threadProps = { timeZone, currentVersion, onChanged: changed, onResolve: resolve, onRemove: remove };
 
   return (
     <section aria-label="Comments" className="flex flex-col gap-3">
@@ -100,7 +148,7 @@ export function Comments({
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
-              void add();
+              add();
             }
           }}
           placeholder={target.type === "note" || target.type === "entry" ? "Leave a comment…" : "Leave a comment for Claude…"}
@@ -108,15 +156,15 @@ export function Comments({
           rows={2}
           className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-lg border bg-background px-3 py-2 text-body outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40 md:text-meta"
         />
-        <Button size="sm" className="self-end" onClick={() => void add()} disabled={busy || !text.trim()}>
-          {busy ? "Saving…" : "Comment"}
+        <Button size="sm" className="self-end" onClick={add} disabled={!text.trim()}>
+          Comment
         </Button>
       </div>
 
       {open.map((t) => (
-        <Thread key={t.id} thread={t} timeZone={timeZone} currentVersion={currentVersion} onChanged={changed} />
+        <Thread key={t.id} thread={t} {...threadProps} />
       ))}
-      {threads.length === 0 && <p className="px-1 text-meta text-muted-foreground">No comments yet.</p>}
+      {all.length === 0 && <p className="px-1 text-meta text-muted-foreground">No comments yet.</p>}
       {resolved.length > 0 && (
         <details className="group flex flex-col gap-3">
           <summary className="cursor-pointer px-1 text-meta text-muted-foreground select-none hover:text-foreground">
@@ -124,7 +172,7 @@ export function Comments({
           </summary>
           <div className="mt-3 flex flex-col gap-3">
             {resolved.map((t) => (
-              <Thread key={t.id} thread={t} timeZone={timeZone} currentVersion={currentVersion} onChanged={changed} />
+              <Thread key={t.id} thread={t} {...threadProps} />
             ))}
           </div>
         </details>
@@ -138,41 +186,56 @@ function Thread({
   timeZone,
   currentVersion,
   onChanged,
+  onResolve,
+  onRemove,
 }: {
-  thread: Comment;
+  thread: Comment & { saved?: boolean };
   timeZone: string;
   currentVersion?: number;
   onChanged: () => void;
+  onResolve: (thread: Comment, resolved: boolean) => void;
+  onRemove: (thread: Comment) => void;
 }) {
   const [replying, setReplying] = useState(false);
   const [reply, setReply] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  async function run(action: () => Promise<unknown>) {
-    setBusy(true);
-    try {
-      await action();
-      onChanged();
-    } catch (err) {
-      alert((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
+  // A comment still on its way to the server can't be answered or changed yet.
+  const saving = thread.id.startsWith("pending-");
+  const [pending, setPending] = useState<(CommentEntry & { saved?: boolean })[]>([]);
+  const [seen, setSeen] = useState(thread.replies);
+  if (seen !== thread.replies) {
+    setSeen(thread.replies);
+    setPending((p) => p.filter((r) => !r.saved));
   }
 
-  const send = () =>
-    reply.trim() &&
-    run(async () => {
-      await op("reply_to_comment", { id: thread.id, body: reply.trim() });
-      setReply("");
-      setReplying(false);
+  function send() {
+    const body = reply.trim();
+    if (!body) return;
+    const entry = draftEntry(body, null);
+    setPending((p) => [...p, entry]);
+    setReply("");
+    setReplying(false);
+    void inBackground(() => op("reply_to_comment", { id: thread.id, body }), {
+      then: () => {
+        setPending((p) => p.map((r) => (r.id === entry.id ? { ...r, saved: true } : r)));
+        onChanged();
+      },
+      failed: () => {
+        setPending((p) => p.filter((r) => r.id !== entry.id));
+        setReply((t) => t || body);
+        setReplying(true);
+      },
+      failure: "Couldn't save the reply.",
     });
+  }
 
   return (
-    <article className={cn("flex flex-col gap-2 rounded-xl border bg-card p-3 border-stroke", thread.resolved && "opacity-70")}>
+    <article
+      aria-busy={saving}
+      className={cn("flex flex-col gap-2 rounded-xl border bg-card p-3 border-stroke", (thread.resolved || saving) && "opacity-70")}
+    >
       <Entry entry={thread} timeZone={timeZone} currentVersion={currentVersion} />
-      {thread.replies.map((r) => (
-        <div key={r.id} className="ml-3 border-l pl-3">
+      {[...thread.replies, ...pending].map((r) => (
+        <div key={r.id} className={cn("ml-3 border-l pl-3", r.id.startsWith("pending-") && "opacity-60")}>
           <Entry entry={r} timeZone={timeZone} currentVersion={currentVersion} />
         </div>
       ))}
@@ -184,7 +247,7 @@ function Thread({
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
-              void send();
+              send();
             }
           }}
           placeholder="Reply…"
@@ -196,7 +259,7 @@ function Thread({
       <div className="flex flex-wrap items-center gap-1">
         {replying ? (
           <>
-            <Button size="sm" onClick={send} disabled={busy || !reply.trim()}>
+            <Button size="sm" onClick={send} disabled={!reply.trim()}>
               Reply
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setReplying(false)}>
@@ -204,7 +267,7 @@ function Thread({
             </Button>
           </>
         ) : (
-          <Button size="sm" variant="ghost" className="-ml-2" onClick={() => setReplying(true)} disabled={busy}>
+          <Button size="sm" variant="ghost" className="-ml-2" onClick={() => setReplying(true)} disabled={saving}>
             Reply
           </Button>
         )}
@@ -212,8 +275,8 @@ function Thread({
         <Button
           size="sm"
           variant="ghost"
-          disabled={busy}
-          onClick={() => run(() => op("resolve_comment", { id: thread.id, resolved: !thread.resolved }))}
+          disabled={saving}
+          onClick={() => onResolve(thread, !thread.resolved)}
         >
           {thread.resolved ? <RotateCcw className="size-3.5" aria-hidden /> : <Check className="size-3.5" aria-hidden />}
           {thread.resolved ? "Reopen" : "Resolve"}
@@ -223,8 +286,8 @@ function Thread({
           variant="ghost"
           aria-label="Delete comment"
           title="Delete comment"
-          disabled={busy}
-          onClick={() => confirm("Delete this comment and its replies?") && run(() => op("delete_comment", { id: thread.id }))}
+          disabled={saving}
+          onClick={() => onRemove(thread)}
           className="-mr-2"
         >
           <Trash2 className="size-3.5" aria-hidden />

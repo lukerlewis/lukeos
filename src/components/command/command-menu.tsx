@@ -36,6 +36,7 @@ import { useTaskEditor } from "@/components/tasks/task-editor";
 import { Dialog } from "@/components/ui/dialog";
 import type { SearchResult } from "@/core/search";
 import { friendlyDay } from "@/lib/dates";
+import { newDocumentHref, newNoteHref } from "@/lib/new-items";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
@@ -211,10 +212,7 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
         label: q ? `New note “${q}”` : "New note",
         icon: NotebookPen,
         keywords: "add page document write",
-        run: async () => {
-          const note = await op("create_note", { title: q || undefined });
-          go(`/notes/${note.id}?new=1`);
-        },
+        run: async () => go(newNoteHref({ title: q || undefined })),
       },
       {
         key: "new-document",
@@ -222,10 +220,7 @@ export function CommandPanel({ onDone, autoFocus = true }: { onDone?: () => void
         label: q ? `New document “${q}”` : "New document",
         icon: FilePlus,
         keywords: "add page doc write pdf print letter",
-        run: async () => {
-          const doc = await op("create_document", { title: q || "" });
-          go(`/documents/${doc.id}?new=1`);
-        },
+        run: async () => go(newDocumentHref({ title: q || undefined })),
       },
       {
         key: "new-project",

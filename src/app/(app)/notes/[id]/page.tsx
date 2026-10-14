@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
@@ -8,32 +9,44 @@ import { HtmlNote } from "@/components/notes/html-note";
 import { NoteEditor } from "@/components/notes/note-editor";
 import { OperationError } from "@/core/define";
 import { listFolders } from "@/core/folders";
-import { getNote } from "@/core/notes";
+import { getNote, makeNewNote } from "@/core/notes";
 import { listComments } from "@/core/comments";
 import { doneMentionIds } from "@/core/mentions";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { COMMENTABLE } from "@/lib/comments";
 
-async function load(id: string) {
+type Query = Record<string, string | string[] | undefined>;
+const one = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
+
+/**
+ * A brand-new note (?new=1) is made here, with the id the browser picked, so it
+ * opens in one trip. Shared by the title and the page, so it's only made once.
+ */
+const load = cache(async (id: string, create: string | null) => {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   try {
+    if (create) await makeNewNote(id, JSON.parse(create));
     return await getNote(id);
   } catch (err) {
     if (err instanceof OperationError) notFound();
     throw err;
   }
-}
+});
 
-export async function generateMetadata({ params }: PageProps<"/notes/[id]">): Promise<Metadata> {
-  const note = await load((await params).id);
+/** What a new note starts with, from its address. Only read when it's ?new=1. */
+const createFrom = (query: Query) =>
+  query.new === "1" ? JSON.stringify({ title: one(query.title), projectId: one(query.project), folderId: one(query.folder) }) : null;
+
+export async function generateMetadata({ params, searchParams }: PageProps<"/notes/[id]">): Promise<Metadata> {
+  const note = await load((await params).id, createFrom(await searchParams));
   return { title: `${note.title || "Untitled"} · LukeOS` };
 }
 
 export default async function NotePage({ params, searchParams }: PageProps<"/notes/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const [note, projects, folders, threads, timeZone, done] = await Promise.all([
-    load(id),
+    load(id, createFrom(query)),
     listProjects(),
     listFolders(),
     listComments({ targetType: "note", targetId: id }),

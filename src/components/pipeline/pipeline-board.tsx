@@ -27,6 +27,7 @@ import { Card as Panel } from "@/components/ui/card";
 import type { CardSummary, PipelineColumn } from "@/core/pipeline";
 import { isInbox } from "@/lib/inbox";
 import { op } from "@/lib/ops-client";
+import { useWithoutHidden } from "@/lib/background";
 import { cn } from "@/lib/utils";
 import { CardDialog, type CardDraft } from "./card-dialog";
 import { ColumnsDialog } from "./columns-dialog";
@@ -65,12 +66,14 @@ export function PipelineBoard({
   const [, startTransition] = useTransition();
   const cards = columns.flatMap((c) => c.cards.map((card) => ({ ...card, columnId: c.id })));
   // to: null hides the card (a rejected idea).
-  const [items, move] = useOptimistic(cards, (state, { id, to }: { id: string; to: string | null }) => {
+  const [all, move] = useOptimistic(cards, (state, { id, to }: { id: string; to: string | null }) => {
     const card = state.find((c) => c.id === id);
     if (!card) return state;
     const rest = state.filter((c) => c.id !== id);
     return to ? [...rest, { ...card, columnId: to }] : rest;
   });
+  // A card just deleted leaves at once.
+  const items = useWithoutHidden(all);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CardDraft | null>(openCardId ? { id: openCardId } : null);
   const [editingColumns, setEditingColumns] = useState(false);
@@ -150,6 +153,24 @@ export function PipelineBoard({
     onDragCancel: ({ active }) => `Cancelled. "${titleOf(active.id)}" put back.`,
   };
 
+  /** A change made inside an open card: the board shows it at once and saves behind it. */
+  function inBoard(change: { id: string; to: string | null } | null, request: () => Promise<unknown>) {
+    startTransition(async () => {
+      if (change) move(change);
+      try {
+        await request();
+      } catch (err) {
+        showToast((err as Error).message);
+      }
+      router.refresh();
+    });
+  }
+
+  function review(id: string, action: "approve" | "reject") {
+    const card = items.find((c) => c.id === id);
+    if (card) return action === "approve" ? approve(card) : reject(card);
+  }
+
   const newCard = (columnId?: string) => setDraft({ projectId, columnId: columnId ?? list[0]?.id });
 
   return (
@@ -228,6 +249,8 @@ export function PipelineBoard({
           timeZone={timeZone}
           today={today}
           onClose={() => setDraft(null)}
+          inBoard={inBoard}
+          onReview={review}
         />
       )}
       {editingColumns && (

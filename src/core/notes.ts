@@ -134,6 +134,28 @@ export async function listNotes(
   }));
 }
 
+/**
+ * Makes the empty note Luke just asked for, with the id his browser picked, so the
+ * new note's page can open straight away and create it in the same trip.
+ * Does nothing if a note with that id is already there.
+ */
+export async function makeNewNote(id: string, place: { title?: string; projectId?: string | null; folderId?: string | null }) {
+  if (place.projectId) await assertProject(place.projectId);
+  if (place.folderId) await assertFolder(place.folderId);
+  await db
+    .insert(notes)
+    .values({
+      id,
+      title: place.title ?? "",
+      content: "",
+      format: "markdown",
+      projectId: place.projectId ?? null,
+      folderId: place.folderId ?? null,
+      ...madeByColumns({ kind: "user" }),
+    })
+    .onConflictDoNothing();
+}
+
 export async function getNote(id: string): Promise<Note> {
   const [row] = await db
     .select({ note: notes, project: projects, folder: { id: noteFolders.id, name: noteFolders.name } })

@@ -87,6 +87,19 @@ export async function listDocuments(
   }));
 }
 
+/**
+ * Makes the empty document Luke just asked for, with the id his browser picked, so
+ * the new document's page can open straight away and create it in the same trip.
+ * Does nothing if a document with that id is already there.
+ */
+export async function makeNewDocument(id: string, place: { title?: string; projectId?: string | null }) {
+  if (place.projectId) await assertProject(place.projectId);
+  await db
+    .insert(documents)
+    .values({ id, title: place.title ?? "", content: "", projectId: place.projectId ?? null, ...madeByColumns({ kind: "user" }) })
+    .onConflictDoNothing();
+}
+
 export async function getDocument(id: string): Promise<Document> {
   const [[row], seen] = await Promise.all([
     db

@@ -3,7 +3,8 @@
 import { Check, CheckSquare, LayoutDashboard, MessageSquare, RotateCcw, Sparkles, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useState } from "react";
+import { Fragment, useOptimistic, useTransition } from "react";
+import { showToast } from "@/components/shell/toast";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import { Button } from "@/components/ui/button";
 import type { Mention } from "@/core/mentions";
@@ -67,19 +68,20 @@ export function MentionList({ mentions, when }: { mentions: Mention[]; when: Rec
 function Row({ mention: m, when }: { mention: Mention; when: string }) {
   const router = useRouter();
   const { openTask } = useTaskEditor();
-  const [busy, setBusy] = useState(false);
-  const done = m.status === "done";
+  // Ticks at once; the server catches up behind it.
+  const [done, setOptimisticDone] = useOptimistic(m.status === "done");
+  const [, startTransition] = useTransition();
 
-  async function setDone(resolved: boolean) {
-    setBusy(true);
-    try {
-      await op("resolve_mention", { id: m.id, resolved });
+  function setDone(resolved: boolean) {
+    startTransition(async () => {
+      setOptimisticDone(resolved);
+      try {
+        await op("resolve_mention", { id: m.id, resolved });
+      } catch (err) {
+        showToast((err as Error).message);
+      }
       router.refresh();
-    } catch (err) {
-      alert((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
+    });
   }
 
   const Icon = m.where.type === "task" ? CheckSquare : m.where.type === "comment" ? MessageSquare : m.where.scratchPad ? LayoutDashboard : NotebookPen;
@@ -127,7 +129,7 @@ function Row({ mention: m, when }: { mention: Mention; when: string }) {
         <span>{when}</span>
         {m.removed && <span>Tag since removed</span>}
         <span className="grow" />
-        <Button variant="ghost" size="sm" className="-mr-2" disabled={busy} onClick={() => setDone(!done)}>
+        <Button variant="ghost" size="sm" className="-mr-2" onClick={() => setDone(!done)}>
           {done ? <RotateCcw className="size-3.5" aria-hidden /> : <Check className="size-3.5" aria-hidden />}
           {done ? "Reopen" : "Mark done"}
         </Button>

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { momentIn, timeIn, todayIn } from "@/lib/dates";
 import { duration } from "@/lib/focus";
+import { hide, inBackground, unhide, useWithoutHidden } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { FocusChart } from "./focus-chart";
 
@@ -41,7 +42,7 @@ export function FocusStats({
   const [picked, setPicked] = useState(days.length - 1);
   const [editing, setEditing] = useState<FocusSession | null>(null);
   const day = days[picked]?.date;
-  const shown = sessions.filter((s) => s.day === day);
+  const shown = useWithoutHidden(sessions).filter((s) => s.day === day);
   const at = new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit" });
 
   return (
@@ -83,54 +84,48 @@ function SessionDialog({ session, timeZone, onClose }: { session: FocusSession; 
   const ended = new Date(session.endedAt);
   const [minutes, setMinutes] = useState(String(Math.max(1, Math.round(session.seconds / 60))));
   const [start, setStart] = useState(timeIn(timeZone, started));
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const save = async (e: React.FormEvent) => {
+  // Saving and deleting close the box at once; the change saves behind it.
+  const save = (e: React.FormEvent) => {
     e.preventDefault();
     const seconds = Math.round(Number(minutes) * 60);
     // A new start time moves the whole session; more minutes than it spanned stretch its end.
     const startedAt = momentIn(timeZone, todayIn(timeZone, started), start);
     let endedAt = new Date(ended.getTime() + startedAt.getTime() - started.getTime());
     if (endedAt.getTime() < startedAt.getTime() + seconds * 1000) endedAt = new Date(startedAt.getTime() + seconds * 1000);
-    setBusy(true);
     setError(null);
-    try {
-      await op("update_focus_session", {
-        id: session.id,
-        seconds,
-        startedAt: startedAt.toISOString(),
-        endedAt: endedAt.toISOString(),
-      });
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't save.");
-      setBusy(false);
-    }
+    onClose();
+    void inBackground(
+      () => op("update_focus_session", { id: session.id, seconds, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString() }),
+      { then: () => router.refresh(), failure: "Couldn't save the session." },
+    );
   };
 
-  const remove = async () => {
-    setBusy(true);
-    try {
-      await op("delete_focus_session", { id: session.id });
-      router.refresh();
-      onClose();
-      showToast("Session deleted", async () => {
-        await op("log_focus_session", {
-          id: session.id,
-          kind: session.kind,
-          seconds: session.seconds,
-          startedAt: started.toISOString(),
-          endedAt: ended.toISOString(),
-          label: session.label ?? undefined,
-        });
-        router.refresh();
+  const remove = () => {
+    hide(session.id);
+    onClose();
+    const deleting = op("delete_focus_session", { id: session.id });
+    showToast("Session deleted", async () => {
+      await deleting;
+      await op("log_focus_session", {
+        id: session.id,
+        kind: session.kind,
+        seconds: session.seconds,
+        startedAt: started.toISOString(),
+        endedAt: ended.toISOString(),
+        label: session.label ?? undefined,
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't delete.");
-      setBusy(false);
-    }
+      unhide(session.id);
+      router.refresh();
+    });
+    deleting.then(
+      () => router.refresh(),
+      (err: Error) => {
+        unhide(session.id);
+        showToast(err.message);
+      },
+    );
   };
 
   return (
@@ -164,14 +159,14 @@ function SessionDialog({ session, timeZone, onClose }: { session: FocusSession; 
         </div>
         {error && <p className="text-meta text-danger">{error}</p>}
         <div className="flex items-center gap-2">
-          <Button variant="danger" onClick={remove} disabled={busy} className="-ml-2">
+          <Button variant="danger" onClick={remove} className="-ml-2">
             Delete
           </Button>
           <span className="grow" />
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={busy}>
+          <Button type="submit">
             Save
           </Button>
         </div>
