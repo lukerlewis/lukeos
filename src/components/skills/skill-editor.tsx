@@ -10,7 +10,6 @@ import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Toolbar, useAutosave } from "@/components/notes/note-editor";
-import { showTrashedToast } from "@/components/shell/toast";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Skill } from "@/core/skills";
@@ -42,6 +41,7 @@ const kinds = {
     long: "Long file. Consider splitting rarely needed detail into another context file.",
   },
 } as const;
+import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
@@ -110,16 +110,13 @@ export function SkillEditor({ skill, autoFocus, kind = "skill" }: { skill: Skill
     if (autoFocus) titleRef.current?.focus();
   }, [autoFocus]);
 
-  async function remove() {
-    await flush();
-    try {
-      await op(k.remove, { id: skill.id });
-      showTrashedToast(k.type, skill.id, () => router.push(`${k.href}/${skill.id}`));
-      router.push(k.list);
-      router.refresh();
-    } catch (err) {
-      alert((err as Error).message);
-    }
+  // Goes back at once; the delete (and any last save) finishes behind the scenes.
+  function remove() {
+    trashInBackground(k.type, skill.id, () => flush().then(() => op(k.remove, { id: skill.id })), {
+      then: () => router.refresh(),
+      onUndone: () => router.push(`${k.href}/${skill.id}`),
+    });
+    router.push(k.list);
   }
 
   return (

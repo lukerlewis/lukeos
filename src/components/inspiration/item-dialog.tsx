@@ -3,7 +3,8 @@
 import { Download, ExternalLink, FileText, Globe, Play, Sparkles, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { showTrashedToast } from "@/components/shell/toast";
+import { showToast } from "@/components/shell/toast";
+import { trashInBackground } from "@/lib/background";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -41,7 +42,7 @@ function useSave(id: string) {
     try {
       await op("update_inspiration", { id, ...change });
     } catch (err) {
-      alert((err as Error).message);
+      showToast(`Couldn't save the change. ${(err as Error).message}`);
     }
   }
 
@@ -52,9 +53,9 @@ function useSave(id: string) {
     else timer.current = setTimeout(flush, 700);
   }
 
-  async function close() {
-    await flush();
-    if (changed.current) router.refresh();
+  // Doesn't wait: what's left saves behind the scenes after the item closes.
+  function close() {
+    void flush().then(() => changed.current && router.refresh());
   }
 
   useEffect(() => () => void flush(), []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -182,20 +183,17 @@ export function ItemDialog({ item, projects, onClose }: { item: InspirationItem;
   const [tags, setTags] = useState(item.tags);
   const [projectId, setProjectId] = useState(item.project?.id ?? "");
 
-  async function done() {
-    await close();
+  function done() {
+    close();
     onClose();
   }
 
-  async function remove() {
-    try {
-      await op("delete_inspiration", { id: item.id });
-      onClose();
-      router.refresh();
-      showTrashedToast("inspiration", item.id, () => router.refresh());
-    } catch (err) {
-      alert((err as Error).message);
-    }
+  function remove() {
+    trashInBackground("inspiration", item.id, () => op("delete_inspiration", { id: item.id }), {
+      then: () => router.refresh(),
+      onUndone: () => router.refresh(),
+    });
+    onClose();
   }
 
   const field = "w-full bg-transparent text-body outline-none placeholder:text-muted-foreground md:text-sm";

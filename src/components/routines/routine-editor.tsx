@@ -11,11 +11,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Toolbar, useAutosave } from "@/components/notes/note-editor";
-import { showTrashedToast } from "@/components/shell/toast";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import type { Routine } from "@/core/routines";
+import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { checkInsLabel, dayNames, timeLabel, type CheckIns, type Frequency } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -99,16 +99,13 @@ export function RoutineEditor({
     router.refresh();
   }
 
-  async function remove() {
-    await flush();
-    try {
-      await op("delete_routine", { id: routine.id });
-      showTrashedToast("routine", routine.id, () => router.push(`/agents/routines/${routine.id}`));
-      router.push("/agents?view=routines");
-      router.refresh();
-    } catch (err) {
-      alert((err as Error).message);
-    }
+  // Goes back at once; the delete (and any last save) finishes behind the scenes.
+  function remove() {
+    trashInBackground("routine", routine.id, () => flush().then(() => op("delete_routine", { id: routine.id })), {
+      then: () => router.refresh(),
+      onUndone: () => router.push(`/agents/routines/${routine.id}`),
+    });
+    router.push("/agents?view=routines");
   }
 
   // The time picker offers the check-in times, since that's when routines actually run.

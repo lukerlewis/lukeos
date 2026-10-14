@@ -30,10 +30,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { imageFiles, useAutosave } from "@/components/notes/note-editor";
 import { shrinkPhoto } from "@/components/notes/photos";
-import { showTrashedToast } from "@/components/shell/toast";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Document } from "@/core/documents";
+import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
@@ -139,16 +139,13 @@ export function DocumentEditor({
     if (autoFocus) titleRef.current?.focus();
   }, [autoFocus]);
 
-  async function remove() {
-    await flush();
-    try {
-      await op("delete_document", { id: doc.id });
-      showTrashedToast("document", doc.id, () => router.push(`/documents/${doc.id}`));
-      router.push(projectId ? `/projects/${projectId}?view=notes` : "/documents");
-      router.refresh();
-    } catch (err) {
-      alert((err as Error).message);
-    }
+  // Goes back at once; the delete (and any last save) finishes behind the scenes.
+  function remove() {
+    trashInBackground("document", doc.id, () => flush().then(() => op("delete_document", { id: doc.id })), {
+      then: () => router.refresh(),
+      onUndone: () => router.push(`/documents/${doc.id}`),
+    });
+    router.push(projectId ? `/projects/${projectId}?view=notes` : "/documents");
   }
 
   /** Saves, then fetches the PDF. Phones get the share sheet (Save to Files, Print...); computers download it. */

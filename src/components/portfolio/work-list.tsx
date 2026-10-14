@@ -3,7 +3,8 @@
 import { ArrowDown, ArrowUp, ExternalLink, Lock, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
+import { showToast } from "@/components/shell/toast";
 import { EmptyState } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -20,23 +21,38 @@ import { cn } from "@/lib/utils";
  */
 export function PortfolioWorkList({ entries }: { entries: PortfolioEntry[] }) {
   const router = useRouter();
-  const shown = entries.filter((e) => e.onPortfolio);
-  const rest = entries.filter((e) => !e.onPortfolio);
-
-  async function toggle(e: PortfolioEntry, on: boolean) {
-    try {
-      await op("update_portfolio_work", { id: e.id, onPortfolio: on });
-      router.refresh();
-    } catch (err) {
-      alert((err as Error).message);
+  const [, startTransition] = useTransition();
+  // Adding, removing and reordering show at once; the server catches up behind them.
+  const [list, change] = useOptimistic(entries, (state, c: { id: string; on: boolean } | { ids: string[] }) => {
+    if ("ids" in c) {
+      const order = new Map(c.ids.map((id, i) => [id, i]));
+      return [...state].sort((a, b) => (order.get(a.id) ?? Infinity) - (order.get(b.id) ?? Infinity));
     }
+    const entry = state.find((e) => e.id === c.id);
+    return entry ? [...state.filter((e) => e.id !== c.id), { ...entry, onPortfolio: c.on }] : state;
+  });
+  const shown = list.filter((e) => e.onPortfolio);
+  const rest = list.filter((e) => !e.onPortfolio);
+
+  function save(c: Parameters<typeof change>[0], request: () => Promise<unknown>) {
+    startTransition(async () => {
+      change(c);
+      try {
+        await request();
+      } catch (err) {
+        showToast((err as Error).message);
+      }
+      router.refresh();
+    });
   }
 
-  async function move(i: number, by: -1 | 1) {
+  const toggle = (e: PortfolioEntry, on: boolean) =>
+    save({ id: e.id, on }, () => op("update_portfolio_work", { id: e.id, onPortfolio: on }));
+
+  function move(i: number, by: -1 | 1) {
     const ids = shown.map((e) => e.id);
     [ids[i], ids[i + by]] = [ids[i + by], ids[i]];
-    await op("reorder_portfolio_work", { ids });
-    router.refresh();
+    save({ ids }, () => op("reorder_portfolio_work", { ids }));
   }
 
   return (

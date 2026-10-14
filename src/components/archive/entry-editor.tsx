@@ -11,11 +11,11 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { imageFiles, Toolbar, useAutosave } from "@/components/notes/note-editor";
 import { shrinkPhoto } from "@/components/notes/photos";
-import { showTrashedToast } from "@/components/shell/toast";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Entry } from "@/core/archive";
 import { entrySizes, entryStages, sizeLabel, stageLabel, type EntrySize, type EntryStage } from "@/lib/archive";
+import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { EntryFiles } from "./entry-files";
@@ -129,16 +129,13 @@ export function EntryEditor({ entry, autoFocus }: { entry: Entry; autoFocus?: bo
     if (autoFocus) titleRef.current?.focus();
   }, [autoFocus]);
 
-  async function remove() {
-    await flush();
-    try {
-      await op("delete_archive_entry", { id: entry.id });
-      showTrashedToast("entry", entry.id, () => router.push(`/archive/${entry.id}`));
-      router.push("/archive");
-      router.refresh();
-    } catch (err) {
-      alert((err as Error).message);
-    }
+  // Goes back at once; the delete (and any last save) finishes behind the scenes.
+  function remove() {
+    trashInBackground("entry", entry.id, () => flush().then(() => op("delete_archive_entry", { id: entry.id })), {
+      then: () => router.refresh(),
+      onUndone: () => router.push(`/archive/${entry.id}`),
+    });
+    router.push("/archive");
   }
 
   return (

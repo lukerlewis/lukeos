@@ -6,6 +6,7 @@ import type { InspirationItem } from "@/core/inspiration";
 import { fileDetail } from "@/lib/inspiration";
 import { cn } from "@/lib/utils";
 import { ItemDialog } from "./item-dialog";
+import { useWithoutHidden } from "@/lib/background";
 
 type Project = { id: string; name: string; color: string };
 
@@ -57,7 +58,7 @@ function useColumnCount() {
 
 /** Uneven-height tiles, like mymind or Pinterest. Tapping one opens it. */
 export function Gallery({
-  items,
+  items: all,
   projects,
   openItem,
 }: {
@@ -66,6 +67,8 @@ export function Gallery({
   /** Opened from a link (?item=), even if the filters hide it. */
   openItem?: InspirationItem | null;
 }) {
+  // An item just deleted leaves at once.
+  const items = useWithoutHidden(all);
   const { ref, count } = useColumnCount();
   const [open, setOpen] = useState<string | null>(openItem?.id ?? null);
   const current = items.find((i) => i.id === open) ?? (openItem?.id === open ? openItem : null);

@@ -24,7 +24,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Note } from "@/core/notes";
-import { showTrashedToast } from "@/components/shell/toast";
+import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { ClaudeTag } from "./claude-tag";
@@ -224,16 +224,13 @@ export function NoteEditor({
     if (autoFocus) titleRef.current?.focus();
   }, [autoFocus]);
 
-  async function remove() {
-    await flush();
-    try {
-      await op("delete_note", { id: note.id });
-      showTrashedToast("note", note.id, () => router.push(`/notes/${note.id}`));
-      router.push(folderId ? `/notes?folder=${folderId}` : projectId ? `/projects/${projectId}?view=notes` : "/notes");
-      router.refresh();
-    } catch (err) {
-      alert((err as Error).message);
-    }
+  // Goes back at once; the delete (and any last save) finishes behind the scenes.
+  function remove() {
+    trashInBackground("note", note.id, () => flush().then(() => op("delete_note", { id: note.id })), {
+      then: () => router.refresh(),
+      onUndone: () => router.push(`/notes/${note.id}`),
+    });
+    router.push(folderId ? `/notes?folder=${folderId}` : projectId ? `/projects/${projectId}?view=notes` : "/notes");
   }
 
   return (
