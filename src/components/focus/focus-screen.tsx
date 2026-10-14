@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
 import { clock, duration, FOCUS_LIMITS, type FocusSettings } from "@/lib/focus";
+import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { phaseLabel, useFocus } from "./focus-provider";
@@ -352,26 +353,17 @@ function LengthsDialog({
         fields.map(({ key }) => [key, String(settings[key])]),
       ) as Record<keyof FocusSettings, string>,
   );
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const save = async (e: React.FormEvent) => {
+  // Closes at once; the new lengths save behind it.
+  const save = (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError(null);
-    try {
-      await op(
-        "update_focus_settings",
-        Object.fromEntries(
-          fields.map(({ key }) => [key, Number(values[key])]),
-        ) as Partial<FocusSettings>,
-      );
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't save.");
-      setSaving(false);
-    }
+    onClose();
+    void inBackground(
+      () => op("update_focus_settings", Object.fromEntries(fields.map(({ key }) => [key, Number(values[key])])) as Partial<FocusSettings>),
+      { then: () => router.refresh(), failure: "Couldn't save the lengths." },
+    );
   };
 
   return (
@@ -405,7 +397,7 @@ function LengthsDialog({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={saving}>
+          <Button type="submit">
             Save
           </Button>
         </div>

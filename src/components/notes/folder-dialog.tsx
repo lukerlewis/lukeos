@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { showToast } from "@/components/shell/toast";
+import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 
 type Existing = { id: string; name: string; projectId: string | null };
@@ -27,43 +29,42 @@ export function FolderDialog({
   const router = useRouter();
   const [name, setName] = useState(folder?.name ?? "");
   const [projectId, setProjectId] = useState(folder ? folder.projectId : (startProject ?? null));
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function save(e: React.FormEvent) {
+  // The box closes at once and the folder saves behind it.
+  function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return setError("Give the folder a name.");
-    setBusy(true);
-    setError(null);
-    try {
-      if (folder) {
-        await op("update_folder", { id: folder.id, name: name.trim(), projectId });
-      } else {
-        const created = await op("create_folder", { name: name.trim(), projectId });
-        // From Notes, open the new folder; from a project, stay on the project.
-        if (!startProject) router.push(`/notes?folder=${created.id}`);
-      }
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
+    const clean = name.trim();
+    if (!clean) return setError("Give the folder a name.");
+    onClose();
+    if (folder) {
+      if (clean === folder.name && projectId === folder.projectId) return;
+      void inBackground(() => op("update_folder", { id: folder.id, name: clean, projectId }), {
+        then: () => router.refresh(),
+        failure: "Couldn't save the folder.",
+      });
+    } else {
+      void inBackground(() => op("create_folder", { name: clean, projectId }), {
+        then: (created) => {
+          showToast("Folder added");
+          // From Notes, open the new folder; from a project, stay on the project.
+          if (!startProject) router.push(`/notes?folder=${created.id}`);
+          router.refresh();
+        },
+        failure: `Couldn't add “${clean}”.`,
+      });
     }
   }
 
-  async function remove() {
+  function remove() {
     if (!folder) return;
     if (!confirm(`Delete the folder "${folder.name}"? Its notes are kept.`)) return;
-    setBusy(true);
-    try {
-      await op("delete_folder", { id: folder.id });
-      router.push("/notes");
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
-    }
+    router.push("/notes");
+    onClose();
+    void inBackground(() => op("delete_folder", { id: folder.id }), {
+      then: () => router.refresh(),
+      failure: "Couldn't delete the folder.",
+    });
   }
 
   return (
@@ -92,18 +93,16 @@ export function FolderDialog({
         )}
         <div className="-mx-5 flex items-center gap-2 border-t px-5 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
           {folder && (
-            <Button variant="danger" onClick={remove} disabled={busy} className="-ml-2">
+            <Button variant="danger" onClick={remove} className="-ml-2">
               <Trash2 className="size-4" aria-hidden />
               Delete
             </Button>
           )}
           <div className="grow" />
-          <Button variant="outline" onClick={onClose} disabled={busy}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={busy}>
-            {busy ? "Saving…" : folder ? "Save" : "Create folder"}
-          </Button>
+          <Button type="submit">{folder ? "Save" : "Create folder"}</Button>
         </div>
       </form>
     </Dialog>

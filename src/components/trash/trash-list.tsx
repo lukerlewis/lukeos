@@ -8,6 +8,7 @@ import { ClaudeBadge } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { TrashItem } from "@/core/trash";
 import { daysBetween, dayAndMonth, todayIn } from "@/lib/dates";
+import { hide, inBackground, unhide, useHidden } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 
 function plural(n: number, word: string) {
@@ -36,7 +37,7 @@ export function TrashList({ items, timeZone }: { items: TrashItem[]; timeZone: s
 
 function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const gone = useHidden(item.id);
   const Icon =
     item.type === "project"
       ? Folder
@@ -76,36 +77,37 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
       item.contains.artifacts && plural(item.contains.artifacts, "artifact"),
     ].filter(Boolean);
 
-  async function restore() {
-    setBusy(true);
-    try {
-      const { movedOutOfProject } = await op("restore_from_trash", { type: item.type, id: item.id });
-      showToast(
-        movedOutOfProject
-          ? `${kind} restored. Its project is still in Trash, so it's on its own now.`
-          : `${kind} restored`,
-      );
-      router.refresh();
-    } catch (err) {
-      showToast((err as Error).message);
-      setBusy(false);
-    }
+  // The row leaves at once; the toast comes when the server's done.
+  function restore() {
+    hide(item.id);
+    void inBackground(() => op("restore_from_trash", { type: item.type, id: item.id }), {
+      then: ({ movedOutOfProject }) => {
+        showToast(
+          movedOutOfProject
+            ? `${kind} restored. Its project is still in Trash, so it's on its own now.`
+            : `${kind} restored`,
+        );
+        router.refresh();
+      },
+      failed: () => unhide(item.id),
+    });
   }
 
   async function removeForever() {
     const extra =
       containsText && containsText.length > 0 ? ` and the ${containsText.join(" and ")} in it` : "";
     if (!confirm(`Delete "${item.title}"${extra} for good? This can't be undone.`)) return;
-    setBusy(true);
-    try {
-      await op("delete_forever", { type: item.type, id: item.id });
-      showToast(`${kind} deleted for good`);
-      router.refresh();
-    } catch (err) {
-      showToast((err as Error).message);
-      setBusy(false);
-    }
+    hide(item.id);
+    void inBackground(() => op("delete_forever", { type: item.type, id: item.id }), {
+      then: () => {
+        showToast(`${kind} deleted for good`);
+        router.refresh();
+      },
+      failed: () => unhide(item.id),
+    });
   }
+
+  if (gone) return null;
 
   const contains = containsText?.join(", ");
 
@@ -135,11 +137,11 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
         </div>
       </div>
       <div className="flex shrink-0 gap-1 pl-7 sm:pl-0">
-        <Button variant="outline" size="sm" onClick={restore} disabled={busy}>
+        <Button variant="outline" size="sm" onClick={restore}>
           <RotateCcw className="size-3.5" aria-hidden />
           Restore
         </Button>
-        <Button variant="danger" size="sm" onClick={removeForever} disabled={busy} aria-label={`Delete "${item.title}" for good`}>
+        <Button variant="danger" size="sm" onClick={removeForever} aria-label={`Delete "${item.title}" for good`}>
           <Trash2 className="size-3.5" aria-hidden />
           <span className="max-sm:sr-only">Delete for good</span>
         </Button>

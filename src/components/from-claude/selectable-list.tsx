@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ClaudeItem } from "@/core/from-claude";
+import { hide, inBackground, unhide, useWithoutHidden } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { effortLabel, efforts, priorities, priorityLabel, statuses, statusLabel } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
@@ -30,7 +31,7 @@ const dueChoices = [
  * and effort.
  */
 export function SelectableClaudeList({
-  items,
+  items: all,
   when,
   kind,
   projects,
@@ -46,7 +47,8 @@ export function SelectableClaudeList({
   const { openTask } = useTaskEditor();
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [busy, setBusy] = useState(false);
+  // Items just moved to Trash leave at once.
+  const items = useWithoutHidden(all);
 
   const ids = [...picked].filter((id) => items.some((i) => i.id === id));
   const allPicked = ids.length === items.length && items.length > 0;
@@ -65,29 +67,30 @@ export function SelectableClaudeList({
     setPicked(new Set());
   };
 
-  async function run(action: () => Promise<{ count: number }>, message: (n: number) => string, undo?: () => Promise<void>) {
-    setBusy(true);
-    try {
-      const { count } = await action();
-      showToast(message(count), undo);
-      stop();
-      router.refresh();
-    } catch (err) {
-      alert((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
+  // The selection closes at once; the toast comes when the change has saved.
+  function run(action: () => Promise<{ count: number }>, message: (n: number) => string, undo?: () => Promise<void>, onFail?: () => void) {
+    stop();
+    void inBackground(action, {
+      then: ({ count }) => {
+        showToast(message(count), undo);
+        router.refresh();
+      },
+      failed: onFail,
+    });
   }
 
   const trash = () => {
     const chosen = ids;
+    hide(...chosen);
     return run(
       () => (kind === "task" ? op("delete_tasks", { ids: chosen }) : op("delete_artifacts", { ids: chosen })),
       (n) => `${noun(n)} moved to Trash`.replace(/^./, (c) => c.toUpperCase()),
       async () => {
         for (const id of chosen) await op("restore_from_trash", { type: kind, id });
+        unhide(...chosen);
         router.refresh();
       },
+      () => unhide(...chosen),
     );
   };
 
@@ -190,7 +193,7 @@ export function SelectableClaudeList({
 
       {selecting && ids.length > 0 && (
         <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-10 mt-1 flex flex-wrap items-center gap-2 rounded-xl border bg-card p-2 border-stroke md:bottom-4">
-          <Picker label="Project" disabled={busy} onPick={setProject}>
+          <Picker label="Project" onPick={setProject}>
             <option value="none">No project</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
@@ -200,14 +203,14 @@ export function SelectableClaudeList({
           </Picker>
           {kind === "task" && (
             <>
-              <Picker label="Status" disabled={busy} onPick={(v) => setTaskField({ status: v as (typeof statuses)[number] }, `Status set to ${statusLabel[v as (typeof statuses)[number]]}`)}>
+              <Picker label="Status" onPick={(v) => setTaskField({ status: v as (typeof statuses)[number] }, `Status set to ${statusLabel[v as (typeof statuses)[number]]}`)}>
                 {statuses.map((s) => (
                   <option key={s} value={s}>
                     {statusLabel[s]}
                   </option>
                 ))}
               </Picker>
-              <Picker label="Due" disabled={busy} onPick={(v) => moveTasks(v as (typeof dueChoices)[number]["value"])}>
+              <Picker label="Due" onPick={(v) => moveTasks(v as (typeof dueChoices)[number]["value"])}>
                 {dueChoices.map((d) => (
                   <option key={d.value} value={d.value}>
                     {d.label}
@@ -216,7 +219,7 @@ export function SelectableClaudeList({
               </Picker>
               <Picker
                 label="Priority"
-                disabled={busy}
+               
                 onPick={(v) =>
                   setTaskField(
                     { priority: v === "none" ? null : (v as (typeof priorities)[number]) },
@@ -233,7 +236,7 @@ export function SelectableClaudeList({
               </Picker>
               <Picker
                 label="Effort"
-                disabled={busy}
+               
                 onPick={(v) =>
                   setTaskField(
                     { effort: v === "none" ? null : (v as (typeof efforts)[number]) },
@@ -250,7 +253,7 @@ export function SelectableClaudeList({
               </Picker>
             </>
           )}
-          <Button variant="danger" size="sm" className="ml-auto" disabled={busy} onClick={trash}>
+          <Button variant="danger" size="sm" className="ml-auto" onClick={trash}>
             <Trash2 className="size-4" aria-hidden />
             Delete
           </Button>

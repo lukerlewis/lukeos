@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { showTrashedToast } from "@/components/shell/toast";
+import { showToast } from "@/components/shell/toast";
+import { inBackground, trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { projectColorNames, projectColors, type ProjectColor } from "@/lib/project-colors";
 import { cn } from "@/lib/utils";
@@ -16,44 +17,43 @@ export function ProjectDialog({ project, onClose }: { project?: Existing; onClos
   const router = useRouter();
   const [name, setName] = useState(project?.name ?? "");
   const [color, setColor] = useState<ProjectColor | undefined>(project?.color);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function save(e: React.FormEvent) {
+  // The box closes at once and the project saves behind it.
+  function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return setError("Give the project a name.");
-    setBusy(true);
-    setError(null);
-    try {
-      if (project) {
-        await op("update_project", { id: project.id, name: name.trim(), color });
-        router.refresh();
-      } else {
-        const created = await op("create_project", { name: name.trim(), color });
-        router.push(`/projects/${created.id}`);
-        router.refresh();
-      }
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
+    const clean = name.trim();
+    if (!clean) return setError("Give the project a name.");
+    onClose();
+    if (project) {
+      if (clean === project.name && color === project.color) return;
+      void inBackground(() => op("update_project", { id: project.id, name: clean, color }), {
+        then: () => router.refresh(),
+        failure: "Couldn't save the project.",
+      });
+    } else {
+      // A new project opens once it's made, since its page needs it to exist.
+      void inBackground(() => op("create_project", { name: clean, color }), {
+        then: (created) => {
+          showToast("Project added");
+          router.push(`/projects/${created.id}`);
+          router.refresh();
+        },
+        failure: `Couldn't add “${clean}”.`,
+      });
     }
   }
 
-  async function remove() {
+  function remove() {
     if (!project) return;
     if (!confirm(`Move "${project.name}" and all its tasks and notes to Trash? You can get them back within 30 days.`)) return;
-    setBusy(true);
-    try {
-      await op("delete_project", { id: project.id });
-      showTrashedToast("project", project.id, () => router.push(`/projects/${project.id}`));
-      router.push("/projects");
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
-    }
+    const id = project.id;
+    trashInBackground("project", id, () => op("delete_project", { id }), {
+      then: () => router.refresh(),
+      onUndone: () => router.push(`/projects/${id}`),
+    });
+    router.push("/projects");
+    onClose();
   }
 
   return (
@@ -98,18 +98,16 @@ export function ProjectDialog({ project, onClose }: { project?: Existing; onClos
         )}
         <div className="-mx-5 flex items-center gap-2 border-t px-5 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
           {project && (
-            <Button variant="danger" onClick={remove} disabled={busy} className="-ml-2">
+            <Button variant="danger" onClick={remove} className="-ml-2">
               <Trash2 className="size-4" aria-hidden />
               Delete
             </Button>
           )}
           <div className="grow" />
-          <Button variant="outline" onClick={onClose} disabled={busy}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={busy}>
-            {busy ? "Saving…" : project ? "Save" : "Create project"}
-          </Button>
+          <Button type="submit">{project ? "Save" : "Create project"}</Button>
         </div>
       </form>
     </Dialog>
