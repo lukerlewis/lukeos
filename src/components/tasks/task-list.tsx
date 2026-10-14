@@ -8,7 +8,8 @@ import { bucketForDate } from "@/lib/board";
 import { friendlyDay, nextRepeat } from "@/lib/dates";
 import { SmartChips, useSmartEntry } from "./smart-chips";
 import { op } from "@/lib/ops-client";
-import { effortLabel, priorityLabel, repeatLabel, type Bucket, type Status } from "@/lib/task-fields";
+import { useHidden } from "@/lib/background";
+import { bucketLabel, effortLabel, priorityLabel, repeatLabel, type Bucket, type Status } from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
 import { showToast } from "@/components/shell/toast";
 import { ClaudeBadge } from "./made-by";
@@ -47,6 +48,7 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
   const [status, setOptimisticStatus] = useOptimistic(task.status);
   // Counts taps on the circle, so the tick animates afresh each time.
   const [taps, setTaps] = useState(0);
+  const gone = useHidden(task.id);
 
   // Tapping the circle ticks a task off, or un-ticks a done one.
   function toggle() {
@@ -67,6 +69,7 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
     });
   }
 
+  if (gone) return null;
   const done = status === "done";
   const due = task.dueDate;
   const late = !done && due !== null && due < today;
@@ -146,6 +149,8 @@ export function QuickAdd({
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [pending, startTransition] = useTransition();
+  // Tasks just typed, shown at once (faded) until they're saved and the list catches up.
+  const [adding, addOne] = useOptimistic<{ key: number; title: string }[], { key: number; title: string }>([], (s, t) => [...s, t]);
   const smart = useSmartEntry(title, today);
   const { parsed } = smart;
   const due = parsed.dueDate ?? (parsed.repeat ? today : null);
@@ -160,30 +165,48 @@ export function QuickAdd({
     const fields = { title: clean, projectId: projectId ?? null, bucket: list, dueDate: due, repeat: parsed.repeat };
     setTitle("");
     smart.reset();
+    // One going to another list ("tomorrow") doesn't show here, so a toast says where it went.
+    const here = !bucket || list === bucket;
+    if (!here && list) showToast(`Added to ${bucketLabel[list]}`);
     startTransition(async () => {
+      if (here) addOne({ key: Date.now(), title: clean });
       try {
         await op("create_task", fields);
         router.refresh();
       } catch (err) {
-        setTitle(typed);
-        alert((err as Error).message);
+        setTitle((t) => t || typed);
+        showToast(`Couldn't add the task. ${(err as Error).message}`);
       }
     });
   }
 
   return (
-    <form onSubmit={submit} className="flex items-center gap-3 border-t px-4">
-      <Plus className="size-[22px] shrink-0 text-muted-foreground md:size-[18px]" aria-hidden />
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder={placeholder}
-        aria-label={placeholder}
-        aria-busy={pending}
-        enterKeyHint="done"
-        className="h-12 w-0 min-w-0 grow bg-transparent text-body outline-none placeholder:text-muted-foreground md:h-11 md:text-sm"
-      />
-      <SmartChips parsed={parsed} dueDate={due} repeat={parsed.repeat} today={today} onDismiss={smart.dismiss} className="flex-nowrap" />
-    </form>
+    <>
+      {adding.length > 0 && (
+        <ul aria-busy>
+          {adding.map((t) => (
+            <li key={t.key} className="flex items-start gap-3 border-t px-4 opacity-60">
+              <span className="-mx-2 flex size-11 shrink-0 items-center justify-center md:size-10">
+                <StatusIcon status="todo" className="size-[26px] md:size-[18px]" />
+              </span>
+              <span className="min-w-0 grow py-3 text-control font-medium break-words">{t.title}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={submit} className="flex items-center gap-3 border-t px-4">
+        <Plus className="size-[22px] shrink-0 text-muted-foreground md:size-[18px]" aria-hidden />
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={placeholder}
+          aria-label={placeholder}
+          aria-busy={pending}
+          enterKeyHint="done"
+          className="h-12 w-0 min-w-0 grow bg-transparent text-body outline-none placeholder:text-muted-foreground md:h-11 md:text-sm"
+        />
+        <SmartChips parsed={parsed} dueDate={due} repeat={parsed.repeat} today={today} onDismiss={smart.dismiss} className="flex-nowrap" />
+      </form>
+    </>
   );
 }

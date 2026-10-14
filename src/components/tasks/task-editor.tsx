@@ -12,7 +12,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
 import { bucketForDate } from "@/lib/board";
 import { addDays, endOfWeek } from "@/lib/dates";
-import { showTrashedToast } from "@/components/shell/toast";
+import { showToast } from "@/components/shell/toast";
+import { inBackground, trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import {
@@ -48,6 +49,8 @@ type Draft = {
   notes: string;
   madeBy?: Task["madeBy"];
   createdAt?: Task["createdAt"];
+  /** Why the last try to add it failed, when it's reopened to try again. */
+  error?: string;
 };
 
 type Editor = {
@@ -134,6 +137,7 @@ export function TaskEditorProvider({
           today={today}
           timeZone={timeZone}
           onClose={() => setDraft(null)}
+          onFailed={(d) => setDraft(d)}
         />
       )}
     </EditorContext>
@@ -146,17 +150,21 @@ function TaskDialog({
   today,
   timeZone,
   onClose,
+  onFailed,
 }: {
   initial: Draft;
   projects: Project[];
   today: string;
   timeZone: string;
   onClose: () => void;
+  /** A new task that didn't save comes back here, so nothing typed is lost. */
+  onFailed: (draft: Draft) => void;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initial.error ?? null);
+  // Once closed, a save that fails says so in a toast instead.
+  const closed = useRef(false);
   // Adding a task on a phone shows just the name; the rest is behind "Show more".
   const [more, setMore] = useState(!!initial.id);
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -224,7 +232,7 @@ function TaskDialog({
       .then(() => op("update_task", update))
       .then(
         () => setError(null),
-        (err) => setError((err as Error).message),
+        (err) => (closed.current ? showToast(`Couldn't save the task. ${(err as Error).message}`) : setError((err as Error).message)),
       );
     return saving.current;
   }, [initial.id, fieldsKey]);
@@ -237,13 +245,14 @@ function TaskDialog({
     };
   }, [isNew, fieldsKey, flush]);
 
-  async function close() {
-    await flush();
-    if (changed.current) router.refresh();
+  // Closing doesn't wait: the last change finishes saving behind the scenes.
+  function close() {
+    closed.current = true;
+    void flush().then(() => changed.current && router.refresh());
     onClose();
   }
 
-  async function save(e?: React.FormEvent) {
+  function save(e?: React.FormEvent) {
     e?.preventDefault();
     if (!isNew) return close();
     if (!parsed.title) {
@@ -251,31 +260,27 @@ function TaskDialog({
       titleRef.current?.focus();
       return;
     }
-    setBusy(true);
-    setError(null);
-    try {
-      await op("create_task", fields);
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
-    }
+    // The box closes at once; the task saves behind it and a toast says when it's in.
+    const keep = { ...draft, dueDate, repeat, bucket };
+    onClose();
+    void inBackground(() => op("create_task", fields), {
+      then: () => {
+        showToast(bucket === "today" ? "Task added" : `Task added to ${bucketLabel[bucket]}`);
+        router.refresh();
+      },
+      failed: (err) => onFailed({ ...keep, error: `Not added yet: ${err.message}` }),
+      failure: "Couldn't add the task.",
+    });
   }
 
-  async function remove() {
+  function remove() {
     if (!draft.id) return;
     if (pending.current) clearTimeout(pending.current);
-    setBusy(true);
-    try {
-      await op("delete_task", { id: draft.id });
-      showTrashedToast("task", draft.id);
-      router.refresh();
-      onClose();
-    } catch (err) {
-      setError((err as Error).message);
-      setBusy(false);
-    }
+    closed.current = true;
+    const id = draft.id;
+    // Any change still waiting is saved first, so Undo brings back the latest version.
+    trashInBackground("task", id, () => saving.current.then(() => op("delete_task", { id })), { then: () => router.refresh() });
+    onClose();
   }
 
   const dueChoices = [
@@ -459,7 +464,7 @@ function TaskDialog({
 
         <div className="flex items-center gap-2 border-t px-5 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
           {!isNew && (
-            <Button variant="danger" onClick={remove} disabled={busy} className="-ml-2">
+            <Button variant="danger" onClick={remove} className="-ml-2">
               <Trash2 className="size-4" aria-hidden />
               Delete
             </Button>
@@ -467,15 +472,13 @@ function TaskDialog({
           <div className="grow" />
           {isNew ? (
             <>
-              <Button variant="outline" onClick={onClose} disabled={busy}>
+              <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={busy}>
-                {busy ? "Adding…" : "Add task"}
-              </Button>
+              <Button type="submit">Add task</Button>
             </>
           ) : (
-            <Button variant="outline" onClick={close} disabled={busy}>
+            <Button variant="outline" onClick={close}>
               Done
             </Button>
           )}

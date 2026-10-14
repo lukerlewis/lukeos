@@ -27,6 +27,7 @@ import type { Task } from "@/core/tasks";
 import { changesForMove, columnOf, columnsFor, compareTasks, type BoardView, type Column, type ColumnId } from "@/lib/board";
 import { friendlyDay } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
+import { useWithoutHidden } from "@/lib/background";
 import { effortLabel, priorityLabel, repeatLabel, type Bucket, type Status } from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
 
@@ -66,9 +67,11 @@ export function Board({
   const dndId = useId();
   const { newTask } = useTaskEditor();
   const [, startTransition] = useTransition();
-  const [items, applyChange] = useOptimistic(tasks, (state, { id, changes }: Change) =>
+  const [all, applyChange] = useOptimistic(tasks, (state, { id, changes }: Change) =>
     state.map((t) => (t.id === id ? { ...t, ...changes } : t)),
   );
+  // A task just deleted leaves at once.
+  const items = useWithoutHidden(all);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const columns = columnsFor(view, show);
   const dragging = items.find((t) => t.id === draggingId);

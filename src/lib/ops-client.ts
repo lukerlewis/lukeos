@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { OperationName, Operations } from "@/core/operations";
 import { pushUndo } from "./undo";
+import { snapshotReads } from "./undo-snapshot";
 
 type Input<N extends OperationName> = z.input<Operations[N]["input"]>;
 type Output<N extends OperationName> = Awaited<ReturnType<Operations[N]["run"]>>;
@@ -10,15 +11,17 @@ type Output<N extends OperationName> = Awaited<ReturnType<Operations[N]["run"]>>
  * Changes that can be taken back are remembered, so Cmd+Z undoes them.
  */
 export async function op<N extends OperationName>(name: N, input: Input<N>): Promise<Output<N>> {
-  const before = await snapshot(name, input as Record<string, unknown>);
-  const result = await send(name, input);
+  // For a change that overwrites something, the server reads how it looked first, in the same trip.
+  const { result, before } = snapshotReads(name, input as Record<string, unknown>)
+    ? ((await send(name, input, true)) as unknown as { result: Output<N>; before: unknown[] | null })
+    : { result: await send(name, input), before: null };
   const undo = undoFor(name, input as Record<string, unknown>, result, before);
   if (undo) pushUndo(undo.label, undo.run);
   return result;
 }
 
-async function send<N extends OperationName>(name: N, input: Input<N>): Promise<Output<N>> {
-  const res = await fetch(`/api/ops/${name}`, {
+async function send<N extends OperationName>(name: N, input: Input<N>, withBefore = false): Promise<Output<N>> {
+  const res = await fetch(`/api/ops/${name}${withBefore ? "?before=1" : ""}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
@@ -51,32 +54,6 @@ const quote = (title: string | null | undefined) => {
 };
 
 const plural = (n: number, kind: string) => `${n} ${kind}${n === 1 ? "" : "s"}`;
-
-/** Reads what a change is about to overwrite. Undo still works for everything else if this fails. */
-async function snapshot(name: OperationName, input: Record<string, unknown>) {
-  try {
-    switch (name) {
-      case "update_task":
-      case "move_task":
-        return [await send("get_task", { id: input.id as string })];
-      case "update_tasks":
-      case "move_tasks":
-        return await Promise.all((input.ids as string[]).map((id) => send("get_task", { id })));
-      case "update_notes":
-        return await Promise.all((input.ids as string[]).map((id) => send("get_note", { id })));
-      case "update_artifact":
-        return [await send("get_artifact", { id: input.id as string })];
-      case "update_artifacts":
-        return await Promise.all((input.ids as string[]).map((id) => send("get_artifact", { id })));
-      case "update_project":
-        return [await send("get_project", { id: input.id as string })];
-      default:
-        return null;
-    }
-  } catch {
-    return null;
-  }
-}
 
 function undoFor(
   name: OperationName,

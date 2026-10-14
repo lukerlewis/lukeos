@@ -30,9 +30,12 @@ export function showTrashedToast(
   type: "task" | "note" | "artifact" | "document" | "card" | "project" | "skill" | "context" | "routine" | "entry" | "inspiration" | "whiteboard",
   id: string,
   onUndone?: () => void,
+  /** The delete, if it's still on its way: Undo waits for it before bringing the thing back. */
+  deleting?: Promise<unknown>,
 ) {
   const what = { card: "Card", task: "Task", note: "Note", artifact: "Artifact", document: "Document", project: "Project", skill: "Skill", context: "Context file", routine: "Routine", entry: "Entry", inspiration: "Item", whiteboard: "Whiteboard" }[type];
   showToast(`${what} moved to Trash`, async () => {
+    await deleting;
     await op("restore_from_trash", { type, id });
     onUndone?.();
   });
