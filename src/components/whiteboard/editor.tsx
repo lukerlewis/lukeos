@@ -1313,6 +1313,24 @@ export function WhiteboardEditor({
     };
   }, [setCam]);
 
+  // iPad Safari's Scribble (handwriting with the Pencil) swallows every other Pencil stroke
+  // unless the page claims the touches itself. The pointer events above still arrive.
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const claim = (e: TouchEvent) => {
+      if ((e.target as HTMLElement).closest?.("[data-wb-ui], [data-wb-editor]")) return;
+      const stylus = [...e.changedTouches].some((t) => (t as Touch & { touchType?: string }).touchType === "stylus");
+      if (stylus || tool === "pen" || tool === "eraser") e.preventDefault();
+    };
+    view.addEventListener("touchstart", claim, { passive: false });
+    view.addEventListener("touchmove", claim, { passive: false });
+    return () => {
+      view.removeEventListener("touchstart", claim);
+      view.removeEventListener("touchmove", claim);
+    };
+  }, [tool]);
+
   const zoomBy = useCallback(
     (factor: number) => {
       const view = viewRef.current;
