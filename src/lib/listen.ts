@@ -71,3 +71,12 @@ function textFrame(body: Uint8Array) {
   const text = new TextDecoder(label).decode(bytes).replace(/\0+$/g, "").replace(/\0/g, " / ").trim();
   return text || null;
 }
+
+/** Icons Luke can give a playlist (lucide names). */
+export const PLAYLIST_ICONS = [
+  "list-music", "music", "headphones", "mic", "radio", "disc", "guitar", "piano", "drum",
+  "heart", "star", "sparkles", "flame", "zap", "sun", "moon", "coffee", "brain",
+  "book-open", "briefcase", "dumbbell", "footprints", "car", "plane", "leaf", "mountain", "waves", "house",
+] as const;
+
+export type PlaylistIcon = (typeof PLAYLIST_ICONS)[number];

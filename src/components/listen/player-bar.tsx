@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Music, Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, X } from "lucide-react";
+import { Loader2, Music, Pause, Play, Repeat1, RotateCcw, RotateCw, Shuffle, SkipBack, SkipForward, X } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { playClock, SPEEDS } from "@/lib/listen";
@@ -75,6 +75,8 @@ export function PlayerBar() {
           )}
         </div>
         <Scrubber className="grow" />
+        <ShuffleButton />
+        <RepeatButton />
         <SpeedButton />
         <IconButton label="Close the player" onClick={listen.close}>
           <X />
@@ -87,14 +89,33 @@ export function PlayerBar() {
   );
 }
 
-function IconButton({ label, onClick, children, className }: { label: string; onClick: () => void; children: React.ReactNode; className?: string }) {
+function IconButton({
+  label,
+  onClick,
+  children,
+  className,
+  pressed,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+  className?: string;
+  /** For on/off buttons (shuffle, repeat): on shows dark on a grey circle, off stays faded. */
+  pressed?: boolean;
+}) {
   return (
     <button
       type="button"
       aria-label={label}
       title={label}
+      aria-pressed={pressed}
       onClick={onClick}
-      className={cn("press flex size-11 items-center justify-center rounded-full text-subtle-foreground hover:bg-muted [&_svg]:size-5", className)}
+      className={cn(
+        "press flex size-11 items-center justify-center rounded-full text-subtle-foreground hover:bg-muted [&_svg]:size-5",
+        pressed === false && "text-icon",
+        pressed && "bg-selected text-foreground",
+        className,
+      )}
     >
       {children}
     </button>
@@ -156,6 +177,24 @@ function Scrubber({ className }: { className?: string }) {
   );
 }
 
+function ShuffleButton() {
+  const listen = useListen()!;
+  return (
+    <IconButton label={listen.shuffle ? "Shuffle on" : "Shuffle off"} pressed={listen.shuffle} onClick={() => listen.setShuffle(!listen.shuffle)}>
+      <Shuffle />
+    </IconButton>
+  );
+}
+
+function RepeatButton() {
+  const listen = useListen()!;
+  return (
+    <IconButton label={listen.repeat ? "Repeat this track: on" : "Repeat this track: off"} pressed={listen.repeat} onClick={() => listen.setRepeat(!listen.repeat)}>
+      <Repeat1 />
+    </IconButton>
+  );
+}
+
 function SpeedButton() {
   const listen = useListen()!;
   const nextSpeed = SPEEDS[(SPEEDS.indexOf(listen.speed as (typeof SPEEDS)[number]) + 1) % SPEEDS.length];
@@ -205,7 +244,11 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
           </IconButton>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <SpeedButton />
+          <div className="flex items-center gap-2">
+            <SpeedButton />
+            <ShuffleButton />
+            <RepeatButton />
+          </div>
           <button type="button" onClick={() => { listen.close(); onClose(); }} className="press h-9 rounded-lg px-3 text-meta font-medium text-muted-foreground hover:bg-muted">
             Close player
           </button>

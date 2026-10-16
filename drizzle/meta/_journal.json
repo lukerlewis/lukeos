@@ -211,6 +211,13 @@
       "when": 1792155729894,
       "tag": "0029_listen",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792157739120,
+      "tag": "0030_playlist_icons",
+      "breakpoints": true
     }
   ]
 }

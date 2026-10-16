@@ -1,6 +1,9 @@
 "use client";
 
 import { Pencil, Trash2 } from "lucide-react";
+import { PLAYLIST_ICONS, type PlaylistIcon } from "@/lib/listen";
+import { cn } from "@/lib/utils";
+import { PlaylistCover, playlistIcons } from "./playlist-icon";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { showToast } from "@/components/shell/toast";
@@ -8,10 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { op } from "@/lib/ops-client";
 
-/** Rename and delete, beside a playlist's title. */
-export function PlaylistActions({ id, title }: { id: string; title: string }) {
+/** Icon, rename and delete, beside a playlist's title. */
+export function PlaylistActions({ id, title, icon, artworkUrl }: { id: string; title: string; icon: string | null; artworkUrl: string | null }) {
   const router = useRouter();
-  const [open, setOpen] = useState<null | "rename" | "delete">(null);
+  const [open, setOpen] = useState<null | "icon" | "rename" | "delete">(null);
   const [name, setName] = useState(title);
   const [busy, setBusy] = useState(false);
 
@@ -30,6 +33,9 @@ export function PlaylistActions({ id, title }: { id: string; title: string }) {
 
   return (
     <>
+      <button type="button" aria-label="Change icon" title="Change icon" onClick={() => setOpen("icon")} className="press rounded-lg">
+        <PlaylistCover playlist={{ icon, artworkUrl }} className="size-11" />
+      </button>
       <Button variant="ghost" size="icon" aria-label="Rename playlist" onClick={() => setOpen("rename")}>
         <Pencil className="size-5" aria-hidden />
       </Button>
@@ -37,9 +43,43 @@ export function PlaylistActions({ id, title }: { id: string; title: string }) {
         <Trash2 className="size-5" aria-hidden />
       </Button>
       {open && (
-        <Dialog label={open === "rename" ? "Rename playlist" : "Delete playlist"} onClose={() => setOpen(null)} focusFirstField={open === "rename"}>
+        <Dialog
+          label={open === "icon" ? "Playlist icon" : open === "rename" ? "Rename playlist" : "Delete playlist"}
+          onClose={() => setOpen(null)}
+          focusFirstField={open === "rename"}
+        >
           <div className="flex flex-col gap-4 p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
-            {open === "rename" ? (
+            {open === "icon" ? (
+              <>
+                <h2 className="text-heading font-medium">Playlist icon</h2>
+                <div className="grid grid-cols-7 gap-1">
+                  {PLAYLIST_ICONS.map((name: PlaylistIcon) => {
+                    const Icon = playlistIcons[name];
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        aria-label={name.replace("-", " ")}
+                        aria-pressed={icon === name}
+                        disabled={busy}
+                        onClick={() => void run(() => op("update_playlist", { id, icon: name }), () => router.refresh())}
+                        className={cn(
+                          "press flex aspect-square items-center justify-center rounded-lg text-subtle-foreground hover:bg-muted",
+                          icon === name && "bg-selected text-foreground",
+                        )}
+                      >
+                        <Icon className="size-5" aria-hidden />
+                      </button>
+                    );
+                  })}
+                </div>
+                {icon && (
+                  <Button variant="outline" disabled={busy} onClick={() => void run(() => op("update_playlist", { id, icon: null }), () => router.refresh())}>
+                    Use artwork instead
+                  </Button>
+                )}
+              </>
+            ) : open === "rename" ? (
               <form
                 className="flex flex-col gap-3"
                 onSubmit={(e) => {

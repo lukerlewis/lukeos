@@ -771,6 +771,8 @@ export const listenEpisodes = pgTable(
 export const listenPlaylists = pgTable("listen_playlists", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull().default(""),
+  /** One of PLAYLIST_ICONS (src/lib/listen.ts), picked by Luke. Empty shows the first item's artwork. */
+  icon: text("icon"),
   createdByKind: text("created_by_kind").notNull().default("user"),
   createdByName: text("created_by_name"),
   createdByRoutine: text("created_by_routine"),

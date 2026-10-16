@@ -1,0 +1,1 @@
+ALTER TABLE "listen_playlists" ADD COLUMN "icon" text;
