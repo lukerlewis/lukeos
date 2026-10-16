@@ -24,6 +24,10 @@ export function playLength(seconds: number) {
   return h ? (m ? `${h} hr ${m} min` : `${h} hr`) : `${m} min`;
 }
 
+/** 20 minutes or longer counts as a podcast; so does a podcast episode whose length isn't known yet. */
+export const isPodcastLength = (e: { durationSeconds: number | null; kind: string }) =>
+  e.durationSeconds ? e.durationSeconds >= 20 * 60 : e.kind === "podcast";
+
 export const SPEEDS = [0.8, 1, 1.2, 1.5, 1.75, 2] as const;
 
 /**
