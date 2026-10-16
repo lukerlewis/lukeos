@@ -6,7 +6,7 @@ export default function Loading() {
   return (
     <div className="flex min-w-0 grow flex-col" aria-busy="true" aria-label="Loading">
       <div className="hidden h-14 shrink-0 border-b md:block" />
-      <div className="flex animate-pulse flex-col gap-6 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-28 md:px-10 md:pt-8 md:pb-10">
+      <div className="flex animate-pulse flex-col gap-6 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[calc(7rem+var(--player-space))] md:px-10 md:pt-8 md:pb-10">
         <div className="pt-8 md:pt-0">
           <div className="h-3.5 w-28 rounded bg-muted" />
           <div className="mt-2.5 h-8 w-52 rounded-lg bg-muted" />

@@ -39,7 +39,7 @@ export function Page({
       <div
         className={cn(
           "flex flex-col gap-6 px-5 pt-[max(env(safe-area-inset-top),1rem)] md:px-10 md:pt-8",
-          fill ? "grow pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0" : "pb-28 md:pb-10",
+          fill ? "grow pb-[calc(3.5rem+env(safe-area-inset-bottom)+var(--player-space))] md:pb-0" : "pb-[calc(7rem+var(--player-space))] md:pb-10",
         )}
       >
         <div className="flex items-end justify-between gap-4 pt-8 md:pt-0">

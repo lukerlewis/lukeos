@@ -509,6 +509,22 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Deleted a focus session" };
     case "update_focus_settings":
       return { summary: "Changed your pomodoro lengths" };
+    case "add_episode": {
+      const out = r as { title?: string; alreadyAdded?: boolean };
+      return out.alreadyAdded ? null : { summary: `Added ${quote(out.title)} to Listen` };
+    }
+    case "update_episode":
+      return { summary: `Edited ${quote((r as { title?: string }).title)} in Listen` };
+    case "delete_episode":
+      return { summary: `Deleted ${quote((r as { title?: string }).title)} from Listen` };
+    case "create_playlist":
+      return { summary: `Made the playlist ${quote((r as { title?: string }).title)}` };
+    case "update_playlist":
+    case "add_to_playlist":
+    case "remove_from_playlist":
+      return { summary: `Changed the playlist ${quote((r as { title?: string }).title)}` };
+    case "delete_playlist":
+      return { summary: `Deleted the playlist ${quote((r as { title?: string }).title)}` };
     case "set_dashboard_view":
       return { summary: "Changed how your dashboard looks" };
     case "update_whiteboard_settings":

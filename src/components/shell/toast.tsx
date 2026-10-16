@@ -90,7 +90,7 @@ export function Toaster() {
     <div
       role="status"
       key={toast.id}
-      className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-50 flex justify-center px-4 md:bottom-6"
+      className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem+var(--player-space))] z-50 flex justify-center px-4 md:bottom-6"
     >
       <div className="motion-toast flex min-h-11 items-center gap-3 rounded-xl bg-foreground py-1.5 pr-1.5 pl-4 text-meta font-medium text-background">
         <span className="py-1.5">{toast.message}</span>

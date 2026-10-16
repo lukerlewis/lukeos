@@ -192,7 +192,7 @@ export function SelectableClaudeList({
       </Card>
 
       {selecting && ids.length > 0 && (
-        <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-10 mt-1 flex flex-wrap items-center gap-2 rounded-xl border bg-card p-2 border-stroke md:bottom-4">
+        <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.5rem+var(--player-space))] z-10 mt-1 flex flex-wrap items-center gap-2 rounded-xl border bg-card p-2 border-stroke md:bottom-4">
           <Picker label="Project" onPick={setProject}>
             <option value="none">No project</option>
             {projects.map((p) => (

@@ -871,3 +871,52 @@
   --wb-sticky-green: #a2d6b0;
   --wb-sticky-ink: #1d1d1b;
 }
+
+/* Listen's position slider: a thin bar, filled up to where Luke is (--fill). */
+@layer components {
+  .listen-range {
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .listen-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right, var(--foreground) var(--fill, 0%), var(--grey-300) var(--fill, 0%));
+  }
+  .listen-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+    border-radius: 50%;
+    background: var(--foreground);
+  }
+  .listen-range::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--grey-300);
+  }
+  .listen-range::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--foreground);
+  }
+  .listen-range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--foreground);
+  }
+}
+
+/* While the player is showing on a phone, screens leave room for it above the tab bar. */
+:root {
+  --player-space: 0px;
+}
+@media (max-width: 767px) {
+  :root[data-player] {
+    --player-space: 4rem;
+  }
+}
