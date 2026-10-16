@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, ListMusic, Play } from "lucide-react";
+import { ChevronRight, Play } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -16,8 +16,9 @@ import { showToast } from "@/components/shell/toast";
 import { deleteEpisode, EpisodeRow, NewPlaylistInline, toPlayer, type PlaylistSummary } from "./episode-row";
 import { useListen } from "./listen-provider";
 import { Artwork } from "./player-bar";
+import { PlaylistCover } from "./playlist-icon";
 
-type Playlist = PlaylistSummary & { count: number; seconds: number; artworkUrl: string | null };
+type Playlist = PlaylistSummary & { icon: string | null; count: number; seconds: number; artworkUrl: string | null };
 
 /** Listen's screen: what's waiting to be listened to, what's finished, and playlists. */
 export function ListenScreen({ episodes: all, playlists }: { episodes: Episode[]; playlists: Playlist[] }) {
@@ -35,7 +36,7 @@ export function ListenScreen({ episodes: all, playlists }: { episodes: Episode[]
         onChange={setTab}
         className="md:w-80"
         options={[
-          { value: "episodes", label: "Episodes" },
+          { value: "episodes", label: "Tracks" },
           { value: "playlists", label: "Playlists" },
         ]}
       />
@@ -122,13 +123,7 @@ function Playlists({ playlists }: { playlists: Playlist[] }) {
         {playlists.map((p) => (
           <li key={p.id} className="border-b">
             <Link href={`/listen/playlists/${p.id}`} className="press-tint flex min-h-16 items-center gap-3 px-3 py-2.5 hover:bg-muted/50">
-              {p.artworkUrl ? (
-                <Artwork episode={p} className="size-12" />
-              ) : (
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-muted text-icon" aria-hidden>
-                  <ListMusic className="size-5" />
-                </span>
-              )}
+              <PlaylistCover playlist={p} className="size-12" />
               <span className="min-w-0 grow">
                 <span className="block truncate text-preview font-medium">{p.title}</span>
                 <span className="block text-meta text-muted-foreground">
@@ -175,7 +170,7 @@ export function PlaylistScreen({
       )}
       <Card>
         {episodes.length === 0 ? (
-          <EmptyState>Nothing on this playlist yet. Add things from Episodes with the ⋯ button.</EmptyState>
+          <EmptyState>Nothing on this playlist yet. Add things from Tracks with the ⋯ button.</EmptyState>
         ) : (
           <ul>
             {episodes.map((e) => (

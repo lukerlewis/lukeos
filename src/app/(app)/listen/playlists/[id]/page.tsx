@@ -33,7 +33,14 @@ export default async function PlaylistPage({ params }: PageProps<"/listen/playli
       title={playlist.title}
       eyebrow={<Link href="/listen" className="hover:text-foreground">Music</Link>}
       newTask={false}
-      actions={<PlaylistActions id={playlist.id} title={playlist.title} />}
+      actions={
+        <PlaylistActions
+          id={playlist.id}
+          title={playlist.title}
+          icon={playlist.icon}
+          artworkUrl={playlist.episodes.find((e) => e.artworkUrl)?.artworkUrl ?? null}
+        />
+      }
     >
       <PlaylistScreen playlist={playlist} playlists={playlists.map((p) => ({ id: p.id, title: p.title }))} />
     </Page>

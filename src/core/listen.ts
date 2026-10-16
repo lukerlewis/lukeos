@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
-import { MAX_LISTEN_FILE_BYTES } from "@/lib/listen";
+import { MAX_LISTEN_FILE_BYTES, PLAYLIST_ICONS } from "@/lib/listen";
 import { PodcastError, readFeed, resolveLink, searchPodcasts, type Feed, type FeedEpisode } from "@/lib/podcasts";
 import { adoptBlob, deleteStoredFile, storageUsage, storeFile } from "@/lib/storage";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor } from "./define";
@@ -81,6 +81,7 @@ export async function listPlaylists() {
     .select({
       id: playlists.id,
       title: playlists.title,
+      icon: playlists.icon,
       createdByKind: playlists.createdByKind,
       createdByName: playlists.createdByName,
       createdByRoutine: playlists.createdByRoutine,
@@ -105,7 +106,7 @@ export async function getPlaylist(id: string) {
     .innerJoin(episodes, eq(episodes.id, items.episodeId))
     .where(eq(items.playlistId, id))
     .orderBy(asc(items.position));
-  return { id: playlist.id, title: playlist.title, madeBy: madeByOf(playlist), episodes: rows.map((r) => episodeOut(r.episode)) };
+  return { id: playlist.id, title: playlist.title, icon: playlist.icon, madeBy: madeByOf(playlist), episodes: rows.map((r) => episodeOut(r.episode)) };
 }
 
 /** Puts a playlist's episodes in this order (episodes left out are taken off it). */
@@ -246,6 +247,12 @@ async function removeEpisode(row: EpisodeRow) {
     }
   }
 }
+
+const iconField = z
+  .enum(PLAYLIST_ICONS)
+  .nullable()
+  .optional()
+  .describe("The playlist's icon (null: show its first item's artwork). Only change it when Luke asks.");
 
 const episodeIds = z.array(z.uuid()).min(1).max(500);
 
@@ -389,9 +396,9 @@ export const listenOperations = {
   create_playlist: defineOperation({
     name: "create_playlist",
     description: "Make a Listen playlist, optionally with episodes in it (ids from list_episodes) in that order.",
-    input: z.object({ title: z.string().trim().min(1).max(200), episodeIds: z.array(z.uuid()).max(500).optional() }),
-    run: async ({ title, episodeIds: ids }, { actor }) => {
-      const [row] = await db.insert(playlists).values({ title, ...madeByColumns(actor) }).returning();
+    input: z.object({ title: z.string().trim().min(1).max(200), icon: iconField, episodeIds: z.array(z.uuid()).max(500).optional() }),
+    run: async ({ title, icon, episodeIds: ids }, { actor }) => {
+      const [row] = await db.insert(playlists).values({ title, icon: icon ?? null, ...madeByColumns(actor) }).returning();
       if (ids?.length) await setPlaylistOrder(row.id, ids);
       return getPlaylist(row.id);
     },
@@ -400,11 +407,20 @@ export const listenOperations = {
   update_playlist: defineOperation({
     name: "update_playlist",
     description:
-      "Rename a Listen playlist, or set its whole order with episodeIds (anything left out is taken off the playlist, not deleted).",
-    input: z.object({ id: z.uuid(), title: z.string().trim().min(1).max(200).optional(), episodeIds: z.array(z.uuid()).max(500).optional() }),
-    run: async ({ id, title, episodeIds: ids }) => {
+      "Rename a Listen playlist, change its icon, or set its whole order with episodeIds (anything left out is taken off the playlist, not deleted).",
+    input: z.object({
+      id: z.uuid(),
+      title: z.string().trim().min(1).max(200).optional(),
+      icon: iconField,
+      episodeIds: z.array(z.uuid()).max(500).optional(),
+    }),
+    run: async ({ id, title, icon, episodeIds: ids }) => {
       await findPlaylist(id);
-      if (title !== undefined) await db.update(playlists).set({ title, updatedAt: new Date() }).where(eq(playlists.id, id));
+      if (title !== undefined || icon !== undefined)
+        await db
+          .update(playlists)
+          .set({ ...(title !== undefined && { title }), ...(icon !== undefined && { icon }), updatedAt: new Date() })
+          .where(eq(playlists.id, id));
       if (ids) await setPlaylistOrder(id, ids);
       return getPlaylist(id);
     },
