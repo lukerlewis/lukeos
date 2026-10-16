@@ -23,7 +23,15 @@ import { SPEEDS } from "@/lib/listen";
 
 export type PlayerEpisode = Pick<Episode, "id" | "title" | "show" | "src" | "artworkUrl" | "durationSeconds" | "positionSeconds" | "kind">;
 
-type Saved = { queue: PlayerEpisode[]; index: number; speed: number };
+type Saved = {
+  queue: PlayerEpisode[];
+  index: number;
+  speed: number;
+  repeat?: boolean;
+  shuffle?: boolean;
+  /** With shuffle on: the list in its own order, to go back to when it's turned off. */
+  original?: PlayerEpisode[] | null;
+};
 
 const STORAGE_KEY = "lukeos:listen";
 const SAVE_EVERY_MS = 15_000;
@@ -41,6 +49,9 @@ type ListenContextValue = {
   position: number;
   duration: number;
   speed: number;
+  /** Plays the current track over and over until turned off. */
+  repeat: boolean;
+  shuffle: boolean;
   /** Plays this episode, with the list it came from as what plays next. */
   play: (episode: PlayerEpisode, queue?: PlayerEpisode[]) => void;
   toggle: () => void;
@@ -49,6 +60,8 @@ type ListenContextValue = {
   next: () => void;
   previous: () => void;
   setSpeed: (speed: number) => void;
+  setRepeat: (on: boolean) => void;
+  setShuffle: (on: boolean) => void;
   /** Stops and hides the player. */
   close: () => void;
   /** Forget an episode that was deleted. */
@@ -58,6 +71,16 @@ type ListenContextValue = {
 const ListenContext = createContext<ListenContextValue | null>(null);
 
 export const useListen = () => useContext(ListenContext);
+
+/** The list with `first` at the front and everything else in a random order. */
+function shuffled(list: PlayerEpisode[], first: PlayerEpisode) {
+  const rest = list.filter((e) => e.id !== first.id);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return [first, ...rest];
+}
 
 function load(): Saved | null {
   try {
@@ -105,6 +128,10 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [speed, setSpeedState] = useState(1);
+  const [repeat, setRepeatState] = useState(false);
+  const [shuffle, setShuffleState] = useState(false);
+  /** With shuffle on, the list in its own order. */
+  const originalRef = useRef<PlayerEpisode[] | null>(null);
   const [finished, setFinished] = useState<PlayerEpisode | null>(null);
   const [deleting, setDeleting] = useState(false);
   /** The episode the audio element has actually started (so its time is real). */
@@ -112,12 +139,18 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
   const current = queue[index] ?? null;
 
   // Refs for the audio element's event handlers, which outlive renders.
-  const state = useRef({ queue, index, speed, lastSaved: 0 });
+  const state = useRef({ queue, index, speed, shuffle, lastSaved: 0 });
   useEffect(() => {
     state.current.queue = queue;
     state.current.index = index;
     state.current.speed = speed;
-  }, [queue, index, speed]);
+    state.current.shuffle = shuffle;
+  }, [queue, index, speed, shuffle]);
+
+  // Repeat loops the audio element itself, so it carries on with the phone locked (and never counts as finished).
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.loop = repeat;
+  }, [repeat]);
 
   // What was playing last time comes back paused.
   useEffect(() => {
@@ -129,6 +162,9 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     setQueue(saved.queue);
     setIndex(saved.index);
     setSpeedState(SPEEDS.includes(saved.speed as (typeof SPEEDS)[number]) ? saved.speed : 1);
+    setRepeatState(Boolean(saved.repeat));
+    setShuffleState(Boolean(saved.shuffle));
+    originalRef.current = saved.shuffle ? (saved.original ?? null) : null;
     if (audio && ep?.src) {
       audio.preload = "metadata";
       audio.src = ep.src;
@@ -138,13 +174,13 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (queue.length) store({ queue, index, speed });
+    if (queue.length) store({ queue, index, speed, repeat, shuffle, original: originalRef.current });
     else
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch {}
     document.documentElement.toggleAttribute("data-player", queue.length > 0);
-  }, [queue, index, speed]);
+  }, [queue, index, speed, repeat, shuffle]);
 
   /** Saves where Luke is in the current episode, here and on the server. */
   const savePosition = useCallback((force = false) => {
@@ -159,7 +195,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     const seconds = Math.floor(audio.currentTime);
     const duration = Number.isFinite(audio.duration) ? Math.round(audio.duration) : undefined;
     ep.positionSeconds = seconds;
-    store({ queue: q, index: i, speed: state.current.speed });
+    store({ queue: q, index: i, speed: state.current.speed, repeat: audio.loop, shuffle: state.current.shuffle, original: originalRef.current });
     send("update_episode", {
       id: ep.id,
       positionSeconds: seconds,
@@ -210,8 +246,13 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
   const play = useCallback(
     (ep: PlayerEpisode, list?: PlayerEpisode[]) => {
       savePosition(true);
-      const q = list?.length ? list : [ep];
-      const i = Math.max(0, q.findIndex((e) => e.id === ep.id));
+      let q = list?.length ? list : [ep];
+      let i = Math.max(0, q.findIndex((e) => e.id === ep.id));
+      if (state.current.shuffle) {
+        originalRef.current = q;
+        q = shuffled(q, q[i]);
+        i = 0;
+      }
       setQueue(q);
       setIndex(i);
       state.current.queue = q;
@@ -257,6 +298,29 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     // Like a music app: back to the start first, then the one before.
     if ((audioRef.current?.currentTime ?? 0) > 5 || !goTo(state.current.index - 1)) seek(0);
   }, [goTo, seek]);
+
+  const setShuffle = useCallback((on: boolean) => {
+    const { queue: q, index: i } = state.current;
+    const cur = q[i];
+    setShuffleState(on);
+    state.current.shuffle = on;
+    if (!cur) return;
+    let next: PlayerEpisode[];
+    if (on) {
+      originalRef.current = q;
+      next = shuffled(q, cur);
+    } else {
+      // Back to the list's own order, without anything deleted meanwhile.
+      const ids = new Set(q.map((e) => e.id));
+      next = (originalRef.current ?? q).filter((e) => ids.has(e.id));
+      originalRef.current = null;
+    }
+    const at = Math.max(0, next.findIndex((e) => e.id === cur.id));
+    setQueue(next);
+    setIndex(at);
+    state.current.queue = next;
+    state.current.index = at;
+  }, []);
 
   const setSpeed = useCallback((s: number) => {
     setSpeedState(s);
@@ -448,6 +512,8 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     position,
     duration: duration || current?.durationSeconds || 0,
     speed,
+    repeat,
+    shuffle,
     play,
     toggle,
     seek,
@@ -455,6 +521,8 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     next,
     previous,
     setSpeed,
+    setRepeat: setRepeatState,
+    setShuffle,
     close,
     forget,
   };
