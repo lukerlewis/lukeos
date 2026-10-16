@@ -397,7 +397,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     ms.metadata = new MediaMetadata({
       title: current.title,
       artist: current.show ?? "LukeOS",
-      album: current.show ?? "Listen",
+      album: current.show ?? "Music",
       artwork: current.artworkUrl
         ? [{ src: current.artworkUrl, sizes: "600x600" }]
         : [{ src: "/icon-512.png", sizes: "512x512", type: "image/png" }],

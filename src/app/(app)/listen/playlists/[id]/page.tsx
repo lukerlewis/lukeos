@@ -31,7 +31,7 @@ export default async function PlaylistPage({ params }: PageProps<"/listen/playli
   return (
     <Page
       title={playlist.title}
-      eyebrow={<Link href="/listen" className="hover:text-foreground">Listen</Link>}
+      eyebrow={<Link href="/listen" className="hover:text-foreground">Music</Link>}
       newTask={false}
       actions={<PlaylistActions id={playlist.id} title={playlist.title} />}
     >

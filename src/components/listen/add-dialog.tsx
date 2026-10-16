@@ -37,10 +37,10 @@ export function AddButton({ storage }: { storage: { used: number; limit: number 
 function AddDialog({ storage, onClose }: { storage: { used: number; limit: number }; onClose: () => void }) {
   const [tab, setTab] = useState<"podcast" | "upload">("podcast");
   return (
-    <Dialog label="Add to Listen" onClose={onClose} className="sm:max-w-2xl">
+    <Dialog label="Add to Music" onClose={onClose} className="sm:max-w-2xl">
       <div className="flex flex-col gap-4 p-5">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-heading font-medium">Add to Listen</h2>
+          <h2 className="text-heading font-medium">Add to Music</h2>
           <Segmented
             value={tab}
             onChange={setTab}
@@ -106,7 +106,7 @@ function PodcastPicker() {
     try {
       const ep = await op("add_episode", { feedUrl: show.show.feedUrl, guid });
       setAdded((a) => new Set(a).add(guid));
-      showToast(ep.alreadyAdded ? "Already in Listen" : "Added");
+      showToast(ep.alreadyAdded ? "Already in Music" : "Added");
       router.refresh();
     } catch (err) {
       showToast((err as Error).message);
@@ -299,7 +299,7 @@ function Uploader({ storage }: { storage: { used: number; limit: number } }) {
   function take(files: FileList | File[]) {
     const list = Array.from(files);
     const audio = list.filter(isAudioFile);
-    if (audio.length < list.length) showToast("Only MP3 and other audio files can go in Listen.");
+    if (audio.length < list.length) showToast("Only MP3 and other audio files can go in Music.");
     // One at a time, so a big batch doesn't fight over the connection.
     void audio.reduce(async (before, file) => {
       await before;
