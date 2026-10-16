@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Item as WhiteboardItem } from "@/lib/whiteboard";
-import { boolean, customType, date, index, integer, jsonb, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { boolean, customType, date, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
@@ -723,4 +723,71 @@ export const whiteboards = pgTable(
     ...madeBy,
   },
   (t) => [index("whiteboards_updated_idx").on(t.updatedAt)],
+);
+
+/**
+ * Something to listen to in Listen. Either an MP3 Luke uploaded (kept in
+ * storage, `fileId`), or a podcast episode he picked, played straight from
+ * the podcast's own servers (`audioUrl`), so it takes no storage. Deleting
+ * one deletes it for good (no Trash), so its file's space comes back at once.
+ */
+export const listenEpisodes = pgTable(
+  "listen_episodes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(), // "upload" | "podcast"
+    title: text("title").notNull().default(""),
+    /** The podcast's name, or an uploaded song's artist. */
+    show: text("show"),
+    /** Podcasts: the episode's audio on the podcast's servers. */
+    audioUrl: text("audio_url"),
+    /** Uploads: the kept file. */
+    fileId: uuid("file_id").references(() => storedFiles.id, { onDelete: "set null" }),
+    fileName: text("file_name"),
+    bytes: integer("bytes"),
+    artworkUrl: text("artwork_url"),
+    description: text("description").notNull().default(""),
+    /** Podcasts: where it came from, so it's never added twice. */
+    feedUrl: text("feed_url"),
+    guid: text("guid"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    durationSeconds: integer("duration_seconds"),
+    /** How far Luke got. */
+    positionSeconds: integer("position_seconds").notNull().default(0),
+    lastPlayedAt: timestamp("last_played_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    /** Luke answered "Keep" when asked whether to delete it after finishing. */
+    kept: boolean("kept").notNull().default(false),
+    createdByKind: text("created_by_kind").notNull().default("user"), // "user" | "agent"
+    createdByName: text("created_by_name"),
+    createdByRoutine: text("created_by_routine"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("listen_episodes_created_idx").on(t.createdAt)],
+);
+
+/** A playlist in Listen: episodes and songs in Luke's order. */
+export const listenPlaylists = pgTable("listen_playlists", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull().default(""),
+  createdByKind: text("created_by_kind").notNull().default("user"),
+  createdByName: text("created_by_name"),
+  createdByRoutine: text("created_by_routine"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const listenPlaylistItems = pgTable(
+  "listen_playlist_items",
+  {
+    playlistId: uuid("playlist_id")
+      .notNull()
+      .references(() => listenPlaylists.id, { onDelete: "cascade" }),
+    episodeId: uuid("episode_id")
+      .notNull()
+      .references(() => listenEpisodes.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.playlistId, t.episodeId] })],
 );

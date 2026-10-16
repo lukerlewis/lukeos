@@ -2,11 +2,12 @@ import { issueSignedToken } from "@vercel/blob";
 import { handleUpload, handleUploadPresigned, type HandleUploadBody, type HandleUploadPresignedBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
+import { MAX_LISTEN_FILE_BYTES } from "@/lib/listen";
 import { MAX_MESSAGE_FILE_BYTES } from "@/lib/message-files";
 import { blobConfigured } from "@/lib/storage";
 
 /**
- * Lets the browser put a big file (a video) straight into Blob storage, since
+ * Lets the browser put a big file (a video in Messages, an MP3 in Listen) straight into Blob storage, since
  * the app itself only takes about 4 MB at a time. GET says which way the
  * store wants it done; POST hands out permission for one file.
  */
@@ -19,8 +20,9 @@ export async function GET() {
   return NextResponse.json({ mode: mode() });
 }
 
-const allowed = (pathname: string) => /^messages\/[\w-]+\.[a-z0-9]{1,8}$/i.test(pathname);
-const limits = { maximumSizeInBytes: MAX_MESSAGE_FILE_BYTES, validUntil: () => Date.now() + 60 * 60_000 };
+const allowed = (pathname: string) => /^(messages|listen)\/[\w-]+\.[a-z0-9]{1,8}$/i.test(pathname);
+const maxBytes = (pathname: string) => (pathname.startsWith("listen/") ? MAX_LISTEN_FILE_BYTES : MAX_MESSAGE_FILE_BYTES);
+const limits = { validUntil: () => Date.now() + 60 * 60_000 };
 
 export async function POST(req: Request) {
   if (!(await getSession())) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
         body: body as HandleUploadBody,
         onBeforeGenerateToken: async (pathname) => {
           if (!allowed(pathname)) throw new Error("Not allowed.");
-          return { maximumSizeInBytes: limits.maximumSizeInBytes, validUntil: limits.validUntil(), addRandomSuffix: false, cacheControlMaxAge: 60 * 60 * 24 * 365 };
+          return { maximumSizeInBytes: maxBytes(pathname), validUntil: limits.validUntil(), addRandomSuffix: false, cacheControlMaxAge: 60 * 60 * 24 * 365 };
         },
       });
       return NextResponse.json(out);
@@ -46,8 +48,9 @@ export async function POST(req: Request) {
         getSignedToken: async (pathname) => {
           if (!allowed(pathname)) throw new Error("Not allowed.");
           const validUntil = limits.validUntil();
-          const token = await issueSignedToken({ pathname, operations: ["put"], maximumSizeInBytes: limits.maximumSizeInBytes, validUntil });
-          return { token, urlOptions: { maximumSizeInBytes: limits.maximumSizeInBytes, validUntil, addRandomSuffix: false, cacheControlMaxAge: 60 * 60 * 24 * 365 } };
+          const maximumSizeInBytes = maxBytes(pathname);
+          const token = await issueSignedToken({ pathname, operations: ["put"], maximumSizeInBytes, validUntil });
+          return { token, urlOptions: { maximumSizeInBytes, validUntil, addRandomSuffix: false, cacheControlMaxAge: 60 * 60 * 24 * 365 } };
         },
       });
       return NextResponse.json(out);

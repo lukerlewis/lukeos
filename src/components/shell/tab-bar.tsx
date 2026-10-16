@@ -19,7 +19,8 @@ export function TabBar({ unreadMessages = 0 }: { unreadMessages?: number }) {
     >
       {phoneTabs.map(({ href, label, icon: Icon, also }) => {
         const active = isActive(pathname, href) || also.some((a: string) => isActive(pathname, a));
-        const count = href === "/messages" ? unread : 0;
+        // Messages lives under More on phones, so its unread count shows there.
+        const count = href === "/projects" ? unread : 0;
         return (
           <Link
             key={href}

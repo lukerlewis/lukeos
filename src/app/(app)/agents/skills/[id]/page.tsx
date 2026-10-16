@@ -34,7 +34,7 @@ export default async function SkillPage({ params, searchParams }: PageProps<"/ag
           {back.label}
         </Link>
       </header>
-      <div className="flex flex-col gap-2 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-28 md:px-10 md:pt-8 md:pb-10">
+      <div className="flex flex-col gap-2 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[calc(7rem+var(--player-space))] md:px-10 md:pt-8 md:pb-10">
         <Link
           href={back.href}
           className="-ml-1 inline-flex items-center self-start pt-8 text-meta text-muted-foreground hover:text-foreground md:hidden"

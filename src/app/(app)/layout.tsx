@@ -9,6 +9,8 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { TabBar } from "@/components/shell/tab-bar";
 import { Toaster } from "@/components/shell/toast";
 import { FocusProvider } from "@/components/focus/focus-provider";
+import { ListenProvider } from "@/components/listen/listen-provider";
+import { PlayerBar } from "@/components/listen/player-bar";
 import { TaskEditorProvider } from "@/components/tasks/task-editor";
 import { TimeZoneSync } from "@/components/time-zone-sync";
 import { getFocusSettings } from "@/core/focus";
@@ -55,6 +57,7 @@ async function AppShell({ children, sidebarCollapsed }: { children: React.ReactN
     <TaskEditorProvider projects={projects} today={today} timeZone={timeZone}>
       <CommandMenuProvider projects={menuProjects} today={today}>
         <FocusProvider settings={focusSettings}>
+        <ListenProvider>
         <TimeZoneSync saved={timeZone} />
         <PushListener />
         <PullToRefresh />
@@ -65,10 +68,15 @@ async function AppShell({ children, sidebarCollapsed }: { children: React.ReactN
             unreadMessages={unreadMessages}
             collapsed={sidebarCollapsed}
           />
-          <main className="flex min-w-0 grow md:overflow-y-auto">{children}</main>
+          {/* On computers the player sits under the screen; on phones it floats above the tab bar. */}
+          <div className="flex min-w-0 grow flex-col md:min-h-0">
+            <main className="flex min-w-0 grow md:min-h-0 md:overflow-y-auto">{children}</main>
+            <PlayerBar />
+          </div>
           <TabBar unreadMessages={unreadMessages} />
         </div>
         <Toaster />
+        </ListenProvider>
         </FocusProvider>
       </CommandMenuProvider>
     </TaskEditorProvider>

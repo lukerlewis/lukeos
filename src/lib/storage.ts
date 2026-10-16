@@ -7,7 +7,7 @@ import { db, schema } from "@/db";
 const { storedFiles } = schema;
 
 /**
- * Where Inspiration and Messages keep their pictures and files. Vercel Blob when a Blob
+ * Where Inspiration, Messages and Listen keep their pictures and files. Vercel Blob when a Blob
  * store is connected to the project (it sets BLOB_STORE_ID or
  * BLOB_READ_WRITE_TOKEN); the database otherwise, so the app still works
  * before one is set up. Everything is served through /api/stored/<id>, which
@@ -31,6 +31,11 @@ const extensions: Record<string, string> = {
   "video/mp4": "mp4",
   "video/quicktime": "mov",
   "video/webm": "webm",
+  "audio/mpeg": "mp3",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "aac",
+  "audio/wav": "wav",
 };
 
 /** The store is either private or public; we find out on the first upload and remember. */
@@ -166,6 +171,7 @@ export async function deleteUnusedStoredFiles() {
           select 1 from messages m, jsonb_array_elements(m.attachments) a
           where ${storedFiles.id}::text in (a->>'fileId', a->>'thumbId')
         )`,
+        sql`not exists (select 1 from listen_episodes l where l.file_id = ${storedFiles.id})`,
       ),
     )
     .limit(500);
@@ -182,4 +188,12 @@ export async function deleteUnusedStoredFiles() {
   }
   await db.delete(storedFiles).where(inArray(storedFiles.id, unused.map((f) => f.id)));
   return unused.length;
+}
+
+/** Deletes one kept file for good, straight away, so its space comes back now (Listen's delete skips Trash). */
+export async function deleteStoredFile(id: string) {
+  const [row] = await db.select({ backend: storedFiles.backend, blobUrl: storedFiles.blobUrl }).from(storedFiles).where(eq(storedFiles.id, id)).limit(1);
+  if (!row) return;
+  if (row.backend === "blob" && row.blobUrl) await del(row.blobUrl);
+  await db.delete(storedFiles).where(eq(storedFiles.id, id));
 }

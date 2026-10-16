@@ -380,7 +380,7 @@ export function MessageThread({
         }
       />
       {/* Below the box (and clear of the phone tab bar), so scrolling to it shows the last message above the box, not behind it. */}
-      <div ref={endRef} className="scroll-mb-[calc(3.5rem+env(safe-area-inset-bottom))] md:scroll-mb-0" />
+      <div ref={endRef} className="scroll-mb-[calc(3.5rem+env(safe-area-inset-bottom)+var(--player-space))] md:scroll-mb-0" />
       <PhotoViewer photo={photo} onClose={closePhoto} />
     </div>
   );
@@ -541,7 +541,7 @@ function Composer({
         e.preventDefault();
         add([...e.dataTransfer.files]);
       }}
-      className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-[5] -mx-5 mt-auto border-t bg-background/95 px-3 py-2 backdrop-blur md:bottom-0 md:mx-0 md:border-0 md:px-0 md:pb-6"
+      className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom)+var(--player-space))] z-[5] -mx-5 mt-auto border-t bg-background/95 px-3 py-2 backdrop-blur md:bottom-0 md:mx-0 md:border-0 md:px-0 md:pb-6"
     >
       {editing ? (
         <div className="mx-auto flex max-w-2xl items-center gap-2 pb-1.5 pl-1 text-meta text-muted-foreground">
