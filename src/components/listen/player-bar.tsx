@@ -1,20 +1,20 @@
 "use client";
 
-import { Headphones, Loader2, Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, X } from "lucide-react";
+import { Loader2, Music, Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, X } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { playClock, SPEEDS } from "@/lib/listen";
 import { cn } from "@/lib/utils";
 import { useListen, type PlayerEpisode } from "./listen-provider";
 
-/** An episode's picture, or a plain square with headphones when it has none. */
+/** An episode's picture, or a plain square with a music note when it has none. */
 export function Artwork({ episode, className }: { episode: Pick<PlayerEpisode, "artworkUrl">; className?: string }) {
   return episode.artworkUrl ? (
     // eslint-disable-next-line @next/next/no-img-element -- podcast artwork lives on the podcast's servers
     <img src={episode.artworkUrl} alt="" className={cn("shrink-0 rounded-md bg-muted object-cover", className)} loading="lazy" />
   ) : (
     <span className={cn("flex shrink-0 items-center justify-center rounded-md bg-muted text-icon", className)} aria-hidden>
-      <Headphones className="size-1/2" />
+      <Music className="size-1/2" />
     </span>
   );
 }

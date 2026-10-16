@@ -511,12 +511,12 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Changed your pomodoro lengths" };
     case "add_episode": {
       const out = r as { title?: string; alreadyAdded?: boolean };
-      return out.alreadyAdded ? null : { summary: `Added ${quote(out.title)} to Listen` };
+      return out.alreadyAdded ? null : { summary: `Added ${quote(out.title)} to Music` };
     }
     case "update_episode":
-      return { summary: `Edited ${quote((r as { title?: string }).title)} in Listen` };
+      return { summary: `Edited ${quote((r as { title?: string }).title)} in Music` };
     case "delete_episode":
-      return { summary: `Deleted ${quote((r as { title?: string }).title)} from Listen` };
+      return { summary: `Deleted ${quote((r as { title?: string }).title)} from Music` };
     case "create_playlist":
       return { summary: `Made the playlist ${quote((r as { title?: string }).title)}` };
     case "update_playlist":

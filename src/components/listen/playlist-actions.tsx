@@ -62,7 +62,7 @@ export function PlaylistActions({ id, title }: { id: string; title: string }) {
               <>
                 <div>
                   <h2 className="text-heading font-medium">Delete “{title}”?</h2>
-                  <p className="mt-1 text-preview text-muted-foreground">Its episodes stay in Listen.</p>
+                  <p className="mt-1 text-preview text-muted-foreground">Its episodes stay in Music.</p>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" className="grow" onClick={() => setOpen(null)}>
