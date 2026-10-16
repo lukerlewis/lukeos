@@ -283,8 +283,16 @@ function EpisodeMenu({
 }
 
 /** "New playlist" with a name box, used when adding to a playlist and on the Playlists tab. */
-export function NewPlaylistInline({ episodeId, onDone }: { episodeId?: string; onDone: (id: string) => void }) {
-  const [open, setOpen] = useState(false);
+export function NewPlaylistInline({
+  episodeId,
+  onDone,
+  startOpen,
+}: {
+  episodeId?: string;
+  onDone: (id: string) => void;
+  startOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(!!startOpen);
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   if (!open)
