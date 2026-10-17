@@ -33,7 +33,7 @@ export const toPlayer = (e: Episode): PlayerEpisode => ({
 /** "42 min", or "23 min left" once started. */
 function lengthLine(e: Episode) {
   if (!e.durationSeconds) return null;
-  if (!e.finishedAt && e.positionSeconds > 30) return `${playLength(e.durationSeconds - e.positionSeconds)} left`;
+  if (e.kind === "podcast" && !e.finishedAt && e.positionSeconds > 30) return `${playLength(e.durationSeconds - e.positionSeconds)} left`;
   return playLength(e.durationSeconds);
 }
 
@@ -59,7 +59,7 @@ export function EpisodeRow({
   const isHidden = useHidden(episode.id);
   if (isHidden) return null;
   const current = listen?.current?.id === episode.id;
-  const progress = episode.durationSeconds && !episode.finishedAt ? Math.min(1, episode.positionSeconds / episode.durationSeconds) : 0;
+  const progress = episode.kind === "podcast" && episode.durationSeconds && !episode.finishedAt ? Math.min(1, episode.positionSeconds / episode.durationSeconds) : 0;
   const line = [episode.show, lengthLine(episode)].filter(Boolean).join(" · ");
   const selecting = !!selection?.selecting;
   const on = !!selection?.picked.has(episode.id);
