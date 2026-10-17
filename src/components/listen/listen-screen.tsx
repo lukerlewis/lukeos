@@ -26,7 +26,7 @@ export type TrackFilter = "all" | "podcasts";
 const pick = (episodes: Episode[], filter: TrackFilter) => (filter === "podcasts" ? episodes.filter((e) => e.kind === "podcast") : episodes);
 const totalSeconds = (episodes: Episode[]) => episodes.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0);
 
-/** Music's screen: finished things to decide on, then a row for all tracks, podcasts, and each playlist. */
+/** Music's screen: finished things to decide on, then a card with All tracks and Podcasts, and a card of playlists. */
 export function ListenScreen({ episodes: all, playlists }: { episodes: Episode[]; playlists: Playlist[] }) {
   const episodes = useWithoutHidden(all);
   const toDecide = episodes.filter((e) => e.finishedAt && !e.kept);
@@ -40,18 +40,24 @@ export function ListenScreen({ episodes: all, playlists }: { episodes: Episode[]
         <ul>
           <LibraryRow href="/listen/tracks" title="All tracks" icon={<Music />} count={shelved.length} seconds={totalSeconds(shelved)} />
           <LibraryRow href="/listen/podcasts" title="Podcasts" icon={<Mic />} count={podcasts.length} seconds={totalSeconds(podcasts)} />
-          {playlists.map((p) => (
-            <LibraryRow
-              key={p.id}
-              href={`/listen/playlists/${p.id}`}
-              title={p.title}
-              cover={<PlaylistCover playlist={p} className="size-12" />}
-              count={p.count}
-              seconds={p.seconds}
-            />
-          ))}
         </ul>
       </Card>
+      {playlists.length > 0 && (
+        <Card>
+          <ul>
+            {playlists.map((p) => (
+              <LibraryRow
+                key={p.id}
+                href={`/listen/playlists/${p.id}`}
+                title={p.title}
+                cover={<PlaylistCover playlist={p} className="size-12" />}
+                count={p.count}
+                seconds={p.seconds}
+              />
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }
