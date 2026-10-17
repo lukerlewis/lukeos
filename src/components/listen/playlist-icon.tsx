@@ -13,7 +13,7 @@ export const playlistIcons: Record<PlaylistIcon, LucideIcon> = {
   car: Car, plane: Plane, leaf: Leaf, mountain: Mountain, waves: Waves, house: House,
 };
 
-/** A playlist's square: the icon Luke picked, else its first item's artwork, else a list icon. */
+/** A playlist's square: the emoji (or older icon) Luke picked, else its first item's artwork, else a list icon. */
 export function PlaylistCover({
   playlist,
   className,
@@ -22,6 +22,12 @@ export function PlaylistCover({
   className?: string;
 }) {
   const Icon = playlist.icon ? playlistIcons[playlist.icon as PlaylistIcon] : null;
+  if (playlist.icon && !Icon)
+    return (
+      <span className={cn("flex shrink-0 items-center justify-center rounded-md bg-muted text-[26px] leading-none", className)} aria-hidden>
+        {playlist.icon}
+      </span>
+    );
   if (!Icon && playlist.artworkUrl) return <Artwork episode={{ artworkUrl: playlist.artworkUrl }} className={className} />;
   const Shown = Icon ?? ListMusic;
   return (

@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
-import { MAX_LISTEN_FILE_BYTES, PLAYLIST_ICONS } from "@/lib/listen";
+import { isEmoji, MAX_LISTEN_FILE_BYTES } from "@/lib/listen";
 import { PodcastError, readFeed, resolveLink, searchPodcasts, type Feed, type FeedEpisode } from "@/lib/podcasts";
 import { adoptBlob, deleteStoredFile, storageUsage, storeFile } from "@/lib/storage";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor } from "./define";
@@ -249,10 +249,13 @@ async function removeEpisode(row: EpisodeRow) {
 }
 
 const iconField = z
-  .enum(PLAYLIST_ICONS)
+  .string()
+  .trim()
+  .max(32)
+  .refine(isEmoji, "Use a single emoji.")
   .nullable()
   .optional()
-  .describe("The playlist's icon (null: show its first item's artwork). Only change it when Luke asks.");
+  .describe("The playlist's emoji, e.g. \"🏃\" (null: show its first item's artwork). Only change it when Luke asks.");
 
 const episodeIds = z.array(z.uuid()).min(1).max(500);
 
@@ -407,7 +410,7 @@ export const listenOperations = {
   update_playlist: defineOperation({
     name: "update_playlist",
     description:
-      "Rename a Listen playlist, change its icon, or set its whole order with episodeIds (anything left out is taken off the playlist, not deleted).",
+      "Rename a Listen playlist, change its emoji, or set its whole order with episodeIds (anything left out is taken off the playlist, not deleted).",
     input: z.object({
       id: z.uuid(),
       title: z.string().trim().min(1).max(200).optional(),
