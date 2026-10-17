@@ -87,7 +87,7 @@ export function EpisodeRow({
         )}
         <Artwork episode={episode} className="size-12" />
         <span className="min-w-0 grow">
-          <span className={cn("line-clamp-2 text-preview font-medium", episode.finishedAt && "text-muted-foreground")}>{episode.title}</span>
+          <span className={cn("line-clamp-2 text-preview font-medium", episode.kind === "podcast" && episode.finishedAt && "text-muted-foreground")}>{episode.title}</span>
           <span className="mt-0.5 flex items-center gap-1.5 text-meta text-muted-foreground">
             {current && <span className="font-medium text-foreground">{listen?.playing ? "Playing" : "Paused"}</span>}
             {current && line && <span aria-hidden>·</span>}
@@ -237,15 +237,17 @@ function EpisodeMenu({
                 </button>
               </>
             )}
-            <button
-              type="button"
-              className={item}
-              disabled={busy}
-              onClick={() => void run(() => op("update_episode", { id: episode.id, finished: !episode.finishedAt }))}
-            >
-              <Check className="size-[18px] text-muted-foreground" aria-hidden />
-              {episode.finishedAt ? "Mark as not finished" : "Mark as finished"}
-            </button>
+            {episode.kind === "podcast" && (
+              <button
+                type="button"
+                className={item}
+                disabled={busy}
+                onClick={() => void run(() => op("update_episode", { id: episode.id, finished: !episode.finishedAt }))}
+              >
+                <Check className="size-[18px] text-muted-foreground" aria-hidden />
+                {episode.finishedAt ? "Mark as not finished" : "Mark as finished"}
+              </button>
+            )}
             <button type="button" className={item} onClick={() => setView("rename")}>
               <Pencil className="size-[18px] text-muted-foreground" aria-hidden />
               Rename

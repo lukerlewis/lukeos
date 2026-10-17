@@ -39,8 +39,8 @@ const totalSeconds = (episodes: Episode[]) => episodes.reduce((sum, e) => sum + 
 /** Music's screen: finished things to decide on, then a card with All songs and Podcasts, and a card of playlists. */
 export function ListenScreen({ episodes: all, playlists }: { episodes: Episode[]; playlists: Playlist[] }) {
   const episodes = useWithoutHidden(all);
-  const toDecide = episodes.filter((e) => e.finishedAt && !e.kept);
-  const shelved = episodes.filter((e) => !e.finishedAt || e.kept);
+  const toDecide = episodes.filter((e) => e.kind === "podcast" && e.finishedAt && !e.kept);
+  const shelved = episodes.filter((e) => !toDecide.includes(e));
   const songs = pick(shelved, "songs");
   const podcasts = pick(shelved, "podcasts");
 
@@ -152,8 +152,10 @@ export function TracksScreen({
   const [query, setQuery] = useState("");
   const everything = pick(useWithoutHidden(all), filter);
   const episodes = query.trim() ? everything.filter((e) => matches(e, query)) : everything;
-  const waiting = episodes.filter((e) => !e.finishedAt).sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
-  const finished = episodes.filter((e) => e.finishedAt && e.kept);
+  // Songs never count as finished (older ones may still be marked); only podcast episodes do.
+  const isDone = (e: Episode) => e.kind === "podcast" && !!e.finishedAt;
+  const waiting = episodes.filter((e) => !isDone(e)).sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
+  const finished = episodes.filter((e) => isDone(e) && e.kept);
   const noun = filter === "podcasts" ? "podcasts" : "songs";
 
   return (
