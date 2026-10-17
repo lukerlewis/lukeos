@@ -1,6 +1,7 @@
 "use client";
 
-import { Ellipsis, Pencil, Smile, Trash2 } from "lucide-react";
+import { Ellipsis, Pencil, Smile, Trash2, Upload } from "lucide-react";
+import { PlaylistUploadDialog } from "./add-dialog";
 import { isEmoji } from "@/lib/listen";
 import { PlaylistCover, playlistIcons } from "./playlist-icon";
 import { useRouter } from "next/navigation";
@@ -17,9 +18,21 @@ function lastEmoji(text: string) {
 }
 
 /** A ⋯ button beside a playlist's title, opening Change icon, Rename and Delete. */
-export function PlaylistActions({ id, title, icon, artworkUrl }: { id: string; title: string; icon: string | null; artworkUrl: string | null }) {
+export function PlaylistActions({
+  id,
+  title,
+  icon,
+  artworkUrl,
+  storage,
+}: {
+  id: string;
+  title: string;
+  icon: string | null;
+  artworkUrl: string | null;
+  storage: { used: number; limit: number };
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState<null | "menu" | "icon" | "rename" | "delete">(null);
+  const [open, setOpen] = useState<null | "menu" | "upload" | "icon" | "rename" | "delete">(null);
   const [name, setName] = useState(title);
   const [emoji, setEmoji] = useState(icon && !(icon in playlistIcons) ? icon : "");
   const [busy, setBusy] = useState(false);
@@ -44,7 +57,8 @@ export function PlaylistActions({ id, title, icon, artworkUrl }: { id: string; t
       <Button variant="ghost" size="icon" aria-label="Playlist options" title="Playlist options" onClick={() => setOpen("menu")}>
         <Ellipsis className="size-5" aria-hidden />
       </Button>
-      {open && (
+      {open === "upload" && <PlaylistUploadDialog playlist={{ id, title }} storage={storage} onClose={() => setOpen(null)} />}
+      {open && open !== "upload" && (
         <Dialog
           label={open === "menu" ? title : open === "icon" ? "Playlist emoji" : open === "rename" ? "Rename playlist" : "Delete playlist"}
           onClose={() => setOpen(null)}
@@ -57,6 +71,10 @@ export function PlaylistActions({ id, title, icon, artworkUrl }: { id: string; t
                   <PlaylistCover playlist={{ icon, artworkUrl }} className="size-12" />
                   <h2 className="min-w-0 truncate text-heading font-medium">{title}</h2>
                 </div>
+                <button type="button" className={`${item} hidden md:flex`} onClick={() => setOpen("upload")}>
+                  <Upload className="size-[18px] text-muted-foreground" aria-hidden />
+                  Upload songs
+                </button>
                 <button type="button" className={item} onClick={() => setOpen("icon")}>
                   <Smile className="size-[18px] text-muted-foreground" aria-hidden />
                   {icon ? "Change emoji" : "Add an emoji"}
