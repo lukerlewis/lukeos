@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Mic, Music, Play, Plus } from "lucide-react";
+import { ChevronRight, Mic, Music, Play, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -17,6 +17,7 @@ import { deleteEpisode, EpisodeRow, NewPlaylistInline, toPlayer, type PlaylistSu
 import { useListen } from "./listen-provider";
 import { Artwork } from "./player-bar";
 import { PlaylistCover } from "./playlist-icon";
+import { SelectableSongs } from "./selection";
 
 type Playlist = PlaylistSummary & { icon: string | null; count: number; seconds: number; artworkUrl: string | null };
 
@@ -24,6 +25,15 @@ type Playlist = PlaylistSummary & { icon: string | null; count: number; seconds:
 export type TrackFilter = "songs" | "podcasts";
 
 const pick = (episodes: Episode[], filter: TrackFilter) => episodes.filter((e) => e.kind === (filter === "podcasts" ? "podcast" : "upload"));
+/** Lowercase, without accents, so "gymnopedie" finds "Gymnopédie". */
+const plain = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+/** Every word typed has to show up in the title or the artist, in any order. */
+function matches(e: Episode, query: string) {
+  const haystack = plain(`${e.title} ${e.show ?? ""}`);
+  return plain(query).split(/\s+/).filter(Boolean).every((word) => haystack.includes(word));
+}
+
 const totalSeconds = (episodes: Episode[]) => episodes.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0);
 
 /** Music's screen: finished things to decide on, then a card with All songs and Podcasts, and a card of playlists. */
@@ -139,23 +149,57 @@ export function TracksScreen({
   filter: TrackFilter;
 }) {
   const listen = useListen();
-  const episodes = pick(useWithoutHidden(all), filter);
+  const [query, setQuery] = useState("");
+  const everything = pick(useWithoutHidden(all), filter);
+  const episodes = query.trim() ? everything.filter((e) => matches(e, query)) : everything;
   const waiting = episodes.filter((e) => !e.finishedAt).sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
   const finished = episodes.filter((e) => e.finishedAt && e.kept);
+  const noun = filter === "podcasts" ? "podcasts" : "songs";
 
   return (
-    <div className="flex w-full max-w-3xl flex-col gap-6">
-      {waiting.length > 0 && (
-        <Button className="self-start" onClick={() => listen?.play(toPlayer(waiting[0]), waiting.map(toPlayer))}>
-          <Play className="fill-current" aria-hidden />
-          Play
-        </Button>
+    <SelectableSongs episodes={[...waiting, ...finished]} playlists={playlists} noun={filter === "podcasts" ? "podcast" : "song"}>
+      {everything.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          {waiting.length > 0 && (
+            <Button onClick={() => listen?.play(toPlayer(waiting[0]), waiting.map(toPlayer))}>
+              <Play className="fill-current" aria-hidden />
+              Play
+            </Button>
+          )}
+          <label className="relative flex min-w-0 grow items-center md:max-w-80">
+            <Search className="pointer-events-none absolute left-3 size-[18px] text-icon" aria-hidden />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search ${noun}`}
+              aria-label={`Search ${noun}`}
+              className="h-11 w-full rounded-lg border border-stroke-strong bg-card pr-10 pl-10 text-base md:text-control [&::-webkit-search-cancel-button]:hidden"
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setQuery("")}
+                className="press absolute right-1 flex size-9 items-center justify-center rounded-full text-icon hover:bg-muted"
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            )}
+          </label>
+        </div>
       )}
       <Card>
         {waiting.length === 0 ? (
           <EmptyState>
-            {filter === "podcasts" ? "No podcasts waiting." : "No songs yet."}
-            <span className="hidden md:inline">{filter === "podcasts" ? " Add one with the Add button." : " Upload MP3s or FLACs with the Add button."}</span>
+            {query.trim() ? (
+              finished.length ? `Nothing waiting matches “${query.trim()}”.` : `No ${noun} match “${query.trim()}”.`
+            ) : (
+              <>
+                {filter === "podcasts" ? "No podcasts waiting." : "No songs yet."}
+                <span className="hidden md:inline">{filter === "podcasts" ? " Add one with the Add button." : " Upload MP3s or FLACs with the Add button."}</span>
+              </>
+            )}
           </EmptyState>
         ) : (
           <ul>
@@ -177,7 +221,7 @@ export function TracksScreen({
           </Card>
         </section>
       )}
-    </div>
+    </SelectableSongs>
   );
 }
 
@@ -233,7 +277,7 @@ export function PlaylistScreen({
   const order = episodes.map((e) => e.id);
   const firstUnfinished = episodes.find((e) => !e.finishedAt) ?? episodes[0];
   return (
-    <div className="flex w-full max-w-3xl flex-col gap-6">
+    <SelectableSongs episodes={episodes} playlists={playlists} inPlaylist={playlist.id}>
       {episodes.length > 0 && (
         <Button className="self-start" onClick={() => listen?.play(toPlayer(firstUnfinished), episodes.map(toPlayer))}>
           <Play className="fill-current" aria-hidden />
@@ -251,6 +295,6 @@ export function PlaylistScreen({
           </ul>
         )}
       </Card>
-    </div>
+    </SelectableSongs>
   );
 }
