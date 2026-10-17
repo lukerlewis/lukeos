@@ -3,6 +3,7 @@
 import { Loader2, Music, Pause, Play, Repeat1, RotateCcw, RotateCw, Shuffle, SkipBack, SkipForward, X } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
+import { DESKTOP_PLAYER_BAR_ON } from "@/lib/features";
 import { playClock, SPEEDS } from "@/lib/listen";
 import { cn } from "@/lib/utils";
 import { useListen, type PlayerEpisode } from "./listen-provider";
@@ -51,7 +52,8 @@ export function PlayerBar() {
         </div>
       </div>
 
-      {/* Computers */}
+      {/* Computers (on ice: hovering Music in the sidebar has the controls instead) */}
+      {DESKTOP_PLAYER_BAR_ON && (
       <div className="hidden h-[72px] shrink-0 items-center gap-4 border-t border-stroke bg-sidebar px-4 md:flex">
         <button type="button" onClick={() => setOpen(true)} className="flex w-64 min-w-0 shrink-0 items-center gap-3 text-left" aria-label="Open the player">
           <Artwork episode={current} className="size-11" />
@@ -82,6 +84,7 @@ export function PlayerBar() {
           <X />
         </IconButton>
       </div>
+      )}
 
       {open && <NowPlaying onClose={() => setOpen(false)} />}
       {loading && <span className="sr-only">Loading</span>}

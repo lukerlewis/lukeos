@@ -54,6 +54,8 @@ type ListenContextValue = {
   shuffle: boolean;
   /** Plays this episode, with the list it came from as what plays next. */
   play: (episode: PlayerEpisode, queue?: PlayerEpisode[]) => void;
+  /** Turns shuffle on and plays the list from a random track. */
+  playShuffled: (queue: PlayerEpisode[]) => void;
   toggle: () => void;
   seek: (seconds: number) => void;
   skip: (delta: number) => void;
@@ -260,6 +262,16 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
       start(q[i]);
     },
     [savePosition, start],
+  );
+
+  const playShuffled = useCallback(
+    (list: PlayerEpisode[]) => {
+      if (!list.length) return;
+      setShuffleState(true);
+      state.current.shuffle = true;
+      play(list[Math.floor(Math.random() * list.length)], list);
+    },
+    [play],
   );
 
   const toggle = useCallback(() => {
@@ -520,6 +532,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     repeat,
     shuffle,
     play,
+    playShuffled,
     toggle,
     seek,
     skip,

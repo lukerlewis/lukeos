@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Mic, Music, Play, Plus, Search, X } from "lucide-react";
+import { ChevronRight, Mic, Music, Play, Plus, Search, Shuffle, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -163,10 +163,16 @@ export function TracksScreen({
       {everything.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">
           {waiting.length > 0 && (
-            <Button onClick={() => listen?.play(toPlayer(waiting[0]), waiting.map(toPlayer))}>
-              <Play className="fill-current" aria-hidden />
-              Play
-            </Button>
+            <span className="flex gap-2">
+              <Button onClick={() => listen?.play(toPlayer(waiting[0]), waiting.map(toPlayer))}>
+                <Play className="fill-current" aria-hidden />
+                Play
+              </Button>
+              <Button variant="outline" onClick={() => listen?.playShuffled(waiting.map(toPlayer))}>
+                <Shuffle aria-hidden />
+                Shuffle
+              </Button>
+            </span>
           )}
           <label className="relative flex min-w-0 grow items-center md:max-w-80">
             <Search className="pointer-events-none absolute left-3 size-[18px] text-icon" aria-hidden />
@@ -281,10 +287,16 @@ export function PlaylistScreen({
   return (
     <SelectableSongs episodes={episodes} playlists={playlists} inPlaylist={playlist.id}>
       {episodes.length > 0 && (
-        <Button className="self-start" onClick={() => listen?.play(toPlayer(firstUnfinished), episodes.map(toPlayer))}>
-          <Play className="fill-current" aria-hidden />
-          Play
-        </Button>
+        <span className="flex gap-2">
+          <Button onClick={() => listen?.play(toPlayer(firstUnfinished), episodes.map(toPlayer))}>
+            <Play className="fill-current" aria-hidden />
+            Play
+          </Button>
+          <Button variant="outline" onClick={() => listen?.playShuffled(episodes.map(toPlayer))}>
+            <Shuffle aria-hidden />
+            Shuffle
+          </Button>
+        </span>
       )}
       <Card>
         {episodes.length === 0 ? (
