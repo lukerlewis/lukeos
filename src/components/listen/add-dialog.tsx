@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
 import { fileSize } from "@/lib/archive";
+import { flacToMp3, isFlac } from "@/lib/flac-to-mp3";
 import { isAudioFile, MAX_LISTEN_FILE_BYTES, playLength, readMp3Tags } from "@/lib/listen";
 import { DIRECT_UPLOAD_BYTES } from "@/lib/message-files";
 import { op } from "@/lib/ops-client";
@@ -235,15 +236,15 @@ async function post(body: unknown) {
   return out;
 }
 
-/** Sends one audio file (MP3, FLAC…) to LukeOS: straight into Blob storage when there's a store, through the app otherwise. */
-async function uploadAudio(file: File, onProgress: (share: number) => void) {
-  const label = file.name || "That file";
+/** Sends one audio file to LukeOS: straight into Blob storage when there's a store, through the app otherwise. FLACs become MP3s first. */
+async function uploadAudio(original: File, onProgress: (share: number) => void, onConvert: (share: number) => void) {
+  const label = original.name || "That file";
+  const tags = await readMp3Tags(original);
+  const converted = isFlac(original) ? await flacToMp3(original, onConvert) : null;
+  const file = converted?.file ?? original;
   if (file.size > MAX_LISTEN_FILE_BYTES) throw new Error(`${label} is over 200 MB.`);
-  const [tags, durationSeconds] = await Promise.all([readMp3Tags(file), audioLength(file)]);
-  const mimeType =
-    file.type === "audio/x-flac" || (!file.type && /\.flac$/i.test(file.name))
-      ? "audio/flac"
-      : file.type || (/\.m4a$/i.test(file.name) ? "audio/mp4" : "audio/mpeg");
+  const durationSeconds = converted?.durationSeconds ?? (await audioLength(file));
+  const mimeType = file.type || (/\.m4a$/i.test(file.name) ? "audio/mp4" : "audio/mpeg");
   const meta = { name: file.name || "Audio.mp3", mimeType, title: tags.title, artist: tags.artist, durationSeconds };
 
   const { mode } = await fetch("/api/messages/upload/blob").then((r) => r.json()).catch(() => ({ mode: "none" }));
@@ -291,7 +292,7 @@ async function uploadAudio(file: File, onProgress: (share: number) => void) {
   throw new Error(`Couldn't upload ${label}. Try again.`);
 }
 
-type Pending = { key: string; name: string; bytes: number; share: number; done: boolean; error: string | null };
+type Pending = { key: string; name: string; bytes: number; share: number; converting: number | null; done: boolean; error: string | null };
 
 function Uploader({ storage }: { storage: { used: number; limit: number } }) {
   const router = useRouter();
@@ -308,9 +309,13 @@ function Uploader({ storage }: { storage: { used: number; limit: number } }) {
       await before;
       const key = crypto.randomUUID();
       const set = (change: Partial<Pending>) => setPending((p) => p.map((x) => (x.key === key ? { ...x, ...change } : x)));
-      setPending((p) => [...p, { key, name: file.name, bytes: file.size, share: 0, done: false, error: null }]);
+      setPending((p) => [...p, { key, name: file.name, bytes: file.size, share: 0, converting: null, done: false, error: null }]);
       try {
-        await uploadAudio(file, (share) => set({ share }));
+        await uploadAudio(
+          file,
+          (share) => set({ share, converting: null }),
+          (converting) => set({ converting }),
+        );
         set({ share: 1, done: true });
         router.refresh();
       } catch (err) {
@@ -350,7 +355,13 @@ function Uploader({ storage }: { storage: { used: number; limit: number } }) {
               <div className="flex items-center gap-2 text-preview">
                 <span className="min-w-0 grow truncate font-medium">{p.name}</span>
                 <span className="shrink-0 text-meta text-muted-foreground">
-                  {p.error ? "" : p.done ? "Added" : `${fileSize(p.bytes)} · ${Math.round(p.share * 100)}%`}
+                  {p.error
+                    ? ""
+                    : p.done
+                      ? "Added"
+                      : p.converting !== null
+                        ? `Converting to MP3 · ${Math.round(p.converting * 100)}%`
+                        : `${fileSize(p.bytes)} · ${Math.round(p.share * 100)}%`}
                 </span>
               </div>
               {p.error ? (
@@ -358,7 +369,7 @@ function Uploader({ storage }: { storage: { used: number; limit: number } }) {
               ) : (
                 !p.done && (
                   <span className="block h-1 overflow-hidden rounded-full bg-grey-300" aria-hidden>
-                    <span className="block h-full bg-foreground transition-[width]" style={{ width: `${p.share * 100}%` }} />
+                    <span className="block h-full bg-foreground transition-[width]" style={{ width: `${(p.converting ?? p.share) * 100}%` }} />
                   </span>
                 )
               )}
