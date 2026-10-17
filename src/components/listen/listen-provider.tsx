@@ -415,8 +415,13 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
       const done = q[i];
       if (done) {
         done.positionSeconds = 0;
-        send("update_episode", { id: done.id, finished: true }).then(() => router.refresh(), () => {});
-        setFinished(done);
+        // Songs stay in the library to play again; only podcast episodes ask whether to delete.
+        if (done.kind === "podcast") {
+          send("update_episode", { id: done.id, finished: true }).then(() => router.refresh(), () => {});
+          setFinished(done);
+        } else {
+          send("update_episode", { id: done.id, positionSeconds: 0 }).catch(() => {});
+        }
       }
       // Straight on to the next one, while the audio session is still going (works with the phone locked).
       const nextIndex = i + 1;
