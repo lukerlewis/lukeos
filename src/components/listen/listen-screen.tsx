@@ -21,16 +21,17 @@ import { PlaylistCover } from "./playlist-icon";
 type Playlist = PlaylistSummary & { icon: string | null; count: number; seconds: number; artworkUrl: string | null };
 
 /** Which tracks a list shows: everything, or just podcast episodes (not uploads, however long). */
-export type TrackFilter = "all" | "podcasts";
+export type TrackFilter = "songs" | "podcasts";
 
-const pick = (episodes: Episode[], filter: TrackFilter) => (filter === "podcasts" ? episodes.filter((e) => e.kind === "podcast") : episodes);
+const pick = (episodes: Episode[], filter: TrackFilter) => episodes.filter((e) => e.kind === (filter === "podcasts" ? "podcast" : "upload"));
 const totalSeconds = (episodes: Episode[]) => episodes.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0);
 
-/** Music's screen: finished things to decide on, then a card with All tracks and Podcasts, and a card of playlists. */
+/** Music's screen: finished things to decide on, then a card with All songs and Podcasts, and a card of playlists. */
 export function ListenScreen({ episodes: all, playlists }: { episodes: Episode[]; playlists: Playlist[] }) {
   const episodes = useWithoutHidden(all);
   const toDecide = episodes.filter((e) => e.finishedAt && !e.kept);
   const shelved = episodes.filter((e) => !e.finishedAt || e.kept);
+  const songs = pick(shelved, "songs");
   const podcasts = pick(shelved, "podcasts");
 
   return (
@@ -38,7 +39,7 @@ export function ListenScreen({ episodes: all, playlists }: { episodes: Episode[]
       {toDecide.length > 0 && <Finished episodes={toDecide} />}
       <Card>
         <ul>
-          <LibraryRow href="/listen/tracks" title="All tracks" icon={<Music />} count={shelved.length} seconds={totalSeconds(shelved)} />
+          <LibraryRow href="/listen/tracks" title="All songs" icon={<Music />} count={songs.length} seconds={totalSeconds(songs)} />
           <LibraryRow href="/listen/podcasts" title="Podcasts" icon={<Mic />} count={podcasts.length} seconds={totalSeconds(podcasts)} />
         </ul>
       </Card>
@@ -127,7 +128,7 @@ export function NewPlaylistButton() {
   );
 }
 
-/** All tracks, or just podcasts: what's waiting (first added plays first), then what's finished and kept. */
+/** All songs (Luke's uploaded MP3s and FLACs) or podcasts: what's waiting (first added plays first), then what's finished and kept. */
 export function TracksScreen({
   episodes: all,
   playlists,
@@ -153,8 +154,8 @@ export function TracksScreen({
       <Card>
         {waiting.length === 0 ? (
           <EmptyState>
-            {filter === "podcasts" ? "No podcasts waiting." : "Nothing to listen to."}
-            <span className="hidden md:inline"> Add a podcast episode or upload an MP3.</span>
+            {filter === "podcasts" ? "No podcasts waiting." : "No songs yet."}
+            <span className="hidden md:inline">{filter === "podcasts" ? " Add one with the Add button." : " Upload MP3s or FLACs with the Add button."}</span>
           </EmptyState>
         ) : (
           <ul>
@@ -241,7 +242,7 @@ export function PlaylistScreen({
       )}
       <Card>
         {episodes.length === 0 ? (
-          <EmptyState>Nothing on this playlist yet. Add things from All tracks with the ⋯ button.</EmptyState>
+          <EmptyState>Nothing on this playlist yet. Add songs or podcasts with the ⋯ button on them.</EmptyState>
         ) : (
           <ul>
             {episodes.map((e) => (

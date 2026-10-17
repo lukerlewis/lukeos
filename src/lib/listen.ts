@@ -5,7 +5,7 @@ export const MAX_LISTEN_FILE_BYTES = 200 * 1024 * 1024;
 
 /** Audio files Listen takes, by type or by name. */
 export const isAudioFile = (file: { type: string; name: string }) =>
-  /^audio\/(mpeg|mp3|mp4|x-m4a|aac|wav|x-wav)$/.test(file.type) || /\.(mp3|m4a|aac|wav)$/i.test(file.name);
+  /^audio\/(mpeg|mp3|mp4|x-m4a|aac|wav|x-wav|flac|x-flac)$/.test(file.type) || /\.(mp3|m4a|aac|wav|flac)$/i.test(file.name);
 
 /** 3723 seconds as "1:02:03"; 125 as "2:05". */
 export function playClock(seconds: number) {
@@ -27,13 +27,14 @@ export function playLength(seconds: number) {
 export const SPEEDS = [0.8, 1, 1.2, 1.5, 1.75, 2] as const;
 
 /**
- * The title and artist written inside an MP3 (its ID3 tags), read in the
- * browser before upload. Null fields when there aren't any.
+ * The title and artist written inside an MP3 (its ID3 tags) or a FLAC (its
+ * Vorbis comments), read in the browser before upload. Null fields when there aren't any.
  */
 export async function readMp3Tags(file: Blob): Promise<{ title: string | null; artist: string | null }> {
   const none = { title: null, artist: null };
   try {
     const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+    if (head[0] === 0x66 && head[1] === 0x4c && head[2] === 0x61 && head[3] === 0x43) return await readFlacTags(file); // "fLaC"
     if (head[0] !== 0x49 || head[1] !== 0x44 || head[2] !== 0x33) return none; // "ID3"
     const version = head[3];
     const size = ((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f);
@@ -62,6 +63,39 @@ export async function readMp3Tags(file: Blob): Promise<{ title: string | null; a
   } catch {
     return none;
   }
+}
+
+/** A FLAC's title and artist, from its VORBIS_COMMENT block. */
+async function readFlacTags(file: Blob) {
+  const out: { title: string | null; artist: string | null } = { title: null, artist: null };
+  let at = 4;
+  for (let blocks = 0; blocks < 64; blocks++) {
+    const h = new Uint8Array(await file.slice(at, at + 4).arrayBuffer());
+    if (h.length < 4) break;
+    const last = (h[0] & 0x80) !== 0;
+    const type = h[0] & 0x7f;
+    const length = (h[1] << 16) | (h[2] << 8) | h[3];
+    if (type === 4) {
+      const body = new DataView(await file.slice(at + 4, at + 4 + Math.min(length, 512 * 1024)).arrayBuffer());
+      const text = (start: number, n: number) => new TextDecoder().decode(new Uint8Array(body.buffer, start, n));
+      let i = 4 + body.getUint32(0, true); // skip the encoder name
+      const count = body.getUint32(i, true);
+      i += 4;
+      for (let c = 0; c < count && i + 4 <= body.byteLength; c++) {
+        const n = body.getUint32(i, true);
+        if (i + 4 + n > body.byteLength) break;
+        const [key, ...rest] = text(i + 4, n).split("=");
+        const value = rest.join("=").trim() || null;
+        if (/^title$/i.test(key) && !out.title) out.title = value;
+        if (/^artist$/i.test(key) && !out.artist) out.artist = value;
+        i += 4 + n;
+      }
+      break;
+    }
+    if (last) break;
+    at += 4 + length;
+  }
+  return out;
 }
 
 function textFrame(body: Uint8Array) {

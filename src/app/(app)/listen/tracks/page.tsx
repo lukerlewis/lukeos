@@ -6,18 +6,18 @@ import { Page } from "@/components/shell/page";
 import { listEpisodes, listPlaylists } from "@/core/listen";
 import { storageUsage } from "@/lib/storage";
 
-export const metadata: Metadata = { title: "All tracks · LukeOS" };
+export const metadata: Metadata = { title: "All songs · LukeOS" };
 
 export default async function TracksPage() {
   const [episodes, playlists, storage] = await Promise.all([listEpisodes(), listPlaylists(), storageUsage()]);
   return (
     <Page
-      title="All tracks"
+      title="All songs"
       eyebrow={<Link href="/listen" className="hover:text-foreground">Music</Link>}
       newTask={false}
       actions={<AddButton storage={{ used: storage.used, limit: storage.limit }} />}
     >
-      <TracksScreen episodes={episodes} playlists={playlists.map((p) => ({ id: p.id, title: p.title }))} filter="all" />
+      <TracksScreen episodes={episodes} playlists={playlists.map((p) => ({ id: p.id, title: p.title }))} filter="songs" />
     </Page>
   );
 }

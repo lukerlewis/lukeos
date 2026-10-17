@@ -47,7 +47,7 @@ function AddDialog({ storage, onClose }: { storage: { used: number; limit: numbe
             className="w-64"
             options={[
               { value: "podcast", label: "Podcast episode" },
-              { value: "upload", label: "Upload MP3" },
+              { value: "upload", label: "Upload audio" },
             ]}
           />
         </div>
@@ -235,12 +235,15 @@ async function post(body: unknown) {
   return out;
 }
 
-/** Sends one MP3 to LukeOS: straight into Blob storage when there's a store, through the app otherwise. */
+/** Sends one audio file (MP3, FLAC…) to LukeOS: straight into Blob storage when there's a store, through the app otherwise. */
 async function uploadAudio(file: File, onProgress: (share: number) => void) {
   const label = file.name || "That file";
   if (file.size > MAX_LISTEN_FILE_BYTES) throw new Error(`${label} is over 200 MB.`);
   const [tags, durationSeconds] = await Promise.all([readMp3Tags(file), audioLength(file)]);
-  const mimeType = file.type || (/\.m4a$/i.test(file.name) ? "audio/mp4" : "audio/mpeg");
+  const mimeType =
+    file.type === "audio/x-flac" || (!file.type && /\.flac$/i.test(file.name))
+      ? "audio/flac"
+      : file.type || (/\.m4a$/i.test(file.name) ? "audio/mp4" : "audio/mpeg");
   const meta = { name: file.name || "Audio.mp3", mimeType, title: tags.title, artist: tags.artist, durationSeconds };
 
   const { mode } = await fetch("/api/messages/upload/blob").then((r) => r.json()).catch(() => ({ mode: "none" }));
@@ -337,9 +340,9 @@ function Uploader({ storage }: { storage: { used: number; limit: number } }) {
         )}
       >
         <Upload className="size-6 text-icon" aria-hidden />
-        Drop MP3s here, or click to pick
+        Drop MP3s or FLACs here, or click to pick
       </button>
-      <input ref={input} type="file" accept="audio/*,.mp3,.m4a" multiple hidden onChange={(e) => e.target.files && take(e.target.files)} />
+      <input ref={input} type="file" accept="audio/*,.mp3,.m4a,.flac" multiple hidden onChange={(e) => e.target.files && take(e.target.files)} />
       {pending.length > 0 && (
         <ul className="flex flex-col gap-2">
           {pending.map((p) => (

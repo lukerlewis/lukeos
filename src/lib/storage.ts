@@ -36,6 +36,8 @@ const extensions: Record<string, string> = {
   "audio/x-m4a": "m4a",
   "audio/aac": "aac",
   "audio/wav": "wav",
+  "audio/flac": "flac",
+  "audio/x-flac": "flac",
 };
 
 /** The store is either private or public; we find out on the first upload and remember. */
