@@ -294,7 +294,27 @@ async function uploadAudio(original: File, onProgress: (share: number) => void, 
 
 type Pending = { key: string; name: string; bytes: number; share: number; converting: number | null; done: boolean; error: string | null };
 
-function Uploader({ storage }: { storage: { used: number; limit: number } }) {
+/** Upload songs straight onto a playlist (they show in All songs too). Desktop only, like Add. */
+export function PlaylistUploadDialog({
+  playlist,
+  storage,
+  onClose,
+}: {
+  playlist: { id: string; title: string };
+  storage: { used: number; limit: number };
+  onClose: () => void;
+}) {
+  return (
+    <Dialog label={`Upload to ${playlist.title}`} onClose={onClose} className="sm:max-w-2xl">
+      <div className="flex flex-col gap-4 p-5">
+        <h2 className="text-heading font-medium">Upload to {playlist.title}</h2>
+        <Uploader storage={storage} playlistId={playlist.id} />
+      </div>
+    </Dialog>
+  );
+}
+
+function Uploader({ storage, playlistId }: { storage: { used: number; limit: number }; playlistId?: string }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<Pending[]>([]);
@@ -311,11 +331,12 @@ function Uploader({ storage }: { storage: { used: number; limit: number } }) {
       const set = (change: Partial<Pending>) => setPending((p) => p.map((x) => (x.key === key ? { ...x, ...change } : x)));
       setPending((p) => [...p, { key, name: file.name, bytes: file.size, share: 0, converting: null, done: false, error: null }]);
       try {
-        await uploadAudio(
+        const episode: { id: string } = await uploadAudio(
           file,
           (share) => set({ share, converting: null }),
           (converting) => set({ converting }),
         );
+        if (playlistId) await op("add_to_playlist", { playlistId, episodeIds: [episode.id] });
         set({ share: 1, done: true });
         router.refresh();
       } catch (err) {

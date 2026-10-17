@@ -6,6 +6,7 @@ import { PlaylistActions } from "@/components/listen/playlist-actions";
 import { Page } from "@/components/shell/page";
 import { OperationError } from "@/core/define";
 import { getPlaylist, listPlaylists } from "@/core/listen";
+import { storageUsage } from "@/lib/storage";
 
 async function load(id: string) {
   try {
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: PageProps<"/listen/playlists/
 
 export default async function PlaylistPage({ params }: PageProps<"/listen/playlists/[id]">) {
   const { id } = await params;
-  const [playlist, playlists] = await Promise.all([isUuid(id) ? load(id) : null, listPlaylists()]);
+  const [playlist, playlists, storage] = await Promise.all([isUuid(id) ? load(id) : null, listPlaylists(), storageUsage()]);
   if (!playlist) notFound();
   return (
     <Page
@@ -39,6 +40,7 @@ export default async function PlaylistPage({ params }: PageProps<"/listen/playli
           title={playlist.title}
           icon={playlist.icon}
           artworkUrl={playlist.episodes.find((e) => e.artworkUrl)?.artworkUrl ?? null}
+          storage={{ used: storage.used, limit: storage.limit }}
         />
       }
     >
