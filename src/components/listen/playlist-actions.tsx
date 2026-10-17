@@ -1,8 +1,7 @@
 "use client";
 
-import { Ellipsis, Pencil, Shapes, Trash2 } from "lucide-react";
-import { PLAYLIST_ICONS, type PlaylistIcon } from "@/lib/listen";
-import { cn } from "@/lib/utils";
+import { Ellipsis, Pencil, Smile, Trash2 } from "lucide-react";
+import { isEmoji } from "@/lib/listen";
 import { PlaylistCover, playlistIcons } from "./playlist-icon";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,11 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { op } from "@/lib/ops-client";
 
+/** The last emoji typed, so picking another replaces the old one instead of adding to it. */
+function lastEmoji(text: string) {
+  const parts = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)].map((p) => p.segment);
+  return parts.reverse().find((p) => isEmoji(p)) ?? "";
+}
+
 /** A ⋯ button beside a playlist's title, opening Change icon, Rename and Delete. */
 export function PlaylistActions({ id, title, icon, artworkUrl }: { id: string; title: string; icon: string | null; artworkUrl: string | null }) {
   const router = useRouter();
   const [open, setOpen] = useState<null | "menu" | "icon" | "rename" | "delete">(null);
   const [name, setName] = useState(title);
+  const [emoji, setEmoji] = useState(icon && !(icon in playlistIcons) ? icon : "");
   const [busy, setBusy] = useState(false);
 
   async function run(work: () => Promise<unknown>, then: () => void) {
@@ -40,9 +46,9 @@ export function PlaylistActions({ id, title, icon, artworkUrl }: { id: string; t
       </Button>
       {open && (
         <Dialog
-          label={open === "menu" ? title : open === "icon" ? "Playlist icon" : open === "rename" ? "Rename playlist" : "Delete playlist"}
+          label={open === "menu" ? title : open === "icon" ? "Playlist emoji" : open === "rename" ? "Rename playlist" : "Delete playlist"}
           onClose={() => setOpen(null)}
-          focusFirstField={open === "rename"}
+          focusFirstField={open === "rename" || open === "icon"}
         >
           <div className="flex flex-col gap-4 p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
             {open === "menu" ? (
@@ -52,8 +58,8 @@ export function PlaylistActions({ id, title, icon, artworkUrl }: { id: string; t
                   <h2 className="min-w-0 truncate text-heading font-medium">{title}</h2>
                 </div>
                 <button type="button" className={item} onClick={() => setOpen("icon")}>
-                  <Shapes className="size-[18px] text-muted-foreground" aria-hidden />
-                  Change icon
+                  <Smile className="size-[18px] text-muted-foreground" aria-hidden />
+                  {icon ? "Change emoji" : "Add an emoji"}
                 </button>
                 <button type="button" className={item} onClick={() => setOpen("rename")}>
                   <Pencil className="size-[18px] text-muted-foreground" aria-hidden />
@@ -65,35 +71,32 @@ export function PlaylistActions({ id, title, icon, artworkUrl }: { id: string; t
                 </button>
               </div>
             ) : open === "icon" ? (
-              <>
-                <h2 className="text-heading font-medium">Playlist icon</h2>
-                <div className="grid grid-cols-7 gap-1">
-                  {PLAYLIST_ICONS.map((name: PlaylistIcon) => {
-                    const Icon = playlistIcons[name];
-                    return (
-                      <button
-                        key={name}
-                        type="button"
-                        aria-label={name.replace("-", " ")}
-                        aria-pressed={icon === name}
-                        disabled={busy}
-                        onClick={() => void run(() => op("update_playlist", { id, icon: name }), () => router.refresh())}
-                        className={cn(
-                          "press flex aspect-square items-center justify-center rounded-lg text-subtle-foreground hover:bg-muted",
-                          icon === name && "bg-selected text-foreground",
-                        )}
-                      >
-                        <Icon className="size-5" aria-hidden />
-                      </button>
-                    );
-                  })}
-                </div>
+              <form
+                className="flex flex-col gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (isEmoji(emoji.trim())) void run(() => op("update_playlist", { id, icon: emoji.trim() }), () => router.refresh());
+                }}
+              >
+                <h2 className="text-heading font-medium">Playlist emoji</h2>
+                <input
+                  value={emoji}
+                  onChange={(e) => setEmoji(lastEmoji(e.target.value))}
+                  aria-label="Emoji"
+                  placeholder="🙂"
+                  enterKeyHint="done"
+                  autoComplete="off"
+                  className="h-16 rounded-lg border border-stroke-strong bg-card px-3 text-center text-[32px]"
+                />
+                <Button type="submit" disabled={busy || !isEmoji(emoji.trim())}>
+                  Save
+                </Button>
                 {icon && (
-                  <Button variant="outline" disabled={busy} onClick={() => void run(() => op("update_playlist", { id, icon: null }), () => router.refresh())}>
-                    Use artwork instead
+                  <Button type="button" variant="outline" disabled={busy} onClick={() => void run(() => op("update_playlist", { id, icon: null }), () => router.refresh())}>
+                    Remove emoji
                   </Button>
                 )}
-              </>
+              </form>
             ) : open === "rename" ? (
               <form
                 className="flex flex-col gap-3"

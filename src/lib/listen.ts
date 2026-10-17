@@ -76,7 +76,13 @@ function textFrame(body: Uint8Array) {
   return text || null;
 }
 
-/** Icons Luke can give a playlist (lucide names). */
+/** One emoji (flags, skin tones and joined ones like 👨‍👩‍👧 count as one). */
+export function isEmoji(text: string) {
+  const parts = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)];
+  return parts.length === 1 && /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(text);
+}
+
+/** Icons a playlist could have before emojis (lucide names); old ones still show. */
 export const PLAYLIST_ICONS = [
   "list-music", "music", "headphones", "mic", "radio", "disc", "guitar", "piano", "drum",
   "heart", "star", "sparkles", "flame", "zap", "sun", "moon", "coffee", "brain",
