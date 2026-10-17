@@ -8,6 +8,7 @@ import { useCommandMenu } from "@/components/command/command-menu";
 import { useFocus } from "@/components/focus/focus-provider";
 import { SEEN_EVENT } from "@/components/from-claude/mark-seen";
 import { useUnreadMessages } from "@/components/messages/unread";
+import { MiniControls } from "@/components/listen/mini-controls";
 import { NewProjectIconButton } from "@/components/projects/project-dialog";
 import { cn } from "@/lib/utils";
 import { isActive, mainNav, SIDEBAR_COOKIE } from "./nav";
@@ -175,11 +176,19 @@ function SidebarContents({
       </button>
 
       <nav className="flex flex-col gap-0.5" aria-label="Main">
-        {mainNav.map((item) => (
-          <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]}
-            aside={item.href === "/focus" ? running : null}
-          />
-        ))}
+        {mainNav.map((item) =>
+          item.href === "/listen" ? (
+            // Hovering Music shows the player's controls over the end of its row.
+            <div key={item.href} className="group/music relative">
+              <NavLink {...item} active={isActive(pathname, item.href)} />
+              <MiniControls className="absolute inset-y-0 right-1.5 hidden items-center gap-0.5 group-hover/music:flex group-has-[:focus-visible]/music:flex" />
+            </div>
+          ) : (
+            <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]}
+              aside={item.href === "/focus" ? running : null}
+            />
+          ),
+        )}
       </nav>
 
       <div className="-mx-1 flex min-h-0 flex-col gap-0.5 overflow-y-auto px-1">
