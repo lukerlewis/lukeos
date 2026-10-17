@@ -44,7 +44,32 @@ type Stopwatch = {
   savedSeconds?: number;
 };
 
-type Saved = { mode: "pomodoro" | "timer"; pomodoro: Pomodoro; stopwatch: Stopwatch };
+/** A task picked for a sprint. A new one has a temporary id until it's saved. */
+export type SprintTask = { id: string; title: string; done: boolean };
+
+/**
+ * A focus sprint: a countdown Luke sets himself, with the tasks he means to
+ * get through, ticked off as he goes.
+ */
+type Sprint = {
+  /** The length picked before starting, in minutes. */
+  minutes: number;
+  tasks: SprintTask[];
+  /** Running: when the sprint ends. */
+  endsAt: number | null;
+  /** Paused part way: the time left. Null means it hasn't started. */
+  leftMs: number | null;
+  lengthMs: number | null;
+  startedAt: number | null;
+  /** Ended, by the clock or by Luke: the time it counted. */
+  doneMs: number | null;
+  sessionId?: string | null;
+  savedSeconds?: number;
+};
+
+type Mode = "pomodoro" | "timer" | "sprint";
+type Saved = { mode: Mode; pomodoro: Pomodoro; stopwatch: Stopwatch; sprint: Sprint };
+type Kind = "pomodoro" | "timer" | "sprint";
 
 const STORAGE_KEY = "lukeos:focus";
 /** Shorter runs aren't worth a line in the stats. */
@@ -61,15 +86,26 @@ const freshPomodoro = (phase: Phase = "focus", round = 0): Pomodoro => ({
   startedAt: null,
 });
 const freshStopwatch = (): Stopwatch => ({ runningSince: null, elapsedMs: 0, startedAt: null });
-const initial: Saved = { mode: "pomodoro", pomodoro: freshPomodoro(), stopwatch: freshStopwatch() };
+const freshSprint = (minutes = 45, tasks: SprintTask[] = []): Sprint => ({
+  minutes,
+  tasks,
+  endsAt: null,
+  leftMs: null,
+  lengthMs: null,
+  startedAt: null,
+  doneMs: null,
+});
+const initial: Saved = { mode: "pomodoro", pomodoro: freshPomodoro(), stopwatch: freshStopwatch(), sprint: freshSprint() };
+
+export const SPRINT_MINUTES = { min: 5, max: 240, step: 5 };
 
 export const phaseLabel: Record<Phase, string> = { focus: "Focus", short: "Break", long: "Long break" };
 
 type FocusContextValue = {
   settings: FocusSettings;
   now: number;
-  mode: Saved["mode"];
-  setMode: (mode: Saved["mode"]) => void;
+  mode: Mode;
+  setMode: (mode: Mode) => void;
   pomodoro: Pomodoro & { running: boolean; leftMs: number; lengthMs: number };
   startPomodoro: () => void;
   pausePomodoro: () => void;
@@ -80,6 +116,14 @@ type FocusContextValue = {
   pauseStopwatch: () => void;
   resetStopwatch: () => void;
   discardStopwatch: () => void;
+  sprint: Sprint & { running: boolean; started: boolean; finished: boolean; leftMs: number; lengthMs: number };
+  setSprintMinutes: (minutes: number) => void;
+  setSprintTasks: (change: (tasks: SprintTask[]) => SprintTask[]) => void;
+  startSprint: () => void;
+  pauseSprint: () => void;
+  endSprint: () => void;
+  /** Back to setting one up, keeping the length and any tasks not done. */
+  newSprint: () => void;
   noise: boolean;
   toggleNoise: () => void;
   /** What a running timer shows, for the tab bar and sidebar. */
@@ -107,8 +151,11 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- browser storage is only readable after mount
-      if (raw) setState({ ...initial, ...(JSON.parse(raw) as Partial<Saved>) });
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<Saved>;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- browser storage is only readable after mount
+        setState({ ...initial, ...saved, sprint: { ...initial.sprint, ...saved.sprint } });
+      }
     } catch {}
     setLoaded(true);
   }, []);
@@ -134,12 +181,12 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
    * `keepalive` lets the save finish while the app is being closed.
    */
   const save = useCallback(
-    (kind: "pomodoro" | "timer", ms: number, endedAt: number, { refresh = true } = {}) => {
-      const run = kind === "pomodoro" ? stateRef.current.pomodoro : stateRef.current.stopwatch;
+    (kind: Kind, ms: number, endedAt: number, { refresh = true } = {}) => {
+      const key = kind === "timer" ? "stopwatch" : kind;
+      const run = stateRef.current[key];
       const seconds = Math.round(ms / 1000);
       if (ms < MIN_LOGGED_MS || seconds === run.savedSeconds) return;
       const id = run.sessionId ?? crypto.randomUUID();
-      const key = kind === "pomodoro" ? "pomodoro" : "stopwatch";
       const mark = (s: Saved): Saved => {
         const current = s[key];
         if ((current.sessionId ?? null) !== (run.sessionId ?? null) || current.startedAt !== run.startedAt) return s;
@@ -157,6 +204,10 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
           seconds,
           startedAt: new Date(run.startedAt ?? endedAt - ms).toISOString(),
           endedAt: new Date(endedAt).toISOString(),
+          // A sprint's line in the stats names what it was for.
+          ...(kind === "sprint" && stateRef.current.sprint.tasks.length
+            ? { label: stateRef.current.sprint.tasks.map((t) => t.title).join(", ").slice(0, 200) }
+            : {}),
         }),
       })
         .then((res) => {
@@ -228,12 +279,26 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     setState((s) => ({ ...s, pomodoro: next }));
   }, [now, p, save, lengthOf, nextAfter, chime, notify]);
 
+  // A running sprint reaching its end: ring, and show how it went.
+  const sp = state.sprint;
+  useEffect(() => {
+    if (!sp.endsAt || now < sp.endsAt) return;
+    const ms = sp.lengthMs ?? sp.minutes * 60_000;
+    save("sprint", ms, sp.endsAt);
+    chime();
+    notify("Sprint done.");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the sprint ends when the clock says so
+    setState((s) => ({ ...s, sprint: { ...s.sprint, endsAt: null, leftMs: 0, doneMs: ms } }));
+  }, [now, sp, save, chime, notify]);
+
   const pomodoroRunning = p.endsAt !== null;
   const stopwatchRunning = state.stopwatch.runningSince !== null;
+  const sprintRunning = sp.endsAt !== null;
+  const anyRunning = pomodoroRunning || stopwatchRunning || sprintRunning;
 
   // Tick while anything runs, and catch up as soon as the app is back on screen.
   useEffect(() => {
-    if (!pomodoroRunning && !stopwatchRunning) return;
+    if (!anyRunning) return;
     const tick = () => setNow(Date.now());
     tick();
     const id = window.setInterval(tick, 250);
@@ -242,7 +307,7 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", tick);
     };
-  }, [pomodoroRunning, stopwatchRunning]);
+  }, [anyRunning]);
 
   const left = useCallback(
     (pp: Pomodoro, at: number) => (pp.endsAt !== null ? Math.max(0, pp.endsAt - at) : (pp.leftMs ?? lengthOf(pp.phase))),
@@ -254,21 +319,26 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     [left],
   );
   const stopwatchElapsed = (sw: Stopwatch, at: number) => sw.elapsedMs + (sw.runningSince ? at - sw.runningSince : 0);
+  const sprintLeft = (s: Sprint, at: number) =>
+    s.endsAt !== null ? Math.max(0, s.endsAt - at) : (s.leftMs ?? s.minutes * 60_000);
+  /** Focus done so far in a sprint. */
+  const sprintFocused = (s: Sprint, at: number) => (s.lengthMs ? s.lengthMs - sprintLeft(s, at) : 0);
 
   /** Saves whatever is running, e.g. on the minute or as the app is left. */
   const saveRunning = useCallback(
     (opts?: { refresh?: boolean }) => {
       const at = Date.now();
-      const { pomodoro: pp, stopwatch: sw } = stateRef.current;
+      const { pomodoro: pp, stopwatch: sw, sprint: s } = stateRef.current;
       if (pp.endsAt && pp.phase === "focus") save("pomodoro", focusedMs(pp, Math.min(at, pp.endsAt)), Math.min(at, pp.endsAt), opts);
       if (sw.runningSince) save("timer", sw.elapsedMs + at - sw.runningSince, at, opts);
+      if (s.endsAt && s.lengthMs) save("sprint", s.lengthMs - Math.max(0, s.endsAt - at), Math.min(at, s.endsAt), opts);
     },
     [save, focusedMs],
   );
 
   // Every minute while a timer runs, and when the app is hidden or closed.
   useEffect(() => {
-    if (!pomodoroRunning && !stopwatchRunning) return;
+    if (!anyRunning) return;
     const id = window.setInterval(() => saveRunning({ refresh: false }), SAVE_EVERY_MS);
     const onHide = () => {
       if (document.visibilityState === "hidden") saveRunning({ refresh: false });
@@ -281,7 +351,7 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
       document.removeEventListener("visibilitychange", onHide);
       window.removeEventListener("pagehide", onLeave);
     };
-  }, [pomodoroRunning, stopwatchRunning, saveRunning]);
+  }, [anyRunning, saveRunning]);
 
   const startPomodoro = () => {
     wakeChime();
@@ -378,6 +448,63 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
       .catch((err) => console.error("[focus] couldn't remove the session", err));
   };
 
+  const setSprintMinutes = (minutes: number) =>
+    setState((s) =>
+      s.sprint.startedAt
+        ? s
+        : {
+            ...s,
+            sprint: { ...s.sprint, minutes: Math.min(SPRINT_MINUTES.max, Math.max(SPRINT_MINUTES.min, Math.round(minutes))) },
+          },
+    );
+
+  const setSprintTasks = (change: (tasks: SprintTask[]) => SprintTask[]) =>
+    setState((s) => ({ ...s, sprint: { ...s.sprint, tasks: change(s.sprint.tasks) } }));
+
+  const startSprint = () => {
+    wakeChime();
+    const at = Date.now();
+    setNow(at);
+    setState((s) => {
+      const sv = s.sprint;
+      if (sv.endsAt || sv.doneMs !== null) return s;
+      const lengthMs = sv.lengthMs ?? sv.minutes * 60_000;
+      return {
+        ...s,
+        sprint: {
+          ...sv,
+          lengthMs,
+          endsAt: at + (sv.leftMs ?? lengthMs),
+          leftMs: null,
+          startedAt: sv.startedAt ?? at,
+          sessionId: sv.sessionId ?? crypto.randomUUID(),
+        },
+      };
+    });
+  };
+
+  const pauseSprint = () => {
+    const at = Date.now();
+    if (state.sprint.endsAt) save("sprint", sprintFocused(state.sprint, at), at);
+    setState((s) =>
+      s.sprint.endsAt ? { ...s, sprint: { ...s.sprint, endsAt: null, leftMs: Math.max(0, s.sprint.endsAt - at) } } : s,
+    );
+  };
+
+  /** Ending early still counts the focus done so far. */
+  const endSprint = () => {
+    const at = Date.now();
+    const ms = sprintFocused(state.sprint, at);
+    save("sprint", ms, at);
+    setState((s) => ({
+      ...s,
+      sprint: { ...s.sprint, endsAt: null, leftMs: sprintLeft(s.sprint, at), doneMs: ms },
+    }));
+  };
+
+  const newSprint = () =>
+    setState((s) => ({ ...s, sprint: freshSprint(s.sprint.minutes, s.sprint.tasks.filter((t) => !t.done)) }));
+
   // Brown noise: the <audio> element below, looping. Its own events keep the
   // switch right when it's paused from the lock screen or headphones.
   const toggleNoise = () => {
@@ -420,7 +547,14 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
 
   const pomodoroLeft = left(p, now);
   const swElapsed = stopwatchElapsed(state.stopwatch, now);
-  const runningClock = pomodoroRunning ? clock(pomodoroLeft) : stopwatchRunning ? clock(swElapsed) : null;
+  const spLeft = sprintLeft(sp, now);
+  const runningClock = sprintRunning
+    ? clock(spLeft)
+    : pomodoroRunning
+      ? clock(pomodoroLeft)
+      : stopwatchRunning
+        ? clock(swElapsed)
+        : null;
 
   const value: FocusContextValue = {
     settings,
@@ -437,6 +571,20 @@ export function FocusProvider({ settings, children }: { settings: FocusSettings;
     pauseStopwatch,
     resetStopwatch,
     discardStopwatch,
+    sprint: {
+      ...sp,
+      running: sprintRunning,
+      started: sp.startedAt !== null,
+      finished: sp.doneMs !== null,
+      leftMs: spLeft,
+      lengthMs: sp.lengthMs ?? sp.minutes * 60_000,
+    },
+    setSprintMinutes,
+    setSprintTasks,
+    startSprint,
+    pauseSprint,
+    endSprint,
+    newSprint,
     noise,
     toggleNoise,
     runningClock,

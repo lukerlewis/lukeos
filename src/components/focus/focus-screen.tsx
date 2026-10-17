@@ -5,11 +5,14 @@ import {
   Check,
   ChartColumn,
   ChevronRight,
+  Minus,
   Pause,
   Play,
+  Plus,
   RotateCcw,
   SkipForward,
   SlidersHorizontal,
+  Square,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,15 +26,18 @@ import { clock, duration, FOCUS_LIMITS, type FocusSettings } from "@/lib/focus";
 import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
-import { phaseLabel, useFocus } from "./focus-provider";
+import { phaseLabel, SPRINT_MINUTES, useFocus } from "./focus-provider";
+import { SprintLengthDialog, SprintTasks, type PickableTask } from "./sprint";
 
-export function FocusScreen() {
+export function FocusScreen({ openTasks }: { openTasks: PickableTask[] }) {
   const focus = useFocus();
+  const [editingLength, setEditingLength] = useState(false);
   if (!focus) return null;
-  const { mode, setMode, pomodoro, stopwatch, settings } = focus;
+  const { mode, setMode, pomodoro, stopwatch, sprint, settings } = focus;
   const onBreak = pomodoro.phase !== "focus";
-  // On phones a running timer takes over the whole screen: just the ring and its buttons.
-  const running = mode === "pomodoro" ? pomodoro.running : stopwatch.running;
+  // On phones a running timer takes over the whole screen: just the ring and its buttons (and a sprint's tasks).
+  const running = mode === "pomodoro" ? pomodoro.running : mode === "timer" ? stopwatch.running : sprint.running;
+  const tasksDone = sprint.tasks.filter((t) => t.done).length;
 
   return (
     <div
@@ -40,6 +46,10 @@ export function FocusScreen() {
         "flex w-full max-w-md flex-col items-center gap-8 md:mx-auto",
         running &&
           "max-md:fixed max-md:inset-0 max-md:z-50 max-md:max-w-none max-md:justify-center max-md:bg-background max-md:px-5 max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)]",
+        // A sprint's task list can be long, so it scrolls, starting at the top.
+        running &&
+          mode === "sprint" &&
+          "max-md:justify-start max-md:gap-6 max-md:overflow-y-auto max-md:pt-[max(env(safe-area-inset-top),2rem)] max-md:pb-[max(env(safe-area-inset-bottom),2rem)]",
       )}
     >
       <Segmented
@@ -49,6 +59,7 @@ export function FocusScreen() {
         options={[
           { value: "pomodoro", label: "Pomodoro" },
           { value: "timer", label: "Timer" },
+          { value: "sprint", label: "Sprint" },
         ]}
       />
 
@@ -73,6 +84,79 @@ export function FocusScreen() {
             skipLabel={onBreak ? "Skip break" : "Skip to break"}
           />
         </>
+      ) : mode === "sprint" ? (
+        !sprint.started ? (
+          <>
+            <Ring>
+              <span className="text-control text-muted-foreground">Sprint</span>
+              <button
+                type="button"
+                aria-label="Sprint length"
+                onClick={() => setEditingLength(true)}
+                className="rounded-lg px-2"
+              >
+                <Face ms={sprint.minutes * 60_000} />
+              </button>
+              <span className="h-2" aria-hidden />
+            </Ring>
+            <Controls
+              running={false}
+              onStart={focus.startSprint}
+              onReset={
+                sprint.minutes > SPRINT_MINUTES.min
+                  ? () => focus.setSprintMinutes(sprint.minutes - SPRINT_MINUTES.step)
+                  : undefined
+              }
+              resetLabel={`${SPRINT_MINUTES.step} minutes less`}
+              resetIcon={<Minus />}
+              onSkip={
+                sprint.minutes < SPRINT_MINUTES.max
+                  ? () => focus.setSprintMinutes(sprint.minutes + SPRINT_MINUTES.step)
+                  : undefined
+              }
+              skipLabel={`${SPRINT_MINUTES.step} minutes more`}
+              skipIcon={<Plus />}
+            />
+            {editingLength && (
+              <SprintLengthDialog minutes={sprint.minutes} onClose={() => setEditingLength(false)} />
+            )}
+          </>
+        ) : (
+          <>
+            <Ring
+              progress={sprint.finished ? 1 : 1 - sprint.leftMs / sprint.lengthMs}
+              className={cn(running && "max-md:w-[min(240px,62vw)]")}
+            >
+              <span className="text-control text-muted-foreground">
+                {sprint.finished ? "Sprint done" : "Sprint"}
+              </span>
+              <Face ms={sprint.finished ? (sprint.doneMs ?? 0) : sprint.leftMs} />
+              {sprint.tasks.length > 0 ? (
+                <span className="text-control text-muted-foreground tabular-nums">
+                  {tasksDone} of {sprint.tasks.length} done
+                </span>
+              ) : (
+                <span className="h-2" aria-hidden />
+              )}
+            </Ring>
+            {sprint.finished ? (
+              <div className="flex h-[76px] items-center">
+                <Button size="lg" className="h-14 rounded-full px-8" onClick={focus.newSprint}>
+                  New sprint
+                </Button>
+              </div>
+            ) : (
+              <Controls
+                running={sprint.running}
+                onStart={focus.startSprint}
+                onPause={focus.pauseSprint}
+                onReset={focus.endSprint}
+                resetLabel="End sprint"
+                resetIcon={<Square fill="currentColor" className="size-3.5!" />}
+              />
+            )}
+          </>
+        )
       ) : (
         <>
           {/* No ring: the timer just keeps counting. */}
@@ -107,6 +191,8 @@ export function FocusScreen() {
         </>
       )}
 
+      {mode === "sprint" && <SprintTasks openTasks={openTasks} />}
+
       <Card className={cn("w-full", running && "max-md:hidden")}>
         <div className="flex items-center gap-3 px-4 py-3">
           <AudioLines className="size-[18px] text-icon" aria-hidden />
@@ -137,18 +223,20 @@ export function FocusScreen() {
 function Ring({
   progress,
   soft,
+  className,
   children,
 }: {
   /** Left out: no ring, just what's inside, at the same size. */
   progress?: number;
   soft?: boolean;
+  className?: string;
   children: React.ReactNode;
 }) {
   const r = 46;
   const length = 2 * Math.PI * r;
   const p = Math.min(1, Math.max(0, progress || 0));
   return (
-    <div className="relative aspect-square w-[min(300px,80vw)] md:w-[340px]">
+    <div className={cn("relative aspect-square w-[min(300px,80vw)] shrink-0 md:w-[340px]", className)}>
       {progress !== undefined && (
         <svg
           viewBox="0 0 100 100"
@@ -192,14 +280,18 @@ function Controls({
   onStart,
   onPause,
   onReset,
+  resetLabel = "Restart",
+  resetIcon = <RotateCcw />,
   onSkip,
   skipLabel,
   skipIcon = <SkipForward />,
 }: {
   running: boolean;
   onStart: () => void;
-  onPause: () => void;
+  onPause?: () => void;
   onReset?: () => void;
+  resetLabel?: string;
+  resetIcon?: React.ReactNode;
   onSkip?: () => void;
   skipLabel?: string;
   skipIcon?: React.ReactNode;
@@ -211,11 +303,11 @@ function Controls({
         variant="outline"
         size="icon"
         className={side}
-        aria-label="Restart"
+        aria-label={resetLabel}
         disabled={!onReset}
         onClick={onReset}
       >
-        <RotateCcw />
+        {resetIcon}
       </Button>
       <Button
         className="size-[76px] rounded-full [&_svg]:size-7"

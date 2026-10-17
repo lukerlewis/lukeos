@@ -8,7 +8,7 @@ import { defineOperation, madeByColumns, OperationError } from "./define";
 import { getTimeZone } from "./settings";
 
 /**
- * Focus: a pomodoro timer, a regular timer and brown noise. The timers run on
+ * Focus: a pomodoro timer, a regular timer, focus sprints and brown noise. The timers run on
  * Luke's device; what's kept here is the pomodoro lengths and a log of the
  * time he spent focusing, shown as a daily chart under Stats.
  */
@@ -27,10 +27,13 @@ export async function getFocusSettings(): Promise<FocusSettings> {
 
 type FocusRow = typeof schema.focusSessions.$inferSelect;
 
+const kinds = ["pomodoro", "timer", "sprint"] as const;
+type FocusKind = (typeof kinds)[number];
+
 /** A logged session, with the day it counts towards (the day it ended, in Luke's time zone). */
 const sessionOut = (r: FocusRow, timeZone: string) => ({
   id: r.id,
-  kind: r.kind as "pomodoro" | "timer",
+  kind: r.kind as FocusKind,
   label: r.label,
   startedAt: r.startedAt,
   endedAt: r.endedAt,
@@ -113,7 +116,7 @@ export const focusOperations = {
   get_focus_stats: defineOperation({
     name: "get_focus_stats",
     description:
-      "How long Luke focused each day (pomodoro focus rounds and the regular timer; breaks and brown noise on its own don't count), for the last N days in his time zone, oldest first, plus each logged session with its id (sessions count towards the day they ended). Times are in seconds.",
+      "How long Luke focused each day (pomodoro focus rounds, the regular timer and focus sprints, whose label lists the tasks he picked for it; breaks and brown noise on its own don't count), for the last N days in his time zone, oldest first, plus each logged session with its id (sessions count towards the day they ended). Times are in seconds.",
     input: z.object({ days: z.number().int().min(1).max(366).default(7).describe("How many days back, including today (default 7).") }),
     run: async ({ days }) => focusByDay(days),
   }),
@@ -124,7 +127,7 @@ export const focusOperations = {
       "Record time Luke spent focusing. The app does this itself as his timers run (finished or not), so only use it when Luke asks you to log focus time he did elsewhere. Passing the id of an existing session replaces its time instead of adding a new one.",
     input: z.object({
       id: z.uuid().optional().describe("Optional id for the session; if it already exists, its time is updated."),
-      kind: z.enum(["pomodoro", "timer"]).default("timer"),
+      kind: z.enum(kinds).default("timer"),
       seconds: z.number().int().min(1).max(24 * 3600).describe("Time focused, leaving out pauses."),
       endedAt: z.iso.datetime({ offset: true }).optional().describe("When it ended (default: now)."),
       startedAt: z.iso.datetime({ offset: true }).optional().describe("When it started (default: endedAt minus seconds)."),
@@ -145,7 +148,10 @@ export const focusOperations = {
           seconds: input.seconds,
           ...madeByColumns(actor),
         })
-        .onConflictDoUpdate({ target: schema.focusSessions.id, set: { endedAt, seconds: input.seconds } })
+        .onConflictDoUpdate({
+          target: schema.focusSessions.id,
+          set: { endedAt, seconds: input.seconds, ...(input.label?.trim() ? { label: input.label.trim() } : {}) },
+        })
         .returning();
       return { id: row.id, kind: row.kind, label: row.label, startedAt: row.startedAt, endedAt: row.endedAt, seconds: row.seconds };
     },
@@ -161,7 +167,7 @@ export const focusOperations = {
       startedAt: z.iso.datetime({ offset: true }).optional(),
       endedAt: z.iso.datetime({ offset: true }).optional().describe("Decides which day the time counts towards."),
       label: z.string().max(200).nullable().optional(),
-      kind: z.enum(["pomodoro", "timer"]).optional(),
+      kind: z.enum(kinds).optional(),
     }),
     run: async (input) => {
       const row = await findSession(input.id);

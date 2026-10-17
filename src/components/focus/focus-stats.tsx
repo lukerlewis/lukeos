@@ -14,7 +14,7 @@ import { FocusChart } from "./focus-chart";
 
 export type FocusSession = {
   id: string;
-  kind: "pomodoro" | "timer";
+  kind: "pomodoro" | "timer" | "sprint";
   label: string | null;
   startedAt: Date | string;
   endedAt: Date | string;
@@ -22,7 +22,9 @@ export type FocusSession = {
   day: string;
 };
 
-const kindLabel = { pomodoro: "Pomodoro", timer: "Timer" };
+const kindLabel = { pomodoro: "Pomodoro", timer: "Timer", sprint: "Sprint" };
+/** A sprint's label is the tasks picked for it, so it keeps its name in front. */
+const nameOf = (s: FocusSession) => (s.kind === "sprint" && s.label ? `Sprint: ${s.label}` : (s.label ?? kindLabel[s.kind]));
 
 /**
  * The chart, and under it the sessions that make up the picked day. Tap a
@@ -64,7 +66,7 @@ export function FocusStats({
                     <span className="text-control text-foreground tabular-nums">
                       {at.format(new Date(s.startedAt))} – {at.format(new Date(s.endedAt))}
                     </span>
-                    <span className="text-meta text-muted-foreground">{s.label ?? kindLabel[s.kind]}</span>
+                    <span className="text-meta text-muted-foreground">{nameOf(s)}</span>
                   </span>
                   <span className="text-control font-medium text-ink tabular-nums">{duration(s.seconds)}</span>
                 </button>
@@ -131,7 +133,7 @@ function SessionDialog({ session, timeZone, onClose }: { session: FocusSession; 
   return (
     <Dialog label="Focus session" onClose={onClose} focusFirstField={false}>
       <form onSubmit={save} className="flex flex-col gap-5 p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
-        <h2 className="text-heading font-medium text-ink">{session.label ?? kindLabel[session.kind]}</h2>
+        <h2 className="text-heading font-medium text-ink">{nameOf(session)}</h2>
         <div className="flex flex-col gap-3">
           <label className="flex items-center gap-3">
             <span className="grow text-control text-foreground">Minutes focused</span>
