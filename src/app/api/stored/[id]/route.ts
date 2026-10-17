@@ -4,7 +4,7 @@ import { db, schema } from "@/db";
 import { eq } from "drizzle-orm";
 
 /** Kinds of file that open in the browser. Anything else (web pages, SVGs, documents) downloads, so it can't run in the app. */
-const opensInline = /^(application\/pdf|image\/(jpeg|png|webp|gif|avif)|video\/(mp4|quicktime|webm))$/;
+const opensInline = /^(application\/pdf|image\/(jpeg|png|webp|gif|avif)|video\/(mp4|quicktime|webm)|audio\/(mpeg|mp4|x-m4a|aac|wav|flac))$/;
 
 /**
  * A picture or file kept for Inspiration or Messages. Only for the signed-in
