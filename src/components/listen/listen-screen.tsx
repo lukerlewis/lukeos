@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import type { Episode } from "@/core/listen";
 import { useWithoutHidden } from "@/lib/background";
-import { isPodcastLength, playLength } from "@/lib/listen";
+import { playLength } from "@/lib/listen";
 import { op } from "@/lib/ops-client";
 import { showToast } from "@/components/shell/toast";
 import { deleteEpisode, EpisodeRow, NewPlaylistInline, toPlayer, type PlaylistSummary } from "./episode-row";
@@ -20,10 +20,10 @@ import { PlaylistCover } from "./playlist-icon";
 
 type Playlist = PlaylistSummary & { icon: string | null; count: number; seconds: number; artworkUrl: string | null };
 
-/** Which tracks a list shows: everything, or just the long ones (podcasts). */
+/** Which tracks a list shows: everything, or just podcast episodes (not uploads, however long). */
 export type TrackFilter = "all" | "podcasts";
 
-const pick = (episodes: Episode[], filter: TrackFilter) => (filter === "podcasts" ? episodes.filter(isPodcastLength) : episodes);
+const pick = (episodes: Episode[], filter: TrackFilter) => (filter === "podcasts" ? episodes.filter((e) => e.kind === "podcast") : episodes);
 const totalSeconds = (episodes: Episode[]) => episodes.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0);
 
 /** Music's screen: finished things to decide on, then a row for all tracks, podcasts, and each playlist. */
