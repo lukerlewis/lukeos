@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Ellipsis, ListPlus, Pencil, Play, Plus, Trash2, Undo2 } from "lucide-react";
+import { Check, CircleCheck, Ellipsis, ListPlus, Pencil, Play, Plus, Trash2, Undo2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { showToast } from "@/components/shell/toast";
@@ -15,6 +15,7 @@ import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { useListen, type PlayerEpisode } from "./listen-provider";
 import { Artwork } from "./player-bar";
+import { useSelection } from "./selection";
 
 export type PlaylistSummary = { id: string; title: string };
 
@@ -53,20 +54,37 @@ export function EpisodeRow({
   extra?: React.ReactNode;
 }) {
   const listen = useListen();
+  const selection = useSelection();
   const [menu, setMenu] = useState(false);
   const isHidden = useHidden(episode.id);
   if (isHidden) return null;
   const current = listen?.current?.id === episode.id;
   const progress = episode.durationSeconds && !episode.finishedAt ? Math.min(1, episode.positionSeconds / episode.durationSeconds) : 0;
   const line = [episode.show, lengthLine(episode)].filter(Boolean).join(" · ");
+  const selecting = !!selection?.selecting;
+  const on = !!selection?.picked.has(episode.id);
 
   return (
-    <li className="flex items-center gap-1 border-b pr-1 last:border-b-0">
+    <li className={cn("flex items-center gap-1 border-b pr-1 last:border-b-0", on && "bg-muted/60")}>
       <button
         type="button"
-        onClick={() => (current ? listen?.toggle() : listen?.play(toPlayer(episode), queue.map(toPlayer)))}
-        className="press-tint flex min-h-16 min-w-0 grow items-center gap-3 py-2.5 pl-3 text-left hover:bg-muted/50"
+        aria-pressed={selecting ? on : undefined}
+        onClick={() =>
+          selecting ? selection!.toggle(episode.id) : current ? listen?.toggle() : listen?.play(toPlayer(episode), queue.map(toPlayer))
+        }
+        className={cn("press-tint flex min-h-16 min-w-0 grow items-center gap-3 py-2.5 pl-3 text-left hover:bg-muted/50", selecting && "pr-3")}
       >
+        {selecting && (
+          <span
+            className={cn(
+              "flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border md:size-4",
+              on ? "border-primary bg-primary text-primary-foreground" : "bg-card",
+            )}
+            aria-hidden
+          >
+            {on && <Check className="size-3" />}
+          </span>
+        )}
         <Artwork episode={episode} className="size-12" />
         <span className="min-w-0 grow">
           <span className={cn("line-clamp-2 text-preview font-medium", episode.finishedAt && "text-muted-foreground")}>{episode.title}</span>
@@ -83,16 +101,29 @@ export function EpisodeRow({
           )}
         </span>
       </button>
-      {extra}
-      <button
-        type="button"
-        aria-label={`Options for ${episode.title}`}
-        onClick={() => setMenu(true)}
-        className="press flex size-11 shrink-0 items-center justify-center rounded-full text-icon hover:bg-muted"
-      >
-        <Ellipsis className="size-5" aria-hidden />
-      </button>
-      {menu && <EpisodeMenu episode={episode} queue={queue} playlists={playlists} inPlaylist={inPlaylist} onClose={() => setMenu(false)} />}
+      {!selecting && (
+        <>
+          {extra}
+          <button
+            type="button"
+            aria-label={`Options for ${episode.title}`}
+            onClick={() => setMenu(true)}
+            className="press flex size-11 shrink-0 items-center justify-center rounded-full text-icon hover:bg-muted"
+          >
+            <Ellipsis className="size-5" aria-hidden />
+          </button>
+        </>
+      )}
+      {menu && (
+        <EpisodeMenu
+          episode={episode}
+          queue={queue}
+          playlists={playlists}
+          inPlaylist={inPlaylist}
+          onSelect={selection && (() => selection.start(episode.id))}
+          onClose={() => setMenu(false)}
+        />
+      )}
     </li>
   );
 }
@@ -115,12 +146,15 @@ function EpisodeMenu({
   queue,
   playlists,
   inPlaylist,
+  onSelect,
   onClose,
 }: {
   episode: Episode;
   queue: Episode[];
   playlists: PlaylistSummary[];
   inPlaylist?: { id: string; order: string[] };
+  /** Starts picking several, this one first. */
+  onSelect?: (() => void) | null;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -176,6 +210,12 @@ function EpisodeMenu({
               <ListPlus className="size-[18px] text-muted-foreground" aria-hidden />
               Add to playlist
             </button>
+            {onSelect && (
+              <button type="button" className={item} onClick={() => { onSelect(); onClose(); }}>
+                <CircleCheck className="size-[18px] text-muted-foreground" aria-hidden />
+                Select
+              </button>
+            )}
             {inPlaylist && (
               <>
                 <button type="button" className={item} disabled={busy || at <= 0} onClick={() => void move(-1)}>
@@ -230,7 +270,7 @@ function EpisodeMenu({
                 {p.title}
               </button>
             ))}
-            <NewPlaylistInline episodeId={episode.id} onDone={() => { onClose(); router.refresh(); }} />
+            <NewPlaylistInline episodeIds={[episode.id]} onDone={() => { onClose(); router.refresh(); }} />
           </div>
         )}
 
@@ -284,11 +324,11 @@ function EpisodeMenu({
 
 /** "New playlist" with a name box, used when adding to a playlist and on the Playlists tab. */
 export function NewPlaylistInline({
-  episodeId,
+  episodeIds,
   onDone,
   startOpen,
 }: {
-  episodeId?: string;
+  episodeIds?: string[];
   onDone: (id: string) => void;
   startOpen?: boolean;
 }) {
@@ -314,8 +354,8 @@ export function NewPlaylistInline({
         if (!title.trim()) return;
         setBusy(true);
         try {
-          const p = await op("create_playlist", { title: title.trim(), ...(episodeId && { episodeIds: [episodeId] }) });
-          showToast(episodeId ? `Added to ${p.title}` : "Playlist made");
+          const p = await op("create_playlist", { title: title.trim(), ...(episodeIds?.length && { episodeIds }) });
+          showToast(episodeIds?.length ? `Added to ${p.title}` : "Playlist made");
           onDone(p.id);
         } catch (err) {
           showToast((err as Error).message);
