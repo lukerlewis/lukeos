@@ -73,6 +73,7 @@ export function SprintTasks({ openTasks }: { openTasks: PickableTask[] }) {
 
   const inSprint = new Set(sprint.tasks.map((t) => t.id));
   const pickable = openTasks.filter((t) => !inSprint.has(t.id));
+  if (sprint.running && sprint.tasks.length === 0) return null;
 
   return (
     <Card className="w-full">
@@ -89,7 +90,8 @@ export function SprintTasks({ openTasks }: { openTasks: PickableTask[] }) {
           ))}
         </ul>
       )}
-      {!sprint.finished && (
+      {/* Adding is for setting up or a pause; while it runs, just the checklist. */}
+      {!sprint.finished && !sprint.running && (
         <>
           <form onSubmit={add} className={cn("flex items-center gap-3 px-4", sprint.tasks.length > 0 && "border-t")}>
             <Plus className="size-[18px] shrink-0 text-icon" aria-hidden />

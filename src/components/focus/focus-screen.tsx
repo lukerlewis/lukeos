@@ -131,7 +131,8 @@ export function FocusScreen({ openTasks }: { openTasks: PickableTask[] }) {
                 {sprint.finished ? "Sprint done" : "Sprint"}
               </span>
               <Face ms={sprint.finished ? (sprint.doneMs ?? 0) : sprint.leftMs} />
-              {sprint.tasks.length > 0 ? (
+              {/* While it runs, just the time; the count shows when paused. */}
+              {sprint.tasks.length > 0 && !sprint.running ? (
                 <span className="text-control text-muted-foreground tabular-nums">
                   {tasksDone} of {sprint.tasks.length} done
                 </span>
@@ -150,7 +151,9 @@ export function FocusScreen({ openTasks }: { openTasks: PickableTask[] }) {
                 running={sprint.running}
                 onStart={focus.startSprint}
                 onPause={focus.pauseSprint}
-                onReset={focus.endSprint}
+                // End shows once the sprint is paused, like the timer's Done.
+                onReset={sprint.running ? undefined : focus.endSprint}
+                hideReset={sprint.running}
                 resetLabel="End sprint"
                 resetIcon={<Square fill="currentColor" className="size-3.5!" />}
               />
@@ -280,6 +283,7 @@ function Controls({
   onStart,
   onPause,
   onReset,
+  hideReset,
   resetLabel = "Restart",
   resetIcon = <RotateCcw />,
   onSkip,
@@ -290,6 +294,8 @@ function Controls({
   onStart: () => void;
   onPause?: () => void;
   onReset?: () => void;
+  /** No Restart button at all (its space kept), rather than a greyed-out one. */
+  hideReset?: boolean;
   resetLabel?: string;
   resetIcon?: React.ReactNode;
   onSkip?: () => void;
@@ -299,16 +305,20 @@ function Controls({
   const side = "size-14 rounded-full";
   return (
     <div className="flex items-center gap-6">
-      <Button
-        variant="outline"
-        size="icon"
-        className={side}
-        aria-label={resetLabel}
-        disabled={!onReset}
-        onClick={onReset}
-      >
-        {resetIcon}
-      </Button>
+      {hideReset ? (
+        <span className={side} aria-hidden />
+      ) : (
+        <Button
+          variant="outline"
+          size="icon"
+          className={side}
+          aria-label={resetLabel}
+          disabled={!onReset}
+          onClick={onReset}
+        >
+          {resetIcon}
+        </Button>
+      )}
       <Button
         className="size-[76px] rounded-full [&_svg]:size-7"
         aria-label={running ? "Pause" : "Start"}
