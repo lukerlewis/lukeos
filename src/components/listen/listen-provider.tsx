@@ -170,7 +170,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     if (audio && ep?.src) {
       audio.preload = "metadata";
       audio.src = ep.src;
-      setPosition(ep.positionSeconds);
+      setPosition(ep.kind === "podcast" ? ep.positionSeconds : 0);
       setDuration(ep.durationSeconds ?? 0);
     }
   }, []);
@@ -190,7 +190,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     const { queue: q, index: i } = state.current;
     const ep = q[i];
     // Until it's started, the audio element is at 0 whatever Luke's place is, so there's nothing to save.
-    if (!audio || !ep || startedRef.current !== ep.id || !Number.isFinite(audio.currentTime)) return;
+    if (!audio || !ep || ep.kind !== "podcast" || startedRef.current !== ep.id || !Number.isFinite(audio.currentTime)) return;
     const now = Date.now();
     if (!force && now - state.current.lastSaved < SAVE_EVERY_MS) return;
     state.current.lastSaved = now;
@@ -227,7 +227,8 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
       // A fresh start (not a resume after pause) picks up where Luke left off.
       if (startedRef.current !== ep.id) {
         startedRef.current = ep.id;
-        const from = ep.durationSeconds && ep.positionSeconds > ep.durationSeconds - 10 ? 0 : ep.positionSeconds;
+        // Songs always start from the beginning; only podcast episodes keep their place.
+        const from = ep.kind !== "podcast" || (ep.durationSeconds && ep.positionSeconds > ep.durationSeconds - 10) ? 0 : ep.positionSeconds;
         if (from > 0) {
           if (audio.readyState >= 1) audio.currentTime = from;
           else
