@@ -140,6 +140,8 @@ export function FocusScreen({ openTasks }: { openTasks: PickableTask[] }) {
                 <span className="h-2" aria-hidden />
               )}
             </Ring>
+            {/* Once started, the checklist comes first and the buttons sit under it. */}
+            <SprintTasks openTasks={openTasks} />
             {sprint.finished ? (
               <div className="flex h-[76px] items-center">
                 <Button size="lg" className="h-14 rounded-full px-8" onClick={focus.newSprint}>
@@ -194,7 +196,7 @@ export function FocusScreen({ openTasks }: { openTasks: PickableTask[] }) {
         </>
       )}
 
-      {mode === "sprint" && <SprintTasks openTasks={openTasks} />}
+      {mode === "sprint" && !sprint.started && <SprintTasks openTasks={openTasks} />}
 
       <Card className={cn("w-full", running && "max-md:hidden")}>
         <div className="flex items-center gap-3 px-4 py-3">
