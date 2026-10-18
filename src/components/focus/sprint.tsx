@@ -2,7 +2,7 @@
 
 import { Check, ListChecks, Plus, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StatusIcon } from "@/components/tasks/status-circle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -277,6 +277,65 @@ function TaskPicker({
       </div>
       </div>
     </Dialog>
+  );
+}
+
+/**
+ * A place to jot down whatever comes to mind mid-sprint, so it's out of Luke's
+ * head without leaving the sprint. Saves as he types and stays until he clears it.
+ */
+export function ScratchPad({ text: saved }: { text: string }) {
+  const [text, setText] = useState(saved);
+  const [prev, setPrev] = useState(saved);
+  const [focused, setFocused] = useState(false);
+  const last = useRef(saved);
+  const latest = useRef(saved);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Claude (or another device) changed it: show that, unless Luke is typing.
+  if (saved !== prev) {
+    setPrev(saved);
+    if (!focused) setText(saved);
+  }
+
+  const save = useCallback(() => {
+    clearTimeout(timer.current);
+    const value = latest.current;
+    if (value === last.current) return;
+    last.current = value;
+    void inBackground(() => op("update_scratch_pad", { text: value }), { failure: "Couldn't save the scratch pad." });
+  }, []);
+
+  // Anything typed in the last moment is saved when Luke leaves the screen.
+  useEffect(() => {
+    window.addEventListener("pagehide", save);
+    return () => {
+      window.removeEventListener("pagehide", save);
+      save();
+    };
+  }, [save]);
+
+  return (
+    <Card className="w-full">
+      <textarea
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          latest.current = e.target.value;
+          clearTimeout(timer.current);
+          timer.current = setTimeout(save, 600);
+        }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setFocused(false);
+          save();
+        }}
+        placeholder="Scratch pad"
+        aria-label="Scratch pad"
+        rows={3}
+        className="field-sizing-content block max-h-72 min-h-24 w-full resize-none bg-transparent px-4 py-3 text-body outline-none placeholder:text-muted-foreground md:text-control"
+      />
+    </Card>
   );
 }
 

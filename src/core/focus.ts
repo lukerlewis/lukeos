@@ -9,11 +9,19 @@ import { getTimeZone } from "./settings";
 
 /**
  * Focus: a pomodoro timer, a regular timer, focus sprints and brown noise. The timers run on
- * Luke's device; what's kept here is the pomodoro lengths and a log of the
- * time he spent focusing, shown as a daily chart under Stats.
+ * Luke's device; what's kept here is the pomodoro lengths, the sprint scratch pad and a
+ * log of the time he spent focusing, shown as a daily chart under Stats.
  */
 
 const KEY = "focus_settings";
+const SCRATCH_KEY = "focus_scratch_pad";
+const SCRATCH_MAX = 20_000;
+
+/** The scratch pad under a sprint's tasks: one block of text that stays until Luke clears it. */
+export async function getScratchPad(): Promise<string> {
+  const [row] = await db.select().from(schema.appSettings).where(eq(schema.appSettings.key, SCRATCH_KEY)).limit(1);
+  return row?.value ?? "";
+}
 
 export async function getFocusSettings(): Promise<FocusSettings> {
   const [row] = await db.select().from(schema.appSettings).where(eq(schema.appSettings.key, KEY)).limit(1);
@@ -83,9 +91,23 @@ export const focusOperations = {
   get_focus: defineOperation({
     name: "get_focus",
     description:
-      "Luke's Focus section: his pomodoro lengths (focus, short break, long break, in minutes, and rounds before a long break).",
+      "Luke's Focus section: his pomodoro lengths (focus, short break, long break, in minutes, and rounds before a long break), and his sprint scratch pad (things he jotted down mid-sprint so they don't distract him).",
     input: z.object({}),
-    run: async () => ({ settings: await getFocusSettings() }),
+    run: async () => ({ settings: await getFocusSettings(), scratchPad: await getScratchPad() }),
+  }),
+
+  update_scratch_pad: defineOperation({
+    name: "update_scratch_pad",
+    description:
+      "Replace the text of Luke's sprint scratch pad (shown under a focus sprint's tasks; get_focus has the current text). An empty string clears it. Only change it when Luke asks.",
+    input: z.object({ text: z.string().max(SCRATCH_MAX) }),
+    run: async ({ text }) => {
+      await db
+        .insert(schema.appSettings)
+        .values({ key: SCRATCH_KEY, value: text })
+        .onConflictDoUpdate({ target: schema.appSettings.key, set: { value: text } });
+      return { scratchPad: text };
+    },
   }),
 
   update_focus_settings: defineOperation({
