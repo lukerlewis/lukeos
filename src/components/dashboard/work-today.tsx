@@ -20,11 +20,14 @@ export function WorkToday({
   projects,
   canAdd,
   today,
+  side,
 }: {
   tasks: Task[];
   projects: CellProject[];
   canAdd: boolean;
   today: string;
+  /** The cards beside the Today card (Scratch pad, Agents), lined up with its top. */
+  side: React.ReactNode;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   // A project that's gone since it was picked shows everything again.
@@ -34,21 +37,24 @@ export function WorkToday({
   return (
     <div className="flex flex-col gap-3">
       <ProjectFilter tasks={tasks} projects={projects} picked={project?.id ?? null} onPick={setPicked} />
-      <Card>
-        <div className="flex items-center gap-2 border-b px-4 py-3.5">
-          <h2 className="text-sm font-medium">Today</h2>
-          <span className="text-meta text-muted-foreground">{shown.length}</span>
-        </div>
-        <TaskList
-          tasks={shown}
-          today={today}
-          columns
-          projects={projects}
-          empty={<p className="px-4 py-6 text-center text-meta text-muted-foreground">Nothing for today.</p>}
-        />
-        {/* "Add a task" makes a To do task, so it only shows while To do tasks do. A picked project gets it. */}
-        {canAdd && <QuickAdd bucket="today" area="work" projectId={project?.id ?? null} today={today} placeholder="Add to Work" />}
-      </Card>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <Card>
+          <div className="flex items-center gap-2 border-b px-4 py-3.5">
+            <h2 className="text-sm font-medium">Today</h2>
+            <span className="text-meta text-muted-foreground">{shown.length}</span>
+          </div>
+          <TaskList
+            tasks={shown}
+            today={today}
+            columns
+            projects={projects}
+            empty={<p className="px-4 py-6 text-center text-meta text-muted-foreground">Nothing for today.</p>}
+          />
+          {/* "Add a task" makes a To do task, so it only shows while To do tasks do. A picked project gets it. */}
+          {canAdd && <QuickAdd bucket="today" area="work" projectId={project?.id ?? null} today={today} placeholder="Add to Work" />}
+        </Card>
+        {side}
+      </div>
     </div>
   );
 }
