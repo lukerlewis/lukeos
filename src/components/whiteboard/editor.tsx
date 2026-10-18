@@ -8,6 +8,8 @@ import {
   Frame,
   Hand,
   Maximize,
+  MessageSquare,
+  MessageSquarePlus,
   Minus,
   MousePointer2,
   MoveRight,
@@ -20,11 +22,15 @@ import {
   Trash2,
   Type,
   Undo2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Comments } from "@/components/comments/comments";
 import { showToast, showTrashedToast } from "@/components/shell/toast";
+import type { Comment } from "@/core/comments";
+import type { CommentPin } from "@/db/schema";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import {
@@ -59,7 +65,7 @@ import { Inks, Panel, PenSizes } from "./panel";
 
 type Rect = { x: number; y: number; w: number; h: number };
 type Camera = { x: number; y: number; z: number };
-type Tool = "select" | "hand" | "frame" | "text" | "sticky" | "shape" | "arrow" | "pen" | "eraser";
+type Tool = "select" | "hand" | "frame" | "text" | "sticky" | "shape" | "arrow" | "pen" | "eraser" | "comment";
 type Handle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 
 type Gesture =
@@ -167,9 +173,12 @@ function useHistory(initial: Item[]) {
 export function WhiteboardEditor({
   board,
   settings,
+  comments,
 }: {
   board: { id: string; title: string; version: number; items: Item[] };
   settings: { snap: boolean };
+  /** The board's comments, and whether to start with them showing (opened from a notification). */
+  comments: { threads: Comment[]; timeZone: string; open: boolean };
 }) {
   const router = useRouter();
   const history = useHistory(board.items);
@@ -235,6 +244,12 @@ export function WhiteboardEditor({
   /** While Option is held: what to measure the selection's distance to. */
   const [measure, setMeasure] = useState<string | null>(null);
   const pointerAt = useRef<{ x: number; y: number } | null>(null);
+  const [commentsOpen, setCommentsOpen] = useState(comments.open);
+  const [threads, setThreads] = useState(comments.threads);
+  /** Where the comment being written will be pinned. */
+  const [newPin, setNewPin] = useState<CommentPin | null>(null);
+  /** The comment picked on the board. */
+  const [activeComment, setActiveComment] = useState<string | null>(null);
 
   const viewRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
@@ -381,6 +396,45 @@ export function WhiteboardEditor({
       window.removeEventListener("focus", poll);
     };
   }, [board.id, replace, itemsRef, setSelection]);
+
+  // ---- Comments: Claude's replies show up while the board is open ----
+  const loadComments = useCallback(async () => {
+    try {
+      setThreads(await op("list_comments", { targetType: "whiteboard", targetId: board.id }));
+    } catch {}
+  }, [board.id]);
+  useEffect(() => {
+    const poll = () => {
+      if (!document.hidden) void loadComments();
+    };
+    const t = setInterval(poll, commentsOpen ? 5000 : 30000);
+    window.addEventListener("focus", poll);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("focus", poll);
+    };
+  }, [loadComments, commentsOpen]);
+  /** Pinned comments are numbered in the order they were made, so the numbers stay put. */
+  const pinNumbers = useMemo(() => {
+    const pinned = threads.filter((t) => t.pin).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return new Map(pinned.map((t, i) => [t.id, i + 1]));
+  }, [threads]);
+  /** Where a pin is on the board right now: it follows the item it's on. Null if that item is gone. */
+  const pinPoint = (pin: CommentPin, boxes = rects): Point | null => {
+    if (!pin.item) return { x: pin.x, y: pin.y };
+    const r = boxes.get(pin.item);
+    return r ? { x: r.x + pin.x, y: r.y + pin.y } : null;
+  };
+  /** Moves the board so a pinned comment is in view. */
+  const showPin = (thread: Comment) => {
+    const at = thread.pin && pinPoint(thread.pin, rectsRef.current);
+    const view = viewRef.current;
+    setActiveComment(thread.id);
+    if (!at || !view) return;
+    const c = camRef.current;
+    setCam({ ...c, x: view.clientWidth / 2 - at.x * c.z, y: view.clientHeight / 2 - at.y * c.z });
+    if (window.matchMedia("(max-width: 767px)").matches) setCommentsOpen(false);
+  };
 
   // ---- Picking what was clicked ----
   /** The ids under a pointer, from the outermost frame in. */
@@ -730,6 +784,17 @@ export function WhiteboardEditor({
       return;
     }
     const chain = chainAt(e.target);
+
+    if (tool === "comment") {
+      // Pinned to the innermost thing under the pointer, so it moves with it, or else to the spot on the board.
+      const id = itemUnder(e.clientX, e.clientY);
+      const r = id ? rectsRef.current.get(id) : undefined;
+      setNewPin(id && r ? { item: id, x: Math.round(world.x - r.x), y: Math.round(world.y - r.y) } : { x: Math.round(world.x), y: Math.round(world.y) });
+      setActiveComment(null);
+      setCommentsOpen(true);
+      setTool("select");
+      return;
+    }
 
     if (tool === "pen" || tool === "eraser") {
       // Only the Pencil (or a mouse) draws, so a resting hand can't. One finger does nothing; two fingers still pinch and pan.
@@ -1473,7 +1538,7 @@ export function WhiteboardEditor({
       return;
     }
     if (mod || e.altKey) return;
-    const tools: Record<string, Tool> = { v: "select", h: "hand", f: "frame", t: "text", s: "sticky", r: "shape", o: "shape", x: "arrow", p: "pen", e: "eraser" };
+    const tools: Record<string, Tool> = { v: "select", h: "hand", f: "frame", t: "text", s: "sticky", r: "shape", o: "shape", x: "arrow", p: "pen", e: "eraser", c: "comment" };
     if (tools[key] && !e.shiftKey) {
       if (key === "r") setShapeKind("rect");
       if (key === "o") setShapeKind("ellipse");
@@ -1525,7 +1590,7 @@ export function WhiteboardEditor({
 
   /** Picking the pen or eraser lets go of what's selected, so its panel is out of the way. */
   function chooseTool(next: Tool) {
-    if (next === "pen" || next === "eraser") setSelection([]);
+    if (next === "pen" || next === "eraser" || next === "comment") setSelection([]);
     setTool(next);
   }
 
@@ -1533,6 +1598,7 @@ export function WhiteboardEditor({
   const single = selectedItems.length === 1 ? selectedItems[0] : null;
   const singleParent = single ? locate(items, single.id)?.parent ?? null : null;
   const cursor = spaceDown || tool === "hand" ? "grab" : tool === "select" ? "default" : "crosshair";
+  const openComments = threads.filter((t) => !t.resolved).length;
 
   async function rename(next: string) {
     const t = next.trim();
@@ -1574,6 +1640,19 @@ export function WhiteboardEditor({
           aria-label="Whiteboard name"
           className="h-9 min-w-0 grow rounded-lg bg-transparent px-2 text-base font-medium text-foreground outline-none placeholder:text-muted-foreground hover:bg-selected focus:bg-card md:text-control"
         />
+        <button
+          type="button"
+          onClick={() => setCommentsOpen(!commentsOpen)}
+          aria-label="Comments"
+          aria-expanded={commentsOpen}
+          className={cn(
+            "flex h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-muted-foreground hover:bg-selected hover:text-foreground md:h-9 md:min-w-9",
+            commentsOpen && "bg-selected text-foreground",
+          )}
+        >
+          <MessageSquare className="size-4" aria-hidden />
+          {openComments > 0 && <span className="text-meta tabular-nums">{openComments}</span>}
+        </button>
         <div className="relative">
           <button
             type="button"
@@ -1631,10 +1710,11 @@ export function WhiteboardEditor({
         </button>
       </header>
 
+      <div className="relative flex min-h-0 grow">
       <div
         ref={viewRef}
         data-no-pull
-        className="relative grow touch-none overflow-hidden select-none"
+        className="relative min-w-0 grow touch-none overflow-hidden select-none"
         style={{
           cursor,
           background: "var(--wb-canvas)",
@@ -1796,6 +1876,41 @@ export function WhiteboardEditor({
           )}
         </div>
 
+        {/* Comments pinned to the board. Resolved ones are only in the list. */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {threads.map((t) => {
+            const n = pinNumbers.get(t.id);
+            const at = t.pin && !t.resolved ? pinPoint(t.pin) : null;
+            if (!at || n === undefined) return null;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                data-wb-ui
+                onClick={() => {
+                  setActiveComment(t.id);
+                  setCommentsOpen(true);
+                }}
+                aria-label={`Comment ${n}`}
+                title={t.body.slice(0, 120)}
+                className={cn(
+                  "pointer-events-auto absolute flex size-7 -translate-y-full items-center justify-center rounded-full rounded-bl-none border-2 border-card bg-foreground text-meta font-medium text-background tabular-nums",
+                  activeComment === t.id && commentsOpen && "ring-2 ring-foreground",
+                )}
+                style={{ left: at.x * cam.z + cam.x, top: at.y * cam.z + cam.y }}
+              >
+                {n}
+              </button>
+            );
+          })}
+          {newPin && pinPoint(newPin) && (
+            <div
+              className="absolute size-7 -translate-y-full rounded-full rounded-bl-none border-2 border-foreground bg-card"
+              style={{ left: pinPoint(newPin)!.x * cam.z + cam.x, top: pinPoint(newPin)!.y * cam.z + cam.y }}
+            />
+          )}
+        </div>
+
         {(single || selectedItems.length > 1) && !drag && (
           <Panel
             items={selectedItems}
@@ -1810,7 +1925,14 @@ export function WhiteboardEditor({
           />
         )}
 
-        <div data-wb-ui className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-stroke bg-card p-1">
+        <div
+          data-wb-ui
+          className={cn(
+            "absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-stroke bg-card p-1",
+            // Room for the comments beside the board: the tools move to the left.
+            commentsOpen && "md:left-3 md:translate-x-0",
+          )}
+        >
           <ToolButton label="Select (V)" active={tool === "select"} onClick={() => setTool("select")} icon={MousePointer2} />
           <ToolButton label="Hand (H)" active={tool === "hand"} onClick={() => setTool("hand")} icon={Hand} className="hidden md:flex" />
           <ToolButton label="Frame (F)" active={tool === "frame"} onClick={() => setTool("frame")} icon={Frame} />
@@ -1836,6 +1958,7 @@ export function WhiteboardEditor({
             icon={arrowKind === "elbow" ? CornerDownRight : MoveRight}
           />
           <ToolButton label="Pen (P)" active={tool === "pen" || tool === "eraser"} onClick={() => chooseTool("pen")} icon={Pencil} />
+          <ToolButton label="Comment (C)" active={tool === "comment"} onClick={() => chooseTool("comment")} icon={MessageSquarePlus} className="hidden md:flex" />
           <span className="mx-1 h-6 w-px bg-border" />
           <ToolButton label="Undo" onClick={() => history.undo()} icon={Undo2} disabled={!history.canUndo} />
           <ToolButton label="Redo" onClick={() => history.redo()} icon={Redo2} disabled={!history.canRedo} className="hidden md:flex" />
@@ -1866,7 +1989,10 @@ export function WhiteboardEditor({
           </div>
         )}
 
-        <div data-wb-ui className="absolute right-3 bottom-3 hidden items-center gap-0.5 rounded-xl border border-stroke bg-card p-1 md:flex">
+        <div
+          data-wb-ui
+          className={cn("absolute right-3 bottom-3 hidden items-center gap-0.5 rounded-xl border border-stroke bg-card p-1 md:flex", commentsOpen && "md:hidden xl:flex")}
+        >
           <ToolButton label="Zoom out" onClick={() => zoomBy(0.8)} icon={Minus} />
           <button
             type="button"
@@ -1879,6 +2005,34 @@ export function WhiteboardEditor({
           <ToolButton label="Zoom in" onClick={() => zoomBy(1.25)} icon={Plus} />
           <ToolButton label="Fit (Shift+1)" onClick={() => fit()} icon={Maximize} />
         </div>
+      </div>
+
+      {commentsOpen && (
+        <aside className="absolute inset-0 z-30 flex flex-col overflow-y-auto bg-background p-4 pb-[calc(1rem+var(--player-space,0px))] md:static md:w-80 md:shrink-0 md:border-l md:border-stroke">
+          <button
+            type="button"
+            onClick={() => {
+              setCommentsOpen(false);
+              setNewPin(null);
+            }}
+            aria-label="Close comments"
+            className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-selected hover:text-foreground md:top-3 md:right-3 md:size-8"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
+          <Comments
+            target={{ type: "whiteboard", id: board.id }}
+            threads={threads}
+            timeZone={comments.timeZone}
+            onChanged={loadComments}
+            pin={newPin}
+            onUnpin={() => setNewPin(null)}
+            numbers={pinNumbers}
+            active={activeComment}
+            onPick={showPin}
+          />
+        </aside>
+      )}
       </div>
     </div>
   );

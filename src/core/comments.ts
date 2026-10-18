@@ -2,14 +2,15 @@ import "server-only";
 import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
+import type { CommentPin } from "@/db/schema";
 import { assertArtifact } from "./artifacts";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, type MadeBy } from "./define";
 import { deleteOrphanMentions, syncMentions } from "./mentions";
 import { sendPush } from "./push";
 
-const { comments, notes, artifacts, documents, tasks, archiveEntries, cards, projects, mentions } = schema;
+const { comments, notes, artifacts, documents, tasks, archiveEntries, cards, projects, mentions, whiteboards } = schema;
 
-export const commentTargets = ["note", "artifact", "document", "task", "entry", "card"] as const;
+export const commentTargets = ["note", "artifact", "document", "task", "entry", "card", "whiteboard"] as const;
 export type CommentTarget = (typeof commentTargets)[number];
 
 export type Comment = {
@@ -19,6 +20,8 @@ export type Comment = {
   version: number | null;
   /** The words it's about, if any were picked. */
   quote: string | null;
+  /** Whiteboards only: the spot it's pinned to (from the top left of `item` when there is one, else on the board). */
+  pin: CommentPin | null;
   body: string;
   resolved: boolean;
   resolvedAt: Date | null;
@@ -58,6 +61,15 @@ async function targetTitle(type: CommentTarget, id: string) {
     if (!card) throw new OperationError("That card doesn't exist, or it's in Trash.", 404);
     return card.title;
   }
+  if (type === "whiteboard") {
+    const [board] = await db
+      .select({ title: whiteboards.title })
+      .from(whiteboards)
+      .where(and(eq(whiteboards.id, id), isNull(whiteboards.deletedAt)))
+      .limit(1);
+    if (!board) throw new OperationError("That whiteboard doesn't exist, or it's in Trash.", 404);
+    return board.title;
+  }
   if (type === "entry") {
     const [entry] = await db
       .select({ title: archiveEntries.title })
@@ -82,6 +94,7 @@ const replyOf = (r: Row) => ({
   id: r.id,
   version: r.version,
   quote: r.quote,
+  pin: r.pin ?? null,
   body: r.body,
   resolved: r.resolvedAt !== null,
   resolvedAt: r.resolvedAt,
@@ -90,7 +103,7 @@ const replyOf = (r: Row) => ({
 });
 
 /**
- * Comment threads, oldest first: on one note, artifact, document, task or entry, or (with no
+ * Comment threads, oldest first: on one note, artifact, document, task, entry, card or whiteboard, or (with no
  * target) across everything, e.g. every open comment Claude hasn't answered.
  */
 export async function listComments(
@@ -107,7 +120,8 @@ export async function listComments(
     or (${comments.targetType} = 'document' and exists (select 1 from ${documents} d where d.id = ${comments.targetId} and d.deleted_at is null))
     or (${comments.targetType} = 'task' and exists (select 1 from ${tasks} t where t.id = ${comments.targetId} and t.deleted_at is null))
     or (${comments.targetType} = 'entry' and exists (select 1 from ${archiveEntries} e where e.id = ${comments.targetId} and e.deleted_at is null))
-    or (${comments.targetType} = 'card' and exists (select 1 from ${cards} k join ${projects} p on p.id = k.project_id where k.id = ${comments.targetId} and k.deleted_at is null and p.deleted_at is null)))`);
+    or (${comments.targetType} = 'card' and exists (select 1 from ${cards} k join ${projects} p on p.id = k.project_id where k.id = ${comments.targetId} and k.deleted_at is null and p.deleted_at is null))
+    or (${comments.targetType} = 'whiteboard' and exists (select 1 from ${whiteboards} w where w.id = ${comments.targetId} and w.deleted_at is null)))`);
 
   const threads = await db
     .select({
@@ -118,7 +132,8 @@ export async function listComments(
         (select d.title from ${documents} d where ${comments.targetType} = 'document' and d.id = ${comments.targetId}),
         (select t.title from ${tasks} t where ${comments.targetType} = 'task' and t.id = ${comments.targetId}),
         (select e.title from ${archiveEntries} e where ${comments.targetType} = 'entry' and e.id = ${comments.targetId}),
-        (select k.title from ${cards} k where ${comments.targetType} = 'card' and k.id = ${comments.targetId}), '')`,
+        (select k.title from ${cards} k where ${comments.targetType} = 'card' and k.id = ${comments.targetId}),
+        (select w.title from ${whiteboards} w where ${comments.targetType} = 'whiteboard' and w.id = ${comments.targetId}), '')`,
     })
     .from(comments)
     .where(and(...where))
@@ -156,11 +171,17 @@ async function getThread(id: string) {
   return thread;
 }
 
-const fallbackTitle = { note: "Note", artifact: "Artifact", document: "Document", task: "Task", entry: "Work archive entry", card: "Card" } as const;
+const fallbackTitle = { note: "Note", artifact: "Artifact", document: "Document", task: "Task", entry: "Work archive entry", card: "Card", whiteboard: "Whiteboard" } as const;
 
-/** Where a comment's note, artifact, document, task, Work archive entry or card opens in the app. Tasks open over the dashboard; cards (/cards/<id>) on their project's Board. */
+/** Where a comment's note, artifact, document, task, Work archive entry, card or whiteboard opens in the app. Tasks open over the dashboard; cards (/cards/<id>) on their project's Board. */
 export const commentTargetUrl = (target: { type: CommentTarget; id: string }) =>
-  target.type === "task" ? `/?task=${target.id}` : target.type === "entry" ? `/archive/${target.id}` : `/${target.type}s/${target.id}`;
+  target.type === "task"
+    ? `/?task=${target.id}`
+    : target.type === "entry"
+      ? `/archive/${target.id}`
+      : target.type === "whiteboard"
+        ? `/whiteboard/${target.id}?comments=1`
+        : `/${target.type}s/${target.id}`;
 
 /** Tells Luke's phone when Claude answers or starts a comment, so he can reply. */
 async function notifyLuke(actor: Actor, target: Comment["target"], text: string) {
@@ -201,17 +222,19 @@ export async function commentOnTaskMention(taskId: string, line: string, reply: 
 }
 
 const id = z.uuid().describe("The comment's id.");
-const targetType = z.enum(commentTargets).describe('"document", "note", "task", "entry" (a Work archive entry), "card" (a pipeline card) or "artifact".');
+const targetType = z
+  .enum(commentTargets)
+  .describe('"document", "note", "task", "entry" (a Work archive entry), "card" (a pipeline card), "whiteboard" or "artifact".');
 const body = z.string().trim().min(1).max(20_000).describe("What the comment says.");
 
 export const commentOperations = {
   list_comments: defineOperation({
     name: "list_comments",
     description:
-      "Comment threads on Luke's documents, notes, tasks, Work archive entries, pipeline cards and artifacts, each with its replies. Give one of them to see its comments, or leave both out to see comments across everything. open: true shows only unresolved ones, which is how to find what Luke has asked you to look at. Each comment may quote the words it's about, and on an artifact says which version it was made on.",
+      "Comment threads on Luke's documents, notes, tasks, Work archive entries, pipeline cards, whiteboards and artifacts, each with its replies. Give one of them to see its comments, or leave both out to see comments across everything. open: true shows only unresolved ones, which is how to find what Luke has asked you to look at. Each comment may quote the words it's about, on an artifact says which version it was made on, and on a whiteboard may be pinned to a spot (pin: item is the id of the thing it's pinned to, read it with get_whiteboard; x and y are from that item's top left corner, or on the board when there's no item).",
     input: z.object({
       targetType: targetType.optional(),
-      targetId: z.uuid().optional().describe("The document's, note's, task's, entry's, card's or artifact's id."),
+      targetId: z.uuid().optional().describe("The document's, note's, task's, entry's, card's, whiteboard's or artifact's id."),
       open: z.boolean().optional().describe("Only comments not yet resolved."),
       limit: z.number().int().min(1).max(200).optional(),
     }),
@@ -220,19 +243,34 @@ export const commentOperations = {
 
   add_comment: defineOperation({
     name: "add_comment",
-    description: "Start a comment thread on a document, a note, a task, a Work archive entry, a pipeline card or an artifact. To answer an existing comment, use reply_to_comment.",
+    description:
+      "Start a comment thread on a document, a note, a task, a Work archive entry, a pipeline card, a whiteboard or an artifact. On a whiteboard, pin it to the thing it's about with pin.item (an item id from get_whiteboard), or to a spot on the board with pin.x and pin.y. To answer an existing comment, use reply_to_comment.",
     input: z.object({
       targetType,
-      targetId: z.uuid().describe("The document's, note's, task's, entry's, card's or artifact's id."),
+      targetId: z.uuid().describe("The document's, note's, task's, entry's, card's, whiteboard's or artifact's id."),
       body,
       quote: z.string().trim().max(2000).optional().describe("The words the comment is about, copied exactly."),
+      pin: z
+        .object({
+          item: z.string().trim().min(1).max(40).optional().describe("The id of the whiteboard item it's about. It moves with the item."),
+          x: z.number().finite().optional().describe("From the item's top left corner, or on the board when there's no item. Defaults to 0."),
+          y: z.number().finite().optional(),
+        })
+        .optional()
+        .describe("Whiteboards only: where the comment sits on the board."),
     }),
-    run: async ({ targetType, targetId, body, quote }, { actor }) => {
+    run: async ({ targetType, targetId, body, quote, pin }, { actor }) => {
       await targetTitle(targetType, targetId);
       const version = targetType === "artifact" ? (await assertArtifact(targetId)).version : null;
+      if (pin && targetType !== "whiteboard") throw new OperationError("Only comments on a whiteboard can be pinned.", 400);
+      if (pin && pin.item === undefined && (pin.x === undefined || pin.y === undefined))
+        throw new OperationError("Give pin.item, or both pin.x and pin.y.", 400);
+      const spot: CommentPin | null = pin
+        ? { x: Math.round(pin.x ?? 0), y: Math.round(pin.y ?? 0), ...(pin.item ? { item: pin.item } : {}) }
+        : null;
       const [row] = await db
         .insert(comments)
-        .values({ targetType, targetId, body, quote: quote || null, version, ...madeByColumns(actor) })
+        .values({ targetType, targetId, body, quote: quote || null, pin: spot, version, ...madeByColumns(actor) })
         .returning({ id: comments.id });
       await syncMentions("comment", row.id, [body], actor);
       const thread = await getThread(row.id);
