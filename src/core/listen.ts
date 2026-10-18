@@ -75,6 +75,36 @@ export async function listEpisodes(filter: { status?: "unfinished" | "finished" 
   return rows.map(episodeOut);
 }
 
+const SHUFFLE_KEY = "listen_shuffle_excluded";
+
+/** Playlists Luke left out of All songs' Shuffle, kept as a list of ids in app settings. */
+export async function shuffleExcludedPlaylistIds(): Promise<string[]> {
+  const [row] = await db.select().from(schema.appSettings).where(eq(schema.appSettings.key, SHUFFLE_KEY)).limit(1);
+  try {
+    const ids = JSON.parse(row?.value ?? "[]");
+    return Array.isArray(ids) ? ids.filter((i): i is string => typeof i === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+async function setShuffleExcluded(playlistId: string, excluded: boolean) {
+  const current = (await shuffleExcludedPlaylistIds()).filter((i) => i !== playlistId);
+  const value = JSON.stringify(excluded ? [...current, playlistId] : current);
+  await db
+    .insert(schema.appSettings)
+    .values({ key: SHUFFLE_KEY, value })
+    .onConflictDoUpdate({ target: schema.appSettings.key, set: { value } });
+}
+
+/** Songs on any playlist left out of shuffle: All songs' Shuffle skips these. */
+export async function shuffleSkippedEpisodeIds() {
+  const ids = await shuffleExcludedPlaylistIds();
+  if (!ids.length) return [];
+  const rows = await db.selectDistinct({ id: items.episodeId }).from(items).where(inArray(items.playlistId, ids));
+  return rows.map((r) => r.id);
+}
+
 export async function listPlaylists() {
   // Raw listen_playlists.id in the subqueries: Drizzle leaves column names unqualified there, which would pick up e.id.
   const rows = await db
@@ -92,8 +122,10 @@ export async function listPlaylists() {
     })
     .from(playlists)
     .orderBy(asc(playlists.title));
+  const excluded = new Set(await shuffleExcludedPlaylistIds());
   return rows.map(({ createdByKind, createdByName, createdByRoutine, ...p }) => ({
     ...p,
+    excludedFromShuffle: excluded.has(p.id),
     madeBy: madeByOf({ createdByKind, createdByName, createdByRoutine }),
   }));
 }
@@ -106,7 +138,8 @@ export async function getPlaylist(id: string) {
     .innerJoin(episodes, eq(episodes.id, items.episodeId))
     .where(eq(items.playlistId, id))
     .orderBy(asc(items.position));
-  return { id: playlist.id, title: playlist.title, icon: playlist.icon, madeBy: madeByOf(playlist), episodes: rows.map((r) => episodeOut(r.episode)) };
+  const excludedFromShuffle = (await shuffleExcludedPlaylistIds()).includes(id);
+  return { id: playlist.id, title: playlist.title, icon: playlist.icon, excludedFromShuffle, madeBy: madeByOf(playlist), episodes: rows.map((r) => episodeOut(r.episode)) };
 }
 
 /** Puts a playlist's episodes in this order (episodes left out are taken off it). */
@@ -384,7 +417,8 @@ export const listenOperations = {
 
   list_playlists: defineOperation({
     name: "list_playlists",
-    description: "Luke's Listen playlists, with how many episodes or songs each holds and their total length in seconds.",
+    description:
+      "Luke's Listen playlists, with how many episodes or songs each holds, their total length in seconds, and whether each is left out of All songs' Shuffle (excludedFromShuffle).",
     input: z.object({}),
     run: async () => ({ playlists: await listPlaylists() }),
   }),
@@ -410,15 +444,17 @@ export const listenOperations = {
   update_playlist: defineOperation({
     name: "update_playlist",
     description:
-      "Rename a Listen playlist, change its emoji, or set its whole order with episodeIds (anything left out is taken off the playlist, not deleted).",
+      "Rename a Listen playlist, change its emoji, set its whole order with episodeIds (anything left out is taken off the playlist, not deleted), or leave it out of All songs' Shuffle (excludeFromShuffle: its songs don't come up when Luke shuffles all songs).",
     input: z.object({
       id: z.uuid(),
       title: z.string().trim().min(1).max(200).optional(),
       icon: iconField,
       episodeIds: z.array(z.uuid()).max(500).optional(),
+      excludeFromShuffle: z.boolean().optional().describe("Only change it when Luke asks."),
     }),
-    run: async ({ id, title, icon, episodeIds: ids }) => {
+    run: async ({ id, title, icon, episodeIds: ids, excludeFromShuffle }) => {
       await findPlaylist(id);
+      if (excludeFromShuffle !== undefined) await setShuffleExcluded(id, excludeFromShuffle);
       if (title !== undefined || icon !== undefined)
         await db
           .update(playlists)
@@ -460,6 +496,7 @@ export const listenOperations = {
     run: async ({ id }) => {
       const row = await findPlaylist(id);
       await db.delete(playlists).where(eq(playlists.id, id));
+      await setShuffleExcluded(id, false);
       return { id, title: row.title };
     },
   }),
