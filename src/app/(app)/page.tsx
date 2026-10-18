@@ -45,9 +45,9 @@ export default async function DashboardPage() {
       <DashboardControls view={view} area={area} />
       {board ? (
         area === "work" ? (
-          <WorkBoard tasks={tasks} projects={workProjects} today={date} show={view.show} />
+          <WorkBoard tasks={tasks} projects={workProjects} today={date} show={view.show} sort={view.sort} />
         ) : (
-          <Board tasks={tasks} view="when" today={date} show={view.show} />
+          <Board tasks={tasks} view="when" today={date} show={view.show} sort={view.sort} />
         )
       ) : (
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">

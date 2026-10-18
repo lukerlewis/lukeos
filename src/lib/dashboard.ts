@@ -5,7 +5,7 @@
  */
 import { statuses, type Status } from "./task-fields";
 
-/** What the Today list is sorted by, and which way round. */
+/** What the Today list and Board columns are sorted by, and which way round. */
 export const sortKeys = ["priority", "effort", "project", "name", "created"] as const;
 export type SortKey = (typeof sortKeys)[number];
 export const sortDirs = ["desc", "asc"] as const;
