@@ -306,7 +306,8 @@ function Column({
       ref={setNodeRef}
       aria-label={column.name}
       className={cn(
-        "flex min-h-48 w-[82vw] max-w-80 shrink-0 snap-start flex-col gap-2.5 rounded-xl border bg-sidebar p-2.5 transition-colors md:w-64 lg:w-auto lg:min-w-52 lg:flex-1",
+        // Phones: each column fills the screen between the side margins.
+        "flex min-h-48 w-[calc(100vw-2.5rem)] shrink-0 snap-start flex-col gap-2.5 rounded-xl border bg-sidebar p-2.5 transition-colors md:w-64 lg:w-auto lg:min-w-52 lg:flex-1",
         isOver && "border-ring bg-muted",
       )}
     >
