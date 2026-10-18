@@ -25,7 +25,8 @@ import { TICK_MS } from "@/components/tasks/task-list";
 import { FocusChip, PriorityChip, ProjectChip } from "@/components/tasks/task-chips";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import type { Task } from "@/core/tasks";
-import { changesForMove, columnOf, columnsFor, compareTasks, type BoardView, type Column, type ColumnId } from "@/lib/board";
+import { changesForMove, columnOf, columnsFor, compareTasks, sortTasks, type BoardView, type Column, type ColumnId } from "@/lib/board";
+import type { DashboardSort } from "@/lib/dashboard";
 import { friendlyDay } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
 import { useWithoutHidden } from "@/lib/background";
@@ -54,6 +55,7 @@ export function Board({
   projectId,
   showProject = true,
   show,
+  sort,
 }: {
   tasks: Task[];
   view: BoardView;
@@ -62,6 +64,8 @@ export function Board({
   showProject?: boolean;
   /** Only these statuses get a column when grouping by status. */
   show?: Status[];
+  /** How cards are ordered in each column, as picked in the dashboard's Sort menu. */
+  sort?: DashboardSort;
 }) {
   const router = useRouter();
   // A fixed id keeps dnd-kit's screen reader ids the same on the server and in the browser.
@@ -157,7 +161,8 @@ export function Board({
         )}
       >
         {columns.map((column) => {
-          const cards = items.filter((t) => columnOf(t, view) === column.id).sort(compareTasks);
+          const inColumn = items.filter((t) => columnOf(t, view) === column.id);
+          const cards = sort ? sortTasks(inColumn, sort) : inColumn.sort(compareTasks);
           return (
             <BoardColumn key={column.id} column={column} view={view} count={cards.length} onAdd={() => addTo(column)}>
               {cards.map((t) => (

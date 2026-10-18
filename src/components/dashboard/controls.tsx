@@ -109,44 +109,42 @@ export function DashboardControls({ view, area }: { view: DashboardView; area: A
             </div>
           </div>
         </Filters>
-        {current.layout === "list" && (
-          <Menu
-            label={sortLabel[current.sort.by]}
-            icon={ArrowDownUp}
-            aria-label={`Sort by ${sortLabel[current.sort.by]}, ${sortDirLabel[current.sort.by][current.sort.dir]}`}
-          >
-            {(close) => (
-              <div role="menu" className="flex w-56 flex-col gap-0.5">
-                <span className="px-2.5 pt-1 pb-1 text-xs font-medium text-muted-foreground">Sort by</span>
-                {sortKeys.map((by) => (
-                  <MenuItem
-                    key={by}
-                    on={current.sort.by === by}
-                    onClick={() => {
-                      close();
-                      if (current.sort.by !== by) change({ sort: { by, dir: by === "name" || by === "project" ? "asc" : "desc" } });
-                    }}
-                  >
-                    {sortLabel[by]}
-                  </MenuItem>
-                ))}
-                <div className="my-1 border-t" />
-                {sortDirs.map((dir) => (
-                  <MenuItem
-                    key={dir}
-                    on={current.sort.dir === dir}
-                    onClick={() => {
-                      close();
-                      if (current.sort.dir !== dir) change({ sort: { ...current.sort, dir } });
-                    }}
-                  >
-                    {sortDirLabel[current.sort.by][dir]}
-                  </MenuItem>
-                ))}
-              </div>
-            )}
-          </Menu>
-        )}
+        <Menu
+          label={sortLabel[current.sort.by]}
+          icon={ArrowDownUp}
+          aria-label={`Sort by ${sortLabel[current.sort.by]}, ${sortDirLabel[current.sort.by][current.sort.dir]}`}
+        >
+          {(close) => (
+            <div role="menu" className="flex w-56 flex-col gap-0.5">
+              <span className="px-2.5 pt-1 pb-1 text-xs font-medium text-muted-foreground">Sort by</span>
+              {sortKeys.map((by) => (
+                <MenuItem
+                  key={by}
+                  on={current.sort.by === by}
+                  onClick={() => {
+                    close();
+                    if (current.sort.by !== by) change({ sort: { by, dir: by === "name" || by === "project" ? "asc" : "desc" } });
+                  }}
+                >
+                  {sortLabel[by]}
+                </MenuItem>
+              ))}
+              <div className="my-1 border-t" />
+              {sortDirs.map((dir) => (
+                <MenuItem
+                  key={dir}
+                  on={current.sort.dir === dir}
+                  onClick={() => {
+                    close();
+                    if (current.sort.dir !== dir) change({ sort: { ...current.sort, dir } });
+                  }}
+                >
+                  {sortDirLabel[current.sort.by][dir]}
+                </MenuItem>
+              ))}
+            </div>
+          )}
+        </Menu>
       </div>
     </div>
   );

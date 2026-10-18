@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Task } from "@/core/tasks";
+import type { DashboardSort } from "@/lib/dashboard";
 import type { Status } from "@/lib/task-fields";
 import { Board } from "@/components/board/board";
 import { QuickAdd, TaskList, type CellProject } from "@/components/tasks/task-list";
@@ -58,11 +59,13 @@ export function WorkBoard({
   projects,
   today,
   show,
+  sort,
 }: {
   tasks: Task[];
   projects: CellProject[];
   today: string;
   show: Status[];
+  sort: DashboardSort;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const project = projects.find((p) => p.id === picked) ?? null;
@@ -74,6 +77,7 @@ export function WorkBoard({
         view="when"
         today={today}
         show={show}
+        sort={sort}
         projectId={project?.id}
       />
     </div>
