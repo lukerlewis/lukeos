@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Mic, Music, Play, Plus, Search, Shuffle, X } from "lucide-react";
+import { Check, ChevronRight, Mic, Music, Play, Plus, Search, Shuffle, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,6 +13,7 @@ import { useWithoutHidden } from "@/lib/background";
 import { playLength } from "@/lib/listen";
 import { op } from "@/lib/ops-client";
 import { showToast } from "@/components/shell/toast";
+import { cn } from "@/lib/utils";
 import { deleteEpisode, EpisodeRow, NewPlaylistInline, toPlayer, type PlaylistSummary } from "./episode-row";
 import { useListen } from "./listen-provider";
 import { Artwork } from "./player-bar";
@@ -20,6 +21,12 @@ import { PlaylistCover } from "./playlist-icon";
 import { SelectableSongs } from "./selection";
 
 type Playlist = PlaylistSummary & { icon: string | null; count: number; seconds: number; artworkUrl: string | null };
+
+/** All songs' Shuffle: Luke's playlists (to pick ones to leave out) and the songs it skips because of them. */
+export type ShuffleSettings = {
+  playlists: (PlaylistSummary & { icon: string | null; artworkUrl: string | null; excludedFromShuffle: boolean })[];
+  skip: string[];
+};
 
 /** Which tracks a list shows: everything, or just podcast episodes (not uploads, however long). */
 export type TrackFilter = "songs" | "podcasts";
@@ -143,10 +150,13 @@ export function TracksScreen({
   episodes: all,
   playlists,
   filter,
+  shuffle,
 }: {
   episodes: Episode[];
   playlists: PlaylistSummary[];
   filter: TrackFilter;
+  /** On All songs: the settings button beside Shuffle, and the songs Shuffle leaves out. */
+  shuffle?: ShuffleSettings;
 }) {
   const listen = useListen();
   const [query, setQuery] = useState("");
@@ -157,6 +167,8 @@ export function TracksScreen({
   const waiting = episodes.filter((e) => !isDone(e)).sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
   const finished = episodes.filter((e) => isDone(e) && e.kept);
   const noun = filter === "podcasts" ? "podcasts" : "songs";
+  const skip = new Set(shuffle?.skip);
+  const toShuffle = waiting.filter((e) => !skip.has(e.id));
 
   return (
     <SelectableSongs episodes={[...waiting, ...finished]} playlists={playlists} noun={filter === "podcasts" ? "podcast" : "song"}>
@@ -168,10 +180,11 @@ export function TracksScreen({
                 <Play className="fill-current" aria-hidden />
                 Play
               </Button>
-              <Button variant="outline" onClick={() => listen?.playShuffled(waiting.map(toPlayer))}>
+              <Button variant="outline" disabled={!toShuffle.length} onClick={() => listen?.playShuffled(toShuffle.map(toPlayer))}>
                 <Shuffle aria-hidden />
                 Shuffle
               </Button>
+              {shuffle && <ShuffleSettingsButton playlists={shuffle.playlists} />}
             </span>
           )}
           <label className="relative flex min-w-0 grow items-center md:max-w-80">
@@ -230,6 +243,88 @@ export function TracksScreen({
         </section>
       )}
     </SelectableSongs>
+  );
+}
+
+/** Beside All songs' Shuffle: pick playlists whose songs Shuffle leaves out. */
+function ShuffleSettingsButton({ playlists }: { playlists: ShuffleSettings["playlists"] }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  // Ticks show at once; the server catches up behind them.
+  const [excluded, setExcluded] = useState<Record<string, boolean>>({});
+  const isOut = (p: ShuffleSettings["playlists"][number]) => excluded[p.id] ?? p.excludedFromShuffle;
+  const outCount = playlists.filter(isOut).length;
+
+  function flip(p: ShuffleSettings["playlists"][number]) {
+    const next = !isOut(p);
+    setExcluded((prev) => ({ ...prev, [p.id]: next }));
+    op("update_playlist", { id: p.id, excludeFromShuffle: next }).then(
+      () => router.refresh(),
+      (err: Error) => {
+        setExcluded((prev) => ({ ...prev, [p.id]: !next }));
+        showToast(err.message);
+      },
+    );
+  }
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="icon"
+        aria-label="Shuffle settings"
+        title="Shuffle settings"
+        className="relative"
+        onClick={() => setOpen(true)}
+      >
+        <SlidersHorizontal aria-hidden />
+        {outCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-tag text-background" aria-hidden>
+            {outCount}
+          </span>
+        )}
+      </Button>
+      {open && (
+        <Dialog label="Leave out of shuffle" onClose={() => setOpen(false)} focusFirstField={false}>
+          <div className="flex flex-col gap-3 p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
+            <h2 className="px-1 text-heading font-medium">Leave out of shuffle</h2>
+            {playlists.length === 0 ? (
+              <p className="px-1 text-preview text-muted-foreground">No playlists yet.</p>
+            ) : (
+              <ul className="-mx-1 max-h-[60vh] overflow-y-auto">
+                {playlists.map((p) => {
+                  const on = isOut(p);
+                  return (
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={on}
+                        onClick={() => flip(p)}
+                        className="press-tint flex min-h-12 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-muted"
+                      >
+                        <PlaylistCover playlist={p} className="size-9 text-[20px]" />
+                        <span className="min-w-0 grow truncate text-control">{p.title}</span>
+                        <span
+                          className={cn(
+                            "flex size-5 shrink-0 items-center justify-center rounded-md border border-stroke-strong",
+                            on && "border-primary bg-primary text-primary-foreground",
+                          )}
+                          aria-hidden
+                        >
+                          {on && <Check className="size-3.5" strokeWidth={3} />}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <Button onClick={() => setOpen(false)}>Done</Button>
+          </div>
+        </Dialog>
+      )}
+    </>
   );
 }
 
