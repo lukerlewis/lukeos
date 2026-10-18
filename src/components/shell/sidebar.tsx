@@ -1,20 +1,19 @@
 "use client";
 
-import { BriefcaseBusiness, House, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useCommandMenu } from "@/components/command/command-menu";
 import { useFocus } from "@/components/focus/focus-provider";
 import { SEEN_EVENT } from "@/components/from-claude/mark-seen";
 import { useUnreadMessages } from "@/components/messages/unread";
 import { MiniControls } from "@/components/listen/mini-controls";
 import { NewProjectIconButton } from "@/components/projects/project-dialog";
-import { areaLabel, areas, type Area } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 import { isActive, mainNav, SIDEBAR_COOKIE } from "./nav";
 
-type SidebarProject = { id: string; name: string; hex: string; open: number; area: Area };
+type SidebarProject = { id: string; name: string; hex: string; open: number };
 
 export function Sidebar({
   projects,
@@ -200,38 +199,25 @@ function SidebarContents({
           <NewProjectIconButton />
         </div>
         {projects.length === 0 && <p className="px-3 text-meta text-muted-foreground">No projects yet</p>}
-        {areas.map((area) => {
-          const group = projects.filter((p) => p.area === area);
-          if (group.length === 0) return null;
-          const AreaIcon = area === "work" ? BriefcaseBusiness : House;
+        {projects.map((p) => {
+          const href = `/projects/${p.id}`;
+          const active = pathname === href;
           return (
-            <Fragment key={area}>
-              <div className="flex items-center gap-2 px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground">
-                <AreaIcon className="size-3.5" aria-hidden />
-                {areaLabel[area]}
-              </div>
-              {group.map((p) => {
-              const href = `/projects/${p.id}`;
-              const active = pathname === href;
-              return (
-                <Link
-                  key={p.id}
-                  href={href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "pressable flex h-11 items-center gap-3 rounded-lg px-3 text-control text-muted-foreground hover:bg-muted",
-                    active && "bg-selected font-medium text-ink",
-                  )}
-                >
-                  <span className="flex size-[18px] shrink-0 items-center justify-center" aria-hidden>
-                    <span className="size-2.5 rounded-[3px]" style={{ background: p.hex }} />
-                  </span>
-                  <span className="grow truncate">{p.name}</span>
-                  {p.open > 0 && <span className="text-meta text-muted-foreground">{p.open}</span>}
-                </Link>
-              );
-              })}
-            </Fragment>
+            <Link
+              key={p.id}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "pressable flex h-11 items-center gap-3 rounded-lg px-3 text-control text-muted-foreground hover:bg-muted",
+                active && "bg-selected font-medium text-ink",
+              )}
+            >
+              <span className="flex size-[18px] shrink-0 items-center justify-center" aria-hidden>
+                <span className="size-2.5 rounded-[3px]" style={{ background: p.hex }} />
+              </span>
+              <span className="grow truncate">{p.name}</span>
+              {p.open > 0 && <span className="text-meta text-muted-foreground">{p.open}</span>}
+            </Link>
           );
         })}
       </div>

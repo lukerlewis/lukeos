@@ -242,6 +242,25 @@
     line-height: 1.5;
     white-space: nowrap;
   }
+  /* A project as a chip tinted with its own colour (set --project to the colour). */
+  .project-chip {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--project) 14%, transparent);
+    color: color-mix(in srgb, var(--project) 75%, black);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+  .dark .project-chip {
+    background: color-mix(in srgb, var(--project) 24%, transparent);
+    color: color-mix(in srgb, var(--project) 55%, white);
+  }
   /* Priority as flames, tinted like a stoplight (Luke's Notion colours): 1 green, 2 yellow, 3 red. */
   .flames {
     display: inline-flex;

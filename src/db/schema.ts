@@ -51,8 +51,8 @@ export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   color: text("color").notNull(),
-  /** "work" or "life". Its tasks are in the same one. */
-  area: text("area").notNull().default("life"),
+  /** "work" or "life". Always work for now (Life has no projects). Its tasks are in the same one. */
+  area: text("area").notNull().default("work"),
   ...madeBy,
 });
 

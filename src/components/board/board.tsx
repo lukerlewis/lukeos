@@ -22,13 +22,14 @@ import { useId, useOptimistic, useState, useTransition } from "react";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import { StatusIcon } from "@/components/tasks/status-circle";
 import { TICK_MS } from "@/components/tasks/task-list";
+import { FocusChip, PriorityChip, ProjectChip } from "@/components/tasks/task-chips";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import type { Task } from "@/core/tasks";
 import { changesForMove, columnOf, columnsFor, compareTasks, type BoardView, type Column, type ColumnId } from "@/lib/board";
 import { friendlyDay } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
 import { useWithoutHidden } from "@/lib/background";
-import { effortLabel, priorityLabel, repeatLabel, type Bucket, type Status } from "@/lib/task-fields";
+import { repeatLabel, type Bucket, type Status } from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
 
 type Change = { id: string; changes: Partial<Pick<Task, "bucket" | "status">> };
@@ -283,7 +284,7 @@ function CardBody({
   const dueToday = !done && due === today;
   const meta = [
     task.madeBy.kind === "agent",
-    task.priority === "high",
+    task.priority,
     task.effort,
     task.notes,
     task.repeat,
@@ -321,12 +322,12 @@ function CardBody({
       {meta && (
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-[26px] text-meta text-muted-foreground">
           {due && (
-            <span className={cn("font-medium", dueToday && "text-ink", late && "font-medium text-ink")}>
+            <span className={cn(dueToday && "text-ink", late && "font-medium text-ink")}>
               {friendlyDay(due, today)}
             </span>
           )}
-          {task.priority === "high" && <span className="tag">{priorityLabel.high}</span>}
-          {task.effort && <span>{effortLabel[task.effort]}</span>}
+          {task.effort && <FocusChip effort={task.effort} />}
+          {task.priority && <PriorityChip priority={task.priority} />}
           {task.repeat && (
             <span className="inline-flex items-center" title={repeatLabel[task.repeat]}>
               <Repeat className="size-3" aria-hidden />
@@ -335,10 +336,7 @@ function CardBody({
           )}
           {task.notes && <span>Notes</span>}
           {showProject && task.project && (
-            <span className="inline-flex min-w-0 items-center gap-1.5">
-              <span className="size-2 shrink-0 rounded-[3px]" style={{ background: task.project.hex }} aria-hidden />
-              <span className="truncate">{task.project.name}</span>
-            </span>
+            <ProjectChip project={task.project} className="min-w-0" />
           )}
           <ClaudeBadge madeBy={task.madeBy} />
         </div>
