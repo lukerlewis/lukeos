@@ -40,6 +40,41 @@ export default async function DashboardPage() {
   const workProjects = projects.map((p) => ({ id: p.id, name: p.name, color: p.color, hex: colorHex(p.color) }));
   const doneTags = scratch ? await doneMentionIds("note", scratch.id) : [];
 
+  // The Scratch pad and Agents cards, beside the Today card.
+  const side = (
+    <div className="flex flex-col gap-6">
+      {scratch && (
+        <Card>
+          <DoneTags ids={doneTags} />
+          <CardHeader
+            title="Scratch pad"
+            aside={
+              <Link href="/agents?view=claude" className="hover:text-foreground">
+                @claude requests
+              </Link>
+            }
+          />
+          <ScratchPad id={scratch.id} content={scratch.content} />
+        </Card>
+      )}
+      <Card>
+        <CardHeader
+          title="Agents"
+          aside={
+            <Link href="/agents?view=activity" className="hover:text-foreground">
+              See all
+            </Link>
+          }
+        />
+        {activity.length === 0 ? (
+          <EmptyState>Nothing yet.</EmptyState>
+        ) : (
+          <ActivityList days={activityDays(activity, timeZone)} />
+        )}
+      </Card>
+    </div>
+  );
+
   return (
     <Page title="Dashboard" eyebrow={<TodayDate />} heading={<Greeting />} addNew>
       <DashboardControls view={view} area={area} />
@@ -49,52 +84,22 @@ export default async function DashboardPage() {
         ) : (
           <Board tasks={tasks} view="when" today={date} show={view.show} sort={view.sort} />
         )
+      ) : area === "work" ? (
+        // Work puts its project chips above both columns, so the Today card lines up with the Scratch pad.
+        <WorkToday
+          tasks={sortTasks(
+            tasks.filter((t) => t.bucket === "today"),
+            view.sort,
+          )}
+          projects={workProjects}
+          canAdd={view.show.includes("todo")}
+          today={date}
+          side={side}
+        />
       ) : (
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          {area === "work" ? (
-            <WorkToday
-              tasks={sortTasks(
-                tasks.filter((t) => t.bucket === "today"),
-                view.sort,
-              )}
-              projects={workProjects}
-              canAdd={view.show.includes("todo")}
-              today={date}
-            />
-          ) : (
-            <TodayTasks tasks={tasks.filter((t) => t.bucket === "today")} view={view} area={area} today={date} />
-          )}
-          <div className="flex flex-col gap-6">
-            {scratch && (
-              <Card>
-                <DoneTags ids={doneTags} />
-                <CardHeader
-                  title="Scratch pad"
-                  aside={
-                    <Link href="/agents?view=claude" className="hover:text-foreground">
-                      @claude requests
-                    </Link>
-                  }
-                />
-                <ScratchPad id={scratch.id} content={scratch.content} />
-              </Card>
-            )}
-            <Card>
-              <CardHeader
-                title="Agents"
-                aside={
-                  <Link href="/agents?view=activity" className="hover:text-foreground">
-                    See all
-                  </Link>
-                }
-              />
-              {activity.length === 0 ? (
-                <EmptyState>Nothing yet.</EmptyState>
-              ) : (
-                <ActivityList days={activityDays(activity, timeZone)} />
-              )}
-            </Card>
-          </div>
+          <TodayTasks tasks={tasks.filter((t) => t.bucket === "today")} view={view} area={area} today={date} />
+          {side}
         </div>
       )}
     </Page>
