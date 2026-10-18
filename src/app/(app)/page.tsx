@@ -1,3 +1,4 @@
+import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { Board } from "@/components/board/board";
 import { DashboardControls } from "@/components/dashboard/controls";
@@ -7,6 +8,7 @@ import { DoneTags } from "@/components/notes/done-tags";
 import { ScratchPad } from "@/components/notes/scratch-pad-lazy";
 import { Greeting, TodayDate } from "@/components/greeting";
 import { EmptyState, Page } from "@/components/shell/page";
+import { WorkToday } from "@/components/dashboard/work-today";
 import { QuickAdd, TaskList } from "@/components/tasks/task-list";
 import { Card, CardHeader } from "@/components/ui/card";
 import { listActivity } from "@/core/activity";
@@ -14,30 +16,49 @@ import { boardTasks } from "@/core/board";
 import { getDashboardView } from "@/core/dashboard";
 import { doneMentionIds } from "@/core/mentions";
 import { getScratchPad } from "@/core/notes";
+import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
-import { compareTasks } from "@/lib/board";
+import { colorHex } from "@/lib/project-colors";
+import { AREA_COOKIE, defaultAreaFor, parseArea } from "@/lib/area";
+import { sortTasks } from "@/lib/board";
 import type { DashboardView } from "@/lib/dashboard";
+import type { Area } from "@/lib/task-fields";
 
 export default async function DashboardPage() {
   const view = await getDashboardView();
   const board = view.layout === "board";
-  const [{ date, tasks }, activity, scratch, timeZone] = await Promise.all([
-    boardTasks("when", undefined, view.show),
+  // Work or Life is picked on each device: computers start on Work, phones on Life.
+  const area = parseArea((await cookies()).get(AREA_COOKIE)?.value) ?? defaultAreaFor((await headers()).get("user-agent"));
+  const [{ date, tasks }, activity, scratch, timeZone, projects] = await Promise.all([
+    boardTasks("when", undefined, view.show, area),
     // The board is only the board; the other cards are on the Today tab.
     board ? [] : listActivity({ limit: 8 }),
     board ? null : getScratchPad(),
     getTimeZone(),
+    area === "work" && !board ? listProjects() : [],
   ]);
   const doneTags = scratch ? await doneMentionIds("note", scratch.id) : [];
 
   return (
     <Page title="Dashboard" eyebrow={<TodayDate />} heading={<Greeting />} addNew>
-      <DashboardControls view={view} />
+      <DashboardControls view={view} area={area} />
       {board ? (
         <Board tasks={tasks} view="when" today={date} show={view.show} />
       ) : (
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <TodayTasks tasks={tasks.filter((t) => t.bucket === "today")} view={view} today={date} />
+          {area === "work" ? (
+            <WorkToday
+              tasks={sortTasks(
+                tasks.filter((t) => t.bucket === "today"),
+                view.sort,
+              )}
+              projects={projects.filter((p) => p.area === "work").map((p) => ({ id: p.id, name: p.name, hex: colorHex(p.color) }))}
+              canAdd={view.show.includes("todo")}
+              today={date}
+            />
+          ) : (
+            <TodayTasks tasks={tasks.filter((t) => t.bucket === "today")} view={view} area={area} today={date} />
+          )}
           <div className="flex flex-col gap-6">
             {scratch && (
               <Card>
@@ -79,10 +100,12 @@ export default async function DashboardPage() {
 function TodayTasks({
   tasks,
   view,
+  area,
   today,
 }: {
   tasks: Awaited<ReturnType<typeof boardTasks>>["tasks"];
   view: DashboardView;
+  area: Area;
   today: string;
 }) {
   return (
@@ -92,9 +115,9 @@ function TodayTasks({
           <h2 className="text-sm font-medium">Today</h2>
           <span className="text-meta text-muted-foreground">{tasks.length}</span>
         </div>
-        <TaskList tasks={[...tasks].sort(compareTasks)} today={today} empty={<EmptyState>Nothing for today.</EmptyState>} />
+        <TaskList tasks={sortTasks(tasks, view.sort)} today={today} empty={<EmptyState>Nothing for today.</EmptyState>} />
         {/* "Add a task" makes a To do task, so it only shows while To do tasks do. */}
-        {view.show.includes("todo") && <QuickAdd bucket="today" today={today} placeholder="Add a task for today" />}
+        {view.show.includes("todo") && <QuickAdd bucket="today" area={area} today={today} placeholder={area === "life" ? "Add to Life" : "Add to Work"} />}
       </Card>
     </div>
   );

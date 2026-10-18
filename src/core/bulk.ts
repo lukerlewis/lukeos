@@ -41,7 +41,7 @@ export const bulkOperations = {
   update_tasks: defineOperation({
     name: "update_tasks",
     description:
-      "Change several tasks at once: their project, list (bucket), status, due date, priority or effort. The same changes go to every task listed. Fields left out stay as they are; null clears one.",
+      "Change several tasks at once: their project, list (bucket), status, due date, priority, focus type (effort) or area (work or life). The same changes go to every task listed. Fields left out stay as they are; null clears one.",
     input: z.object({
       ids: ids("tasks"),
       projectId: fields.projectId.optional(),
@@ -50,12 +50,20 @@ export const bulkOperations = {
       dueDate: fields.dueDate.optional(),
       priority: fields.priority.optional(),
       effort: fields.effort.optional(),
+      area: fields.area.optional(),
     }),
     run: async ({ ids, ...changes }): Promise<Outcome> => {
       const rows = await liveTitles(tasks, ids);
       const project = await projectName(changes.projectId);
       const set: Record<string, unknown> = { updatedAt: new Date() };
       for (const [key, value] of Object.entries(changes)) if (value !== undefined) set[key] = value;
+      // A task in a project is always in its project's area; one moved to the other area leaves its project.
+      if (changes.projectId) {
+        const [p] = await db.select({ area: projects.area }).from(projects).where(eq(projects.id, changes.projectId)).limit(1);
+        set.area = p.area;
+      } else if (changes.area && changes.projectId === undefined) {
+        set.projectId = sql`case when (select ${projects.area} from ${projects} where ${projects.id} = ${tasks.projectId}) = ${changes.area} then ${tasks.projectId} else null end`;
+      }
       if (changes.status) {
         // Only tasks whose status actually changes get a new finished time.
         set.completedAt = sql`case when ${tasks.status} = ${changes.status} then ${tasks.completedAt} else ${

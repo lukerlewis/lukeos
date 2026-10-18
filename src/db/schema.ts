@@ -51,6 +51,8 @@ export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   color: text("color").notNull(),
+  /** "work" or "life". Its tasks are in the same one. */
+  area: text("area").notNull().default("life"),
   ...madeBy,
 });
 
@@ -135,7 +137,9 @@ export const tasks = pgTable(
     /** Which list it's in: "today" | "tomorrow" | "this_week" | "later". Set by hand, separate from the due date. */
     bucket: text("bucket").notNull().default("today"),
     priority: text("priority"), // "low" | "medium" | "high"
-    effort: text("effort"), // "small" | "medium" | "large"
+    effort: text("effort"), // focus type: "shallow" | "focus" | "deep"
+    /** "work" or "life". A task in a project is always in its project's one. */
+    area: text("area").notNull().default("life"),
     notes: text("notes"),
     repeat: text("repeat"), // "daily" | "weekdays" | "weekly" | "monthly" | "yearly"
     /** A repeating task that's done: the next one it made, so un-ticking it can take that back. */
