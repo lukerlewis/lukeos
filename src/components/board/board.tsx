@@ -192,7 +192,8 @@ function BoardColumn({
       ref={setNodeRef}
       aria-label={column.title}
       className={cn(
-        "flex min-h-48 w-[82vw] max-w-80 shrink-0 snap-start flex-col gap-2.5 rounded-xl border bg-sidebar p-2.5 transition-colors lg:w-auto lg:max-w-none",
+        // Phones: each column fills the screen between the side margins.
+        "flex min-h-48 w-[calc(100vw-2.5rem)] shrink-0 snap-start flex-col gap-2.5 rounded-xl border bg-sidebar p-2.5 transition-colors md:w-[82vw] md:max-w-80 lg:w-auto lg:max-w-none",
         isOver && "border-ring bg-muted",
       )}
     >
