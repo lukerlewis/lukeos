@@ -27,9 +27,9 @@ import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { phaseLabel, SPRINT_MINUTES, useFocus } from "./focus-provider";
-import { SprintLengthDialog, SprintTasks, type PickableTask } from "./sprint";
+import { ScratchPad, SprintLengthDialog, SprintTasks, type PickableTask } from "./sprint";
 
-export function FocusScreen({ openTasks }: { openTasks: PickableTask[] }) {
+export function FocusScreen({ openTasks, scratchPad }: { openTasks: PickableTask[]; scratchPad: string }) {
   const focus = useFocus();
   const [editingLength, setEditingLength] = useState(false);
   if (!focus) return null;
@@ -142,6 +142,7 @@ export function FocusScreen({ openTasks }: { openTasks: PickableTask[] }) {
             </Ring>
             {/* Once started, the checklist comes first and the buttons sit under it. */}
             <SprintTasks openTasks={openTasks} />
+            <ScratchPad text={scratchPad} />
             {sprint.finished ? (
               <div className="flex h-[76px] items-center">
                 <Button size="lg" className="h-14 rounded-full px-8" onClick={focus.newSprint}>
@@ -196,7 +197,12 @@ export function FocusScreen({ openTasks }: { openTasks: PickableTask[] }) {
         </>
       )}
 
-      {mode === "sprint" && !sprint.started && <SprintTasks openTasks={openTasks} />}
+      {mode === "sprint" && !sprint.started && (
+        <>
+          <SprintTasks openTasks={openTasks} />
+          <ScratchPad text={scratchPad} />
+        </>
+      )}
 
       <Card className={cn("w-full", running && "max-md:hidden")}>
         <div className="flex items-center gap-3 px-4 py-3">

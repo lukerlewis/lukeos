@@ -509,6 +509,8 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Deleted a focus session" };
     case "update_focus_settings":
       return { summary: "Changed your pomodoro lengths" };
+    case "update_scratch_pad":
+      return { summary: "Edited your sprint scratch pad" };
     case "add_episode": {
       const out = r as { title?: string; alreadyAdded?: boolean };
       return out.alreadyAdded ? null : { summary: `Added ${quote(out.title)} to Music` };
