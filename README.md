@@ -86,6 +86,11 @@ the app, Claude can do too, through a connector (roadmap step 3).
   visitor's question and answer back to `/api/portfolio/prompts`, signed with
   a key made under Portfolio > Setup (only its hash is kept), and they show as
   Visitor prompts. Operations in `src/core/portfolio.ts`.
+  Not to be confused with Luke's **Portfolio project**: an ordinary Work
+  project (Projects) holding his tasks for designing, building and managing
+  the site. The Portfolio section is the CMS for what the site says and
+  shows; the Portfolio project is the to-do list for the work on it. The
+  connector instructions (`src/core/mcp.ts`) tell Claude the same.
 - **Inspiration** (`/inspiration`): a gallery like mymind of pictures,
   links (saved with their preview picture), videos (as links), quotes and
   PDFs, in uneven-height columns. Add with the Add sheet, by dropping or
