@@ -31,3 +31,12 @@ export function PriorityChip({ priority, className }: { priority: Priority; clas
     </span>
   );
 }
+
+/** A project as a chip tinted with its colour, e.g. a light blue Content. */
+export function ProjectChip({ project, className }: { project: { name: string; hex: string }; className?: string }) {
+  return (
+    <span className={cn("project-chip", className)} style={{ "--project": project.hex } as React.CSSProperties}>
+      <span className="truncate">{project.name}</span>
+    </span>
+  );
+}

@@ -465,21 +465,24 @@ function TaskDialog({
               />
             </Field>
 
-            <Field label="Project">
-              <select
-                value={draft.projectId ?? ""}
-                onChange={(e) => set("projectId", e.target.value || null)}
-                aria-label="Project"
-                className="h-9 w-full rounded-lg border bg-card px-2.5 text-body md:text-meta border-stroke-strong sm:w-auto sm:min-w-56"
-              >
-                <option value="">No project</option>
-                {projects.filter((p) => p.area === draft.area || p.id === draft.projectId).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            {/* Projects are all in Work, so Life tasks don't get the choice. */}
+            {(draft.area === "work" || draft.projectId) && (
+              <Field label="Project">
+                <select
+                  value={draft.projectId ?? ""}
+                  onChange={(e) => set("projectId", e.target.value || null)}
+                  aria-label="Project"
+                  className="h-9 w-full rounded-lg border bg-card px-2.5 text-body md:text-meta border-stroke-strong sm:w-auto sm:min-w-56"
+                >
+                  <option value="">No project</option>
+                  {projects.filter((p) => p.area === draft.area || p.id === draft.projectId).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
 
             <Field label="Notes">
               <textarea

@@ -8,7 +8,7 @@ import { DoneTags } from "@/components/notes/done-tags";
 import { ScratchPad } from "@/components/notes/scratch-pad-lazy";
 import { Greeting, TodayDate } from "@/components/greeting";
 import { EmptyState, Page } from "@/components/shell/page";
-import { WorkToday } from "@/components/dashboard/work-today";
+import { WorkBoard, WorkToday } from "@/components/dashboard/work-today";
 import { QuickAdd, TaskList } from "@/components/tasks/task-list";
 import { Card, CardHeader } from "@/components/ui/card";
 import { listActivity } from "@/core/activity";
@@ -35,15 +35,20 @@ export default async function DashboardPage() {
     board ? [] : listActivity({ limit: 8 }),
     board ? null : getScratchPad(),
     getTimeZone(),
-    area === "work" && !board ? listProjects() : [],
+    area === "work" ? listProjects() : [],
   ]);
+  const workProjects = projects.map((p) => ({ id: p.id, name: p.name, color: p.color, hex: colorHex(p.color) }));
   const doneTags = scratch ? await doneMentionIds("note", scratch.id) : [];
 
   return (
     <Page title="Dashboard" eyebrow={<TodayDate />} heading={<Greeting />} addNew>
       <DashboardControls view={view} area={area} />
       {board ? (
-        <Board tasks={tasks} view="when" today={date} show={view.show} />
+        area === "work" ? (
+          <WorkBoard tasks={tasks} projects={workProjects} today={date} show={view.show} />
+        ) : (
+          <Board tasks={tasks} view="when" today={date} show={view.show} />
+        )
       ) : (
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           {area === "work" ? (
@@ -52,7 +57,7 @@ export default async function DashboardPage() {
                 tasks.filter((t) => t.bucket === "today"),
                 view.sort,
               )}
-              projects={projects.filter((p) => p.area === "work").map((p) => ({ id: p.id, name: p.name, hex: colorHex(p.color) }))}
+              projects={workProjects}
               canAdd={view.show.includes("todo")}
               today={date}
             />

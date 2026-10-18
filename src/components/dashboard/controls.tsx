@@ -82,69 +82,72 @@ export function DashboardControls({ view, area }: { view: DashboardView; area: A
           { value: "board", label: "Board", icon: SquareKanban },
         ]}
       />
-      <Filters count={changedFilters}>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground" aria-hidden>
-            Show
-          </span>
-          <div role="group" aria-label="Show tasks that are" className="inline-flex gap-0.5 self-start seg-track rounded-lg p-[3px]">
-            {statuses.map((s) => {
-              const on = current.show.includes(s);
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggle(s)}
-                  title={on ? `Hide ${statusLabel[s]}` : `Show ${statusLabel[s]}`}
-                  className={cn(pill, "text-muted-foreground", on && "seg-on text-foreground")}
-                >
-                  <StatusIcon status={s} className={cn("size-3.5", !on && "opacity-50")} />
-                  {statusLabel[s]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </Filters>
-      {current.layout === "list" && (
-        <Menu
-          label={sortLabel[current.sort.by]}
-          icon={ArrowDownUp}
-          aria-label={`Sort by ${sortLabel[current.sort.by]}, ${sortDirLabel[current.sort.by][current.sort.dir]}`}
-        >
-          {(close) => (
-            <div role="menu" className="flex w-56 flex-col gap-0.5">
-              <span className="px-2.5 pt-1 pb-1 text-xs font-medium text-muted-foreground">Sort by</span>
-              {sortKeys.map((by) => (
-                <MenuItem
-                  key={by}
-                  on={current.sort.by === by}
-                  onClick={() => {
-                    close();
-                    if (current.sort.by !== by) change({ sort: { by, dir: by === "name" || by === "project" ? "asc" : "desc" } });
-                  }}
-                >
-                  {sortLabel[by]}
-                </MenuItem>
-              ))}
-              <div className="my-1 border-t" />
-              {sortDirs.map((dir) => (
-                <MenuItem
-                  key={dir}
-                  on={current.sort.dir === dir}
-                  onClick={() => {
-                    close();
-                    if (current.sort.dir !== dir) change({ sort: { ...current.sort, dir } });
-                  }}
-                >
-                  {sortDirLabel[current.sort.by][dir]}
-                </MenuItem>
-              ))}
+      {/* Filters and Sort are for the computer; the phone keeps it simple. */}
+      <div className="hidden md:contents">
+        <Filters count={changedFilters}>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground" aria-hidden>
+              Show
+            </span>
+            <div role="group" aria-label="Show tasks that are" className="inline-flex gap-0.5 self-start seg-track rounded-lg p-[3px]">
+              {statuses.map((s) => {
+                const on = current.show.includes(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggle(s)}
+                    title={on ? `Hide ${statusLabel[s]}` : `Show ${statusLabel[s]}`}
+                    className={cn(pill, "text-muted-foreground", on && "seg-on text-foreground")}
+                  >
+                    <StatusIcon status={s} className={cn("size-3.5", !on && "opacity-50")} />
+                    {statusLabel[s]}
+                  </button>
+                );
+              })}
             </div>
-          )}
-        </Menu>
-      )}
+          </div>
+        </Filters>
+        {current.layout === "list" && (
+          <Menu
+            label={sortLabel[current.sort.by]}
+            icon={ArrowDownUp}
+            aria-label={`Sort by ${sortLabel[current.sort.by]}, ${sortDirLabel[current.sort.by][current.sort.dir]}`}
+          >
+            {(close) => (
+              <div role="menu" className="flex w-56 flex-col gap-0.5">
+                <span className="px-2.5 pt-1 pb-1 text-xs font-medium text-muted-foreground">Sort by</span>
+                {sortKeys.map((by) => (
+                  <MenuItem
+                    key={by}
+                    on={current.sort.by === by}
+                    onClick={() => {
+                      close();
+                      if (current.sort.by !== by) change({ sort: { by, dir: by === "name" || by === "project" ? "asc" : "desc" } });
+                    }}
+                  >
+                    {sortLabel[by]}
+                  </MenuItem>
+                ))}
+                <div className="my-1 border-t" />
+                {sortDirs.map((dir) => (
+                  <MenuItem
+                    key={dir}
+                    on={current.sort.dir === dir}
+                    onClick={() => {
+                      close();
+                      if (current.sort.dir !== dir) change({ sort: { ...current.sort, dir } });
+                    }}
+                  >
+                    {sortDirLabel[current.sort.by][dir]}
+                  </MenuItem>
+                ))}
+              </div>
+            )}
+          </Menu>
+        )}
+      </div>
     </div>
   );
 }

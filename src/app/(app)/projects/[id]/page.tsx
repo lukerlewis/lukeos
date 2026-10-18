@@ -122,7 +122,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           {project.name}
         </span>
       }
-      actions={<EditProjectButton project={{ id: project.id, name: project.name, color: project.color, area: project.area }} />}
+      actions={<EditProjectButton project={{ id: project.id, name: project.name, color: project.color }} />}
       newTask={inspirationView || pipelineView ? false : { projectId: project.id }}
     >
       {!pipelineView && <div className="flex flex-wrap items-center gap-2">{toolbar}</div>}

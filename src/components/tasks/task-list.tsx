@@ -10,16 +10,32 @@ import { friendlyDay, nextRepeat } from "@/lib/dates";
 import { SmartChips, useSmartEntry } from "./smart-chips";
 import { op } from "@/lib/ops-client";
 import { useHidden } from "@/lib/background";
-import { bucketLabel, effortLabel, priorityLabel, repeatLabel, type Area, type Bucket, type Status } from "@/lib/task-fields";
+import {
+  bucketLabel,
+  effortLabel,
+  efforts,
+  priorities,
+  priorityLabel,
+  repeatLabel,
+  type Area,
+  type Bucket,
+  type Effort,
+  type Priority,
+  type Status,
+} from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
 import { showToast } from "@/components/shell/toast";
 import { ClaudeBadge } from "./made-by";
 import { StatusIcon } from "./status-circle";
-import { FocusChip, PriorityChip } from "./task-chips";
+import { CellMenu } from "./cell-menu";
+import { FocusChip, PriorityChip, ProjectChip } from "./task-chips";
 import { useTaskEditor } from "./task-editor";
 
 /** How long the tick animation takes to play out. */
 export const TICK_MS = 400;
+
+/** A project a table cell can put a task in. */
+export type CellProject = NonNullable<Task["project"]>;
 
 /** A list of task rows, e.g. inside a Card. */
 export function TaskList({
@@ -27,38 +43,71 @@ export function TaskList({
   today,
   showProject = true,
   columns = false,
+  projects = [],
   empty,
 }: {
   tasks: Task[];
   today: string;
   showProject?: boolean;
-  /** Work's table on computers: focus type, priority, name and project in columns, like Luke's Notion. Phones keep plain rows. */
+  /**
+   * Work's table on computers: focus type, priority, name and project in columns, like Luke's Notion,
+   * each one clickable to set it. Phones keep plain rows.
+   */
   columns?: boolean;
+  /** The projects the Project column offers. */
+  projects?: CellProject[];
   empty?: React.ReactNode;
 }) {
   if (tasks.length === 0 && empty) return <>{empty}</>;
   return (
-    <ul>
-      {tasks.map((t) => (
-        <TaskRow key={t.id} task={t} today={today} showProject={showProject} columns={columns} />
-      ))}
-    </ul>
+    <>
+      {columns && (
+        <div
+          aria-hidden
+          className="hidden border-b bg-muted/40 px-4 text-xs font-medium text-muted-foreground md:grid"
+          style={{ gridTemplateColumns: tableColumns }}
+        >
+          <span />
+          <span className={headCell}>Focus type</span>
+          <span className={headCell}>Priority</span>
+          <span className={cn(headCell, "pl-3")}>Name</span>
+          <span className={headCell}>Project</span>
+        </div>
+      )}
+      <ul>
+        {tasks.map((t) => (
+          <TaskRow key={t.id} task={t} today={today} showProject={showProject} columns={columns} projects={projects} />
+        ))}
+      </ul>
+    </>
   );
 }
 
 /** The column widths of Work's table: tick, focus type, priority, name, project. */
-const tableColumns = "28px 96px 68px minmax(0, 1fr) 104px";
+const tableColumns = "28px 104px 76px minmax(0, 1fr) 120px";
+const headCell = "border-l px-2 py-1.5";
+
+const focusOptions = [
+  { value: null, label: <span className="text-muted-foreground">None</span> },
+  ...efforts.map((e) => ({ value: e, label: <FocusChip effort={e} /> })),
+];
+const priorityOptions = [
+  { value: null, label: <span className="text-muted-foreground">None</span> },
+  ...[...priorities].reverse().map((p) => ({ value: p, label: <PriorityChip priority={p} /> })),
+];
 
 export function TaskRow({
   task,
   today,
   showProject,
   columns = false,
+  projects = [],
 }: {
   task: Task;
   today: string;
   showProject: boolean;
   columns?: boolean;
+  projects?: CellProject[];
 }) {
   const router = useRouter();
   const { openTask } = useTaskEditor();
@@ -67,6 +116,23 @@ export function TaskRow({
   // Counts taps on the circle, so the tick animates afresh each time.
   const [taps, setTaps] = useState(0);
   const gone = useHidden(task.id);
+  // A value picked in a table cell shows at once, before the list catches up.
+  const [cells, setCells] = useOptimistic(
+    { effort: task.effort, priority: task.priority, project: task.project },
+    (now, change: Partial<Pick<Task, "effort" | "priority" | "project">>) => ({ ...now, ...change }),
+  );
+
+  function setCell(change: Partial<Pick<Task, "effort" | "priority" | "project">>, input: { effort?: Effort | null; priority?: Priority | null; projectId?: string | null }) {
+    startTransition(async () => {
+      setCells(change);
+      try {
+        await op("update_task", { id: task.id, ...input });
+      } catch (err) {
+        showToast(`Couldn't save. ${(err as Error).message}`);
+      }
+      router.refresh();
+    });
+  }
 
   // Tapping the circle ticks a task off, or un-ticks a done one.
   function toggle() {
@@ -95,27 +161,48 @@ export function TaskRow({
 
   return (
     <li
-      className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-center")}
+      className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0")}
       style={columns ? { gridTemplateColumns: tableColumns } : undefined}
     >
       <button
         type="button"
         onClick={toggle}
         aria-label={done ? `Mark "${task.title}" as not done` : `Mark "${task.title}" as done`}
-        className="-mx-2 flex size-11 shrink-0 items-center justify-center md:size-10"
+        className={cn("-mx-2 flex size-11 shrink-0 items-center justify-center md:size-10", columns && "md:self-center")}
       >
         <StatusIcon key={taps} status={status} className={cn("size-[26px] md:size-[18px]", taps > 0 && "motion-tick")} />
       </button>
       {columns && (
         <>
-          <span className="hidden md:flex">{task.effort && <FocusChip effort={task.effort} />}</span>
-          <span className="hidden md:flex">{task.priority && <PriorityChip priority={task.priority} />}</span>
+          <span className="hidden border-l md:flex">
+            <CellMenu
+              label={`Focus type of "${task.title}"`}
+              value={cells.effort}
+              options={focusOptions}
+              onPick={(effort) => setCell({ effort }, { effort })}
+            >
+              {cells.effort && <FocusChip effort={cells.effort} />}
+            </CellMenu>
+          </span>
+          <span className="hidden border-l md:flex">
+            <CellMenu
+              label={`Priority of "${task.title}"`}
+              value={cells.priority}
+              options={priorityOptions}
+              onPick={(priority) => setCell({ priority }, { priority })}
+            >
+              {cells.priority && <PriorityChip priority={cells.priority} />}
+            </CellMenu>
+          </span>
         </>
       )}
       <button
         type="button"
         onClick={() => openTask(task)}
-        className="press-tint -mr-4 flex min-w-0 grow flex-col gap-0.5 py-3 pr-4 text-left md:flex-row md:items-center md:gap-3"
+        className={cn(
+          "press-tint -mr-4 flex min-w-0 grow flex-col gap-0.5 py-3 pr-4 text-left md:flex-row md:items-center md:gap-3",
+          columns && "md:mr-0 md:border-l md:px-3",
+        )}
       >
         <span
           className={cn(
@@ -137,10 +224,7 @@ export function TaskRow({
           )}
           {task.notes && <span title="Has notes">Notes</span>}
           {showProject && task.project && (
-            <span className={cn("inline-flex items-center gap-1.5", columns && "md:hidden")}>
-              <span className="size-2 rounded-[3px]" style={{ background: task.project.hex }} aria-hidden />
-              {task.project.name}
-            </span>
+            <ProjectChip project={task.project} className={cn(columns && "md:hidden")} />
           )}
           {due && (
             <span
@@ -156,13 +240,19 @@ export function TaskRow({
         </span>
       </button>
       {columns && (
-        <span className="hidden min-w-0 items-center gap-1.5 text-meta text-muted-foreground md:flex">
-          {task.project && (
-            <>
-              <span className="size-2 shrink-0 rounded-[3px]" style={{ background: task.project.hex }} aria-hidden />
-              <span className="truncate">{task.project.name}</span>
-            </>
-          )}
+        <span className="-mr-4 hidden min-w-0 border-l md:flex">
+          <CellMenu
+            label={`Project of "${task.title}"`}
+            value={cells.project?.id ?? null}
+            options={[
+              { value: null, label: <span className="text-muted-foreground">No project</span> },
+              ...projects.map((p) => ({ value: p.id, label: <ProjectChip project={p} /> })),
+            ]}
+            onPick={(id) => setCell({ project: projects.find((p) => p.id === id) ?? null }, { projectId: id })}
+            className="pr-4"
+          >
+            {cells.project && <ProjectChip project={cells.project} />}
+          </CellMenu>
         </span>
       )}
     </li>

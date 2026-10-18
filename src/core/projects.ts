@@ -3,7 +3,7 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { projectColorNames, type ProjectColor } from "@/lib/project-colors";
-import { areas, type Area } from "@/lib/task-fields";
+import type { Area } from "@/lib/task-fields";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { listArtifacts } from "./artifacts";
 import { listDocuments } from "./documents";
@@ -18,7 +18,7 @@ export type Project = {
   id: string;
   name: string;
   color: ProjectColor;
-  /** Work or Life. Its tasks are in the same one. */
+  /** Always Work for now: Life has no projects (kept in case it gets them later). Its tasks are in the same one. */
   area: Area;
   openTasks: number;
   doneTasks: number;
@@ -27,7 +27,6 @@ export type Project = {
 };
 
 const colorInput = z.enum(projectColorNames).describe(`One of: ${projectColorNames.join(", ")}.`);
-const areaInput = z.enum(areas).describe("work or life. Its tasks go in the same one.");
 
 /** Live (not in Trash) projects, oldest first, with task counts. */
 export async function listProjects(): Promise<Project[]> {
@@ -109,16 +108,15 @@ export const projectOperations = {
 
   create_project: defineOperation({
     name: "create_project",
-    description: "Create a project, in Work or Life (Life if not given). If no colour is given, an unused one is picked.",
+    description: "Create a project (projects are always in Work). If no colour is given, an unused one is picked.",
     input: z.object({
       name: z.string().trim().min(1).max(200),
       color: colorInput.optional(),
-      area: areaInput.optional(),
     }),
-    run: async ({ name, color, area }, { actor }) => {
+    run: async ({ name, color }, { actor }) => {
       const [row] = await db
         .insert(projects)
-        .values({ name, color: color ?? (await nextColor()), area: area ?? "life", ...madeByColumns(actor) })
+        .values({ name, color: color ?? (await nextColor()), area: "work", ...madeByColumns(actor) })
         .returning({ id: projects.id });
       return getProject(row.id);
     },
@@ -126,27 +124,22 @@ export const projectOperations = {
 
   update_project: defineOperation({
     name: "update_project",
-    description: "Rename a project, change its colour, or move it between Work and Life (its tasks move with it).",
+    description: "Rename a project or change its colour.",
     input: z.object({
       id,
       name: z.string().trim().min(1).max(200).optional(),
       color: colorInput.optional(),
-      area: areaInput.optional(),
     }),
-    run: async ({ id, name, color, area }) => {
+    run: async ({ id, name, color }) => {
       await assertProject(id);
-      await db.transaction(async (tx) => {
-        await tx
-          .update(projects)
-          .set({
-            ...(name !== undefined && { name }),
-            ...(color !== undefined && { color }),
-            ...(area !== undefined && { area }),
-            updatedAt: new Date(),
-          })
-          .where(eq(projects.id, id));
-        if (area) await tx.update(tasks).set({ area }).where(eq(tasks.projectId, id));
-      });
+      await db
+        .update(projects)
+        .set({
+          ...(name !== undefined && { name }),
+          ...(color !== undefined && { color }),
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, id));
       return getProject(id);
     },
   }),
