@@ -357,7 +357,7 @@ export const artifactOperations = {
   }),
 };
 
-/** Deletes comments whose note, artifact, document, task or Work archive entry is gone for good. */
+/** Deletes comments whose note, artifact, document, task, Work archive entry, card or whiteboard is gone for good. */
 export async function deleteOrphanComments() {
   await db.execute(sql`
     delete from ${comments} c
@@ -366,5 +366,6 @@ export async function deleteOrphanComments() {
        or (c.target_type = 'document' and not exists (select 1 from documents d where d.id = c.target_id))
        or (c.target_type = 'task' and not exists (select 1 from tasks t where t.id = c.target_id))
        or (c.target_type = 'entry' and not exists (select 1 from archive_entries e where e.id = c.target_id))
-       or (c.target_type = 'card' and not exists (select 1 from cards k where k.id = c.target_id))`);
+       or (c.target_type = 'card' and not exists (select 1 from cards k where k.id = c.target_id))
+       or (c.target_type = 'whiteboard' and not exists (select 1 from whiteboards w where w.id = c.target_id))`);
 }

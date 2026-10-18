@@ -95,7 +95,9 @@ function Row({ mention: m, when }: { mention: Mention; when: string }) {
               ? `/?task=${m.where.on.id}`
               : m.where.on.type === "entry"
                 ? `/archive/${m.where.on.id}`
-                : `/${m.where.on.type}s/${m.where.on.id}`,
+                : m.where.on.type === "whiteboard"
+                  ? `/whiteboard/${m.where.on.id}?comments=1`
+                  : `/${m.where.on.type}s/${m.where.on.id}`,
         }
       : m.where.type === "note"
         ? { label: m.where.title || "Untitled note", href: `/notes/${m.where.id}` }

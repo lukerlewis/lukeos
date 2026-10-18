@@ -1,12 +1,13 @@
 "use client";
 
-import { Check, MessageSquare, RotateCcw, Sparkles, Trash2, X } from "lucide-react";
+import { Check, MapPin, MessageSquare, RotateCcw, Sparkles, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { editedLabel } from "@/components/notes/note-list";
 import { Button } from "@/components/ui/button";
 import type { Comment, CommentTarget } from "@/core/comments";
 import type { MadeBy } from "@/core/define";
+import type { CommentPin } from "@/db/schema";
 import { COMMENTABLE } from "@/lib/comments";
 import { hide, inBackground, unhide, useWithoutHidden } from "@/lib/background";
 import { op } from "@/lib/ops-client";
@@ -36,11 +37,12 @@ function usePickedWords() {
 type CommentEntry = Omit<Comment, "replies" | "target">;
 
 /** A comment Luke just wrote, shown at once while it saves. `saved` once the server has it. */
-function draftEntry(body: string, quote: string | null): CommentEntry & { saved?: boolean } {
+function draftEntry(body: string, quote: string | null, pin: CommentPin | null = null): CommentEntry & { saved?: boolean } {
   return {
     id: `pending-${Date.now()}`,
     version: null,
     quote,
+    pin,
     body,
     resolved: false,
     resolvedAt: null,
@@ -52,7 +54,7 @@ function draftEntry(body: string, quote: string | null): CommentEntry & { saved?
 const who = (m: MadeBy) => (m.kind === "user" ? "You" : m.routine ? `${m.name ?? "Claude"} (${m.routine})` : (m.name ?? "Claude"));
 
 /**
- * Comments on a note, an artifact, a task or a Work archive entry. Pick some words first to quote them.
+ * Comments on a note, an artifact, a task, a Work archive entry or a whiteboard. Pick some words first to quote them.
  * Claude reads open comments through the connector and can reply and resolve them.
  */
 export function Comments({
@@ -61,6 +63,11 @@ export function Comments({
   timeZone,
   currentVersion,
   onChanged,
+  pin,
+  onUnpin,
+  numbers,
+  active,
+  onPick,
 }: {
   target: { type: CommentTarget; id: string };
   threads: Comment[];
@@ -69,11 +76,24 @@ export function Comments({
   currentVersion?: number;
   /** Reloads the threads after a change. Defaults to refreshing the page. */
   onChanged?: () => void;
+  /** Whiteboards: the spot the next comment is pinned to. */
+  pin?: CommentPin | null;
+  onUnpin?: () => void;
+  /** Whiteboards: each pinned thread's number, as shown on the board. */
+  numbers?: Map<string, number>;
+  /** The thread picked on the board, shown and scrolled to. */
+  active?: string | null;
+  /** Picking a pinned thread's number, to find it on the board. */
+  onPick?: (thread: Comment) => void;
 }) {
   const router = useRouter();
   const changed = onChanged ?? (() => router.refresh());
   const [picked, setPicked] = usePickedWords();
   const [text, setText] = useState("");
+  const box = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (pin) box.current?.focus();
+  }, [pin]);
   // New comments and resolve/reopen show at once; the server catches up behind them.
   const [pending, setPending] = useState<(Comment & { saved?: boolean })[]>([]);
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
@@ -92,11 +112,13 @@ export function Comments({
     const body = text.trim();
     if (!body) return;
     const quote = picked;
-    const entry = { ...draftEntry(body, quote), target: { ...target, title: "" }, replies: [] };
+    const spot = pin ?? null;
+    const entry = { ...draftEntry(body, quote, spot), target: { ...target, title: "" }, replies: [] };
     setPending((p) => [...p, entry]);
     setText("");
     setPicked(null);
-    void inBackground(() => op("add_comment", { targetType: target.type, targetId: target.id, body, quote: quote ?? undefined }), {
+    onUnpin?.();
+    void inBackground(() => op("add_comment", { targetType: target.type, targetId: target.id, body, quote: quote ?? undefined, pin: spot ?? undefined }), {
       then: () => {
         setPending((p) => p.map((c) => (c.id === entry.id ? { ...c, saved: true } : c)));
         changed();
@@ -123,7 +145,7 @@ export function Comments({
     void inBackground(() => op("delete_comment", { id: thread.id }), { then: changed, failed: () => unhide(thread.id) });
   }
 
-  const threadProps = { timeZone, currentVersion, onChanged: changed, onResolve: resolve, onRemove: remove };
+  const threadProps = { timeZone, currentVersion, onChanged: changed, onResolve: resolve, onRemove: remove, numbers, active, onPick };
 
   return (
     <section aria-label="Comments" className="flex flex-col gap-3">
@@ -142,7 +164,17 @@ export function Comments({
             </button>
           </div>
         ) : null}
+        {pin ? (
+          <div className="flex items-center gap-2 rounded-lg bg-muted px-2.5 py-1.5 text-meta text-muted-foreground">
+            <MapPin className="size-3.5 shrink-0" aria-hidden />
+            <span className="grow">Pinned to the board</span>
+            <button type="button" onClick={onUnpin} aria-label="Don't pin it" className="shrink-0 hover:text-foreground">
+              <X className="size-3.5" aria-hidden />
+            </button>
+          </div>
+        ) : null}
         <textarea
+          ref={box}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -151,7 +183,7 @@ export function Comments({
               add();
             }
           }}
-          placeholder={target.type === "note" || target.type === "entry" ? "Leave a comment…" : "Leave a comment for Claude…"}
+          placeholder={target.type === "note" || target.type === "entry" || target.type === "whiteboard" ? "Leave a comment…" : "Leave a comment for Claude…"}
           aria-label="New comment"
           rows={2}
           className="field-sizing-content max-h-60 min-h-16 w-full resize-none rounded-lg border bg-background px-3 py-2 text-body outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/40 md:text-meta"
@@ -188,6 +220,9 @@ function Thread({
   onChanged,
   onResolve,
   onRemove,
+  numbers,
+  active,
+  onPick,
 }: {
   thread: Comment & { saved?: boolean };
   timeZone: string;
@@ -195,7 +230,16 @@ function Thread({
   onChanged: () => void;
   onResolve: (thread: Comment, resolved: boolean) => void;
   onRemove: (thread: Comment) => void;
+  numbers?: Map<string, number>;
+  active?: string | null;
+  onPick?: (thread: Comment) => void;
 }) {
+  const here = useRef<HTMLElement>(null);
+  const isActive = active === thread.id;
+  useEffect(() => {
+    if (isActive) here.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [isActive]);
+  const number = numbers?.get(thread.id);
   const [replying, setReplying] = useState(false);
   const [reply, setReply] = useState("");
   // A comment still on its way to the server can't be answered or changed yet.
@@ -230,10 +274,32 @@ function Thread({
 
   return (
     <article
+      ref={here}
       aria-busy={saving}
-      className={cn("flex flex-col gap-2 rounded-xl border bg-card p-3 border-stroke", (thread.resolved || saving) && "opacity-70")}
+      className={cn(
+        "flex flex-col gap-2 rounded-xl border bg-card p-3 border-stroke",
+        isActive && "border-foreground",
+        (thread.resolved || saving) && "opacity-70",
+      )}
     >
-      <Entry entry={thread} timeZone={timeZone} currentVersion={currentVersion} />
+      <Entry
+        entry={thread}
+        timeZone={timeZone}
+        currentVersion={currentVersion}
+        pin={
+          number !== undefined ? (
+            <button
+              type="button"
+              onClick={() => onPick?.(thread)}
+              title="Show on the board"
+              aria-label={`Show comment ${number} on the board`}
+              className="flex size-5 shrink-0 items-center justify-center rounded-full rounded-bl-none bg-foreground text-tag font-medium text-background tabular-nums"
+            >
+              {number}
+            </button>
+          ) : null
+        }
+      />
       {[...thread.replies, ...pending].map((r) => (
         <div key={r.id} className={cn("ml-3 border-l pl-3", r.id.startsWith("pending-") && "opacity-60")}>
           <Entry entry={r} timeZone={timeZone} currentVersion={currentVersion} />
@@ -301,15 +367,19 @@ function Entry({
   entry,
   timeZone,
   currentVersion,
+  pin,
 }: {
   entry: Omit<Comment, "replies" | "target">;
   timeZone: string;
   currentVersion?: number;
+  /** Whiteboards: the pinned thread's number. */
+  pin?: React.ReactNode;
 }) {
   const agent = entry.madeBy.kind === "agent";
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-x-2 text-meta text-muted-foreground">
+        {pin}
         <span className="inline-flex items-center gap-1 font-medium text-foreground">
           {agent && <Sparkles className="size-3" aria-hidden />}
           {who(entry.madeBy)}

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WhiteboardEditor } from "@/components/whiteboard/editor";
+import { listComments } from "@/core/comments";
 import { OperationError } from "@/core/define";
+import { getTimeZone } from "@/core/settings";
 import { getWhiteboard, getWhiteboardSettings } from "@/core/whiteboards";
 
 async function load(id: string) {
@@ -19,7 +21,20 @@ export async function generateMetadata({ params }: PageProps<"/whiteboard/[id]">
   return { title: `${board.title || "Untitled"} · LukeOS` };
 }
 
-export default async function WhiteboardPage({ params }: PageProps<"/whiteboard/[id]">) {
-  const [board, settings] = await Promise.all([load((await params).id), getWhiteboardSettings()]);
-  return <WhiteboardEditor key={board.id} board={{ id: board.id, title: board.title, version: board.version, items: board.items }} settings={settings} />;
+export default async function WhiteboardPage({ params, searchParams }: PageProps<"/whiteboard/[id]">) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  const [board, settings, threads, timeZone] = await Promise.all([
+    load(id),
+    getWhiteboardSettings(),
+    listComments({ targetType: "whiteboard", targetId: id }),
+    getTimeZone(),
+  ]);
+  return (
+    <WhiteboardEditor
+      key={board.id}
+      board={{ id: board.id, title: board.title, version: board.version, items: board.items }}
+      settings={settings}
+      comments={{ threads, timeZone, open: query.comments === "1" }}
+    />
+  );
 }

@@ -262,21 +262,25 @@ export const artifactParts = pgTable(
 );
 
 /**
- * A comment on a note, an artifact, a document, a task, a Work archive entry or a pipeline card, by Luke or Claude. It can quote the
- * words it's about, and on an artifact it records which version it was
- * made on. Replies point at the comment they answer. Resolving closes it.
+ * A comment on a note, an artifact, a document, a task, a Work archive entry, a pipeline card or a whiteboard, by Luke or Claude. It can quote the
+ * words it's about, on an artifact it records which version it was
+ * made on, and on a whiteboard it can be pinned to a spot. Replies point at the comment they answer. Resolving closes it.
  */
+export type CommentPin = { x: number; y: number; item?: string };
+
 export const comments = pgTable(
   "comments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    targetType: text("target_type").notNull(), // "note" | "artifact" | "document" | "task" | "entry" | "card"
+    targetType: text("target_type").notNull(), // "note" | "artifact" | "document" | "task" | "entry" | "card" | "whiteboard"
     targetId: uuid("target_id").notNull(),
     parentId: uuid("parent_id").references((): AnyPgColumn => comments.id, { onDelete: "cascade" }),
     /** Artifacts only: the version number it was made on. */
     version: integer("version"),
     /** The words it's about, if Luke picked some. */
     quote: text("quote"),
+    /** Whiteboards only: where it's pinned. With `item`, x and y are from that item's top left corner, so it moves with it. */
+    pin: jsonb("pin").$type<CommentPin>(),
     body: text("body").notNull(),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
     ...madeBy,

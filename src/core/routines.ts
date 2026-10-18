@@ -402,6 +402,7 @@ export const routineOperations = {
           id: c.id,
           on: c.target,
           quote: c.quote,
+          ...(c.pin && { pin: c.pin }),
           comment: c.body,
           // The back and forth so far, so the latest reply reads in context.
           replies: c.replies.map((r) => ({ from: r.madeBy.kind === "user" ? "Luke" : (r.madeBy.name ?? "Claude"), text: r.body })),
