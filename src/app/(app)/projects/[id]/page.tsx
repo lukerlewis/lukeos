@@ -6,6 +6,7 @@ import { ArtifactList } from "@/components/artifacts/artifact-list";
 import { AddButton } from "@/components/inspiration/add";
 import { InspirationBoard } from "@/components/inspiration/board";
 import { Board } from "@/components/board/board";
+import { TaskSortMenu } from "@/components/dashboard/controls";
 import { BoardViewSwitch, type BoardGrouping } from "@/components/board/view-switch";
 import { PipelineBoard } from "@/components/pipeline/pipeline-board";
 import { getPipeline, listColumns } from "@/core/pipeline";
@@ -29,6 +30,8 @@ import { listInspiration } from "@/core/inspiration";
 import { listNotes } from "@/core/notes";
 import { getProject, listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
+import { getDashboardView } from "@/core/dashboard";
+import { sortTasks } from "@/lib/board";
 import { listTasks } from "@/core/tasks";
 import { todayIn } from "@/lib/dates";
 import { colorHex } from "@/lib/project-colors";
@@ -66,7 +69,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const inspirationView = view === "inspiration";
   const listView = !boardView && !pipelineView && !notesView && !inspirationView;
 
-  const [project, tasks, timeZone, board, notes, documents, artifacts, folders, projects, inspiration, pipeline] = await Promise.all([
+  const [project, tasks, timeZone, board, notes, documents, artifacts, folders, projects, inspiration, pipeline, dashboard] = await Promise.all([
     load(id),
     listView ? listTasks({ projectId: id, includeDone: true }) : [],
     getTimeZone(),
@@ -78,14 +81,20 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     notesView || inspirationView ? listProjects() : [],
     inspirationView ? listInspiration({ projectId: id }) : [],
     pipelineView ? getPipeline(id) : null,
+    // Tasks here are ordered by the same saved sort as the dashboard.
+    getDashboardView(),
   ]);
+  const sort = dashboard.sort;
   // Notes in the folders attached to this project show under their folder.
   const folderIds = new Set(folders.map((f) => f.id));
   const looseNotes = notes.filter((n) => !n.folder || !folderIds.has(n.folder.id));
   const date = todayIn(timeZone);
   const groups = (["doing", "todo", "done"] as Status[]).map((status) => ({
     status,
-    tasks: tasks.filter((t) => t.status === status),
+    tasks: sortTasks(
+      tasks.filter((t) => t.status === status),
+      sort,
+    ),
   }));
 
   const toolbar = (
@@ -104,6 +113,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
       {(boardView || pipelineView) && (
         <BoardViewSwitch pipeline view={grouping} href={(by) => `${page}?view=board&by=${by}`} />
       )}
+      {(listView || boardView) && <TaskSortMenu sort={sort} />}
     </>
   );
 
@@ -205,7 +215,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           )}
         </div>
       ) : board && boardView ? (
-        <Board tasks={board.tasks} view={boardView} today={board.date} projectId={project.id} showProject={false} />
+        <Board tasks={board.tasks} view={boardView} today={board.date} projectId={project.id} showProject={false} sort={sort} />
       ) : (
         <div className="flex max-w-3xl flex-col gap-5">
           {tasks.length === 0 && (
@@ -223,7 +233,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
                   <span className="text-xs font-normal text-muted-foreground">{group.length}</span>
                 </h2>
                 <Card>
-                  <TaskList tasks={group} today={date} showProject={false} />
+                  <TaskList tasks={group} today={date} showProject={false} columns />
                   {status === "todo" && <QuickAdd projectId={project.id} today={date} />}
                 </Card>
               </section>

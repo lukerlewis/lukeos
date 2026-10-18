@@ -65,13 +65,13 @@ export function TaskList({
         <div
           aria-hidden
           className="hidden border-b bg-muted/40 px-4 text-xs font-medium text-muted-foreground md:grid"
-          style={{ gridTemplateColumns: tableColumns }}
+          style={{ gridTemplateColumns: tableColumns(showProject) }}
         >
           <span />
           <span className={headCell}>Focus type</span>
           <span className={headCell}>Priority</span>
           <span className={cn(headCell, "pl-3")}>Name</span>
-          <span className={headCell}>Project</span>
+          {showProject && <span className={headCell}>Project</span>}
         </div>
       )}
       <ul>
@@ -83,8 +83,8 @@ export function TaskList({
   );
 }
 
-/** The column widths of Work's table: tick, focus type, priority, name, project. */
-const tableColumns = "28px 104px 76px minmax(0, 1fr) 120px";
+/** The column widths of the table: tick, focus type, priority, name, and project unless it's left out (on a project's page). */
+const tableColumns = (project: boolean) => `28px 104px 76px minmax(0, 1fr)${project ? " 120px" : ""}`;
 const headCell = "border-l px-2 py-1.5";
 
 const focusOptions = [
@@ -162,7 +162,7 @@ export function TaskRow({
   return (
     <li
       className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0")}
-      style={columns ? { gridTemplateColumns: tableColumns } : undefined}
+      style={columns ? { gridTemplateColumns: tableColumns(showProject) } : undefined}
     >
       <button
         type="button"
@@ -239,7 +239,7 @@ export function TaskRow({
           )}
         </span>
       </button>
-      {columns && (
+      {columns && showProject && (
         <span className="-mr-4 hidden min-w-0 border-l md:flex">
           <CellMenu
             label={`Project of "${task.title}"`}
