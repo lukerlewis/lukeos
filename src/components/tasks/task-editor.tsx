@@ -11,12 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
 import { bucketForDate } from "@/lib/board";
+import { currentArea } from "@/lib/area";
 import { addDays, endOfWeek } from "@/lib/dates";
 import { showToast } from "@/components/shell/toast";
 import { inBackground, trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import {
+  areaLabel,
+  areas,
   bucketLabel,
   buckets,
   effortLabel,
@@ -27,6 +30,7 @@ import {
   repeats,
   statuses,
   statusLabel,
+  type Area,
   type Bucket,
   type Effort,
   type Priority,
@@ -35,6 +39,7 @@ import {
 } from "@/lib/task-fields";
 import { MadeByLabel } from "./made-by";
 import { HighlightedText, SmartChips, useSmartEntry } from "./smart-chips";
+import { FocusIcon, PriorityChip } from "./task-chips";
 
 type Draft = {
   id?: string;
@@ -45,6 +50,7 @@ type Draft = {
   dueDate: string | null;
   priority: Priority | null;
   effort: Effort | null;
+  area: Area;
   repeat: Repeat | null;
   notes: string;
   madeBy?: Task["madeBy"];
@@ -57,7 +63,7 @@ type Editor = {
   /** Open an existing task to view and change it. */
   openTask: (task: Task) => void;
   /** Start a new task, optionally in a project or list. */
-  newTask: (defaults?: Partial<Pick<Draft, "title" | "projectId" | "bucket" | "status">>) => void;
+  newTask: (defaults?: Partial<Pick<Draft, "title" | "projectId" | "bucket" | "status" | "area">>) => void;
 };
 
 const EditorContext = createContext<Editor | null>(null);
@@ -92,6 +98,7 @@ export function TaskEditorProvider({
       dueDate: t.dueDate,
       priority: t.priority,
       effort: t.effort,
+      area: t.area,
       repeat: t.repeat,
       notes: t.notes ?? "",
       madeBy: t.madeBy,
@@ -111,20 +118,25 @@ export function TaskEditorProvider({
       .catch(() => {});
   }, [openTask]);
 
-  const newTask = useCallback<Editor["newTask"]>((defaults) => {
-    // A new task goes in Today unless the screen picked a list.
-    setDraft({
-      title: defaults?.title ?? "",
-      projectId: defaults?.projectId ?? null,
-      status: defaults?.status ?? "todo",
-      bucket: defaults?.bucket ?? "today",
-      dueDate: null,
-      priority: null,
-      effort: null,
-      repeat: null,
-      notes: "",
-    });
-  }, []);
+  const newTask = useCallback<Editor["newTask"]>(
+    (defaults) => {
+      // A new task goes in Today unless the screen picked a list, and in its project's area, else the one this device shows.
+      const project = projects.find((p) => p.id === defaults?.projectId);
+      setDraft({
+        title: defaults?.title ?? "",
+        projectId: defaults?.projectId ?? null,
+        status: defaults?.status ?? "todo",
+        bucket: defaults?.bucket ?? "today",
+        dueDate: null,
+        priority: null,
+        effort: null,
+        area: project?.area ?? defaults?.area ?? currentArea(),
+        repeat: null,
+        notes: "",
+      });
+    },
+    [projects],
+  );
 
   return (
     <EditorContext value={{ openTask, newTask }}>
@@ -207,6 +219,7 @@ function TaskDialog({
     dueDate,
     priority: draft.priority,
     effort: draft.effort,
+    area: draft.area,
     repeat,
     notes: draft.notes.trim() || null,
   };
@@ -350,13 +363,28 @@ function TaskDialog({
 
         <div className="flex flex-col gap-4 px-5 py-4">
           <div className={cn("flex-col gap-4", more ? "flex" : "hidden md:flex")}>
-            <Field label="Status">
+            <Field label="Area">
               <Segmented
-                value={draft.status}
-                onChange={(v) => set("status", v)}
-                options={statuses.map((s) => ({ value: s, label: statusLabel[s] }))}
+                value={draft.area}
+                onChange={(v) => {
+                  // A project belongs to one area, so moving the task to the other one takes it out.
+                  if (draft.projectId && projects.find((p) => p.id === draft.projectId)?.area !== v) set("projectId", null);
+                  set("area", v);
+                }}
+                options={areas.map((a) => ({ value: a, label: areaLabel[a] }))}
               />
             </Field>
+
+            {/* A new task always starts as To do. */}
+            {!isNew && (
+              <Field label="Status">
+                <Segmented
+                  value={draft.status}
+                  onChange={(v) => set("status", v)}
+                  options={statuses.map((s) => ({ value: s, label: statusLabel[s] }))}
+                />
+              </Field>
+            )}
 
             <Field label="List">
               <Segmented
@@ -404,19 +432,36 @@ function TaskDialog({
               </select>
             </Field>
 
+            {/* Focus type is for Work; Life keeps it simple. One already set still shows, so it can be cleared. */}
+            {(draft.area === "work" || draft.effort) && (
+              <Field label="Focus">
+                <Segmented
+                  value={draft.effort ?? "none"}
+                  onChange={(v) => set("effort", v === "none" ? null : v)}
+                  options={[
+                    { value: "none" as const, label: "None" },
+                    ...efforts.map((x) => ({
+                      value: x,
+                      label: (
+                        <>
+                          <FocusIcon effort={x} className="size-3.5" />
+                          {effortLabel[x]}
+                        </>
+                      ),
+                    })),
+                  ]}
+                />
+              </Field>
+            )}
+
             <Field label="Priority">
               <Segmented
                 value={draft.priority ?? "none"}
                 onChange={(v) => set("priority", v === "none" ? null : v)}
-                options={[{ value: "none" as const, label: "None" }, ...priorities.map((p) => ({ value: p, label: priorityLabel[p] }))]}
-              />
-            </Field>
-
-            <Field label="Effort">
-              <Segmented
-                value={draft.effort ?? "none"}
-                onChange={(v) => set("effort", v === "none" ? null : v)}
-                options={[{ value: "none" as const, label: "None" }, ...efforts.map((x) => ({ value: x, label: effortLabel[x] }))]}
+                options={[
+                  { value: "none" as const, label: "None" },
+                  ...priorities.map((p) => ({ value: p, label: <PriorityChip priority={p} />, title: priorityLabel[p] })),
+                ]}
               />
             </Field>
 
@@ -428,7 +473,7 @@ function TaskDialog({
                 className="h-9 w-full rounded-lg border bg-card px-2.5 text-body md:text-meta border-stroke-strong sm:w-auto sm:min-w-56"
               >
                 <option value="">No project</option>
-                {projects.map((p) => (
+                {projects.filter((p) => p.area === draft.area || p.id === draft.projectId).map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>

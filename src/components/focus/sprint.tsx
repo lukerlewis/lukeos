@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
+import { currentArea } from "@/lib/area";
 import { bucketLabel, buckets, type Bucket } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 import { SPRINT_MINUTES, useFocus, type SprintTask } from "./focus-provider";
@@ -41,7 +42,7 @@ export function SprintTasks({ openTasks }: { openTasks: PickableTask[] }) {
     const temp = `new:${crypto.randomUUID()}`;
     setTitle("");
     setSprintTasks((ts) => [...ts, { id: temp, title: clean, done: false }]);
-    void inBackground(() => op("create_task", { title: clean }), {
+    void inBackground(() => op("create_task", { title: clean, area: currentArea() }), {
       then: (task) => {
         setSprintTasks((ts) => ts.map((t) => (t.id === temp ? { ...t, id: task.id } : t)));
         // Ticked off before it finished saving.

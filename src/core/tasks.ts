@@ -5,7 +5,7 @@ import { db, schema } from "@/db";
 import { bucketForDate } from "@/lib/board";
 import { addDays, isoDay, nextRepeat } from "@/lib/dates";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
-import { buckets, efforts, priorities, repeats, statuses, type Bucket, type Effort, type Priority, type Repeat, type Status } from "@/lib/task-fields";
+import { areas, buckets, efforts, oldEfforts, priorities, repeats, statuses, type Area, type Bucket, type Effort, type Priority, type Repeat, type Status } from "@/lib/task-fields";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { syncMentions } from "./mentions";
 import { assertProject } from "./projects";
@@ -13,6 +13,12 @@ import { rollOverLists } from "./rollover";
 import { today } from "./settings";
 
 const { tasks, projects, cards } = schema;
+
+/** Work or Life, for a project. */
+async function projectArea(id: string) {
+  const [row] = await db.select({ area: projects.area }).from(projects).where(eq(projects.id, id)).limit(1);
+  return (row?.area as Area | undefined) ?? null;
+}
 
 /** The project of a live pipeline card. Throws if the card is gone or in Trash. */
 async function cardProject(id: string) {
@@ -34,7 +40,10 @@ export type Task = {
   bucket: Bucket;
   dueDate: string | null;
   priority: Priority | null;
+  /** Focus type: shallow, focus or deep work. */
   effort: Effort | null;
+  /** Work or Life. */
+  area: Area;
   notes: string | null;
   /** How often it comes back once done: daily, weekly or monthly. */
   repeat: Repeat | null;
@@ -59,6 +68,7 @@ function toTask(t: TaskRow, p: ProjectRow | null): Task {
     dueDate: t.dueDate,
     priority: t.priority as Priority | null,
     effort: t.effort as Effort | null,
+    area: t.area as Area,
     notes: t.notes,
     repeat: t.repeat as Repeat | null,
     project: p ? { id: p.id, name: p.name, color: p.color as ProjectColor, hex: colorHex(p.color) } : null,
@@ -77,6 +87,7 @@ const priorityRank = sql`case ${tasks.priority} when 'high' then 0 when 'medium'
 
 export async function listTasks(filter: {
   projectId?: string | null;
+  area?: Area;
   cardId?: string;
   status?: Status;
   bucket?: Bucket;
@@ -90,6 +101,7 @@ export async function listTasks(filter: {
   if (filter.projectId === null) where.push(isNull(tasks.projectId));
   else if (filter.projectId) where.push(eq(tasks.projectId, filter.projectId));
   if (filter.cardId) where.push(eq(tasks.cardId, filter.cardId));
+  if (filter.area) where.push(eq(tasks.area, filter.area));
   if (filter.status) where.push(eq(tasks.status, filter.status));
   else if (!filter.includeDone) where.push(ne(tasks.status, "done"));
   if (filter.bucket) where.push(eq(tasks.bucket, filter.bucket));
@@ -160,6 +172,7 @@ export async function syncRepeats(ids: string[]) {
           dueDate,
           priority: t.priority,
           effort: t.effort,
+          area: t.area,
           notes: t.notes,
           repeat: t.repeat,
           createdByKind: t.createdByKind,
@@ -199,7 +212,12 @@ export const fields = {
     ),
   dueDate,
   priority: z.enum(priorities).nullable().describe("low, medium or high. null clears it."),
-  effort: z.enum(efforts).nullable().describe("How big the task is: small, medium or large. null clears it."),
+  effort: z
+    .preprocess((v) => (typeof v === "string" && oldEfforts[v]) || v, z.enum(efforts).nullable())
+    .describe('Focus type, the kind of attention it needs: shallow, focus or deep (deep work). Shown on Work tasks. null clears it.'),
+  area: z
+    .enum(areas)
+    .describe("work or life. A task in a project always goes in its project's one, so this only matters for tasks with no project."),
   notes: z.string().max(20_000).nullable().describe("Free text notes. null clears them."),
   repeat: z
     .enum(repeats)
@@ -224,6 +242,7 @@ export const taskOperations = {
       "List tasks, soonest due first. By default only open tasks (To do and Doing) from every project. Filter by project, status, list (bucket) or a due date range.",
     input: z.object({
       projectId: z.uuid().nullable().optional().describe("Only this project's tasks. null means tasks with no project."),
+      area: fields.area.optional().describe("Only Work or only Life tasks."),
       status: z.enum(statuses).optional(),
       bucket: z.enum(buckets).optional().describe("Only tasks in this list: today, tomorrow, this_week or later."),
       includeDone: z.boolean().optional().describe("Include done tasks too. Ignored if status is set."),
@@ -244,7 +263,7 @@ export const taskOperations = {
   create_task: defineOperation({
     name: "create_task",
     description:
-      "Create a task. Only the title is required; it starts as To do. Leave out bucket and it goes in the list its due date points to (Today if late, today or no date; Tomorrow; This week; Later); pass bucket to choose the list yourself. Set repeat for something that comes back every day, weekday, week, month or year.",
+      "Create a task. Only the title is required; it starts as To do and goes in Life unless area or a Work project says otherwise. Leave out bucket and it goes in the list its due date points to (Today if late, today or no date; Tomorrow; This week; Later); pass bucket to choose the list yourself. Set repeat for something that comes back every day, weekday, week, month or year.",
     input: z.object({
       title: fields.title,
       projectId: fields.projectId.optional(),
@@ -254,18 +273,21 @@ export const taskOperations = {
       dueDate: fields.dueDate.optional(),
       priority: fields.priority.optional(),
       effort: fields.effort.optional(),
+      area: fields.area.optional(),
       notes: fields.notes.optional(),
       repeat: fields.repeat.optional(),
     }),
     run: async (input, { actor }) => {
       if (input.projectId) await assertProject(input.projectId);
       const inCard = input.cardId ? await cardProject(input.cardId) : null;
+      const projectId = input.projectId === undefined ? inCard : input.projectId;
       const status = input.status ?? "todo";
       const [row] = await db
         .insert(tasks)
         .values({
           title: input.title,
-          projectId: input.projectId === undefined ? inCard : input.projectId,
+          projectId,
+          area: (projectId && (await projectArea(projectId))) || input.area || "life",
           cardId: input.cardId ?? null,
           status,
           // A new task with a date starts in the list that date points to; after that, only Luke moves it.
@@ -288,7 +310,7 @@ export const taskOperations = {
   update_task: defineOperation({
     name: "update_task",
     description:
-      "Change any fields of a task: title, project, card, status, list (bucket), due date, priority, effort, notes or how it repeats. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
+      "Change any fields of a task: title, project, card, status, list (bucket), due date, priority, focus type (effort), area (work or life), notes or how it repeats. Putting it in a project moves it to that project's area; changing the area of a task in a project of the other area takes it out of the project. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
     input: z.object({
       id,
       title: fields.title.optional(),
@@ -299,6 +321,7 @@ export const taskOperations = {
       dueDate: fields.dueDate.optional(),
       priority: fields.priority.optional(),
       effort: fields.effort.optional(),
+      area: fields.area.optional(),
       notes: fields.notes.optional(),
       repeat: fields.repeat.optional(),
     }),
@@ -311,6 +334,14 @@ export const taskOperations = {
         if (value !== undefined) (set as Record<string, unknown>)[key] = value;
       }
       if (changes.notes !== undefined) set.notes = changes.notes?.trim() || null;
+      // A task in a project is always in its project's area.
+      const projectId = changes.projectId !== undefined ? changes.projectId : (current.project?.id ?? null);
+      const inArea = projectId ? await projectArea(projectId) : null;
+      if (inArea && changes.area && changes.area !== inArea && changes.projectId === undefined) {
+        set.projectId = null;
+      } else if (inArea) {
+        set.area = inArea;
+      }
       if (changes.status && changes.status !== current.status) {
         set.completedAt = changes.status === "done" ? new Date() : null;
       }

@@ -4,16 +4,18 @@ import { Plus, Repeat } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
 import type { Task } from "@/core/tasks";
+import { currentArea } from "@/lib/area";
 import { bucketForDate } from "@/lib/board";
 import { friendlyDay, nextRepeat } from "@/lib/dates";
 import { SmartChips, useSmartEntry } from "./smart-chips";
 import { op } from "@/lib/ops-client";
 import { useHidden } from "@/lib/background";
-import { bucketLabel, effortLabel, priorityLabel, repeatLabel, type Bucket, type Status } from "@/lib/task-fields";
+import { bucketLabel, effortLabel, priorityLabel, repeatLabel, type Area, type Bucket, type Status } from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
 import { showToast } from "@/components/shell/toast";
 import { ClaudeBadge } from "./made-by";
 import { StatusIcon } from "./status-circle";
+import { FocusChip, PriorityChip } from "./task-chips";
 import { useTaskEditor } from "./task-editor";
 
 /** How long the tick animation takes to play out. */
@@ -24,24 +26,40 @@ export function TaskList({
   tasks,
   today,
   showProject = true,
+  columns = false,
   empty,
 }: {
   tasks: Task[];
   today: string;
   showProject?: boolean;
+  /** Work's table on computers: focus type, priority, name and project in columns, like Luke's Notion. Phones keep plain rows. */
+  columns?: boolean;
   empty?: React.ReactNode;
 }) {
   if (tasks.length === 0 && empty) return <>{empty}</>;
   return (
     <ul>
       {tasks.map((t) => (
-        <TaskRow key={t.id} task={t} today={today} showProject={showProject} />
+        <TaskRow key={t.id} task={t} today={today} showProject={showProject} columns={columns} />
       ))}
     </ul>
   );
 }
 
-export function TaskRow({ task, today, showProject }: { task: Task; today: string; showProject: boolean }) {
+/** The column widths of Work's table: tick, focus type, priority, name, project. */
+const tableColumns = "28px 96px 68px minmax(0, 1fr) 104px";
+
+export function TaskRow({
+  task,
+  today,
+  showProject,
+  columns = false,
+}: {
+  task: Task;
+  today: string;
+  showProject: boolean;
+  columns?: boolean;
+}) {
   const router = useRouter();
   const { openTask } = useTaskEditor();
   const [, startTransition] = useTransition();
@@ -76,7 +94,10 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
   const dueToday = !done && due === today;
 
   return (
-    <li className="flex items-start gap-3 border-b px-4 last:border-b-0">
+    <li
+      className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-center")}
+      style={columns ? { gridTemplateColumns: tableColumns } : undefined}
+    >
       <button
         type="button"
         onClick={toggle}
@@ -85,6 +106,12 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
       >
         <StatusIcon key={taps} status={status} className={cn("size-[26px] md:size-[18px]", taps > 0 && "motion-tick")} />
       </button>
+      {columns && (
+        <>
+          <span className="hidden md:flex">{task.effort && <FocusChip effort={task.effort} />}</span>
+          <span className="hidden md:flex">{task.priority && <PriorityChip priority={task.priority} />}</span>
+        </>
+      )}
       <button
         type="button"
         onClick={() => openTask(task)}
@@ -100,8 +127,8 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
         </span>
         <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-foreground empty:hidden md:shrink-0 md:flex-nowrap">
           <ClaudeBadge madeBy={task.madeBy} />
-          {task.priority === "high" && <span className="tag">{priorityLabel.high} priority</span>}
-          {task.effort && <span>{effortLabel[task.effort]}</span>}
+          {task.priority === "high" && <span className={cn("tag", columns && "md:hidden")}>{priorityLabel.high} priority</span>}
+          {task.effort && <span className={cn(columns && "md:hidden")}>{effortLabel[task.effort]}</span>}
           {task.repeat && (
             <span className="inline-flex items-center gap-1" title={repeatLabel[task.repeat]}>
               <Repeat className="size-3" aria-hidden />
@@ -110,7 +137,7 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
           )}
           {task.notes && <span title="Has notes">Notes</span>}
           {showProject && task.project && (
-            <span className="inline-flex items-center gap-1.5">
+            <span className={cn("inline-flex items-center gap-1.5", columns && "md:hidden")}>
               <span className="size-2 rounded-[3px]" style={{ background: task.project.hex }} aria-hidden />
               {task.project.name}
             </span>
@@ -128,6 +155,16 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
           )}
         </span>
       </button>
+      {columns && (
+        <span className="hidden min-w-0 items-center gap-1.5 text-meta text-muted-foreground md:flex">
+          {task.project && (
+            <>
+              <span className="size-2 shrink-0 rounded-[3px]" style={{ background: task.project.hex }} aria-hidden />
+              <span className="truncate">{task.project.name}</span>
+            </>
+          )}
+        </span>
+      )}
     </li>
   );
 }
@@ -135,11 +172,14 @@ export function TaskRow({ task, today, showProject }: { task: Task; today: strin
 /** "Add a task" line at the bottom of a list: type and press Enter. */
 export function QuickAdd({
   projectId,
+  area,
   bucket,
   placeholder = "Add a task",
   today,
 }: {
   projectId?: string | null;
+  /** Work or Life. A project's tasks go in its own; otherwise the one this device shows if left out. */
+  area?: Area;
   /** The list it goes in. Today if left out. */
   bucket?: Bucket;
   placeholder?: string;
@@ -162,7 +202,7 @@ export function QuickAdd({
     if (!clean) return;
     // A list typed in the name ("this week") wins, then a typed date picks the list; otherwise it goes in this one.
     const list = parsed.bucket ?? (parsed.dueDate ? bucketForDate(parsed.dueDate, today) : bucket);
-    const fields = { title: clean, projectId: projectId ?? null, bucket: list, dueDate: due, repeat: parsed.repeat };
+    const fields = { title: clean, projectId: projectId ?? null, area: area ?? currentArea(), bucket: list, dueDate: due, repeat: parsed.repeat };
     setTitle("");
     smart.reset();
     // One going to another list ("tomorrow") doesn't show here, so a toast says where it went.

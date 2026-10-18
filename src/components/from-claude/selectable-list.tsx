@@ -28,7 +28,7 @@ const dueChoices = [
 /**
  * Claude's tasks or artifacts, with Select to pick several and change them all at
  * once: move to Trash, put in a project, and for tasks status, due, priority
- * and effort.
+ * and focus type.
  */
 export function SelectableClaudeList({
   items: all,
@@ -235,12 +235,12 @@ export function SelectableClaudeList({
                 ))}
               </Picker>
               <Picker
-                label="Effort"
+                label="Focus type"
                
                 onPick={(v) =>
                   setTaskField(
                     { effort: v === "none" ? null : (v as (typeof efforts)[number]) },
-                    v === "none" ? "Effort cleared" : `Effort set to ${effortLabel[v as (typeof efforts)[number]]}`,
+                    v === "none" ? "Focus type cleared" : `Focus type set to ${effortLabel[v as (typeof efforts)[number]]}`,
                   )
                 }
               >

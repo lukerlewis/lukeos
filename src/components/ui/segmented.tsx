@@ -11,7 +11,7 @@ export function Segmented<T extends string>({
 }: {
   value: T;
   onChange: (value: T) => void;
-  options: { value: T; label: string }[];
+  options: { value: T; label: React.ReactNode; title?: string }[];
   className?: string;
 }) {
   return (
@@ -22,9 +22,11 @@ export function Segmented<T extends string>({
           type="button"
           role="radio"
           aria-checked={value === o.value}
+          aria-label={o.title}
+          title={o.title}
           onClick={() => onChange(o.value)}
           className={cn(
-            "h-9 grow rounded-[8px] px-2.5 text-preview font-medium text-muted-foreground",
+            "inline-flex h-9 grow items-center justify-center gap-1.5 rounded-[8px] px-2.5 text-preview font-medium text-muted-foreground",
             value === o.value && "seg-on text-foreground",
           )}
         >

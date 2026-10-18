@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { boardViews, changesForMove, columnIds, columnOf, columnsFor, compareTasks, type BoardView } from "@/lib/board";
 import { todayIn } from "@/lib/dates";
-import { statuses, type Status } from "@/lib/task-fields";
+import { statuses, type Area, type Status } from "@/lib/task-fields";
 import { defineOperation } from "./define";
 import { assertProject } from "./projects";
 import { getTimeZone } from "./settings";
@@ -13,12 +13,12 @@ import { getTask, listTasks, taskOperations, type Task } from "./tasks";
  * left out). Done ones only while they're fresh: finished today when grouped
  * by when, the 30 most recent when grouped by status.
  */
-export async function boardTasks(view: BoardView, projectId?: string, show: readonly Status[] = statuses) {
+export async function boardTasks(view: BoardView, projectId?: string, show: readonly Status[] = statuses, area?: Area) {
   const timeZone = await getTimeZone();
   const date = todayIn(timeZone);
   const [allOpen, done] = await Promise.all([
-    show.includes("todo") || show.includes("doing") ? listTasks({ projectId }) : [],
-    show.includes("done") ? listTasks({ projectId, status: "done", limit: 200 }) : [],
+    show.includes("todo") || show.includes("doing") ? listTasks({ projectId, area }) : [],
+    show.includes("done") ? listTasks({ projectId, area, status: "done", limit: 200 }) : [],
   ]);
   const open = allOpen.filter((t) => show.includes(t.status));
   const recentDone = done

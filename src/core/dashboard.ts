@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { boardViews } from "@/lib/board";
-import { dashboardLayouts, parseDashboardView, type DashboardView } from "@/lib/dashboard";
+import { dashboardLayouts, parseDashboardView, sortDirs, sortKeys, type DashboardView } from "@/lib/dashboard";
 import { getBoard, showField } from "./board";
 import { defineOperation } from "./define";
 
@@ -38,10 +38,14 @@ export const dashboardOperations = {
   set_dashboard_view: defineOperation({
     name: "set_dashboard_view",
     description:
-      "Change how Luke's dashboard looks, just like the switches at the top of it: the Today tab or the Board, and which statuses show. Only change this when Luke asks. Fields left out stay as they are.",
+      "Change how Luke's dashboard looks, just like the switches at the top of it: the Today tab or the Board, which statuses show, and how the Today list is sorted. Only change this when Luke asks. Fields left out stay as they are. (Whether it shows Work or Life is chosen on each device, not here.)",
     input: z.object({
       layout: z.enum(dashboardLayouts).optional().describe('"list" (the Today tab) or "board".'),
       show: showField.optional().describe("Which statuses to show, e.g. [\"todo\"] or [\"todo\", \"doing\"]."),
+      sort: z
+        .object({ by: z.enum(sortKeys), dir: z.enum(sortDirs) })
+        .optional()
+        .describe('How the Today list is sorted: by priority, effort (focus type), project, name or created (date added); dir "desc" (high to low, newest first) or "asc".'),
     }),
     run: async (changes) => {
       const current = await getDashboardView();

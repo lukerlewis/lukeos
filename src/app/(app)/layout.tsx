@@ -63,7 +63,7 @@ async function AppShell({ children, sidebarCollapsed }: { children: React.ReactN
         <PullToRefresh />
         <div className="flex min-h-dvh md:h-dvh">
           <Sidebar
-            projects={projects.map((p) => ({ id: p.id, name: p.name, hex: colorHex(p.color), open: p.openTasks }))}
+            projects={projects.map((p) => ({ id: p.id, name: p.name, hex: colorHex(p.color), open: p.openTasks, area: p.area }))}
             newFromClaude={newFromClaude}
             unreadMessages={unreadMessages}
             collapsed={sidebarCollapsed}

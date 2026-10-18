@@ -4,6 +4,7 @@
  * app and a move by Claude do exactly the same thing.
  */
 import type { Task } from "@/core/tasks";
+import type { DashboardSort } from "./dashboard";
 import { whenOf } from "./dates";
 import { bucketLabel, buckets, statuses, statusLabel, type Bucket, type Status } from "./task-fields";
 
@@ -65,4 +66,43 @@ export function compareTasks(a: Task, b: Task) {
     (a.priority ? priorityRank[a.priority] : 3) - (b.priority ? priorityRank[b.priority] : 3) ||
     new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
+}
+
+const effortRank = { deep: 0, focus: 1, shallow: 2 } as const;
+
+/**
+ * The Today list in the order Luke picked (Sort): Doing, To do, then Done as always, then by
+ * the chosen field. Tasks without that field go last either way round; ties fall back to the usual order.
+ */
+export function sortTasks(tasks: Task[], sort: DashboardSort): Task[] {
+  const flip = sort.dir === "asc" ? -1 : 1;
+  const key = (t: Task): number | string | null => {
+    switch (sort.by) {
+      case "priority":
+        return t.priority ? priorityRank[t.priority] : null;
+      case "effort":
+        return t.effort ? effortRank[t.effort] : null;
+      case "project":
+        return t.project?.name.toLowerCase() ?? null;
+      case "name":
+        return t.title.toLowerCase();
+      case "created":
+        return -new Date(t.createdAt).getTime();
+    }
+  };
+  // Ranks and times above already put "high" / newest first; names sort A to Z by default, so they flip.
+  const textFlip = sort.by === "project" || sort.by === "name" ? -flip : flip;
+  return [...tasks].sort((a, b) => {
+    const byStatus = statusRank[a.status] - statusRank[b.status];
+    if (byStatus) return byStatus;
+    const ka = key(a);
+    const kb = key(b);
+    if (ka !== kb) {
+      if (ka === null) return 1;
+      if (kb === null) return -1;
+      const c = typeof ka === "string" ? ka.localeCompare(kb as string) : ka - (kb as number);
+      if (c) return c * textFlip;
+    }
+    return compareTasks(a, b);
+  });
 }

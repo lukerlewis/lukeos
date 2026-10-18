@@ -1,26 +1,44 @@
 "use client";
 
-import { ChevronDown, List, SlidersHorizontal, SquareKanban } from "lucide-react";
+import { ArrowDownUp, Check, ChevronDown, List, SlidersHorizontal, SquareKanban } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { StatusIcon } from "@/components/tasks/status-circle";
-import { defaultDashboardView, type DashboardLayout, type DashboardView } from "@/lib/dashboard";
+import { rememberArea } from "@/lib/area";
+import {
+  defaultDashboardView,
+  sortDirLabel,
+  sortDirs,
+  sortKeys,
+  sortLabel,
+  type DashboardLayout,
+  type DashboardView,
+} from "@/lib/dashboard";
 import { op } from "@/lib/ops-client";
 import { pushUndo } from "@/lib/undo";
-import { statuses, statusLabel, type Status } from "@/lib/task-fields";
+import { areaLabel, areas, statuses, statusLabel, type Area, type Status } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 
 const pill = "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[8px] px-3 text-preview font-medium whitespace-nowrap";
 
 /**
- * The switches at the top of the dashboard: the Today list or the Board, and a
- * Filters menu for which statuses show. Each change is saved, so the
- * dashboard looks the same next time and on other devices.
+ * The switches at the top of the dashboard: Work or Life, the Today list or the Board, a
+ * Filters menu for which statuses show and a Sort menu for the Today list. Work or Life is
+ * remembered on this device; the rest is saved, so it's the same next time and on other devices.
  */
-export function DashboardControls({ view }: { view: DashboardView }) {
+export function DashboardControls({ view, area }: { view: DashboardView; area: Area }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [current, setCurrent] = useOptimistic(view);
+  const [shownArea, setShownArea] = useOptimistic(area);
+
+  function pickArea(next: Area) {
+    rememberArea(next);
+    startTransition(() => {
+      setShownArea(next);
+      router.refresh();
+    });
+  }
 
   function change(changes: Partial<DashboardView>) {
     const previous = Object.fromEntries(Object.keys(changes).map((k) => [k, current[k as keyof DashboardView]]));
@@ -49,6 +67,12 @@ export function DashboardControls({ view }: { view: DashboardView }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <Choice<Area>
+        label="Work or Life"
+        value={shownArea}
+        onChange={pickArea}
+        options={areas.map((a) => ({ value: a, label: areaLabel[a] }))}
+      />
       <Choice<DashboardLayout>
         label="View"
         value={current.layout}
@@ -83,6 +107,114 @@ export function DashboardControls({ view }: { view: DashboardView }) {
           </div>
         </div>
       </Filters>
+      {current.layout === "list" && (
+        <Menu
+          label={sortLabel[current.sort.by]}
+          icon={ArrowDownUp}
+          aria-label={`Sort by ${sortLabel[current.sort.by]}, ${sortDirLabel[current.sort.by][current.sort.dir]}`}
+        >
+          {(close) => (
+            <div role="menu" className="flex w-56 flex-col gap-0.5">
+              <span className="px-2.5 pt-1 pb-1 text-xs font-medium text-muted-foreground">Sort by</span>
+              {sortKeys.map((by) => (
+                <MenuItem
+                  key={by}
+                  on={current.sort.by === by}
+                  onClick={() => {
+                    close();
+                    if (current.sort.by !== by) change({ sort: { by, dir: by === "name" || by === "project" ? "asc" : "desc" } });
+                  }}
+                >
+                  {sortLabel[by]}
+                </MenuItem>
+              ))}
+              <div className="my-1 border-t" />
+              {sortDirs.map((dir) => (
+                <MenuItem
+                  key={dir}
+                  on={current.sort.dir === dir}
+                  onClick={() => {
+                    close();
+                    if (current.sort.dir !== dir) change({ sort: { ...current.sort, dir } });
+                  }}
+                >
+                  {sortDirLabel[current.sort.by][dir]}
+                </MenuItem>
+              ))}
+            </div>
+          )}
+        </Menu>
+      )}
+    </div>
+  );
+}
+
+function MenuItem({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      role="menuitemradio"
+      aria-checked={on}
+      onClick={onClick}
+      className={cn(
+        "press-tint flex h-9 items-center gap-2 rounded-lg px-2.5 text-left text-preview hover:bg-muted",
+        on && "bg-selected font-medium text-ink hover:bg-selected",
+      )}
+    >
+      <span className="grow">{children}</span>
+      {on && <Check className="size-4" aria-hidden />}
+    </button>
+  );
+}
+
+/** A button like Filters that opens a small menu below it. Closes on a pick, a click outside or Escape. */
+function Menu({
+  label,
+  icon: Icon,
+  children,
+  ...rest
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: (close: () => void) => React.ReactNode;
+  "aria-label"?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const click = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", click);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("pointerdown", click);
+      document.removeEventListener("keydown", key);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={rest["aria-label"]}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(pill, "h-[38px] border bg-card text-foreground hover:bg-muted/50")}
+      >
+        <Icon className="size-3.5" aria-hidden />
+        {label}
+        <ChevronDown className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+      {open && (
+        <div className="motion-pop absolute right-0 z-30 mt-2 origin-top-right sm:right-auto sm:left-0 sm:origin-top-left rounded-xl border bg-card p-1 border-stroke">
+          {children(() => setOpen(false))}
+        </div>
+      )}
     </div>
   );
 }
