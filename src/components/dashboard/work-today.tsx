@@ -40,7 +40,7 @@ export function WorkToday({
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <div className="flex items-center gap-2 border-b px-4 py-3.5">
-            <h2 className="text-sm font-medium">Today</h2>
+            <h2 className="text-heading font-medium">Today</h2>
             <span className="text-meta text-muted-foreground">{shown.length}</span>
           </div>
           <TaskList
