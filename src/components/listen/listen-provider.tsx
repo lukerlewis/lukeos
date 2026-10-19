@@ -497,15 +497,18 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
         ms.setActionHandler(action, handler);
       } catch {}
     };
-    set("play", () => toggle());
-    set("pause", () => audioRef.current?.pause());
+    // Play and pause are left to the phone, which works the audio element itself. A paused
+    // app in the background gets frozen after a minute or so, and then a play handler of
+    // ours never runs, so the lock-screen Play button did nothing.
+    set("play", null);
+    set("pause", null);
     set("seekto", (d) => d.seekTime != null && seek(d.seekTime));
     set("seekbackward", (d) => skip(-(d.seekOffset ?? BACK)));
     set("seekforward", (d) => skip(d.seekOffset ?? FORWARD));
     // iPhones show previous/next instead of skip buttons when these are set, so long episodes leave them off.
     set("previoustrack", long ? null : () => previous());
     set("nexttrack", long || (index >= queue.length - 1 && !loops(queue)) ? null : () => next());
-  }, [current, duration, index, queue, toggle, seek, skip, next, previous]);
+  }, [current, duration, index, queue, seek, skip, next, previous]);
 
   async function decide(remove: boolean) {
     const ep = finished;
