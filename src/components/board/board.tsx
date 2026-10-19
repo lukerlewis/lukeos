@@ -56,6 +56,7 @@ export function Board({
   showProject = true,
   show,
   sort,
+  fill,
 }: {
   tasks: Task[];
   view: BoardView;
@@ -66,6 +67,8 @@ export function Board({
   show?: Status[];
   /** How cards are ordered in each column, as picked in the dashboard's Sort menu. */
   sort?: DashboardSort;
+  /** Phones: stretch down to the bottom of the screen. */
+  fill?: boolean;
 }) {
   const router = useRouter();
   // A fixed id keeps dnd-kit's screen reader ids the same on the server and in the browser.
@@ -154,7 +157,10 @@ export function Board({
       <div
         className={cn(
           // Phones and small windows: columns side by side that you swipe through.
-          "-mx-5 flex scroll-px-5 gap-3 overflow-x-auto px-5 pb-2 md:-mx-10 md:scroll-px-10 md:px-10",
+          // Swiping past the first or last column stops here instead of dragging the whole screen sideways.
+          "-mx-5 flex scroll-px-5 gap-3 overflow-x-auto overscroll-x-contain px-5 pb-2 md:-mx-10 md:scroll-px-10 md:px-10",
+          // On the dashboard the board reaches the bottom of the phone screen, so a swipe anywhere below the cards moves it.
+          fill && "grow items-start md:grow-0 lg:items-stretch",
           "lg:mx-0 lg:grid lg:overflow-visible lg:px-0",
           ["lg:grid-cols-1", "lg:grid-cols-2", "lg:grid-cols-3", "lg:grid-cols-4"][columns.length - 1],
           !draggingId && "snap-x snap-mandatory",

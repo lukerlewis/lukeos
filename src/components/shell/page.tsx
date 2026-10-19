@@ -26,8 +26,11 @@ export function Page({
   newTask?: false | { projectId?: string | null; dueDate?: string | null };
   /** On computers, show "Add new" (task, note, project) instead of New task. */
   addNew?: boolean;
-  /** The content fills the screen down to the tab bar, for screens with a box pinned to the bottom (Messages). */
-  fill?: boolean;
+  /**
+   * The content fills the screen down to the tab bar, for screens with a box pinned to the bottom (Messages).
+   * "phone" does it on phones only (the dashboard's board).
+   */
+  fill?: boolean | "phone";
   children: React.ReactNode;
 }) {
   return (
@@ -39,7 +42,9 @@ export function Page({
       <div
         className={cn(
           "flex flex-col gap-6 px-5 pt-[max(env(safe-area-inset-top),1rem)] md:px-10 md:pt-8",
-          fill ? "grow pb-[calc(3.5rem+env(safe-area-inset-bottom)+var(--player-space))] md:pb-0" : "pb-[calc(7rem+var(--player-space))] md:pb-10",
+          fill === true && "grow pb-[calc(3.5rem+env(safe-area-inset-bottom)+var(--player-space))] md:pb-0",
+          fill === "phone" && "grow pb-[calc(4.5rem+env(safe-area-inset-bottom)+var(--player-space))] md:pb-10",
+          !fill && "pb-[calc(7rem+var(--player-space))] md:pb-10",
         )}
       >
         <div className="flex items-end justify-between gap-4 pt-8 md:pt-0">
