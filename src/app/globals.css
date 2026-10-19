@@ -970,6 +970,6 @@
 }
 @media (max-width: 767px) {
   :root[data-player] {
-    --player-space: 4.75rem;
+    --player-space: 4.25rem;
   }
 }

@@ -22,7 +22,7 @@ import { SelectableSongs } from "./selection";
 
 type Playlist = PlaylistSummary & { icon: string | null; count: number; seconds: number; artworkUrl: string | null };
 
-/** All songs' Shuffle: Luke's playlists (to pick ones to leave out) and the songs it skips because of them. */
+/** All songs' Play and Shuffle: Luke's playlists (to pick ones to leave out) and the songs they skip because of them. */
 export type ShuffleSettings = {
   playlists: (PlaylistSummary & { icon: string | null; artworkUrl: string | null; excludedFromShuffle: boolean })[];
   skip: string[];
@@ -155,7 +155,7 @@ export function TracksScreen({
   episodes: Episode[];
   playlists: PlaylistSummary[];
   filter: TrackFilter;
-  /** On All songs: the settings button beside Shuffle, and the songs Shuffle leaves out. */
+  /** On All songs: the settings button beside Shuffle, and the songs Play and Shuffle leave out. */
   shuffle?: ShuffleSettings;
 }) {
   const listen = useListen();
@@ -168,7 +168,8 @@ export function TracksScreen({
   const finished = episodes.filter((e) => isDone(e) && e.kept);
   const noun = filter === "podcasts" ? "podcasts" : "songs";
   const skip = new Set(shuffle?.skip);
-  const toShuffle = waiting.filter((e) => !skip.has(e.id));
+  // All songs' Play and Shuffle both leave out the songs in playlists Luke picked.
+  const toPlay = waiting.filter((e) => !skip.has(e.id));
 
   return (
     <SelectableSongs episodes={[...waiting, ...finished]} playlists={playlists} noun={filter === "podcasts" ? "podcast" : "song"}>
@@ -176,11 +177,11 @@ export function TracksScreen({
         <div className="flex flex-wrap items-center gap-3">
           {waiting.length > 0 && (
             <span className="flex gap-2">
-              <Button onClick={() => listen?.play(toPlayer(waiting[0]), waiting.map(toPlayer))}>
+              <Button disabled={!toPlay.length} onClick={() => listen?.play(toPlayer(toPlay[0]), toPlay.map(toPlayer))}>
                 <Play className="fill-current" aria-hidden />
                 Play
               </Button>
-              <Button variant="outline" disabled={!toShuffle.length} onClick={() => listen?.playShuffled(toShuffle.map(toPlayer))}>
+              <Button variant="outline" disabled={!toPlay.length} onClick={() => listen?.playShuffled(toPlay.map(toPlayer))}>
                 <Shuffle aria-hidden />
                 Shuffle
               </Button>
@@ -246,7 +247,7 @@ export function TracksScreen({
   );
 }
 
-/** Beside All songs' Shuffle: pick playlists whose songs Shuffle leaves out. */
+/** Beside All songs' Shuffle: pick playlists whose songs Play and Shuffle leave out. */
 function ShuffleSettingsButton({ playlists }: { playlists: ShuffleSettings["playlists"] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
