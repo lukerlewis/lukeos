@@ -211,7 +211,7 @@ export function TaskRow({
       >
         <span
           className={cn(
-            "min-w-0 grow text-control font-medium break-words",
+            "min-w-0 grow text-body font-medium md:text-control break-words",
             done && "text-muted-foreground line-through",
           )}
         >

@@ -36,7 +36,7 @@ export function PlayerBar() {
   return (
     <>
       {/* Phones */}
-      <div className="fixed inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+4rem)] z-20 md:hidden">
+      <div className="fixed inset-x-5 bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-20 md:hidden">
         <div className="relative flex items-center gap-3 overflow-hidden rounded-xl border border-stroke bg-card py-2 pr-1.5 pl-2">
           <button type="button" onClick={() => setOpen(true)} className="flex min-w-0 grow items-center gap-3 text-left" aria-label="Open the player">
             <Artwork episode={current} className="size-10" />
