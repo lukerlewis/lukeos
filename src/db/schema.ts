@@ -140,6 +140,8 @@ export const tasks = pgTable(
     effort: text("effort"), // focus type: "shallow" | "focus" | "deep"
     /** "work" or "life". A task in a project is always in its project's one. */
     area: text("area").notNull().default("life"),
+    /** Life's Today is split into "morning" | "day" | "evening". Repeats carry it on. */
+    timeOfDay: text("time_of_day").notNull().default("day"),
     notes: text("notes"),
     repeat: text("repeat"), // "daily" | "weekdays" | "weekly" | "monthly" | "yearly"
     /** A repeating task that's done: the next one it made, so un-ticking it can take that back. */

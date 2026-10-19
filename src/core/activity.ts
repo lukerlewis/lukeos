@@ -41,6 +41,7 @@ const fieldLabel: Record<string, string> = {
   priority: "priority",
   effort: "focus type",
   area: "area",
+  timeOfDay: "time of day",
   repeat: "repeat",
   notes: "notes",
   content: "text",
