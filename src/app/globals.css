@@ -181,6 +181,9 @@
   }
   html {
     -webkit-tap-highlight-color: transparent;
+    /* Phones: the screen never slides sideways; only boards and other strips meant for swiping do. */
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
   body {
     background: var(--background);

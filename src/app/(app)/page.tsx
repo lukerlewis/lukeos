@@ -74,13 +74,13 @@ export default async function DashboardPage() {
   );
 
   return (
-    <Page title="Dashboard" eyebrow={<TodayDate />} heading={<Greeting />} addNew>
+    <Page title="Dashboard" eyebrow={<TodayDate />} heading={<Greeting />} addNew fill={board && "phone"}>
       <DashboardControls view={view} area={area} />
       {board ? (
         area === "work" ? (
           <WorkBoard tasks={tasks} projects={workProjects} today={date} show={view.show} sort={view.sort} />
         ) : (
-          <Board tasks={tasks} view="when" today={date} show={view.show} sort={view.sort} />
+          <Board tasks={tasks} view="when" today={date} show={view.show} sort={view.sort} fill />
         )
       ) : area === "work" ? (
         // Work puts its project chips above both columns, so the Today card lines up with the Scratch pad.

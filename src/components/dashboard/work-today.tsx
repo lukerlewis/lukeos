@@ -76,7 +76,7 @@ export function WorkBoard({
   const [picked, setPicked] = useState<string | null>(null);
   const project = projects.find((p) => p.id === picked) ?? null;
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex grow flex-col gap-3">
       <ProjectFilter tasks={tasks} projects={projects} picked={project?.id ?? null} onPick={setPicked} />
       <Board
         tasks={project ? tasks.filter((t) => t.project?.id === project.id) : tasks}
@@ -85,6 +85,7 @@ export function WorkBoard({
         show={show}
         sort={sort}
         projectId={project?.id}
+        fill
       />
     </div>
   );
