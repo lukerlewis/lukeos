@@ -16,7 +16,7 @@ import {
   type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { Moon, Sun, Sunrise, type LucideIcon } from "lucide-react";
+import { Coffee, Moon, Sun, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useOptimistic, useState, useTransition } from "react";
 import type { Task } from "@/core/tasks";
@@ -135,7 +135,7 @@ export function LifeToday({
   );
 }
 
-const timeIcon: Record<TimeOfDay, LucideIcon> = { morning: Sunrise, day: Sun, evening: Moon };
+const timeIcon: Record<TimeOfDay, LucideIcon> = { morning: Coffee, day: Sun, evening: Moon };
 
 function TimeCard({ time, tasks, today, canAdd }: { time: TimeOfDay; tasks: Task[]; today: string; canAdd: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: time });
@@ -144,8 +144,8 @@ function TimeCard({ time, tasks, today, canAdd }: { time: TimeOfDay; tasks: Task
   return (
     <Card ref={setNodeRef} aria-label={label} className={cn("transition-colors", isOver && "border-ring")}>
       <div className="flex items-center gap-2 border-b px-4 py-3.5">
-        <Icon className="size-4 text-icon" aria-hidden />
-        <h2 className="text-sm font-medium">{label}</h2>
+        <Icon className="size-[18px] text-icon" aria-hidden />
+        <h2 className="text-heading font-medium">{label}</h2>
         <span className="text-meta text-muted-foreground">{tasks.length}</span>
       </div>
       {tasks.length > 0 && (
