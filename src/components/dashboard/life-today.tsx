@@ -110,7 +110,7 @@ export function LifeToday({
         },
       }}
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-6">
         {timesOfDay.map((time) => (
           <TimeCard
             key={time}
