@@ -41,7 +41,7 @@ export const bulkOperations = {
   update_tasks: defineOperation({
     name: "update_tasks",
     description:
-      "Change several tasks at once: their project, list (bucket), status, due date, priority, focus type (effort) or area (work or life). The same changes go to every task listed. Fields left out stay as they are; null clears one.",
+      "Change several tasks at once: their project, list (bucket), status, due date, priority, focus type (effort), area (work or life) or time of day (Life's morning, day or evening). The same changes go to every task listed. Fields left out stay as they are; null clears one.",
     input: z.object({
       ids: ids("tasks"),
       projectId: fields.projectId.optional(),
@@ -51,6 +51,7 @@ export const bulkOperations = {
       priority: fields.priority.optional(),
       effort: fields.effort.optional(),
       area: fields.area.optional(),
+      timeOfDay: fields.timeOfDay.optional(),
     }),
     run: async ({ ids, ...changes }): Promise<Outcome> => {
       const rows = await liveTitles(tasks, ids);

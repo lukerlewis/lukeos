@@ -22,6 +22,7 @@ import {
   type Effort,
   type Priority,
   type Status,
+  type TimeOfDay,
 } from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
 import { showToast } from "@/components/shell/toast";
@@ -102,12 +103,15 @@ export function TaskRow({
   showProject,
   columns = false,
   projects = [],
+  li,
 }: {
   task: Task;
   today: string;
   showProject: boolean;
   columns?: boolean;
   projects?: CellProject[];
+  /** Extra props for the row itself, e.g. to make it draggable. */
+  li?: React.ComponentProps<"li">;
 }) {
   const router = useRouter();
   const { openTask } = useTaskEditor();
@@ -161,7 +165,8 @@ export function TaskRow({
 
   return (
     <li
-      className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0")}
+      {...li}
+      className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0", li?.className)}
       style={columns ? { gridTemplateColumns: tableColumns(showProject) } : undefined}
     >
       <button
@@ -264,6 +269,7 @@ export function QuickAdd({
   projectId,
   area,
   bucket,
+  timeOfDay,
   placeholder = "Add a task",
   today,
 }: {
@@ -272,6 +278,8 @@ export function QuickAdd({
   area?: Area;
   /** The list it goes in. Today if left out. */
   bucket?: Bucket;
+  /** Morning, day or evening, for Life's Today cards. */
+  timeOfDay?: TimeOfDay;
   placeholder?: string;
   /** Today in Luke's time zone, for reading "tomorrow" or "every monday" out of the name. */
   today: string;
@@ -292,7 +300,7 @@ export function QuickAdd({
     if (!clean) return;
     // A list typed in the name ("this week") wins, then a typed date picks the list; otherwise it goes in this one.
     const list = parsed.bucket ?? (parsed.dueDate ? bucketForDate(parsed.dueDate, today) : bucket);
-    const fields = { title: clean, projectId: projectId ?? null, area: area ?? currentArea(), bucket: list, dueDate: due, repeat: parsed.repeat };
+    const fields = { title: clean, projectId: projectId ?? null, area: area ?? currentArea(), bucket: list, dueDate: due, repeat: parsed.repeat, timeOfDay };
     setTitle("");
     smart.reset();
     // One going to another list ("tomorrow") doesn't show here, so a toast says where it went.
