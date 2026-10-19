@@ -97,7 +97,7 @@ async function setShuffleExcluded(playlistId: string, excluded: boolean) {
     .onConflictDoUpdate({ target: schema.appSettings.key, set: { value } });
 }
 
-/** Songs on any playlist left out of shuffle: All songs' Shuffle skips these. */
+/** Songs on any playlist left out of shuffle: All songs' Play and Shuffle skip these. */
 export async function shuffleSkippedEpisodeIds() {
   const ids = await shuffleExcludedPlaylistIds();
   if (!ids.length) return [];
@@ -444,7 +444,7 @@ export const listenOperations = {
   update_playlist: defineOperation({
     name: "update_playlist",
     description:
-      "Rename a Listen playlist, change its emoji, set its whole order with episodeIds (anything left out is taken off the playlist, not deleted), or leave it out of All songs' Shuffle (excludeFromShuffle: its songs don't come up when Luke shuffles all songs).",
+      "Rename a Listen playlist, change its emoji, set its whole order with episodeIds (anything left out is taken off the playlist, not deleted), or leave it out of All songs' Play and Shuffle (excludeFromShuffle: its songs don't come up when Luke plays or shuffles all songs).",
     input: z.object({
       id: z.uuid(),
       title: z.string().trim().min(1).max(200).optional(),
