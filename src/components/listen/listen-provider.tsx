@@ -38,6 +38,8 @@ const SAVE_EVERY_MS = 15_000;
 /** Longer than this, the lock screen shows skip back 15 / forward 30; shorter (songs), previous / next. */
 const LONG_SECONDS = 20 * 60;
 const BACK = 15;
+/** Playlists and All songs start over from the top when they finish; a list of only podcast episodes just stops. */
+const loops = (q: PlayerEpisode[]) => q.some((e) => e.kind !== "podcast");
 const FORWARD = 30;
 
 type ListenContextValue = {
@@ -60,6 +62,8 @@ type ListenContextValue = {
   seek: (seconds: number) => void;
   skip: (delta: number) => void;
   next: () => void;
+  /** Whether Next goes anywhere: there's a track after this one, or the list starts over. */
+  hasNext: boolean;
   previous: () => void;
   setSpeed: (speed: number) => void;
   setRepeat: (on: boolean) => void;
@@ -306,7 +310,10 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     [savePosition, start],
   );
 
-  const next = useCallback(() => void goTo(state.current.index + 1), [goTo]);
+  const next = useCallback(() => {
+    const { queue: q, index: i } = state.current;
+    void goTo(i + 1 < q.length ? i + 1 : loops(q) ? 0 : i + 1);
+  }, [goTo]);
   const previous = useCallback(() => {
     // Like a music app: back to the start first, then the one before.
     if ((audioRef.current?.currentTime ?? 0) > 5 || !goTo(state.current.index - 1)) seek(0);
@@ -437,7 +444,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
         }
       }
       // Straight on to the next one, while the audio session is still going (works with the phone locked).
-      const nextIndex = i + 1;
+      const nextIndex = i + 1 < q.length ? i + 1 : loops(q) ? 0 : q.length;
       if (nextIndex < q.length) {
         setIndex(nextIndex);
         state.current.index = nextIndex;
@@ -497,8 +504,8 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     set("seekforward", (d) => skip(d.seekOffset ?? FORWARD));
     // iPhones show previous/next instead of skip buttons when these are set, so long episodes leave them off.
     set("previoustrack", long ? null : () => previous());
-    set("nexttrack", long || index >= queue.length - 1 ? null : () => next());
-  }, [current, duration, index, queue.length, toggle, seek, skip, next, previous]);
+    set("nexttrack", long || (index >= queue.length - 1 && !loops(queue)) ? null : () => next());
+  }, [current, duration, index, queue, toggle, seek, skip, next, previous]);
 
   async function decide(remove: boolean) {
     const ep = finished;
@@ -538,6 +545,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     seek,
     skip,
     next,
+    hasNext: index < queue.length - 1 || loops(queue),
     previous,
     setSpeed,
     setRepeat: setRepeatState,

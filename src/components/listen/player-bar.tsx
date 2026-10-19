@@ -70,7 +70,7 @@ export function PlayerBar() {
           <IconButton label="Forward 30 seconds" onClick={() => listen.skip(30)}>
             <RotateCw />
           </IconButton>
-          {listen.index < listen.queue.length - 1 && (
+          {listen.hasNext && (
             <IconButton label="Next" onClick={listen.next}>
               <SkipForward />
             </IconButton>
@@ -242,7 +242,7 @@ function NowPlaying({ onClose }: { onClose: () => void }) {
           <IconButton label="Forward 30 seconds" onClick={() => listen.skip(30)}>
             <RotateCw />
           </IconButton>
-          <IconButton label="Next" onClick={listen.next} className={cn(index >= queue.length - 1 && "invisible")}>
+          <IconButton label="Next" onClick={listen.next} className={cn(!listen.hasNext && "invisible")}>
             <SkipForward />
           </IconButton>
         </div>

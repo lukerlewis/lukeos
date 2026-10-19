@@ -23,7 +23,7 @@ export function MiniControls({ className }: { className?: string }) {
         aria-label="Next"
         title="Next"
         className={button}
-        disabled={listen.index >= listen.queue.length - 1}
+        disabled={!listen.hasNext}
         onClick={listen.next}
       >
         <SkipForward className="fill-current" />
