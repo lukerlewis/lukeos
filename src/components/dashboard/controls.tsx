@@ -58,10 +58,8 @@ export function DashboardControls({ view, area }: { view: DashboardView; area: A
   }
 
   function toggle(status: Status) {
-    const on = current.show.includes(status);
-    // Always keep at least one status showing.
-    if (on && current.show.length === 1) return;
-    change({ show: statuses.filter((s) => (s === status ? !on : current.show.includes(s))) });
+    const show = toggled(current.show, status);
+    if (show) change({ show });
   }
 
   const changedFilters = current.show.join() !== defaultDashboardView.show.join() ? 1 : 0;
@@ -86,31 +84,45 @@ export function DashboardControls({ view, area }: { view: DashboardView; area: A
       {/* Filters and Sort are for the computer; the phone keeps it simple. */}
       <div className="hidden md:contents">
         <Filters count={changedFilters}>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground" aria-hidden>
-              Show
-            </span>
-            <div role="group" aria-label="Show tasks that are" className="inline-flex gap-0.5 self-start seg-track rounded-lg p-[3px]">
-              {statuses.map((s) => {
-                const on = current.show.includes(s);
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => toggle(s)}
-                    title={on ? `Hide ${statusLabel[s]}` : `Show ${statusLabel[s]}`}
-                    className={cn(pill, "text-muted-foreground", on && "seg-on text-foreground")}
-                  >
-                    <StatusIcon status={s} className={cn("size-3.5", !on && "opacity-50")} />
-                    {statusLabel[s]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <ShowToggle show={current.show} onToggle={toggle} />
         </Filters>
         <SortMenu sort={current.sort} onChange={(sort) => change({ sort })} />
+      </div>
+    </div>
+  );
+}
+
+/** Which statuses show after switching one on or off, or null if it's the last one on (one must stay). */
+function toggled(show: Status[], status: Status): Status[] | null {
+  const on = show.includes(status);
+  if (on && show.length === 1) return null;
+  return statuses.filter((s) => (s === status ? !on : show.includes(s)));
+}
+
+/** The To do / Doing / Done buttons inside Filters. */
+function ShowToggle({ show, onToggle }: { show: Status[]; onToggle: (status: Status) => void }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium text-muted-foreground" aria-hidden>
+        Show
+      </span>
+      <div role="group" aria-label="Show tasks that are" className="inline-flex gap-0.5 self-start seg-track rounded-lg p-[3px]">
+        {statuses.map((s) => {
+          const on = show.includes(s);
+          return (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onToggle(s)}
+              title={on ? `Hide ${statusLabel[s]}` : `Show ${statusLabel[s]}`}
+              className={cn(pill, "text-muted-foreground", on && "seg-on text-foreground")}
+            >
+              <StatusIcon status={s} className={cn("size-3.5", !on && "opacity-50")} />
+              {statusLabel[s]}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -185,6 +197,41 @@ export function TaskSortMenu({ sort }: { sort: DashboardSort }) {
   return (
     <div className="hidden md:contents">
       <SortMenu sort={current} onChange={change} />
+    </div>
+  );
+}
+
+/**
+ * The Filters dropdown on a project's list. It's the same saved To do / Doing / Done choice as the
+ * dashboard's, so Done is hidden in both until Luke switches it on. Computers only, like on the dashboard.
+ */
+export function TaskFilterMenu({ show }: { show: Status[] }) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const [current, setCurrent] = useOptimistic(show);
+
+  function toggle(status: Status) {
+    const next = toggled(current, status);
+    if (!next) return;
+    startTransition(async () => {
+      setCurrent(next);
+      try {
+        await op("set_dashboard_view", { show: next });
+        pushUndo("changing the filter", async () => {
+          await op("set_dashboard_view", { show });
+        });
+      } catch (err) {
+        alert((err as Error).message);
+      }
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="hidden md:contents">
+      <Filters count={current.join() !== defaultDashboardView.show.join() ? 1 : 0}>
+        <ShowToggle show={current} onToggle={toggle} />
+      </Filters>
     </div>
   );
 }
