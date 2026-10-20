@@ -85,7 +85,7 @@ export function TaskList({
 }
 
 /** The column widths of the table: tick, focus type, priority, name, and project unless it's left out (on a project's page). */
-const tableColumns = (project: boolean) => `28px 104px 76px minmax(0, 1fr)${project ? " 120px" : ""}`;
+const tableColumns = (project: boolean) => `28px 120px 76px minmax(0, 1fr)${project ? " 120px" : ""}`;
 const headCell = "border-l px-2 py-1.5";
 
 const focusOptions = [
