@@ -59,10 +59,10 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const pipelineColumns = await listColumns(id);
   const hasPipeline = pipelineColumns.length > 0;
-  // A project with a pipeline opens on it; otherwise on its list, and its board starts with To do / Doing / Done.
+  // A project with a pipeline opens on its board; otherwise on its list. The board starts By when either way.
   const view = query.view ?? (hasPipeline ? "board" : "list");
   const grouping: BoardGrouping =
-    query.by === "when" || query.by === "status" || query.by === "pipeline" ? query.by : hasPipeline ? "pipeline" : "status";
+    query.by === "when" || query.by === "status" || query.by === "pipeline" ? query.by : "when";
   const pipelineView = view === "board" && grouping === "pipeline";
   const boardView = view === "board" && grouping !== "pipeline" ? grouping : null;
   const notesView = view === "notes";
