@@ -8,8 +8,8 @@ const effortIcon = { shallow: Sailboat, focus: Target, deep: Headphones } as con
 export function FocusChip({ effort, className }: { effort: Effort; className?: string }) {
   const Icon = effortIcon[effort];
   return (
-    <span className={cn("tag", className)}>
-      <Icon className="size-3" aria-hidden />
+    <span className={cn("tag h-6 px-[7px] text-meta", className)}>
+      <Icon className="size-3.5" aria-hidden />
       {effortLabel[effort]}
     </span>
   );
