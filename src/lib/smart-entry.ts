@@ -6,7 +6,7 @@
  */
 
 import { addDays, addMonths, endOfMonth, endOfWeek } from "@/lib/dates";
-import type { Bucket, Repeat } from "@/lib/task-fields";
+import { repeatOf, type Bucket, type Repeat, type RepeatUnit } from "@/lib/task-fields";
 
 export type SmartMatch = {
   kind: "date" | "repeat" | "list";
@@ -109,8 +109,41 @@ function monthDay(today: string, month: number, dom: number, year?: number) {
 
 const count = (word: string) => numberWords[word.toLowerCase()] ?? Number(word);
 
+/** How many days, weeks... apart: "other", "2", "two", "2nd", "second", "couple of". */
+const COUNT_WORDS = Object.keys(numberWords).filter((w) => w !== "a" && w !== "an").join("|");
+const GAP = `other|second|third|couple\\s+(?:of\\s+)?|\\d{1,3}${ORD}?|${COUNT_WORDS}`;
+/** The same for weekdays, without "1st" or "third", which read as a day of the month ("every 1st monday"). */
+const DAY_GAP = `other|second|\\d{1,2}|${COUNT_WORDS}`;
+const gapCount = (word: string) => {
+  const w = word.toLowerCase().replace(/\s+(?:of\s+)?$/, "");
+  if (w === "other" || w === "second" || w === "couple") return 2;
+  if (w === "third") return 3;
+  return count(w.replace(/(?<=\d)(st|nd|rd|th)$/, ""));
+};
+const unitOf = (word: string) => `${word.toLowerCase().replace(/s$/, "")}s` as RepeatUnit;
+
 const rules: Rule[] = [
   // Repeats
+  {
+    // "every other day", "every 3 days", "every second week", "every couple of months"
+    kind: "repeat",
+    re: rx(`(?:every|each)\\s+(${GAP})\\s*(day|week|month|year)s?`),
+    read: (m) => {
+      const n = gapCount(m[1]);
+      return n >= 1 && n <= 365 ? { repeat: repeatOf(n, unitOf(m[2])) } : null;
+    },
+  },
+  {
+    // "every other monday", "every 2 fridays"
+    kind: "repeat",
+    re: rx(`(?:every|each)\\s+(${DAY_GAP})\\s+(${DAY_ANY})s?`),
+    read: (m, today) => {
+      const n = gapCount(m[1]);
+      if (n < 1 || n > 52) return null;
+      return { repeat: repeatOf(n, "weeks"), dueDate: upcoming(today, dayNames[m[2].toLowerCase()]) };
+    },
+  },
+  { kind: "repeat", re: rx(`(?:fortnightly|bi-?weekly)${ADJ_END}|every\\s+fortnight`), read: () => ({ repeat: "every_2_weeks" }) },
   { kind: "repeat", re: rx("every\\s+(?:week\\s*day|work\\s*day)s?|on\\s+weekdays|weekdays"), read: () => ({ repeat: "weekdays" }) },
   {
     kind: "repeat",

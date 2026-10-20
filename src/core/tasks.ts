@@ -5,7 +5,7 @@ import { db, schema } from "@/db";
 import { bucketForDate } from "@/lib/board";
 import { addDays, isoDay, nextRepeat } from "@/lib/dates";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
-import { areas, buckets, efforts, oldEfforts, priorities, repeats, statuses, timesOfDay, type Area, type Bucket, type Effort, type Priority, type Repeat, type Status, type TimeOfDay } from "@/lib/task-fields";
+import { areas, buckets, efforts, oldEfforts, priorities, repeats, statuses, timesOfDay, type Area, type Bucket, type Effort, type Priority, type Repeat, type Status, type TimeOfDay, toRepeat } from "@/lib/task-fields";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { syncMentions } from "./mentions";
 import { assertProject } from "./projects";
@@ -230,10 +230,16 @@ export const fields = {
     ),
   notes: z.string().max(20_000).nullable().describe("Free text notes. null clears them."),
   repeat: z
-    .enum(repeats)
+    .string()
     .nullable()
+    .transform((v, ctx) => {
+      if (v === null) return null;
+      const repeat = toRepeat(v.trim().toLowerCase());
+      if (!repeat) ctx.addIssue({ code: "custom", message: `Use ${repeats.join(", ")}, or every_N_days/weeks/months/years.` });
+      return repeat ?? z.NEVER;
+    })
     .describe(
-      "daily, weekdays (Monday to Friday), weekly, monthly or yearly: when it's marked done, the next one is added automatically, due a day, weekday, week, month or year on. null stops it repeating.",
+      "daily, weekdays (Monday to Friday), weekly, monthly or yearly, or a gap like every_2_days (every other day), every_3_days, every_2_weeks or every_6_months: when it's marked done, the next one is added automatically, that far on. null stops it repeating.",
     ),
 };
 
@@ -273,7 +279,7 @@ export const taskOperations = {
   create_task: defineOperation({
     name: "create_task",
     description:
-      "Create a task. Only the title is required; it starts as To do and goes in Life unless area or a Work project says otherwise. Leave out bucket and it goes in the list its due date points to (Today if late, today or no date; Tomorrow; This week; Later); pass bucket to choose the list yourself. Set repeat for something that comes back every day, weekday, week, month or year.",
+      "Create a task. Only the title is required; it starts as To do and goes in Life unless area or a Work project says otherwise. Leave out bucket and it goes in the list its due date points to (Today if late, today or no date; Tomorrow; This week; Later); pass bucket to choose the list yourself. Set repeat for something that comes back every day, weekday, week, month or year, or every few of them (every_2_days, every_3_weeks).",
     input: z.object({
       title: fields.title,
       projectId: fields.projectId.optional(),

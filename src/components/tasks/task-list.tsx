@@ -16,7 +16,7 @@ import {
   efforts,
   priorities,
   priorityLabel,
-  repeatLabel,
+  repeatName,
   type Area,
   type Bucket,
   type Effort,
@@ -303,9 +303,9 @@ export function TaskRow({
           {task.priority === "high" && <span className={cn("tag", columns && "md:hidden")}>{priorityLabel.high} priority</span>}
           {task.effort && <span className={cn(columns && "md:hidden")}>{effortLabel[task.effort]}</span>}
           {task.repeat && (
-            <span className="inline-flex items-center gap-1" title={repeatLabel[task.repeat]}>
+            <span className="inline-flex items-center gap-1" title={repeatName(task.repeat)}>
               <Repeat className="size-3" aria-hidden />
-              <span className="sr-only">{repeatLabel[task.repeat]}</span>
+              <span className="sr-only">{repeatName(task.repeat)}</span>
             </span>
           )}
           {task.notes && <span title="Has notes">Notes</span>}
