@@ -4,18 +4,27 @@ import { Check, ListChecks, Plus, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StatusIcon } from "@/components/tasks/status-circle";
+import { FocusChip, PriorityChip, ProjectChip } from "@/components/tasks/task-chips";
+import { tableColumns, useColumnWidths } from "@/components/tasks/task-list";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { currentArea } from "@/lib/area";
-import { bucketLabel, buckets, type Bucket } from "@/lib/task-fields";
+import { bucketLabel, buckets, type Bucket, type Effort, type Priority } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 import { SPRINT_MINUTES, useFocus, type SprintTask } from "./focus-provider";
 
 /** An open task Luke could pull into a sprint. */
-export type PickableTask = { id: string; title: string; bucket: Bucket; project: { name: string } | null };
+export type PickableTask = {
+  id: string;
+  title: string;
+  bucket: Bucket;
+  effort: Effort | null;
+  priority: Priority | null;
+  project: { name: string; hex: string } | null;
+};
 
 const isNew = (id: string) => id.startsWith("new:");
 /** New tasks ticked or unticked before they finished saving: temporary id to done. */
@@ -188,7 +197,10 @@ function SprintRow({
   );
 }
 
-/** Pick any number of open tasks, grouped by list. */
+/**
+ * Pick any number of open tasks, grouped by list. On computers each list is the same table as the
+ * dashboard (focus type, priority, name, project, sharing its column widths); phones show the chips under the name.
+ */
 function TaskPicker({
   tasks,
   onClose,
@@ -200,6 +212,7 @@ function TaskPicker({
 }) {
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  useColumnWidths(true);
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
     const shown = q ? tasks.filter((t) => t.title.toLowerCase().includes(q)) : tasks;
@@ -215,7 +228,7 @@ function TaskPicker({
     });
 
   return (
-    <Dialog label="Choose tasks" onClose={onClose} focusFirstField={false} className="overflow-hidden">
+    <Dialog label="Choose tasks" onClose={onClose} focusFirstField={false} className="overflow-hidden sm:max-w-3xl">
       <div className="flex max-h-[92dvh] flex-col sm:max-h-[85dvh]">
       <div className="flex flex-col gap-3 border-b p-4">
         <h2 className="text-heading font-medium text-ink">Choose tasks</h2>
@@ -234,31 +247,53 @@ function TaskPicker({
         {groups.map((g) => (
           <section key={g.bucket}>
             <h3 className="px-4 pt-4 pb-1 text-meta text-muted-foreground">{bucketLabel[g.bucket]}</h3>
+            <div
+              aria-hidden
+              className="hidden border-y bg-muted/40 px-4 text-xs font-medium text-muted-foreground md:grid"
+              style={{ gridTemplateColumns: tableColumns(true) }}
+            >
+              <span />
+              <span className={headCell}>Focus type</span>
+              <span className={headCell}>Priority</span>
+              <span className={cn(headCell, "pl-3")}>Name</span>
+              <span className={headCell}>Project</span>
+            </div>
             <ul>
               {g.tasks.map((t) => {
                 const on = picked.has(t.id);
+                const chips = t.effort || t.priority || t.project;
                 return (
-                  <li key={t.id}>
+                  <li key={t.id} className="border-b last:border-b-0">
                     <button
                       type="button"
                       role="checkbox"
                       aria-checked={on}
                       onClick={() => flip(t.id)}
-                      className="press-tint flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left md:min-h-11"
+                      className="press-tint flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left md:grid md:min-h-11 md:items-stretch md:gap-0 md:py-0"
+                      style={{ gridTemplateColumns: tableColumns(true) }}
                     >
                       <span
                         className={cn(
-                          "flex size-5 shrink-0 items-center justify-center rounded-md border border-stroke-strong",
+                          "flex size-5 shrink-0 items-center justify-center self-center rounded-md border border-stroke-strong",
                           on && "border-primary bg-primary text-primary-foreground",
                         )}
                         aria-hidden
                       >
                         {on && <Check className="size-3.5" strokeWidth={3} />}
                       </span>
-                      <span className="flex min-w-0 grow flex-col">
+                      <span className={cell}>{t.effort && <FocusChip effort={t.effort} />}</span>
+                      <span className={cell}>{t.priority && <PriorityChip priority={t.priority} />}</span>
+                      <span className="flex min-w-0 grow flex-col gap-1 md:justify-center md:border-l md:px-3 md:py-2">
                         <span className="text-control break-words text-foreground">{t.title}</span>
-                        {t.project && <span className="text-meta text-muted-foreground">{t.project.name}</span>}
+                        {chips && (
+                          <span className="flex flex-wrap items-center gap-1.5 md:hidden">
+                            {t.effort && <FocusChip effort={t.effort} />}
+                            {t.priority && <PriorityChip priority={t.priority} />}
+                            {t.project && <ProjectChip project={t.project} />}
+                          </span>
+                        )}
                       </span>
+                      <span className={cn(cell, "min-w-0")}>{t.project && <ProjectChip project={t.project} />}</span>
                     </button>
                   </li>
                 );
@@ -280,6 +315,10 @@ function TaskPicker({
     </Dialog>
   );
 }
+
+const headCell = "border-l px-2 py-1.5";
+/** A table cell in the picker, computers only. */
+const cell = "hidden items-center border-l px-2 md:flex";
 
 /**
  * A place to jot down whatever comes to mind mid-sprint, so it's out of Luke's

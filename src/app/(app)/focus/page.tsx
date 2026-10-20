@@ -13,7 +13,14 @@ export const metadata: Metadata = { title: "Focus · LukeOS" };
  */
 export default async function FocusPage() {
   const [tasks, scratchPad] = await Promise.all([listTasks({}), getScratchPad()]);
-  const openTasks = tasks.map((t) => ({ id: t.id, title: t.title, bucket: t.bucket, project: t.project && { name: t.project.name } }));
+  const openTasks = tasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    bucket: t.bucket,
+    effort: t.effort,
+    priority: t.priority,
+    project: t.project && { name: t.project.name, hex: t.project.hex },
+  }));
   return (
     <Page title="Focus" newTask={false} actions={<LengthsButton />}>
       <FocusScreen openTasks={openTasks} scratchPad={scratchPad} />

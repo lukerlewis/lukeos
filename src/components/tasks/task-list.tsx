@@ -98,7 +98,7 @@ export function TaskList({
  * The column widths of the table: tick, focus type, priority, name, and project unless it's left out (on a project's page).
  * Luke drags the header lines to change them; they're kept on this device and shared by every table.
  */
-const tableColumns = (project: boolean) =>
+export const tableColumns = (project: boolean) =>
   `28px var(--col-focus, 120px) var(--col-priority, 76px) minmax(0, 1fr)${project ? " var(--col-project, 120px)" : ""}`;
 const headCell = "relative border-l px-2 py-1.5";
 
@@ -120,7 +120,7 @@ function applyWidths(widths: Record<Column, number>) {
 }
 
 /** Puts the saved column widths in place once the table shows. */
-function useColumnWidths(on: boolean) {
+export function useColumnWidths(on: boolean) {
   useEffect(() => {
     if (on) applyWidths(savedWidths());
   }, [on]);
