@@ -6,7 +6,7 @@ import { ArtifactList } from "@/components/artifacts/artifact-list";
 import { AddButton } from "@/components/inspiration/add";
 import { InspirationBoard } from "@/components/inspiration/board";
 import { Board } from "@/components/board/board";
-import { TaskSortMenu } from "@/components/dashboard/controls";
+import { TaskFilterMenu, TaskSortMenu } from "@/components/dashboard/controls";
 import { BoardViewSwitch, type BoardGrouping } from "@/components/board/view-switch";
 import { PipelineBoard } from "@/components/pipeline/pipeline-board";
 import { getPipeline, listColumns } from "@/core/pipeline";
@@ -15,7 +15,6 @@ import { NewNoteButton } from "@/components/notes/new-note-button";
 import { NoteList } from "@/components/notes/note-list";
 import { EditProjectButton } from "@/components/projects/project-dialog";
 import { EmptyState, Page } from "@/components/shell/page";
-import { StatusIcon } from "@/components/tasks/status-circle";
 import { QuickAdd, TaskList } from "@/components/tasks/task-list";
 import { Card } from "@/components/ui/card";
 import { SegmentedLinks } from "@/components/ui/segmented-links";
@@ -35,7 +34,6 @@ import { sortTasks } from "@/lib/board";
 import { listTasks } from "@/core/tasks";
 import { todayIn } from "@/lib/dates";
 import { colorHex } from "@/lib/project-colors";
-import { statusLabel, type Status } from "@/lib/task-fields";
 
 async function load(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -89,13 +87,11 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const folderIds = new Set(folders.map((f) => f.id));
   const looseNotes = notes.filter((n) => !n.folder || !folderIds.has(n.folder.id));
   const date = todayIn(timeZone);
-  const groups = (["doing", "todo", "done"] as Status[]).map((status) => ({
-    status,
-    tasks: sortTasks(
-      tasks.filter((t) => t.status === status),
-      sort,
-    ),
-  }));
+  // Like the dashboard's Today: one list, with Done hidden unless switched on in Filters.
+  const shown = sortTasks(
+    tasks.filter((t) => dashboard.show.includes(t.status)),
+    sort,
+  );
 
   const toolbar = (
     <>
@@ -113,6 +109,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
       {(boardView || pipelineView) && (
         <BoardViewSwitch pipeline view={grouping} href={(by) => `${page}?view=board&by=${by}`} />
       )}
+      {listView && <TaskFilterMenu show={dashboard.show} />}
       {(listView || boardView) && <TaskSortMenu sort={sort} />}
     </>
   );
@@ -217,29 +214,14 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
       ) : board && boardView ? (
         <Board tasks={board.tasks} view={boardView} today={board.date} projectId={project.id} showProject={false} sort={sort} />
       ) : (
-        <div className="flex max-w-3xl flex-col gap-5">
-          {tasks.length === 0 && (
-            <Card>
-              <EmptyState>No tasks yet.</EmptyState>
-              <QuickAdd projectId={project.id} today={date} />
-            </Card>
+        <Card className="max-w-3xl">
+          {shown.length > 0 ? (
+            <TaskList tasks={shown} today={date} showProject={false} columns />
+          ) : (
+            <EmptyState>{tasks.length === 0 ? "No tasks yet." : "Nothing to do."}</EmptyState>
           )}
-          {groups.map(({ status, tasks: group }) =>
-            group.length === 0 && !(status === "todo" && tasks.length > 0) ? null : (
-              <section key={status} className="flex flex-col gap-2">
-                <h2 className="flex items-center gap-2 px-1 text-sm font-medium">
-                  <StatusIcon status={status} className="size-4" />
-                  {statusLabel[status]}
-                  <span className="text-xs font-normal text-muted-foreground">{group.length}</span>
-                </h2>
-                <Card>
-                  <TaskList tasks={group} today={date} showProject={false} columns />
-                  {status === "todo" && <QuickAdd projectId={project.id} today={date} />}
-                </Card>
-              </section>
-            ),
-          )}
-        </div>
+          {dashboard.show.includes("todo") && <QuickAdd projectId={project.id} today={date} />}
+        </Card>
       )}
     </Page>
   );
