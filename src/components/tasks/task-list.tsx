@@ -2,7 +2,7 @@
 
 import { Plus, Repeat } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useOptimistic, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
 import type { Task } from "@/core/tasks";
 import { currentArea } from "@/lib/area";
 import { bucketForDate } from "@/lib/board";
@@ -59,6 +59,7 @@ export function TaskList({
   projects?: CellProject[];
   empty?: React.ReactNode;
 }) {
+  useColumnWidths(columns);
   if (tasks.length === 0 && empty) return <>{empty}</>;
   return (
     <>
@@ -69,9 +70,18 @@ export function TaskList({
           style={{ gridTemplateColumns: tableColumns(showProject) }}
         >
           <span />
-          <span className={headCell}>Focus type</span>
-          <span className={headCell}>Priority</span>
-          <span className={cn(headCell, "pl-3")}>Name</span>
+          <span className={headCell}>
+            Focus type
+            <ColumnHandle column="focus" />
+          </span>
+          <span className={headCell}>
+            Priority
+            <ColumnHandle column="priority" />
+          </span>
+          <span className={cn(headCell, "pl-3")}>
+            Name
+            {showProject && <ColumnHandle column="project" />}
+          </span>
           {showProject && <span className={headCell}>Project</span>}
         </div>
       )}
@@ -84,9 +94,80 @@ export function TaskList({
   );
 }
 
-/** The column widths of the table: tick, focus type, priority, name, and project unless it's left out (on a project's page). */
-const tableColumns = (project: boolean) => `28px 104px 76px minmax(0, 1fr)${project ? " 120px" : ""}`;
-const headCell = "border-l px-2 py-1.5";
+/**
+ * The column widths of the table: tick, focus type, priority, name, and project unless it's left out (on a project's page).
+ * Luke drags the header lines to change them; they're kept on this device and shared by every table.
+ */
+const tableColumns = (project: boolean) =>
+  `28px var(--col-focus, 120px) var(--col-priority, 76px) minmax(0, 1fr)${project ? " var(--col-project, 120px)" : ""}`;
+const headCell = "relative border-l px-2 py-1.5";
+
+type Column = "focus" | "priority" | "project";
+const defaultWidths: Record<Column, number> = { focus: 120, priority: 76, project: 120 };
+const minWidth = 48;
+const widthsKey = "lukeos:column-widths";
+
+function savedWidths(): Record<Column, number> {
+  try {
+    return { ...defaultWidths, ...JSON.parse(localStorage.getItem(widthsKey) ?? "{}") };
+  } catch {
+    return { ...defaultWidths };
+  }
+}
+
+function applyWidths(widths: Record<Column, number>) {
+  for (const c of Object.keys(widths) as Column[]) document.documentElement.style.setProperty(`--col-${c}`, `${widths[c]}px`);
+}
+
+/** Puts the saved column widths in place once the table shows. */
+function useColumnWidths(on: boolean) {
+  useEffect(() => {
+    if (on) applyWidths(savedWidths());
+  }, [on]);
+}
+
+/**
+ * A line in the table header to drag sideways, changing a column's width. It sits on the column's
+ * right edge (the Project column's left edge, so dragging left widens it). Double-click puts it back.
+ */
+function ColumnHandle({ column }: { column: Column }) {
+  function start(e: React.PointerEvent<HTMLSpanElement>) {
+    e.preventDefault();
+    const handle = e.currentTarget;
+    handle.setPointerCapture(e.pointerId);
+    const widths = savedWidths();
+    const from = widths[column];
+    const x = e.clientX;
+    const move = (ev: PointerEvent) => {
+      const dx = column === "project" ? x - ev.clientX : ev.clientX - x;
+      widths[column] = Math.max(minWidth, Math.round(from + dx));
+      applyWidths(widths);
+    };
+    const end = () => {
+      handle.removeEventListener("pointermove", move);
+      try {
+        localStorage.setItem(widthsKey, JSON.stringify(widths));
+      } catch {}
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", end, { once: true });
+    handle.addEventListener("pointercancel", end, { once: true });
+  }
+  function reset() {
+    const widths = { ...savedWidths(), [column]: defaultWidths[column] };
+    applyWidths(widths);
+    try {
+      localStorage.setItem(widthsKey, JSON.stringify(widths));
+    } catch {}
+  }
+  return (
+    <span
+      onPointerDown={start}
+      onDoubleClick={reset}
+      className="absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize touch-none after:absolute after:inset-y-0 after:left-1/2 after:w-0.5 after:-translate-x-1/2 hover:after:bg-stroke-strong"
+    />
+  );
+}
 
 const focusOptions = [
   { value: null, label: <span className="text-muted-foreground">None</span> },
