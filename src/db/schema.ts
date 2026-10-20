@@ -143,7 +143,7 @@ export const tasks = pgTable(
     /** Life's Today is split into "morning" | "day" | "evening". Repeats carry it on. */
     timeOfDay: text("time_of_day").notNull().default("day"),
     notes: text("notes"),
-    repeat: text("repeat"), // "daily" | "weekdays" | "weekly" | "monthly" | "yearly"
+    repeat: text("repeat"), // "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | "every_2_days" (any every_N_days/weeks/months/years)
     /** A repeating task that's done: the next one it made, so un-ticking it can take that back. */
     repeatNextId: uuid("repeat_next_id"),
     completedAt: timestamp("completed_at", { withTimezone: true }),

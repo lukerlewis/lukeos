@@ -26,7 +26,7 @@ import {
   efforts,
   priorities,
   priorityLabel,
-  repeatLabel,
+  repeatName,
   repeats,
   statuses,
   statusLabel,
@@ -442,9 +442,9 @@ function TaskDialog({
                 className="h-9 w-full rounded-lg border bg-card px-2.5 text-body md:text-meta border-stroke-strong sm:w-auto sm:min-w-56"
               >
                 <option value="">Never</option>
-                {repeats.map((r) => (
+                {repeatChoices(repeat).map((r) => (
                   <option key={r} value={r}>
-                    {repeatLabel[r]}
+                    {repeatName(r)}
                   </option>
                 ))}
               </select>
@@ -596,4 +596,10 @@ function Chip({ active, onClick, children }: { active?: boolean; onClick: () => 
       {children}
     </button>
   );
+}
+
+/** The repeat menu: the usual ones, a couple with gaps, and whatever the task has if it's none of those ("every 3 days"). */
+function repeatChoices(current: Repeat | null): Repeat[] {
+  const list: Repeat[] = [...repeats.slice(0, 2), "every_2_days", ...repeats.slice(2, 3), "every_2_weeks", ...repeats.slice(3)];
+  return current && !list.includes(current) ? [...list, current] : list;
 }

@@ -30,7 +30,7 @@ import type { DashboardSort } from "@/lib/dashboard";
 import { friendlyDay } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
 import { useWithoutHidden } from "@/lib/background";
-import { repeatLabel, type Bucket, type Status } from "@/lib/task-fields";
+import { repeatName, type Bucket, type Status } from "@/lib/task-fields";
 import { cn, pause } from "@/lib/utils";
 
 type Change = { id: string; changes: Partial<Pick<Task, "bucket" | "status">> };
@@ -340,9 +340,9 @@ function CardBody({
           {task.effort && <FocusChip effort={task.effort} />}
           {task.priority && <PriorityChip priority={task.priority} />}
           {task.repeat && (
-            <span className="inline-flex items-center" title={repeatLabel[task.repeat]}>
+            <span className="inline-flex items-center" title={repeatName(task.repeat)}>
               <Repeat className="size-3" aria-hidden />
-              <span className="sr-only">{repeatLabel[task.repeat]}</span>
+              <span className="sr-only">{repeatName(task.repeat)}</span>
             </span>
           )}
           {task.notes && <span>Notes</span>}

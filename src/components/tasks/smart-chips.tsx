@@ -4,7 +4,7 @@ import { CalendarDays, List, Repeat, X } from "lucide-react";
 import { useState } from "react";
 import { friendlyDay } from "@/lib/dates";
 import { parseTaskText, type SmartEntry, type SmartMatch } from "@/lib/smart-entry";
-import { bucketLabel, repeatLabel, type Repeat as RepeatValue } from "@/lib/task-fields";
+import { bucketLabel, repeatName, type Repeat as RepeatValue } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 
 /**
@@ -52,7 +52,7 @@ export function SmartChips({
       {showDate && (
         <Chip icon={CalendarDays} label={friendlyDay(dueDate, today)} onDismiss={() => onDismiss(has("date") ? "date" : "repeat")} />
       )}
-      {has("repeat") && repeat && <Chip icon={Repeat} label={repeatLabel[repeat]} onDismiss={() => onDismiss("repeat")} />}
+      {has("repeat") && repeat && <Chip icon={Repeat} label={repeatName(repeat)} onDismiss={() => onDismiss("repeat")} />}
       {parsed.bucket && <Chip icon={List} label={bucketLabel[parsed.bucket]} onDismiss={() => onDismiss("list")} />}
     </div>
   );

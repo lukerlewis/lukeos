@@ -3,6 +3,8 @@
  * These helpers work on those strings so nothing shifts across time zones.
  */
 
+import { repeatStep, type Repeat } from "@/lib/task-fields";
+
 export const isoDay = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Today's date in the given time zone, as YYYY-MM-DD. */
@@ -39,16 +41,17 @@ export function addMonths(day: string, n: number) {
  * day of the month) and always lands after today, so finishing a late one
  * doesn't make another late one.
  */
-export function nextRepeat(due: string | null, repeat: "daily" | "weekdays" | "weekly" | "monthly" | "yearly", today: string) {
+export function nextRepeat(due: string | null, repeat: Repeat, today: string) {
   const start = due ?? today;
+  const gap = repeatStep(repeat) ?? { n: 1, unit: "days" };
   const step = (n: number) =>
-    repeat === "weekly"
-      ? addDays(start, 7 * n)
-      : repeat === "monthly"
-        ? addMonths(start, n)
-        : repeat === "yearly"
-          ? addMonths(start, 12 * n)
-          : addDays(start, n);
+    gap.unit === "weeks"
+      ? addDays(start, 7 * gap.n * n)
+      : gap.unit === "months"
+        ? addMonths(start, gap.n * n)
+        : gap.unit === "years"
+          ? addMonths(start, 12 * gap.n * n)
+          : addDays(start, gap.n * n);
   let n = 1;
   // Weekdays steps a day at a time, passing over Saturday and Sunday.
   while (step(n) <= today || (repeat === "weekdays" && [0, 6].includes(toUtc(step(n)).getUTCDay()))) n++;
