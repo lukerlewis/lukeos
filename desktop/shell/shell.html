@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>LukeOS</title>
+  <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+  <link rel="stylesheet" href="shell.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="bar-left">
+      <button id="back" class="icon" aria-label="Back" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <button id="forward" class="icon" aria-label="Forward" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div id="title" class="title">LukeOS</div>
+    <div class="bar-right">
+      <button id="toggle" class="claude" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg>
+        Claude
+        <span class="key">⌘J</span>
+      </button>
+    </div>
+  </header>
+  <aside id="panel" class="panel">
+    <div id="handle" class="handle" aria-hidden="true"></div>
+    <div id="terminal" class="terminal"></div>
+  </aside>
+  <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>
+  <script src="shell.js"></script>
+</body>
+</html>
