@@ -18,6 +18,7 @@ import { doneMentionIds } from "@/core/mentions";
 import { getScratchPad } from "@/core/notes";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
+import { DASHBOARD_AGENTS_ON } from "@/lib/features";
 import { colorHex } from "@/lib/project-colors";
 import { AREA_COOKIE, defaultAreaFor, parseArea } from "@/lib/area";
 import { sortTasks } from "@/lib/board";
@@ -30,7 +31,7 @@ export default async function DashboardPage() {
   const [{ date, tasks }, activity, scratch, timeZone, projects] = await Promise.all([
     boardTasks("when", undefined, view.show, area),
     // The board is only the board; the other cards are on the Today tab.
-    board ? [] : listActivity({ limit: 8 }),
+    board || !DASHBOARD_AGENTS_ON ? [] : listActivity({ limit: 8 }),
     board ? null : getScratchPad(),
     getTimeZone(),
     area === "work" ? listProjects() : [],
@@ -38,7 +39,7 @@ export default async function DashboardPage() {
   const workProjects = projects.map((p) => ({ id: p.id, name: p.name, color: p.color, hex: colorHex(p.color) }));
   const doneTags = scratch ? await doneMentionIds("note", scratch.id) : [];
 
-  // The Scratch pad and Agents cards, beside the Today card.
+  // The Scratch pad and Agents cards, beside the Today card. Agents is on ice for now.
   const side = (
     <div className="flex flex-col gap-6">
       {scratch && (
@@ -55,21 +56,23 @@ export default async function DashboardPage() {
           <ScratchPad id={scratch.id} content={scratch.content} />
         </Card>
       )}
-      <Card>
-        <CardHeader
-          title="Agents"
-          aside={
-            <Link href="/agents?view=activity" className="hover:text-foreground">
-              See all
-            </Link>
-          }
-        />
-        {activity.length === 0 ? (
-          <EmptyState>Nothing yet.</EmptyState>
-        ) : (
-          <ActivityList days={activityDays(activity, timeZone)} />
-        )}
-      </Card>
+      {DASHBOARD_AGENTS_ON && (
+        <Card>
+          <CardHeader
+            title="Agents"
+            aside={
+              <Link href="/agents?view=activity" className="hover:text-foreground">
+                See all
+              </Link>
+            }
+          />
+          {activity.length === 0 ? (
+            <EmptyState>Nothing yet.</EmptyState>
+          ) : (
+            <ActivityList days={activityDays(activity, timeZone)} />
+          )}
+        </Card>
+      )}
     </div>
   );
 

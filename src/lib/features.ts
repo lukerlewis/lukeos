@@ -11,3 +11,9 @@ export const ARTIFACTS_ON = false;
  * Phones keep their player. Setting this to true brings the bar back.
  */
 export const DESKTOP_PLAYER_BAR_ON = false;
+
+/**
+ * The Agents card on the Dashboard's Today tab is on ice (Luke, 2026-10-21).
+ * The Activity log in Agents stays. Setting this to true brings the card back.
+ */
+export const DASHBOARD_AGENTS_ON = false;
