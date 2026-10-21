@@ -1,0 +1,47 @@
+{
+  "name": "lukeos-desktop",
+  "productName": "LukeOS",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LukeOS for Mac: the web app in its own window, with a Claude Code panel.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac --arm64 --x64 --publish never"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/addon-web-links": "0.12.0",
+    "@xterm/xterm": "6.0.0",
+    "node-pty": "1.1.0"
+  },
+  "devDependencies": {
+    "electron": "44.9.2",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.lukeos.desktop",
+    "productName": "LukeOS",
+    "files": [
+      "main.js",
+      "preload-site.js",
+      "preload-shell.js",
+      "shell/**",
+      "node_modules/**"
+    ],
+    "asarUnpack": [
+      "node_modules/node-pty/**"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
+      "identity": "-",
+      "target": [
+        "dmg"
+      ]
+    },
+    "dmg": {
+      "artifactName": "LukeOS-${arch}.dmg"
+    }
+  }
+}

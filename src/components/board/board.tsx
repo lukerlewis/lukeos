@@ -31,6 +31,7 @@ import { friendlyDay } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
 import { useWithoutHidden } from "@/lib/background";
 import { repeatName, type Bucket, type Status } from "@/lib/task-fields";
+import { askClaudeAbout } from "@/lib/ask-claude";
 import { cn, pause } from "@/lib/utils";
 
 type Change = { id: string; changes: Partial<Pick<Task, "bucket" | "status">> };
@@ -254,7 +255,7 @@ function DraggableCard({
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: task.id });
 
   return (
-    <li ref={setNodeRef} className={cn(isDragging && "opacity-40")}>
+    <li ref={setNodeRef} className={cn(isDragging && "opacity-40")} {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}>
       <CardBody
         task={task}
         today={today}

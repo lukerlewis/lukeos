@@ -1,0 +1,114 @@
+/* Same grey scale as the web app (src/app/globals.css). No shadows. */
+:root {
+  --bar: #f8f8f8;
+  --border: #e8e8e8;
+  --stroke: #d9d9d9;
+  --text: #424242;
+  --ink: #121212;
+  --hover: #e8e8e8;
+  --muted: #808080;
+  --on-ink: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bar: #191919;
+    --border: #2b2b2b;
+    --stroke: #353535;
+    --text: #cecece;
+    --ink: #f5f5f5;
+    --hover: #2b2b2b;
+    --muted: #7d7d7d;
+    --on-ink: #121212;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bar);
+  font: 13px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  color: var(--text);
+  user-select: none;
+}
+
+.bar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 84px;
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;
+}
+.bar-left, .bar-right { width: 220px; display: flex; gap: 2px; }
+.bar-right { justify-content: flex-end; }
+.title {
+  flex: 1;
+  text-align: center;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+button { -webkit-app-region: no-drag; font: inherit; cursor: default; }
+svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.icon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+}
+.icon:hover:not(:disabled) { background: var(--hover); }
+.icon:disabled { color: var(--muted); opacity: 0.5; }
+
+.claude {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 500;
+}
+.claude:hover { background: var(--hover); }
+.claude .key { font-weight: 400; color: var(--muted); }
+.claude[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.claude[aria-pressed="true"] .key { color: inherit; opacity: 0.6; }
+
+/* The terminal is always dark, like a real one. */
+.panel {
+  position: fixed;
+  top: 44px;
+  right: 0;
+  bottom: 0;
+  width: 440px;
+  background: #121212;
+  display: flex;
+}
+.panel[hidden] { display: none; }
+.handle {
+  width: 6px;
+  flex: none;
+  cursor: col-resize;
+  background: #121212;
+  border-left: 1px solid #2b2b2b;
+}
+.handle:hover, .handle.dragging { background: #2b2b2b; }
+.terminal { flex: 1; min-width: 0; padding: 12px 8px 8px 12px; }
+.terminal .xterm-viewport { background: #121212 !important; }
+.terminal ::-webkit-scrollbar { width: 8px; }
+.terminal ::-webkit-scrollbar-track { background: transparent; }
+.terminal ::-webkit-scrollbar-thumb { background: #353535; border-radius: 4px; }

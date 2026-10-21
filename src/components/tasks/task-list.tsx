@@ -24,6 +24,7 @@ import {
   type Status,
   type TimeOfDay,
 } from "@/lib/task-fields";
+import { askClaudeAbout } from "@/lib/ask-claude";
 import { cn, pause } from "@/lib/utils";
 import { showToast } from "@/components/shell/toast";
 import { ClaudeBadge } from "./made-by";
@@ -246,6 +247,7 @@ export function TaskRow({
 
   return (
     <li
+      {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}
       {...li}
       className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0", li?.className)}
       style={columns ? { gridTemplateColumns: tableColumns(showProject) } : undefined}

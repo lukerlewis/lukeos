@@ -45,6 +45,7 @@ export function AddDeviceButton() {
 export function NewDeviceLink() {
   const [busy, setBusy] = useState(false);
   const [link, setLink] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function make() {
@@ -54,6 +55,7 @@ export function NewDeviceLink() {
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setLink(`${location.origin}/sign-in/add/${data.code}`);
+      setCode(data.code);
       // Hide it once it stops working.
       setTimeout(() => setLink(null), new Date(data.expiresAt).getTime() - Date.now());
     } else {
@@ -66,7 +68,10 @@ export function NewDeviceLink() {
     return (
       <div className="flex w-full flex-col gap-2">
         <CopyAddress address={link} label="Copy link" />
-        <p className="text-meta text-muted-foreground">Open on the new device. Works once, for 10 minutes.</p>
+        <p className="text-meta text-muted-foreground">
+          Open on the new device, or type <span className="font-medium text-foreground">{code}</span> in the Mac app. Works
+          once, for 10 minutes.
+        </p>
       </div>
     );
   }
