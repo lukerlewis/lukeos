@@ -2,17 +2,21 @@ import { Archive, Bot, Globe, FileText, Lightbulb, CheckSquare, Ellipsis, Layout
 
 export const mainNav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/messages", label: "Messages", icon: MessagesSquare },
   { href: "/focus", label: "Focus", icon: Timer },
   { href: "/listen", label: "Music", icon: Music },
-  { href: "/tasks", label: "All tasks", icon: CheckSquare },
   { href: "/notes", label: "Notes", icon: NotebookPen },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/whiteboard", label: "Whiteboard", icon: Shapes },
+] as const;
+
+/** On computers, these sit under More in the sidebar. */
+export const moreNav = [
   { href: "/inspiration", label: "Inspiration", icon: Lightbulb },
   { href: "/archive", label: "Work archive", icon: Archive },
   { href: "/portfolio", label: "Portfolio", icon: Globe },
   { href: "/agents", label: "Agents", icon: Bot },
+  { href: "/messages", label: "Messages", icon: MessagesSquare },
+  { href: "/tasks", label: "All tasks", icon: CheckSquare },
 ] as const;
 
 /** On phones, Messages, Search, Projects, All tasks, Documents, Whiteboard, Inspiration, Work archive, Portfolio, Agents and Trash live under More. */
