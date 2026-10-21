@@ -1,6 +1,6 @@
 "use client";
 
-import { PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { ChevronRight, Ellipsis, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -11,7 +11,7 @@ import { useUnreadMessages } from "@/components/messages/unread";
 import { MiniControls } from "@/components/listen/mini-controls";
 import { NewProjectIconButton } from "@/components/projects/project-dialog";
 import { cn } from "@/lib/utils";
-import { isActive, mainNav, SIDEBAR_COOKIE } from "./nav";
+import { isActive, mainNav, moreNav, SIDEBAR_COOKIE } from "./nav";
 
 type SidebarProject = { id: string; name: string; hex: string; open: number };
 
@@ -168,58 +168,66 @@ function SidebarContents({
         type="button"
         onClick={openMenu}
         aria-keyshortcuts={isMac ? "Meta+K" : "Control+K"}
-        className="pressable flex h-10 items-center gap-2 rounded-lg border border-stroke-strong bg-card px-3 text-left whitespace-nowrap text-muted-foreground hover:text-foreground"
+        className="pressable flex h-10 shrink-0 items-center gap-2 rounded-lg border border-stroke-strong bg-card px-3 text-left whitespace-nowrap text-muted-foreground hover:text-foreground"
       >
         <Search className="size-4 text-icon" aria-hidden />
         <span className="grow truncate">Search</span>
         <kbd className="rounded-md border border-stroke bg-muted px-1.5 text-xs">{isMac ? "⌘K" : "Ctrl K"}</kbd>
       </button>
 
-      <nav className="flex flex-col gap-0.5" aria-label="Main">
-        {mainNav.map((item) =>
-          item.href === "/listen" ? (
-            // Hovering Music shows the player's controls over the end of its row.
-            <div key={item.href} className="group/music relative">
-              <NavLink {...item} active={isActive(pathname, item.href)} />
-              <MiniControls className="absolute inset-y-0 right-1.5 hidden items-center gap-0.5 group-hover/music:flex group-has-[:focus-visible]/music:flex" />
-            </div>
-          ) : (
-            <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]}
-              aside={item.href === "/focus" ? running : null}
-            />
-          ),
-        )}
-      </nav>
+      {/* The page links and projects scroll together if the window is short. */}
+      <div className="-mx-1 flex min-h-0 flex-col gap-4 overflow-y-auto px-1">
+        <nav className="flex flex-col gap-0.5" aria-label="Main">
+          {mainNav.map((item) =>
+            item.href === "/listen" ? (
+              // Hovering Music shows the player's controls over the end of its row.
+              <div key={item.href} className="group/music relative">
+                <NavLink {...item} active={isActive(pathname, item.href)} />
+                <MiniControls className="absolute inset-y-0 right-1.5 hidden items-center gap-0.5 group-hover/music:flex group-has-[:focus-visible]/music:flex" />
+              </div>
+            ) : (
+              <NavLink
+                key={item.href}
+                {...item}
+                active={isActive(pathname, item.href)}
+                count={counts[item.href]}
+                aside={item.href === "/focus" ? running : null}
+              />
+            ),
+          )}
+          <MoreNav pathname={pathname} counts={counts} />
+        </nav>
 
-      <div className="-mx-1 flex min-h-0 flex-col gap-0.5 overflow-y-auto px-1">
-        <div className="flex items-center justify-between px-3 pb-1 text-meta font-medium text-muted-foreground">
-          <Link href="/projects" className="hover:text-foreground">
-            Projects
-          </Link>
-          <NewProjectIconButton />
-        </div>
-        {projects.length === 0 && <p className="px-3 text-meta text-muted-foreground">No projects yet</p>}
-        {projects.map((p) => {
-          const href = `/projects/${p.id}`;
-          const active = pathname === href;
-          return (
-            <Link
-              key={p.id}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "pressable flex h-11 items-center gap-3 rounded-lg px-3 text-control text-muted-foreground hover:bg-muted",
-                active && "bg-selected font-medium text-ink",
-              )}
-            >
-              <span className="flex size-[18px] shrink-0 items-center justify-center" aria-hidden>
-                <span className="size-2.5 rounded-[3px]" style={{ background: p.hex }} />
-              </span>
-              <span className="grow truncate">{p.name}</span>
-              {p.open > 0 && <span className="text-meta text-muted-foreground">{p.open}</span>}
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center justify-between px-3 pb-1 text-meta font-medium text-muted-foreground">
+            <Link href="/projects" className="hover:text-foreground">
+              Projects
             </Link>
-          );
-        })}
+            <NewProjectIconButton />
+          </div>
+          {projects.length === 0 && <p className="px-3 text-meta text-muted-foreground">No projects yet</p>}
+          {projects.map((p) => {
+            const href = `/projects/${p.id}`;
+            const active = pathname === href;
+            return (
+              <Link
+                key={p.id}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "pressable flex h-11 items-center gap-3 rounded-lg px-3 text-control text-muted-foreground hover:bg-muted",
+                  active && "bg-selected font-medium text-ink",
+                )}
+              >
+                <span className="flex size-[18px] shrink-0 items-center justify-center" aria-hidden>
+                  <span className="size-2.5 rounded-[3px]" style={{ background: p.hex }} />
+                </span>
+                <span className="grow truncate">{p.name}</span>
+                {p.open > 0 && <span className="text-meta text-muted-foreground">{p.open}</span>}
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grow" />
@@ -232,6 +240,62 @@ function SidebarContents({
 }
 
 const noSubscribe = () => () => {};
+
+const MORE_KEY = "lukeos_sidebar_more";
+function readMoreOpen() {
+  try {
+    return localStorage.getItem(MORE_KEY) === "open";
+  } catch {
+    return false;
+  }
+}
+
+/** Inspiration, Work archive, Portfolio, Agents, Messages and All tasks, folded under one row. */
+function MoreNav({ pathname, counts }: { pathname: string; counts: Record<string, number> }) {
+  const inside = moreNav.some((item) => isActive(pathname, item.href));
+  // Starts open on one of its own pages, or if it was left open last time.
+  const remembered = useSyncExternalStore(noSubscribe, readMoreOpen, () => false);
+  const [choice, setChoice] = useState<boolean | null>(null);
+  const open = choice ?? (inside || remembered);
+  const toggle = () => {
+    setChoice(!open);
+    try {
+      localStorage.setItem(MORE_KEY, open ? "closed" : "open");
+    } catch {}
+  };
+  const total = moreNav.reduce((sum, item) => sum + (counts[item.href] ?? 0), 0);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className={cn(
+          "group pressable flex h-11 items-center gap-3 rounded-lg px-3 text-left text-control text-muted-foreground hover:bg-muted",
+          !open && inside && "bg-selected font-medium text-ink",
+        )}
+      >
+        <Ellipsis className={cn("size-[18px]", !open && inside ? "text-foreground" : "text-icon")} aria-hidden />
+        <span className="grow">More</span>
+        {!open && total > 0 && (
+          <span className="min-w-5 rounded-full bg-notification px-1.5 text-center text-xs leading-5 font-medium text-on-notification">
+            {total}
+            <span className="sr-only"> new</span>
+          </span>
+        )}
+        <ChevronRight className={cn("size-4 text-icon transition-transform", open && "rotate-90")} aria-hidden />
+      </button>
+      {open && (
+        <div className="flex flex-col gap-0.5 pl-3">
+          {moreNav.map((item) => (
+            <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
 
 function NavLink({
   href,
