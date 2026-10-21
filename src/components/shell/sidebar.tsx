@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Ellipsis, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { ChevronDown, Ellipsis, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -284,7 +284,7 @@ function MoreNav({ pathname, counts }: { pathname: string; counts: Record<string
             <span className="sr-only"> new</span>
           </span>
         )}
-        <ChevronRight className={cn("size-4 text-icon transition-transform", open && "rotate-90")} aria-hidden />
+        <ChevronDown className={cn("size-4 text-icon transition-transform", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
         <div className="flex flex-col gap-0.5 pl-3">
