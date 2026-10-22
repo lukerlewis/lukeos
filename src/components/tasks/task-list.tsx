@@ -2,7 +2,7 @@
 
 import { Plus, Repeat } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useOptimistic, useState, useTransition } from "react";
+import { Fragment, useEffect, useOptimistic, useState, useTransition } from "react";
 import type { Task } from "@/core/tasks";
 import { currentArea } from "@/lib/area";
 import { bucketForDate } from "@/lib/board";
@@ -20,6 +20,7 @@ import {
   type Area,
   type Bucket,
   type Effort,
+  type Lane,
   type Priority,
   type Status,
   type TimeOfDay,
@@ -47,6 +48,7 @@ export function TaskList({
   columns = false,
   projects = [],
   empty,
+  row,
 }: {
   tasks: Task[];
   today: string;
@@ -59,6 +61,8 @@ export function TaskList({
   /** The projects the Project column offers. */
   projects?: CellProject[];
   empty?: React.ReactNode;
+  /** Draws each row instead of the plain one, e.g. to make it draggable. */
+  row?: (task: Task) => React.ReactNode;
 }) {
   useColumnWidths(columns);
   if (tasks.length === 0 && empty) return <>{empty}</>;
@@ -87,9 +91,13 @@ export function TaskList({
         </div>
       )}
       <ul>
-        {tasks.map((t) => (
-          <TaskRow key={t.id} task={t} today={today} showProject={showProject} columns={columns} projects={projects} />
-        ))}
+        {tasks.map((t) =>
+          row ? (
+            <Fragment key={t.id}>{row(t)}</Fragment>
+          ) : (
+            <TaskRow key={t.id} task={t} today={today} showProject={showProject} columns={columns} projects={projects} />
+          ),
+        )}
       </ul>
     </>
   );
@@ -353,6 +361,7 @@ export function QuickAdd({
   area,
   bucket,
   timeOfDay,
+  lane,
   placeholder = "Add a task",
   today,
 }: {
@@ -363,6 +372,8 @@ export function QuickAdd({
   bucket?: Bucket;
   /** Morning, day or evening, for Life's Today cards. */
   timeOfDay?: TimeOfDay;
+  /** Signal or noise, for Work's Today cards. */
+  lane?: Lane;
   placeholder?: string;
   /** Today in Luke's time zone, for reading "tomorrow" or "every monday" out of the name. */
   today: string;
@@ -383,7 +394,7 @@ export function QuickAdd({
     if (!clean) return;
     // A list typed in the name ("this week") wins, then a typed date picks the list; otherwise it goes in this one.
     const list = parsed.bucket ?? (parsed.dueDate ? bucketForDate(parsed.dueDate, today) : bucket);
-    const fields = { title: clean, projectId: projectId ?? null, area: area ?? currentArea(), bucket: list, dueDate: due, repeat: parsed.repeat, timeOfDay };
+    const fields = { title: clean, projectId: projectId ?? null, area: area ?? currentArea(), bucket: list, dueDate: due, repeat: parsed.repeat, timeOfDay, lane };
     setTitle("");
     smart.reset();
     // One going to another list ("tomorrow") doesn't show here, so a toast says where it went.

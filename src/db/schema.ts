@@ -142,6 +142,8 @@ export const tasks = pgTable(
     area: text("area").notNull().default("life"),
     /** Life's Today is split into "morning" | "day" | "evening". Repeats carry it on. */
     timeOfDay: text("time_of_day").notNull().default("day"),
+    /** Work's Today is split into "signal" | "noise". New tasks start in noise; repeats carry it on. */
+    lane: text("lane").notNull().default("noise"),
     notes: text("notes"),
     repeat: text("repeat"), // "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | "every_2_days" (any every_N_days/weeks/months/years)
     /** A repeating task that's done: the next one it made, so un-ticking it can take that back. */

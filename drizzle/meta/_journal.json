@@ -246,6 +246,13 @@
       "when": 1792425999921,
       "tag": "0034_life_time_of_day",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792673313847,
+      "tag": "0035_work_lane",
+      "breakpoints": true
     }
   ]
 }

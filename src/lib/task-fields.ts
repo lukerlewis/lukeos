@@ -8,6 +8,8 @@ export const efforts = ["shallow", "focus", "deep"] as const;
 export const areas = ["work", "life"] as const;
 /** When in the day a Life task is for: its card in Life's Today. New ones go in Day. */
 export const timesOfDay = ["morning", "day", "evening"] as const;
+/** Which card a Work task sits in on Work's Today: Signal (what matters) or Noise. New ones go in Noise. */
+export const lanes = ["signal", "noise"] as const;
 export const repeats = ["daily", "weekdays", "weekly", "monthly", "yearly"] as const;
 export const repeatUnits = ["days", "weeks", "months", "years"] as const;
 /** A repeat with a gap: "every_2_days" is every other day, "every_3_weeks" every three weeks. */
@@ -19,6 +21,7 @@ export type Priority = (typeof priorities)[number];
 export type Effort = (typeof efforts)[number];
 export type Area = (typeof areas)[number];
 export type TimeOfDay = (typeof timesOfDay)[number];
+export type Lane = (typeof lanes)[number];
 export type RepeatUnit = (typeof repeatUnits)[number];
 export type Repeat = (typeof repeats)[number] | `every_${number}_${RepeatUnit}`;
 export type Bucket = (typeof buckets)[number];
@@ -32,6 +35,7 @@ export const areaLabel: Record<Area, string> = { work: "Work", life: "Life" };
 /** How many flames a priority shows. */
 export const priorityFlames: Record<Priority, number> = { low: 1, medium: 2, high: 3 };
 export const timeOfDayLabel: Record<TimeOfDay, string> = { morning: "Morning", day: "Day", evening: "Evening" };
+export const laneLabel: Record<Lane, string> = { signal: "Signal", noise: "Noise" };
 export const repeatLabel: Record<(typeof repeats)[number], string> = {
   daily: "Every day",
   weekdays: "Every weekday",
