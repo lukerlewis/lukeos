@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 
 const effortIcon = { shallow: Sailboat, focus: Target, deep: Headphones } as const;
 
-/** A focus type as a small grey label with its icon: Shallow (boat), Focus, Deep work (headphones). */
+/** A focus type as a small grey highlight with its icon, no stroke: Shallow (boat), Focus, Deep work (headphones). */
 export function FocusChip({ effort, className }: { effort: Effort; className?: string }) {
   const Icon = effortIcon[effort];
   return (
-    <span className={cn("tag h-6 px-[7px] text-meta", className)}>
+    <span className={cn("tag h-6 border-0 px-2 text-meta dark:bg-grey-200", className)}>
       <Icon className="size-3.5" aria-hidden />
       {effortLabel[effort]}
     </span>
