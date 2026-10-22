@@ -5,7 +5,7 @@ import { db, schema } from "@/db";
 import { bucketForDate } from "@/lib/board";
 import { addDays, isoDay, nextRepeat } from "@/lib/dates";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
-import { areas, buckets, efforts, oldEfforts, priorities, repeats, statuses, timesOfDay, type Area, type Bucket, type Effort, type Priority, type Repeat, type Status, type TimeOfDay, toRepeat } from "@/lib/task-fields";
+import { areas, buckets, efforts, oldEfforts, priorities, repeats, statuses, timesOfDay, lanes, type Area, type Bucket, type Effort, type Priority, type Repeat, type Status, type TimeOfDay, type Lane, toRepeat } from "@/lib/task-fields";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { syncMentions } from "./mentions";
 import { assertProject } from "./projects";
@@ -46,6 +46,8 @@ export type Task = {
   area: Area;
   /** Morning, day or evening: which card it's in on Life's Today. */
   timeOfDay: TimeOfDay;
+  /** Signal or noise: which card it's in on Work's Today. */
+  lane: Lane;
   notes: string | null;
   /** How often it comes back once done: daily, weekly or monthly. */
   repeat: Repeat | null;
@@ -72,6 +74,7 @@ function toTask(t: TaskRow, p: ProjectRow | null): Task {
     effort: t.effort as Effort | null,
     area: t.area as Area,
     timeOfDay: t.timeOfDay as TimeOfDay,
+    lane: t.lane as Lane,
     notes: t.notes,
     repeat: t.repeat as Repeat | null,
     project: p ? { id: p.id, name: p.name, color: p.color as ProjectColor, hex: colorHex(p.color) } : null,
@@ -178,6 +181,7 @@ export async function syncRepeats(ids: string[]) {
           area: t.area,
           // A morning task comes back in the morning.
           timeOfDay: t.timeOfDay,
+          lane: t.lane,
           notes: t.notes,
           repeat: t.repeat,
           createdByKind: t.createdByKind,
@@ -227,6 +231,11 @@ export const fields = {
     .enum(timesOfDay)
     .describe(
       "morning, day or evening: which of the three cards it sits in on Life's Today. New tasks go in day. Only Life uses it; repeating tasks keep it.",
+    ),
+  lane: z
+    .enum(lanes)
+    .describe(
+      "signal or noise: which of the two cards it sits in on Work's Today. Signal is the work that really matters; everything else is noise. New tasks go in noise. Only Work uses it; repeating tasks keep it.",
     ),
   notes: z.string().max(20_000).nullable().describe("Free text notes. null clears them."),
   repeat: z
@@ -291,6 +300,7 @@ export const taskOperations = {
       effort: fields.effort.optional(),
       area: fields.area.optional(),
       timeOfDay: fields.timeOfDay.optional(),
+      lane: fields.lane.optional(),
       notes: fields.notes.optional(),
       repeat: fields.repeat.optional(),
     }),
@@ -306,6 +316,7 @@ export const taskOperations = {
           projectId,
           area: (projectId && (await projectArea(projectId))) || input.area || "life",
           timeOfDay: input.timeOfDay ?? "day",
+          lane: input.lane ?? "noise",
           cardId: input.cardId ?? null,
           status,
           // A new task with a date starts in the list that date points to; after that, only Luke moves it.
@@ -328,7 +339,7 @@ export const taskOperations = {
   update_task: defineOperation({
     name: "update_task",
     description:
-      "Change any fields of a task: title, project, card, status, list (bucket), due date, priority, focus type (effort), area (work or life), time of day (Life's morning, day or evening), notes or how it repeats. Putting it in a project moves it to that project's area; changing the area of a task in a project of the other area takes it out of the project. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
+      "Change any fields of a task: title, project, card, status, list (bucket), due date, priority, focus type (effort), area (work or life), time of day (Life's morning, day or evening), lane (Work's signal or noise), notes or how it repeats. Putting it in a project moves it to that project's area; changing the area of a task in a project of the other area takes it out of the project. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
     input: z.object({
       id,
       title: fields.title.optional(),
@@ -341,6 +352,7 @@ export const taskOperations = {
       effort: fields.effort.optional(),
       area: fields.area.optional(),
       timeOfDay: fields.timeOfDay.optional(),
+      lane: fields.lane.optional(),
       notes: fields.notes.optional(),
       repeat: fields.repeat.optional(),
     }),

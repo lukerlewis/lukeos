@@ -31,6 +31,8 @@ import {
   statuses,
   statusLabel,
   timeOfDayLabel,
+  laneLabel,
+  lanes,
   timesOfDay,
   type Area,
   type Bucket,
@@ -39,6 +41,7 @@ import {
   type Repeat,
   type Status,
   type TimeOfDay,
+  type Lane,
 } from "@/lib/task-fields";
 import { MadeByLabel } from "./made-by";
 import { HighlightedText, SmartChips, useSmartEntry } from "./smart-chips";
@@ -55,6 +58,7 @@ type Draft = {
   effort: Effort | null;
   area: Area;
   timeOfDay: TimeOfDay;
+  lane: Lane;
   repeat: Repeat | null;
   notes: string;
   madeBy?: Task["madeBy"];
@@ -67,7 +71,7 @@ type Editor = {
   /** Open an existing task to view and change it. */
   openTask: (task: Task) => void;
   /** Start a new task, optionally in a project or list. */
-  newTask: (defaults?: Partial<Pick<Draft, "title" | "projectId" | "bucket" | "status" | "area" | "timeOfDay">>) => void;
+  newTask: (defaults?: Partial<Pick<Draft, "title" | "projectId" | "bucket" | "status" | "area" | "timeOfDay" | "lane">>) => void;
 };
 
 const EditorContext = createContext<Editor | null>(null);
@@ -104,6 +108,7 @@ export function TaskEditorProvider({
       effort: t.effort,
       area: t.area,
       timeOfDay: t.timeOfDay,
+      lane: t.lane,
       repeat: t.repeat,
       notes: t.notes ?? "",
       madeBy: t.madeBy,
@@ -137,6 +142,7 @@ export function TaskEditorProvider({
         effort: null,
         area: project?.area ?? defaults?.area ?? currentArea(),
         timeOfDay: defaults?.timeOfDay ?? "day",
+        lane: defaults?.lane ?? "noise",
         repeat: null,
         notes: "",
       });
@@ -227,6 +233,7 @@ function TaskDialog({
     effort: draft.effort,
     area: draft.area,
     timeOfDay: draft.timeOfDay,
+    lane: draft.lane,
     repeat,
     notes: draft.notes.trim() || null,
   };
@@ -412,6 +419,17 @@ function TaskDialog({
                   value={draft.timeOfDay}
                   onChange={(v) => set("timeOfDay", v)}
                   options={timesOfDay.map((x) => ({ value: x, label: timeOfDayLabel[x] }))}
+                />
+              </Field>
+            )}
+
+            {/* Work's Today is split into Signal and Noise. */}
+            {draft.area === "work" && (
+              <Field label="Card">
+                <Segmented
+                  value={draft.lane}
+                  onChange={(v) => set("lane", v)}
+                  options={lanes.map((x) => ({ value: x, label: laneLabel[x] }))}
                 />
               </Field>
             )}

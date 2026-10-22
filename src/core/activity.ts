@@ -42,6 +42,7 @@ const fieldLabel: Record<string, string> = {
   effort: "focus type",
   area: "area",
   timeOfDay: "time of day",
+  lane: "signal or noise",
   repeat: "repeat",
   notes: "notes",
   content: "text",
