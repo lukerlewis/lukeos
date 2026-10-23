@@ -65,6 +65,9 @@ type ListenContextValue = {
   /** Whether Next goes anywhere: there's a track after this one, or the list starts over. */
   hasNext: boolean;
   previous: () => void;
+  /** Straight to the track before, without restarting this one first (swiping the phone player bar). */
+  previousTrack: () => void;
+  hasPrevious: boolean;
   setSpeed: (speed: number) => void;
   setRepeat: (on: boolean) => void;
   setShuffle: (on: boolean) => void;
@@ -318,6 +321,9 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     // Like a music app: back to the start first, then the one before.
     if ((audioRef.current?.currentTime ?? 0) > 5 || !goTo(state.current.index - 1)) seek(0);
   }, [goTo, seek]);
+  const previousTrack = useCallback(() => {
+    if (!goTo(state.current.index - 1)) seek(0);
+  }, [goTo, seek]);
 
   const setShuffle = useCallback((on: boolean) => {
     const { queue: q, index: i } = state.current;
@@ -550,6 +556,8 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     next,
     hasNext: index < queue.length - 1 || loops(queue),
     previous,
+    previousTrack,
+    hasPrevious: index > 0,
     setSpeed,
     setRepeat: setRepeatState,
     setShuffle,

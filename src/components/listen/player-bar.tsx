@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Music, Pause, Play, Repeat1, RotateCcw, RotateCw, Shuffle, SkipBack, SkipForward, X } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { DESKTOP_PLAYER_BAR_ON } from "@/lib/features";
 import { playClock, SPEEDS } from "@/lib/listen";
@@ -29,6 +29,7 @@ const speedLabel = (s: number) => `${s}×`;
 export function PlayerBar() {
   const listen = useListen();
   const [open, setOpen] = useState(false);
+  const swipe = useTrackSwipe();
   if (!listen?.current) return null;
   const { current, loading, position, duration } = listen;
   const progress = duration ? Math.min(1, position / duration) : 0;
@@ -37,14 +38,25 @@ export function PlayerBar() {
     <>
       {/* Phones */}
       <div className="fixed inset-x-5 bottom-[calc(env(safe-area-inset-bottom)+4.25rem)] z-20 md:hidden">
-        <div className="relative flex items-center gap-3 overflow-hidden rounded-xl border border-stroke bg-card py-2 pr-1.5 pl-2">
-          <button type="button" onClick={() => setOpen(true)} className="flex min-w-0 grow items-center gap-3 text-left" aria-label="Open the player">
-            <Artwork episode={current} className="size-10" />
-            <span className="min-w-0 grow">
-              <span className="block truncate text-preview font-medium">{current.title}</span>
-              {current.show && <span className="block truncate text-meta text-muted-foreground">{current.show}</span>}
-            </span>
-          </button>
+        <div
+          {...swipe.handlers}
+          className="relative flex touch-pan-y items-center gap-3 overflow-hidden rounded-xl border border-stroke bg-card py-2 pr-1.5 pl-2"
+        >
+          <div className="min-w-0 grow overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="flex w-full min-w-0 items-center gap-3 text-left"
+              style={swipe.style}
+              aria-label="Open the player"
+            >
+              <Artwork episode={current} className="size-10" />
+              <span className="min-w-0 grow">
+                <span className="block truncate text-preview font-medium">{current.title}</span>
+                {current.show && <span className="block truncate text-meta text-muted-foreground">{current.show}</span>}
+              </span>
+            </button>
+          </div>
           <PlayButton />
           <span className="absolute inset-x-0 bottom-0 h-0.5 bg-muted" aria-hidden>
             <span className="block h-full bg-foreground" style={{ width: `${progress * 100}%` }} />
@@ -90,6 +102,101 @@ export function PlayerBar() {
       {loading && <span className="sr-only">Loading</span>}
     </>
   );
+}
+
+/** Past this far (or a quick flick), letting go changes track. */
+const SWIPE_DISTANCE = 64;
+const SLIDE_MS = 180;
+
+/**
+ * Swipe the phone player bar: left for the next track, right for the one
+ * before. Only sideways drags count, so scrolling and tapping work as before;
+ * with nothing that way the track stretches a little and springs back.
+ */
+function useTrackSwipe() {
+  const listen = useListen();
+  const [offset, setOffset] = useState(0);
+  const [animate, setAnimate] = useState(false);
+  const drag = useRef<{ id: number; x: number; y: number; t: number; sideways: boolean | null } | null>(null);
+  const swiped = useRef(false);
+
+  const reduceMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const canGo = (dx: number) => (dx < 0 ? !!listen?.hasNext : !!listen?.hasPrevious);
+
+  const settle = () => {
+    setAnimate(true);
+    setOffset(0);
+  };
+
+  const change = (dx: number, width: number) => {
+    const go = dx < 0 ? listen!.next : listen!.previousTrack;
+    if (reduceMotion()) {
+      go();
+      setAnimate(false);
+      setOffset(0);
+      return;
+    }
+    // Slide this track off, then bring the new one in from the other side.
+    setAnimate(true);
+    setOffset(Math.sign(dx) * width);
+    window.setTimeout(() => {
+      go();
+      setAnimate(false);
+      setOffset(-Math.sign(dx) * width);
+      requestAnimationFrame(() => requestAnimationFrame(settle));
+    }, SLIDE_MS);
+  };
+
+  const handlers = {
+    onPointerDown(e: React.PointerEvent<HTMLElement>) {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp, sideways: null };
+      swiped.current = false;
+    },
+    onPointerMove(e: React.PointerEvent<HTMLElement>) {
+      const d = drag.current;
+      if (!d || d.id !== e.pointerId) return;
+      const dx = e.clientX - d.x;
+      const dy = e.clientY - d.y;
+      if (d.sideways === null) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        d.sideways = Math.abs(dx) > Math.abs(dy);
+        if (!d.sideways) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        swiped.current = true;
+        setAnimate(false);
+      }
+      if (!d.sideways) return;
+      setOffset(canGo(dx) ? dx : dx / 4);
+    },
+    onPointerUp(e: React.PointerEvent<HTMLElement>) {
+      const d = drag.current;
+      drag.current = null;
+      if (!d?.sideways || d.id !== e.pointerId) return;
+      const dx = e.clientX - d.x;
+      const fast = Math.abs(dx) > 24 && Math.abs(dx) / Math.max(1, e.timeStamp - d.t) > 0.5;
+      if ((Math.abs(dx) > SWIPE_DISTANCE || fast) && canGo(dx)) change(dx, e.currentTarget.offsetWidth);
+      else settle();
+    },
+    onPointerCancel() {
+      drag.current = null;
+      settle();
+    },
+    // A swipe ends over the bar, which would otherwise count as a tap and open the player.
+    onClickCapture(e: React.MouseEvent) {
+      if (!swiped.current) return;
+      swiped.current = false;
+      e.preventDefault();
+      e.stopPropagation();
+    },
+  };
+
+  const style: React.CSSProperties = {
+    transform: offset ? `translateX(${offset}px)` : undefined,
+    transition: animate ? `transform ${SLIDE_MS}ms ease-out` : undefined,
+  };
+
+  return { handlers, style };
 }
 
 function IconButton({
