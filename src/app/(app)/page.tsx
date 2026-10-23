@@ -38,7 +38,9 @@ export default async function DashboardPage() {
     getTimeZone(),
     isProjectArea(area) ? listProjects() : [],
   ]);
-  const areaProjects = projects.filter((p) => p.area === area).map((p) => ({ id: p.id, name: p.name, color: p.color, hex: colorHex(p.color) }));
+  const areaProjects = projects
+    .filter((p) => p.area === area)
+    .map((p) => ({ id: p.id, name: p.name, color: p.color, hex: colorHex(p.color) }));
   const doneTags = scratch ? await doneMentionIds("note", scratch.id) : [];
 
   // The Scratch pad and Agents cards, beside the Today card. Agents is on ice for now.
@@ -108,7 +110,8 @@ export default async function DashboardPage() {
             tasks.filter((t) => t.bucket === "today"),
             view.sort,
           )}
-          projects={areaProjects} area={area}
+          projects={areaProjects}
+          area={area}
           canAdd={view.show.includes("todo")}
           today={date}
           side={side}
