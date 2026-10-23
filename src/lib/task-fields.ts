@@ -4,11 +4,13 @@ export const statuses = ["todo", "doing", "done"] as const;
 export const priorities = ["low", "medium", "high"] as const;
 /** The kind of attention a task needs (shown as "Focus type"). Stored in the task's `effort` field. */
 export const efforts = ["shallow", "focus", "deep"] as const;
-/** Work or Life. Every task and project is in one; Work holds Luke's work projects. */
-export const areas = ["work", "life"] as const;
+/** Aya, Work or Life. Every task and project is in one; Aya and Work hold projects, Life has none. */
+export const areas = ["aya", "work", "life"] as const;
+/** The areas that have projects, and whose Today is split into Signal and Noise. */
+export const projectAreas = ["aya", "work"] as const;
 /** When in the day a Life task is for: its card in Life's Today. New ones go in Day. */
 export const timesOfDay = ["morning", "day", "evening"] as const;
-/** Which card a Work task sits in on Work's Today: Signal (what matters) or Noise. New ones go in Noise. */
+/** Which card an Aya or Work task sits in on its Today: Signal (what matters) or Noise. New ones go in Noise. */
 export const lanes = ["signal", "noise"] as const;
 export const repeats = ["daily", "weekdays", "weekly", "monthly", "yearly"] as const;
 export const repeatUnits = ["days", "weeks", "months", "years"] as const;
@@ -20,6 +22,7 @@ export type Status = (typeof statuses)[number];
 export type Priority = (typeof priorities)[number];
 export type Effort = (typeof efforts)[number];
 export type Area = (typeof areas)[number];
+export type ProjectArea = (typeof projectAreas)[number];
 export type TimeOfDay = (typeof timesOfDay)[number];
 export type Lane = (typeof lanes)[number];
 export type RepeatUnit = (typeof repeatUnits)[number];
@@ -31,7 +34,11 @@ export const priorityLabel: Record<Priority, string> = { low: "Low", medium: "Me
 export const effortLabel: Record<Effort, string> = { shallow: "Shallow", focus: "Focus", deep: "Deep work" };
 /** Older names for the focus types, still accepted from anything that sends them. */
 export const oldEfforts: Record<string, Effort> = { small: "shallow", medium: "focus", large: "deep" };
-export const areaLabel: Record<Area, string> = { work: "Work", life: "Life" };
+export const areaLabel: Record<Area, string> = { aya: "Aya", work: "Work", life: "Life" };
+/** Aya and Work work the same way (projects, focus type, Signal and Noise); Life keeps it simple. */
+export function isProjectArea(area: Area): area is ProjectArea {
+  return area !== "life";
+}
 /** How many flames a priority shows. */
 export const priorityFlames: Record<Priority, number> = { low: 1, medium: 2, high: 3 };
 export const timeOfDayLabel: Record<TimeOfDay, string> = { morning: "Morning", day: "Day", evening: "Evening" };

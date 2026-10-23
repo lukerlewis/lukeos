@@ -51,7 +51,7 @@ export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   color: text("color").notNull(),
-  /** "work" or "life". Always work for now (Life has no projects). Its tasks are in the same one. */
+  /** "aya" or "work" (Life has no projects). Its tasks are in the same one. */
   area: text("area").notNull().default("work"),
   ...madeBy,
 });
@@ -138,11 +138,11 @@ export const tasks = pgTable(
     bucket: text("bucket").notNull().default("today"),
     priority: text("priority"), // "low" | "medium" | "high"
     effort: text("effort"), // focus type: "shallow" | "focus" | "deep"
-    /** "work" or "life". A task in a project is always in its project's one. */
+    /** "aya", "work" or "life". A task in a project is always in its project's one. */
     area: text("area").notNull().default("life"),
     /** Life's Today is split into "morning" | "day" | "evening". Repeats carry it on. */
     timeOfDay: text("time_of_day").notNull().default("day"),
-    /** Work's Today is split into "signal" | "noise". New tasks start in noise; repeats carry it on. */
+    /** Aya's and Work's Today are split into "signal" | "noise". New tasks start in noise; repeats carry it on. */
     lane: text("lane").notNull().default("noise"),
     notes: text("notes"),
     repeat: text("repeat"), // "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | "every_2_days" (any every_N_days/weeks/months/years)

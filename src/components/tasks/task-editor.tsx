@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import {
   areaLabel,
   areas,
+  isProjectArea,
   bucketLabel,
   buckets,
   effortLabel,
@@ -385,7 +386,12 @@ function TaskDialog({
                   if (draft.projectId && projects.find((p) => p.id === draft.projectId)?.area !== v) set("projectId", null);
                   set("area", v);
                 }}
-                options={areas.map((a) => ({ value: a, label: areaLabel[a] }))}
+                // Aya is for the computer; a phone only shows it for a task already in Aya.
+                options={areas.map((a) => ({
+                  value: a,
+                  label: areaLabel[a],
+                  className: a === "aya" && draft.area !== "aya" ? "hidden md:inline-flex" : undefined,
+                }))}
               />
             </Field>
 
@@ -423,8 +429,8 @@ function TaskDialog({
               </Field>
             )}
 
-            {/* Work's Today is split into Signal and Noise. */}
-            {draft.area === "work" && (
+            {/* Aya's and Work's Today are split into Signal and Noise. */}
+            {isProjectArea(draft.area) && (
               <Field label="Card">
                 <Segmented
                   value={draft.lane}
@@ -468,8 +474,8 @@ function TaskDialog({
               </select>
             </Field>
 
-            {/* Focus type is for Work; Life keeps it simple. One already set still shows, so it can be cleared. */}
-            {(draft.area === "work" || draft.effort) && (
+            {/* Focus type is for Aya and Work; Life keeps it simple. One already set still shows, so it can be cleared. */}
+            {(isProjectArea(draft.area) || draft.effort) && (
               <Field label="Focus">
                 <Segmented
                   value={draft.effort ?? "none"}
@@ -501,8 +507,8 @@ function TaskDialog({
               />
             </Field>
 
-            {/* Projects are all in Work, so Life tasks don't get the choice. */}
-            {(draft.area === "work" || draft.projectId) && (
+            {/* Projects are all in Aya or Work, so Life tasks don't get the choice. */}
+            {(isProjectArea(draft.area) || draft.projectId) && (
               <Field label="Project">
                 <select
                   value={draft.projectId ?? ""}

@@ -179,7 +179,7 @@ function undoFor(
       const p = before[0] as Output<"get_project">;
       return {
         label: `editing project ${quote(p.name)}`,
-        run: async () => void (await send("update_project", { id: p.id, name: p.name, color: p.color })),
+        run: async () => void (await send("update_project", { id: p.id, name: p.name, color: p.color, area: p.area })),
       };
     }
     default:

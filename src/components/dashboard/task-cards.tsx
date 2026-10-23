@@ -26,7 +26,7 @@ import { Card } from "@/components/ui/card";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
-/** The task field that says which card a task is in: Life's time of day, or Work's signal or noise. */
+/** The task field that says which card a task is in: Life's time of day, or Aya's and Work's signal or noise. */
 type CardField = "timeOfDay" | "lane";
 
 // The card under the pointer or finger wins; failing that, the one the row overlaps most.

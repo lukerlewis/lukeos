@@ -3,7 +3,7 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { projectColorNames, type ProjectColor } from "@/lib/project-colors";
-import type { Area } from "@/lib/task-fields";
+import { projectAreas, type ProjectArea } from "@/lib/task-fields";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
 import { listArtifacts } from "./artifacts";
 import { listDocuments } from "./documents";
@@ -18,8 +18,8 @@ export type Project = {
   id: string;
   name: string;
   color: ProjectColor;
-  /** Always Work for now: Life has no projects (kept in case it gets them later). Its tasks are in the same one. */
-  area: Area;
+  /** Aya or Work: Life has no projects (kept in case it gets them later). Its tasks are in the same one. */
+  area: ProjectArea;
   openTasks: number;
   doneTasks: number;
   madeBy: ReturnType<typeof madeByOf>;
@@ -27,6 +27,7 @@ export type Project = {
 };
 
 const colorInput = z.enum(projectColorNames).describe(`One of: ${projectColorNames.join(", ")}.`);
+const areaInput = z.enum(projectAreas).describe("aya or work: which of the two the project sits in on the dashboard (Life has no projects).");
 
 /** Live (not in Trash) projects, oldest first, with task counts. */
 export async function listProjects(): Promise<Project[]> {
@@ -45,7 +46,7 @@ export async function listProjects(): Promise<Project[]> {
     id: project.id,
     name: project.name,
     color: project.color as ProjectColor,
-    area: project.area as Area,
+    area: project.area as ProjectArea,
     openTasks,
     doneTasks,
     madeBy: madeByOf(project),
@@ -108,15 +109,16 @@ export const projectOperations = {
 
   create_project: defineOperation({
     name: "create_project",
-    description: "Create a project (projects are always in Work). If no colour is given, an unused one is picked.",
+    description: "Create a project in Aya or Work (Work if area is left out). If no colour is given, an unused one is picked.",
     input: z.object({
       name: z.string().trim().min(1).max(200),
       color: colorInput.optional(),
+      area: areaInput.optional(),
     }),
-    run: async ({ name, color }, { actor }) => {
+    run: async ({ name, color, area }, { actor }) => {
       const [row] = await db
         .insert(projects)
-        .values({ name, color: color ?? (await nextColor()), area: "work", ...madeByColumns(actor) })
+        .values({ name, color: color ?? (await nextColor()), area: area ?? "work", ...madeByColumns(actor) })
         .returning({ id: projects.id });
       return getProject(row.id);
     },
@@ -124,22 +126,29 @@ export const projectOperations = {
 
   update_project: defineOperation({
     name: "update_project",
-    description: "Rename a project or change its colour.",
+    description: "Rename a project, change its colour, or move it between Aya and Work (its tasks move with it).",
     input: z.object({
       id,
       name: z.string().trim().min(1).max(200).optional(),
       color: colorInput.optional(),
+      area: areaInput.optional(),
     }),
-    run: async ({ id, name, color }) => {
+    run: async ({ id, name, color, area }) => {
       await assertProject(id);
-      await db
-        .update(projects)
-        .set({
-          ...(name !== undefined && { name }),
-          ...(color !== undefined && { color }),
-          updatedAt: new Date(),
-        })
-        .where(eq(projects.id, id));
+      const now = new Date();
+      await db.transaction(async (tx) => {
+        await tx
+          .update(projects)
+          .set({
+            ...(name !== undefined && { name }),
+            ...(color !== undefined && { color }),
+            ...(area !== undefined && { area }),
+            updatedAt: now,
+          })
+          .where(eq(projects.id, id));
+        // A task in a project is always in its project's area.
+        if (area !== undefined) await tx.update(tasks).set({ area, updatedAt: now }).where(eq(tasks.projectId, id));
+      });
       return getProject(id);
     },
   }),

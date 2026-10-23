@@ -41,7 +41,7 @@ export const bulkOperations = {
   update_tasks: defineOperation({
     name: "update_tasks",
     description:
-      "Change several tasks at once: their project, list (bucket), status, due date, priority, focus type (effort), area (work or life), time of day (Life's morning, day or evening) or lane (Work's signal or noise). The same changes go to every task listed. Fields left out stay as they are; null clears one.",
+      "Change several tasks at once: their project, list (bucket), status, due date, priority, focus type (effort), area (aya, work or life), time of day (Life's morning, day or evening) or lane (Aya's or Work's signal or noise). The same changes go to every task listed. Fields left out stay as they are; null clears one.",
     input: z.object({
       ids: ids("tasks"),
       projectId: fields.projectId.optional(),
