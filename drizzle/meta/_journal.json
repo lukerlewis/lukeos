@@ -253,6 +253,13 @@
       "when": 1792673313847,
       "tag": "0035_work_lane",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792768221522,
+      "tag": "0036_aya_area",
+      "breakpoints": true
     }
   ]
 }

@@ -5,18 +5,21 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { Segmented } from "@/components/ui/segmented";
 import { showToast } from "@/components/shell/toast";
 import { inBackground, trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { projectColorNames, projectColors, type ProjectColor } from "@/lib/project-colors";
+import { areaLabel, projectAreas, type Area, type ProjectArea } from "@/lib/task-fields";
 import { cn } from "@/lib/utils";
 
-type Existing = { id: string; name: string; color: ProjectColor };
+type Existing = { id: string; name: string; color: ProjectColor; area: Area };
 
 export function ProjectDialog({ project, onClose }: { project?: Existing; onClose: () => void }) {
   const router = useRouter();
   const [name, setName] = useState(project?.name ?? "");
   const [color, setColor] = useState<ProjectColor | undefined>(project?.color);
+  const [area, setArea] = useState<ProjectArea>(project?.area === "aya" ? "aya" : "work");
   const [error, setError] = useState<string | null>(null);
 
   // The box closes at once and the project saves behind it.
@@ -26,14 +29,14 @@ export function ProjectDialog({ project, onClose }: { project?: Existing; onClos
     if (!clean) return setError("Give the project a name.");
     onClose();
     if (project) {
-      if (clean === project.name && color === project.color) return;
-      void inBackground(() => op("update_project", { id: project.id, name: clean, color }), {
+      if (clean === project.name && color === project.color && area === project.area) return;
+      void inBackground(() => op("update_project", { id: project.id, name: clean, color, area }), {
         then: () => router.refresh(),
         failure: "Couldn't save the project.",
       });
     } else {
       // A new project opens once it's made, since its page needs it to exist.
-      void inBackground(() => op("create_project", { name: clean, color }), {
+      void inBackground(() => op("create_project", { name: clean, color, area }), {
         then: (created) => {
           showToast("Project added");
           router.push(`/projects/${created.id}`);
@@ -70,6 +73,10 @@ export function ProjectDialog({ project, onClose }: { project?: Existing; onClos
             className="h-10 rounded-lg border bg-card px-3 text-body border-stroke-strong outline-none md:text-control focus-visible:border-ring"
           />
         </label>
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="pb-1.5 text-xs font-medium text-muted-foreground">Area</legend>
+          <Segmented value={area} onChange={setArea} options={projectAreas.map((a) => ({ value: a, label: areaLabel[a] }))} />
+        </fieldset>
         <fieldset className="flex flex-col gap-1.5">
           <legend className="pb-1.5 text-xs font-medium text-muted-foreground">Colour</legend>
           <div className="flex flex-wrap gap-2">

@@ -223,10 +223,10 @@ export const fields = {
   priority: z.enum(priorities).nullable().describe("low, medium or high. null clears it."),
   effort: z
     .preprocess((v) => (typeof v === "string" && oldEfforts[v]) || v, z.enum(efforts).nullable())
-    .describe('Focus type, the kind of attention it needs: shallow, focus or deep (deep work). Shown on Work tasks. null clears it.'),
+    .describe('Focus type, the kind of attention it needs: shallow, focus or deep (deep work). Shown on Aya and Work tasks. null clears it.'),
   area: z
     .enum(areas)
-    .describe("work or life. A task in a project always goes in its project's one, so this only matters for tasks with no project."),
+    .describe("aya, work or life. A task in a project always goes in its project's one, so this only matters for tasks with no project."),
   timeOfDay: z
     .enum(timesOfDay)
     .describe(
@@ -235,7 +235,7 @@ export const fields = {
   lane: z
     .enum(lanes)
     .describe(
-      "signal or noise: which of the two cards it sits in on Work's Today. Signal is the work that really matters; everything else is noise. New tasks go in noise. Only Work uses it; repeating tasks keep it.",
+      "signal or noise: which of the two cards it sits in on Aya's or Work's Today. Signal is the work that really matters; everything else is noise. New tasks go in noise. Only Aya and Work use it; repeating tasks keep it.",
     ),
   notes: z.string().max(20_000).nullable().describe("Free text notes. null clears them."),
   repeat: z
@@ -267,7 +267,7 @@ export const taskOperations = {
       "List tasks, soonest due first. By default only open tasks (To do and Doing) from every project. Filter by project, status, list (bucket) or a due date range.",
     input: z.object({
       projectId: z.uuid().nullable().optional().describe("Only this project's tasks. null means tasks with no project."),
-      area: fields.area.optional().describe("Only Work or only Life tasks."),
+      area: fields.area.optional().describe("Only Aya, only Work or only Life tasks."),
       status: z.enum(statuses).optional(),
       bucket: z.enum(buckets).optional().describe("Only tasks in this list: today, tomorrow, this_week or later."),
       includeDone: z.boolean().optional().describe("Include done tasks too. Ignored if status is set."),
@@ -288,7 +288,7 @@ export const taskOperations = {
   create_task: defineOperation({
     name: "create_task",
     description:
-      "Create a task. Only the title is required; it starts as To do and goes in Life unless area or a Work project says otherwise. Leave out bucket and it goes in the list its due date points to (Today if late, today or no date; Tomorrow; This week; Later); pass bucket to choose the list yourself. Set repeat for something that comes back every day, weekday, week, month or year, or every few of them (every_2_days, every_3_weeks).",
+      "Create a task. Only the title is required; it starts as To do and goes in Life unless area or a project (Aya or Work) says otherwise. Leave out bucket and it goes in the list its due date points to (Today if late, today or no date; Tomorrow; This week; Later); pass bucket to choose the list yourself. Set repeat for something that comes back every day, weekday, week, month or year, or every few of them (every_2_days, every_3_weeks).",
     input: z.object({
       title: fields.title,
       projectId: fields.projectId.optional(),
@@ -339,7 +339,7 @@ export const taskOperations = {
   update_task: defineOperation({
     name: "update_task",
     description:
-      "Change any fields of a task: title, project, card, status, list (bucket), due date, priority, focus type (effort), area (work or life), time of day (Life's morning, day or evening), lane (Work's signal or noise), notes or how it repeats. Putting it in a project moves it to that project's area; changing the area of a task in a project of the other area takes it out of the project. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
+      "Change any fields of a task: title, project, card, status, list (bucket), due date, priority, focus type (effort), area (aya, work or life), time of day (Life's morning, day or evening), lane (Aya's or Work's signal or noise), notes or how it repeats. Putting it in a project moves it to that project's area; changing the area of a task in a project of the other area takes it out of the project. Fields left out stay as they are; null clears one. Marking a repeating task done adds the next one.",
     input: z.object({
       id,
       title: fields.title.optional(),

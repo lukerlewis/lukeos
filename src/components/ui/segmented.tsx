@@ -11,7 +11,7 @@ export function Segmented<T extends string>({
 }: {
   value: T;
   onChange: (value: T) => void;
-  options: { value: T; label: React.ReactNode; title?: string }[];
+  options: { value: T; label: React.ReactNode; title?: string; className?: string }[];
   className?: string;
 }) {
   return (
@@ -28,6 +28,7 @@ export function Segmented<T extends string>({
           className={cn(
             "inline-flex h-9 grow items-center justify-center gap-1.5 rounded-[8px] px-2.5 text-preview font-medium text-muted-foreground",
             value === o.value && "seg-on text-foreground",
+            o.className,
           )}
         >
           {o.label}

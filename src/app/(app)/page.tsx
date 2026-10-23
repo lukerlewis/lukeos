@@ -20,23 +20,25 @@ import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { DASHBOARD_AGENTS_ON } from "@/lib/features";
 import { colorHex } from "@/lib/project-colors";
-import { AREA_COOKIE, defaultAreaFor, parseArea } from "@/lib/area";
+import { AREA_COOKIE, areaFor } from "@/lib/area";
 import { sortTasks } from "@/lib/board";
+import { isProjectArea } from "@/lib/task-fields";
 
 export default async function DashboardPage() {
   const view = await getDashboardView();
   const board = view.layout === "board";
-  // Work or Life is picked on each device: computers start on Work, phones on Life.
-  const area = parseArea((await cookies()).get(AREA_COOKIE)?.value) ?? defaultAreaFor((await headers()).get("user-agent"));
+  // Aya, Work or Life is picked on each device: computers start on Work, phones on Life.
+  // Aya is for computers only.
+  const area = areaFor((await cookies()).get(AREA_COOKIE)?.value, (await headers()).get("user-agent"));
   const [{ date, tasks }, activity, scratch, timeZone, projects] = await Promise.all([
     boardTasks("when", undefined, view.show, area),
     // The board is only the board; the other cards are on the Today tab.
     board || !DASHBOARD_AGENTS_ON ? [] : listActivity({ limit: 8 }),
     board ? null : getScratchPad(),
     getTimeZone(),
-    area === "work" ? listProjects() : [],
+    isProjectArea(area) ? listProjects() : [],
   ]);
-  const workProjects = projects.map((p) => ({ id: p.id, name: p.name, color: p.color, hex: colorHex(p.color) }));
+  const areaProjects = projects.filter((p) => p.area === area).map((p) => ({ id: p.id, name: p.name, color: p.color, hex: colorHex(p.color) }));
   const doneTags = scratch ? await doneMentionIds("note", scratch.id) : [];
 
   // The Scratch pad and Agents cards, beside the Today card. Agents is on ice for now.
@@ -94,19 +96,19 @@ export default async function DashboardPage() {
         <DashboardControls view={view} area={area} />
       </div>
       {board ? (
-        area === "work" ? (
-          <WorkBoard tasks={tasks} projects={workProjects} today={date} show={view.show} sort={view.sort} />
+        isProjectArea(area) ? (
+          <WorkBoard tasks={tasks} projects={areaProjects} area={area} today={date} show={view.show} sort={view.sort} />
         ) : (
           <Board tasks={tasks} view="when" today={date} show={view.show} sort={view.sort} fill />
         )
-      ) : area === "work" ? (
-        // Work puts its project chips above both columns, so the Today card lines up with the Scratch pad.
+      ) : isProjectArea(area) ? (
+        // Aya and Work put their project chips above both columns, so the Today card lines up with the Scratch pad.
         <WorkToday
           tasks={sortTasks(
             tasks.filter((t) => t.bucket === "today"),
             view.sort,
           )}
-          projects={workProjects}
+          projects={areaProjects} area={area}
           canAdd={view.show.includes("todo")}
           today={date}
           side={side}

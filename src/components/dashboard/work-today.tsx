@@ -4,7 +4,7 @@ import { AudioWaveform, Signal, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import type { Task } from "@/core/tasks";
 import type { DashboardSort } from "@/lib/dashboard";
-import { laneLabel, lanes, type Lane, type Status } from "@/lib/task-fields";
+import { areaLabel, laneLabel, lanes, type Lane, type ProjectArea, type Status } from "@/lib/task-fields";
 import { Board } from "@/components/board/board";
 import { QuickAdd, TaskList, type CellProject } from "@/components/tasks/task-list";
 import { cn } from "@/lib/utils";
@@ -15,19 +15,21 @@ const laneIcon: Record<Lane, LucideIcon> = { signal: Signal, noise: AudioWavefor
 const chip = "inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-meta";
 
 /**
- * Work's Today: chips to show only some work projects (any number at once), then two cards, Signal (what really matters)
+ * Aya's or Work's Today (both work the same way): chips to show only some of its projects (any number at once), then two cards, Signal (what really matters)
  * on top and Noise. New tasks go in Noise; drag one to the other card to move it (press and hold on a phone).
  * Computers show the tasks as a table (focus type, priority, name, project); phones get plain rows without chips.
  */
 export function WorkToday({
   tasks,
   projects,
+  area,
   canAdd,
   today,
   side,
 }: {
   tasks: Task[];
   projects: CellProject[];
+  area: ProjectArea;
   canAdd: boolean;
   today: string;
   /** The cards beside the Today card (Scratch pad, Agents), lined up with its top. */
@@ -37,7 +39,7 @@ export function WorkToday({
 
   return (
     <div className="flex flex-col gap-3">
-      <ProjectFilter tasks={tasks} projects={projects} picked={filter.picked} onPick={filter.setPicked} />
+      <ProjectFilter tasks={tasks} projects={projects} area={area} picked={filter.picked} onPick={filter.setPicked} />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <TaskCards tasks={filter.shown} field="lane" labels={laneLabel}>
           {(items) => (
@@ -59,7 +61,7 @@ export function WorkToday({
                     {canAdd && (
                       <QuickAdd
                         bucket="today"
-                        area="work"
+                        area={area}
                         lane={lane}
                         projectId={filter.only}
                         today={today}
@@ -78,16 +80,18 @@ export function WorkToday({
   );
 }
 
-/** Work's Board: the same project chips above it, then the columns. */
+/** Aya's or Work's Board: the same project chips above it, then the columns. */
 export function WorkBoard({
   tasks,
   projects,
+  area,
   today,
   show,
   sort,
 }: {
   tasks: Task[];
   projects: CellProject[];
+  area: ProjectArea;
   today: string;
   show: Status[];
   sort: DashboardSort;
@@ -95,7 +99,7 @@ export function WorkBoard({
   const filter = useProjectFilter(tasks, projects);
   return (
     <div className="flex grow flex-col gap-3">
-      <ProjectFilter tasks={tasks} projects={projects} picked={filter.picked} onPick={filter.setPicked} />
+      <ProjectFilter tasks={tasks} projects={projects} area={area} picked={filter.picked} onPick={filter.setPicked} />
       <Board
         tasks={filter.shown}
         view="when"
@@ -110,7 +114,7 @@ export function WorkBoard({
 }
 
 /**
- * The picked projects (none picked shows all work) and the tasks they leave showing.
+ * The picked projects (none picked shows the whole area) and the tasks they leave showing.
  * New tasks only get a project when exactly one is picked.
  */
 function useProjectFilter(tasks: Task[], projects: CellProject[]) {
@@ -126,11 +130,13 @@ function useProjectFilter(tasks: Task[], projects: CellProject[]) {
 function ProjectFilter({
   tasks,
   projects,
+  area,
   picked,
   onPick,
 }: {
   tasks: Task[];
   projects: CellProject[];
+  area: ProjectArea;
   picked: string[];
   onPick: (ids: string[]) => void;
 }) {
@@ -139,14 +145,14 @@ function ProjectFilter({
   if (chips.length === 0) return null;
   const all = picked.length === 0;
   return (
-    <div role="group" aria-label="Work projects" className="hidden flex-wrap items-center gap-1.5 md:flex">
+    <div role="group" aria-label={`${areaLabel[area]} projects`} className="hidden flex-wrap items-center gap-1.5 md:flex">
       <button
         type="button"
         aria-pressed={all}
         onClick={() => onPick([])}
         className={cn(chip, all ? "bg-selected font-medium text-ink" : "border bg-card text-muted-foreground hover:bg-muted")}
       >
-        All work
+        All {area === "work" ? "work" : areaLabel[area]}
         <span className="text-muted-foreground">{tasks.length}</span>
       </button>
       {chips.map((p) => {

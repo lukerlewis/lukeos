@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 const pill = "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[8px] px-3 text-preview font-medium whitespace-nowrap";
 
 /**
- * The switches at the top of the dashboard: Work or Life, the Today list or the Board, a
- * Filters menu for which statuses show and a Sort menu for the Today list. Work or Life is
+ * The switches at the top of the dashboard: Aya, Work or Life (Aya on computers only), the Today list or the Board, a
+ * Filters menu for which statuses show and a Sort menu for the Today list. The area is
  * remembered on this device; the rest is saved, so it's the same next time and on other devices.
  */
 export function DashboardControls({ view, area }: { view: DashboardView; area: Area }) {
@@ -67,10 +67,11 @@ export function DashboardControls({ view, area }: { view: DashboardView; area: A
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Choice<Area>
-        label="Work or Life"
+        label="Aya, Work or Life"
         value={shownArea}
         onChange={pickArea}
-        options={areas.map((a) => ({ value: a, label: areaLabel[a] }))}
+        // Aya is for the computer; phones only get Work and Life.
+        options={areas.map((a) => ({ value: a, label: areaLabel[a], className: a === "aya" ? "hidden md:inline-flex" : undefined }))}
       />
       <Choice<DashboardLayout>
         label="View"
@@ -356,18 +357,18 @@ function Choice<T extends string>({
   label: string;
   value: T;
   onChange: (value: T) => void;
-  options: { value: T; label: string; icon?: React.ComponentType<{ className?: string }> }[];
+  options: { value: T; label: string; icon?: React.ComponentType<{ className?: string }>; className?: string }[];
 }) {
   return (
     <div role="radiogroup" aria-label={label} className="inline-flex gap-0.5 seg-track rounded-lg p-[3px]">
-      {options.map(({ value: v, label, icon: Icon }) => (
+      {options.map(({ value: v, label, icon: Icon, className }) => (
         <button
           key={v}
           type="button"
           role="radio"
           aria-checked={value === v}
           onClick={() => value !== v && onChange(v)}
-          className={cn(pill, "text-muted-foreground", value === v && "seg-on text-foreground")}
+          className={cn(pill, "text-muted-foreground", value === v && "seg-on text-foreground", className)}
         >
           {Icon && <Icon className="size-3.5" aria-hidden />}
           {label}
