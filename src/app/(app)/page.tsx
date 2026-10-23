@@ -77,8 +77,22 @@ export default async function DashboardPage() {
   );
 
   return (
-    <Page title="Dashboard" eyebrow={<TodayDate />} heading={<Greeting />} addNew fill={board && "phone"}>
-      <DashboardControls view={view} area={area} />
+    <Page
+      title="Dashboard"
+      eyebrow={<TodayDate />}
+      heading={<Greeting />}
+      addNew
+      fill={board && "phone"}
+      // Computers put the switches beside the greeting; phones keep them on their own row below it.
+      actions={
+        <div className="hidden md:block">
+          <DashboardControls view={view} area={area} />
+        </div>
+      }
+    >
+      <div className="md:hidden">
+        <DashboardControls view={view} area={area} />
+      </div>
       {board ? (
         area === "work" ? (
           <WorkBoard tasks={tasks} projects={workProjects} today={date} show={view.show} sort={view.sort} />
