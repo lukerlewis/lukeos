@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,8 @@ export type CellOption<T extends string> = { value: T | null; label: React.React
 /**
  * A table cell you click to pick its value from a small menu, like a Notion property.
  * The menu floats over the page, so a card's rounded edge doesn't cut it off.
+ * It opens below the cell, or above it when there's more room there, and
+ * scrolls if it's still taller than the space it has.
  */
 export function CellMenu<T extends string>({
   label,
@@ -28,9 +30,15 @@ export function CellMenu<T extends string>({
   children?: React.ReactNode;
   className?: string;
 }) {
-  const [at, setAt] = useState<{ top: number; left: number } | null>(null);
+  const [at, setAt] = useState<{ top: number; left: number; up: boolean; maxHeight?: number } | null>(null);
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
+
+  // Once the menu is drawn, measure it and keep it on screen.
+  useLayoutEffect(() => {
+    if (!at || at.maxHeight !== undefined || !menu.current || !button.current) return;
+    setAt(place(button.current.getBoundingClientRect(), menu.current));
+  }, [at]);
 
   useEffect(() => {
     if (!at) return;
@@ -55,7 +63,7 @@ export function CellMenu<T extends string>({
   function toggle() {
     if (at) return setAt(null);
     const r = button.current!.getBoundingClientRect();
-    setAt({ top: r.bottom + 4, left: r.left });
+    setAt({ top: r.bottom + GAP, left: r.left, up: false });
   }
 
   return (
@@ -77,8 +85,11 @@ export function CellMenu<T extends string>({
             ref={menu}
             role="menu"
             aria-label={label}
-            style={{ top: at.top, left: at.left }}
-            className="motion-pop fixed z-50 flex min-w-44 origin-top-left flex-col gap-0.5 rounded-xl border border-stroke bg-card p-1"
+            style={{ top: at.top, left: at.left, maxHeight: at.maxHeight, visibility: at.maxHeight === undefined ? "hidden" : undefined }}
+            className={cn(
+              "motion-pop fixed z-50 flex min-w-44 flex-col gap-0.5 overflow-y-auto overscroll-contain rounded-xl border border-stroke bg-card p-1",
+              at.up ? "origin-bottom-left" : "origin-top-left",
+            )}
           >
             {options.map((o) => {
               const on = o.value === value;
@@ -93,7 +104,7 @@ export function CellMenu<T extends string>({
                     if (!on) onPick(o.value);
                   }}
                   className={cn(
-                    "press-tint flex h-9 items-center gap-2 rounded-lg px-2.5 text-left text-preview hover:bg-muted",
+                    "press-tint flex h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-left text-preview hover:bg-muted",
                     on && "bg-selected font-medium text-ink hover:bg-selected",
                   )}
                 >
@@ -107,4 +118,26 @@ export function CellMenu<T extends string>({
         )}
     </>
   );
+}
+
+const GAP = 4;
+/** Space kept clear between the menu and the screen's edge. */
+const EDGE = 8;
+
+/** Where the menu goes: below the cell if it fits, otherwise on whichever side has more room. */
+function place(cell: DOMRect, el: HTMLElement) {
+  const vv = window.visualViewport;
+  const screenH = vv?.height ?? window.innerHeight;
+  const screenW = vv?.width ?? window.innerWidth;
+  const top0 = vv?.offsetTop ?? 0;
+  const left0 = vv?.offsetLeft ?? 0;
+  const h = el.offsetHeight;
+  const w = el.offsetWidth;
+  const below = top0 + screenH - cell.bottom - GAP - EDGE;
+  const above = cell.top - top0 - GAP - EDGE;
+  const up = h > below && above > below;
+  const maxHeight = Math.max(0, Math.min(h, up ? above : below));
+  const top = up ? cell.top - GAP - maxHeight : cell.bottom + GAP;
+  const left = Math.max(left0 + EDGE, Math.min(cell.left, left0 + screenW - w - EDGE));
+  return { top, left, up, maxHeight };
 }
