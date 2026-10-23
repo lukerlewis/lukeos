@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Check, Loader2, Plus, Search, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { showToast } from "@/components/shell/toast";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -65,8 +65,29 @@ function PodcastPicker() {
   const [shows, setShows] = useState<Show[] | null>(null);
   const [show, setShow] = useState<ShowEpisodes | null>(null);
   const [filter, setFilter] = useState("");
+  /** Matches for the filter from the show's whole feed, not just the episodes loaded. */
+  const [found, setFound] = useState<{ feedUrl: string; query: string; result: ShowEpisodes } | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [added, setAdded] = useState<Set<string>>(new Set());
+
+  const feedUrl = show?.show.feedUrl;
+  const filterQuery = filter.trim();
+  useEffect(() => {
+    if (!feedUrl || !filterQuery) return;
+    let stale = false;
+    const timer = setTimeout(async () => {
+      try {
+        const result = await op("get_podcast", { feedUrl, query: filterQuery, limit: 200 });
+        if (!stale) setFound({ feedUrl, query: filterQuery, result });
+      } catch (err) {
+        if (!stale) showToast((err as Error).message);
+      }
+    }, 400);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [feedUrl, filterQuery]);
 
   async function find(e: React.FormEvent) {
     e.preventDefault();
@@ -94,6 +115,7 @@ function PodcastPicker() {
       const out = await op("get_podcast", { feedUrl: s.feedUrl });
       setShow({ ...out, show: { ...out.show, artworkUrl: out.show.artworkUrl ?? s.artworkUrl, title: s.title || out.show.title } });
       setFilter("");
+      setFound(null);
     } catch (err) {
       showToast((err as Error).message);
     } finally {
@@ -117,7 +139,10 @@ function PodcastPicker() {
   }
 
   const words = filter.toLowerCase().split(/\s+/).filter(Boolean);
-  const episodes = show?.episodes.filter((e) => words.every((w) => `${e.title} ${e.description}`.toLowerCase().includes(w))) ?? [];
+  const searched = filterQuery && found && found.feedUrl === feedUrl && found.query === filterQuery ? found.result : null;
+  // Until the whole feed answers, narrow the episodes already loaded.
+  const episodes = searched?.episodes ?? show?.episodes.filter((e) => words.every((w) => `${e.title} ${e.description}`.toLowerCase().includes(w))) ?? [];
+  const searching = Boolean(filterQuery) && !searched;
   const linked = show && "linked" in show ? show.linked : null;
 
   return (
@@ -184,7 +209,11 @@ function PodcastPicker() {
             className="h-11 rounded-lg border border-stroke-strong bg-card px-3 text-control"
           />
           <ul className="-mx-2 flex max-h-[55dvh] flex-col overflow-y-auto">
-            {episodes.length === 0 && <li className="py-6 text-center text-meta text-muted-foreground">No episodes match.</li>}
+            {episodes.length === 0 && (
+              <li className="flex justify-center py-6 text-meta text-muted-foreground">
+                {searching ? <Loader2 className="size-4 animate-spin" aria-label="Searching" /> : "No episodes match."}
+              </li>
+            )}
             {episodes.map((e) => {
               const isAdded = Boolean(e.addedId) || added.has(e.guid);
               return (
@@ -205,6 +234,11 @@ function PodcastPicker() {
                 </li>
               );
             })}
+            {searched && searched.total > searched.episodes.length && (
+              <li className="py-3 text-center text-meta text-muted-foreground">
+                Showing {searched.episodes.length} of {searched.total}. Add more words to narrow it down.
+              </li>
+            )}
           </ul>
         </>
       )}
