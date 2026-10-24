@@ -7,8 +7,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: { "/api/documents/**": ["./src/assets/fonts/*.ttf"] },
   experimental: {
     // Keep screens you've just seen for 30 seconds, so going back to them
-    // is instant. Any change you make refreshes them straight away.
-    staleTimes: { dynamic: 30 },
+    // is instant. Main screens loaded ahead of time (the tab bar and sidebar)
+    // keep for 2 minutes. Any change you make refreshes them straight away.
+    staleTimes: { dynamic: 30, static: 120 },
   },
   headers: async () => [
     // Always check for a newer service worker, rather than keep an old one.

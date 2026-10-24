@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { Suspense } from "react";
 import { CommandMenuProvider } from "@/components/command/command-menu";
 import { PullToRefresh } from "@/components/shell/pull-to-refresh";
+import { KeepFresh } from "@/components/shell/keep-fresh";
 import { PushListener } from "@/components/shell/push-listener";
 import { SIDEBAR_COOKIE } from "@/components/shell/nav";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -51,6 +52,7 @@ async function AppShell({ children, sidebarCollapsed }: { children: React.ReactN
   // Things over 30 days in Trash are deleted for good as the app is used.
   after(() => purgeExpiredTrash().catch((err) => console.error("[trash] purge failed", err)));
   const today = todayIn(timeZone);
+  const renderedAt = madeAt();
   const menuProjects = projects.map((p) => ({ id: p.id, name: p.name, hex: colorHex(p.color) }));
 
   return (
@@ -60,6 +62,7 @@ async function AppShell({ children, sidebarCollapsed }: { children: React.ReactN
         <ListenProvider>
         <TimeZoneSync saved={timeZone} />
         <PushListener />
+        <KeepFresh renderedAt={renderedAt} />
         <PullToRefresh />
         <div className="flex min-h-dvh md:h-dvh">
           <Sidebar
@@ -107,4 +110,9 @@ function ShellLoading({ sidebarCollapsed }: { sidebarCollapsed: boolean }) {
       <TabBar />
     </div>
   );
+}
+
+/** When this page was made, so a copy saved on the phone knows it needs refreshing. */
+function madeAt() {
+  return Date.now();
 }
