@@ -101,7 +101,7 @@ export default async function DashboardPage() {
         isProjectArea(area) ? (
           <WorkBoard tasks={tasks} projects={areaProjects} area={area} today={date} show={view.show} sort={view.sort} />
         ) : (
-          <Board tasks={tasks} view="when" today={date} show={view.show} sort={view.sort} fill />
+          <Board tasks={tasks} view="when" today={date} show={view.show} sort={view.sort} area={area} fill />
         )
       ) : isProjectArea(area) ? (
         // Aya and Work put their project chips above both columns, so the Today card lines up with the Scratch pad.
@@ -112,6 +112,7 @@ export default async function DashboardPage() {
           )}
           projects={areaProjects}
           area={area}
+          show={view.show}
           canAdd={view.show.includes("todo")}
           today={date}
           side={side}
@@ -123,6 +124,7 @@ export default async function DashboardPage() {
             tasks={tasks.filter((t) => t.bucket === "today")}
             today={date}
             sort={view.sort}
+            show={view.show}
             canAdd={view.show.includes("todo")}
           />
           {side}

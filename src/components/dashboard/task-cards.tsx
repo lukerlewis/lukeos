@@ -23,6 +23,7 @@ import type { Task } from "@/core/tasks";
 import { showToast } from "@/components/shell/toast";
 import { TaskRow, type CellProject } from "@/components/tasks/task-list";
 import { Card } from "@/components/ui/card";
+import { useLiveTasks } from "@/lib/live-tasks";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
@@ -43,10 +44,13 @@ export function TaskCards<F extends CardField>({
   tasks,
   field,
   labels,
+  fits,
   children,
 }: {
   tasks: Task[];
   field: F;
+  /** Which tasks belong here, so one just added or changed shows (or leaves) at once. */
+  fits: (task: Task) => boolean;
   /** Each card's name, by its value of the field. */
   labels: Record<Task[F], string>;
   children: (tasks: Task[]) => React.ReactNode;
@@ -55,7 +59,8 @@ export function TaskCards<F extends CardField>({
   // A fixed id keeps dnd-kit's screen reader ids the same on the server and in the browser.
   const dndId = useId();
   const [, startTransition] = useTransition();
-  const [items, move] = useOptimistic(tasks, (state, { id, value }: { id: string; value: Task[F] }) =>
+  const live = useLiveTasks(tasks, fits);
+  const [items, move] = useOptimistic(live, (state, { id, value }: { id: string; value: Task[F] }) =>
     state.map((t) => (t.id === id ? { ...t, [field]: value } : t)),
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);

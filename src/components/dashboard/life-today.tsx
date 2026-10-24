@@ -5,7 +5,7 @@ import type { Task } from "@/core/tasks";
 import { QuickAdd } from "@/components/tasks/task-list";
 import { sortTasks } from "@/lib/board";
 import type { DashboardSort } from "@/lib/dashboard";
-import { timeOfDayLabel, timesOfDay, type TimeOfDay } from "@/lib/task-fields";
+import { timeOfDayLabel, timesOfDay, type Status, type TimeOfDay } from "@/lib/task-fields";
 import { DraggableRow, DropCard, TaskCards } from "./task-cards";
 
 const timeIcon: Record<TimeOfDay, LucideIcon> = { morning: Coffee, day: Sun, evening: Moon };
@@ -18,16 +18,24 @@ export function LifeToday({
   tasks,
   today,
   sort,
+  show,
   canAdd,
 }: {
   tasks: Task[];
   today: string;
   sort: DashboardSort;
+  /** The statuses the dashboard shows. */
+  show: Status[];
   /** "Add a task" makes a To do task, so it only shows while To do tasks do. */
   canAdd: boolean;
 }) {
   return (
-    <TaskCards tasks={tasks} field="timeOfDay" labels={timeOfDayLabel}>
+    <TaskCards
+      tasks={tasks}
+      field="timeOfDay"
+      labels={timeOfDayLabel}
+      fits={(t) => t.area === "life" && t.bucket === "today" && show.includes(t.status)}
+    >
       {(items) => (
         <div className="flex flex-col gap-6">
           {timesOfDay.map((time) => {

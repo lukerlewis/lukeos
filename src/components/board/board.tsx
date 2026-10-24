@@ -30,7 +30,8 @@ import type { DashboardSort } from "@/lib/dashboard";
 import { friendlyDay } from "@/lib/dates";
 import { op } from "@/lib/ops-client";
 import { useWithoutHidden } from "@/lib/background";
-import { repeatName, type Bucket, type Status } from "@/lib/task-fields";
+import { isUnsaved, useLiveTasks } from "@/lib/live-tasks";
+import { repeatName, type Area, type Bucket, type Status } from "@/lib/task-fields";
 import { askClaudeAbout } from "@/lib/ask-claude";
 import { cn, pause } from "@/lib/utils";
 
@@ -58,6 +59,7 @@ export function Board({
   show,
   sort,
   fill,
+  area,
 }: {
   tasks: Task[];
   view: BoardView;
@@ -70,13 +72,20 @@ export function Board({
   sort?: DashboardSort;
   /** Phones: stretch down to the bottom of the screen. */
   fill?: boolean;
+  /** The dashboard's area, so a task just added or moved there shows at once. */
+  area?: Area;
 }) {
   const router = useRouter();
   // A fixed id keeps dnd-kit's screen reader ids the same on the server and in the browser.
   const dndId = useId();
   const { newTask } = useTaskEditor();
   const [, startTransition] = useTransition();
-  const [all, applyChange] = useOptimistic(tasks, (state, { id, changes }: Change) =>
+  // A task just added or changed in the task box shows (or leaves) at once.
+  const live = useLiveTasks(
+    tasks,
+    (t) => (!projectId || t.project?.id === projectId) && (!area || t.area === area) && (!show || show.includes(t.status)),
+  );
+  const [all, applyChange] = useOptimistic(live, (state, { id, changes }: Change) =>
     state.map((t) => (t.id === id ? { ...t, ...changes } : t)),
   );
   // A task just deleted leaves at once.
@@ -255,7 +264,7 @@ function DraggableCard({
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: task.id });
 
   return (
-    <li ref={setNodeRef} className={cn(isDragging && "opacity-40")} {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}>
+    <li ref={setNodeRef} className={cn(isDragging && "opacity-40", isUnsaved(task.id) && "pointer-events-none opacity-60")} {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}>
       <CardBody
         task={task}
         today={today}
