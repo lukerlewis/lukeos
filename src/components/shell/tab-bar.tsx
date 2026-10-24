@@ -25,6 +25,8 @@ export function TabBar({ unreadMessages = 0 }: { unreadMessages?: number }) {
           <Link
             key={href}
             href={href}
+            // Load each tab's screen in full ahead of time, so tapping it shows straight away.
+            prefetch
             aria-current={active ? "page" : undefined}
             className={cn(
               "press flex min-h-14 grow basis-0 flex-col items-center gap-1 pt-2.5 pb-2 text-xs font-medium text-muted-foreground",

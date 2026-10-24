@@ -182,7 +182,7 @@ function SidebarContents({
             item.href === "/listen" ? (
               // Hovering Music shows the player's controls over the end of its row.
               <div key={item.href} className="group/music relative">
-                <NavLink {...item} active={isActive(pathname, item.href)} />
+                <NavLink {...item} active={isActive(pathname, item.href)} prefetch />
                 <MiniControls className="absolute inset-y-0 right-1.5 hidden items-center gap-0.5 group-hover/music:flex group-has-[:focus-visible]/music:flex" />
               </div>
             ) : (
@@ -190,6 +190,7 @@ function SidebarContents({
                 key={item.href}
                 {...item}
                 active={isActive(pathname, item.href)}
+                prefetch
                 count={counts[item.href]}
                 aside={item.href === "/focus" ? running : null}
               />
@@ -304,6 +305,7 @@ function NavLink({
   active,
   count,
   aside,
+  prefetch,
 }: {
   href: string;
   label: string;
@@ -312,10 +314,13 @@ function NavLink({
   count?: number;
   /** Quiet text at the end of the row, e.g. a running timer. */
   aside?: string | null;
+  /** Load the whole screen ahead of time, so opening it is instant. For the main screens. */
+  prefetch?: boolean;
 }) {
   return (
     <Link
       href={href}
+      prefetch={prefetch || null}
       aria-current={active ? "page" : undefined}
       className={cn(
         "group pressable flex h-11 items-center gap-3 rounded-lg px-3 text-control text-muted-foreground hover:bg-muted",
