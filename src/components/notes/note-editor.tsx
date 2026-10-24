@@ -367,6 +367,7 @@ export function Toolbar({ editor, onPhoto, uploading }: { editor: Editor | null;
           }
         : null,
   });
+  const top = useScreenTop();
   if (!editor) return <div className="h-10" />;
   const run = () => editor.chain().focus();
 
@@ -394,7 +395,8 @@ export function Toolbar({ editor, onPhoto, uploading }: { editor: Editor | null;
     <div
       role="toolbar"
       aria-label="Formatting"
-      className="sticky top-0 z-[5] -mx-2 flex gap-0.5 overflow-x-auto border-b bg-background/95 px-2 py-1.5 backdrop-blur md:top-0"
+      style={{ top }}
+      className="sticky top-0 z-[5] -mx-2 flex gap-0.5 overflow-x-auto border-b bg-background/95 px-2 py-1.5 backdrop-blur"
     >
       {tools.map(({ label, icon: Icon, on, act }) => (
         <button
@@ -424,4 +426,28 @@ export function Toolbar({ editor, onPhoto, uploading }: { editor: Editor | null;
       </button>}
     </div>
   );
+}
+
+/**
+ * Where the top of the visible screen is, so the bar stays pinned there. On
+ * iPhones the page slides up under the keyboard while typing, which would
+ * carry a plain sticky bar off the top of the screen.
+ */
+function useScreenTop() {
+  const [top, setTop] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    // Computers scroll the screen area, not the page, so only phones need this.
+    const phone = window.matchMedia("(max-width: 767px)");
+    const update = () => setTop(phone.matches ? Math.max(0, Math.round(vv.offsetTop)) : 0);
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+  return top;
 }
