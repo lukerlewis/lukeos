@@ -15,6 +15,7 @@ import {
   type DashboardSort,
   type DashboardView,
 } from "@/lib/dashboard";
+import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { pushUndo } from "@/lib/undo";
 import { areaLabel, areas, statuses, statusLabel, type Area, type Status } from "@/lib/task-fields";
@@ -27,17 +28,44 @@ const pill = "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[8px] px-3 t
  * Filters menu for which statuses show and a Sort menu for the Today list. The area is
  * remembered on this device; the rest is saved, so it's the same next time and on other devices.
  */
-export function DashboardControls({ view, area }: { view: DashboardView; area: Area }) {
+export function DashboardControls({
+  view,
+  area,
+  onArea,
+  onLayout,
+}: {
+  view: DashboardView;
+  area: Area;
+  /** The screen switches area and tab itself, straight away; these save the choice behind it. */
+  onArea: (area: Area) => void;
+  onLayout: (layout: DashboardLayout) => void;
+}) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [current, setCurrent] = useOptimistic(view);
-  const [shownArea, setShownArea] = useOptimistic(area);
+
+  // Refreshing afterwards keeps the saved copy of this screen up to date, for coming back to it.
+  const refreshBehind = () => startTransition(() => router.refresh());
 
   function pickArea(next: Area) {
     rememberArea(next);
-    startTransition(() => {
-      setShownArea(next);
-      router.refresh();
+    onArea(next);
+    refreshBehind();
+  }
+
+  function pickLayout(layout: DashboardLayout, undoTo = current.layout) {
+    onLayout(layout);
+    void inBackground(() => op("set_dashboard_view", { layout }), {
+      then: () => {
+        pushUndo("changing the dashboard", async () => {
+          onLayout(undoTo);
+          await op("set_dashboard_view", { layout: undoTo });
+          refreshBehind();
+        });
+        refreshBehind();
+      },
+      failed: () => onLayout(undoTo),
+      failure: "Couldn't save that.",
     });
   }
 
@@ -68,15 +96,15 @@ export function DashboardControls({ view, area }: { view: DashboardView; area: A
     <div className="flex flex-wrap items-center gap-2">
       <Choice<Area>
         label="Aya, Work or Life"
-        value={shownArea}
+        value={area}
         onChange={pickArea}
         // Aya is for the computer; phones only get Work and Life.
         options={areas.map((a) => ({ value: a, label: areaLabel[a], className: a === "aya" ? "hidden md:inline-flex" : undefined }))}
       />
       <Choice<DashboardLayout>
         label="View"
-        value={current.layout}
-        onChange={(layout) => change({ layout })}
+        value={view.layout}
+        onChange={(layout) => pickLayout(layout)}
         options={[
           { value: "list", label: "Today", icon: List },
           { value: "board", label: "Board", icon: SquareKanban },

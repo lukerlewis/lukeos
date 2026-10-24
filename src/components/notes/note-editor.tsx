@@ -25,6 +25,7 @@ import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Note } from "@/core/notes";
 import { trashInBackground } from "@/lib/background";
+import { clearEarlyTitle, earlyTitle } from "@/lib/early-title";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { ClaudeTag } from "./claude-tag";
@@ -132,7 +133,9 @@ export function NoteEditor({
 }) {
   const router = useRouter();
   const { state, queue, flush } = useAutosave(note.id);
-  const [title, setTitle] = useState(note.title);
+  // A new note's title may have been typed while its page was opening.
+  const [early] = useState(() => (note.title ? undefined : earlyTitle(note.id)));
+  const [title, setTitle] = useState(early ?? note.title);
   const [projectId, setProjectId] = useState(note.project?.id ?? null);
   const [folderId, setFolderId] = useState(note.folder?.id ?? null);
   const [pinned, setPinned] = useState(note.pinned);
@@ -159,7 +162,7 @@ export function NoteEditor({
   // worth keeping, so it's deleted when Luke leaves it (for good, so Trash
   // doesn't fill up with empty notes). The short wait
   // skips React's practice unmount in development.
-  const hasText = useRef({ title: !!note.title.trim(), content: !!note.content.trim() });
+  const hasText = useRef({ title: !!(early ?? note.title).trim(), content: !!note.content.trim() });
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -221,7 +224,17 @@ export function NoteEditor({
   }, [editor]);
 
   useEffect(() => {
-    if (autoFocus) titleRef.current?.focus();
+    if (early) {
+      queue({ title: early });
+      clearEarlyTitle(note.id);
+    }
+    if (!autoFocus || !titleRef.current) return;
+    // Carry on where the early title left off.
+    const end = titleRef.current.value.length;
+    titleRef.current.focus();
+    titleRef.current.setSelectionRange(end, end);
+    // Only when the note first opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoFocus]);
 
   // Goes back at once; the delete (and any last save) finishes behind the scenes.
