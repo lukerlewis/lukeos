@@ -7,6 +7,7 @@ import type { DashboardSort } from "@/lib/dashboard";
 import { areaLabel, laneLabel, lanes, type Lane, type ProjectArea, type Status } from "@/lib/task-fields";
 import { Board } from "@/components/board/board";
 import { QuickAdd, TaskList, type CellProject } from "@/components/tasks/task-list";
+import { useLiveTasks } from "@/lib/live-tasks";
 import { cn } from "@/lib/utils";
 import { DraggableRow, DropCard, TaskCards } from "./task-cards";
 
@@ -23,6 +24,7 @@ export function WorkToday({
   tasks,
   projects,
   area,
+  show,
   canAdd,
   today,
   side,
@@ -30,18 +32,22 @@ export function WorkToday({
   tasks: Task[];
   projects: CellProject[];
   area: ProjectArea;
+  /** The statuses the dashboard shows. */
+  show: Status[];
   canAdd: boolean;
   today: string;
   /** The cards beside the Today card (Scratch pad, Agents), lined up with its top. */
   side: React.ReactNode;
 }) {
-  const filter = useProjectFilter(tasks, projects);
+  // A task just added or changed in the task box shows (or leaves) at once.
+  const fits = (t: Task) => t.area === area && t.bucket === "today" && show.includes(t.status);
+  const filter = useProjectFilter(useLiveTasks(tasks, fits), projects);
 
   return (
     <div className="flex flex-col gap-3">
       <ProjectFilter tasks={tasks} projects={projects} area={area} picked={filter.picked} onPick={filter.setPicked} />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <TaskCards tasks={filter.shown} field="lane" labels={laneLabel}>
+        <TaskCards tasks={filter.shown} field="lane" labels={laneLabel} fits={fits}>
           {(items) => (
             <div className="flex flex-col gap-6">
               {lanes.map((lane) => {
@@ -107,6 +113,7 @@ export function WorkBoard({
         show={show}
         sort={sort}
         projectId={filter.only ?? undefined}
+        area={area}
         fill
       />
     </div>

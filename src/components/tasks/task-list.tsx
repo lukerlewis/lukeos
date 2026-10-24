@@ -10,6 +10,7 @@ import { friendlyDay, nextRepeat } from "@/lib/dates";
 import { SmartChips, useSmartEntry } from "./smart-chips";
 import { op } from "@/lib/ops-client";
 import { useHidden } from "@/lib/background";
+import { isUnsaved, useLiveTasks } from "@/lib/live-tasks";
 import {
   bucketLabel,
   effortLabel,
@@ -42,7 +43,7 @@ export type CellProject = NonNullable<Task["project"]>;
 
 /** A list of task rows, e.g. inside a Card. */
 export function TaskList({
-  tasks,
+  tasks: saved,
   today,
   showProject = true,
   columns = false,
@@ -65,6 +66,8 @@ export function TaskList({
   row?: (task: Task) => React.ReactNode;
 }) {
   useColumnWidths(columns);
+  // Edits made in the task box show at once.
+  const tasks = useLiveTasks(saved);
   if (tasks.length === 0 && empty) return <>{empty}</>;
   return (
     <>
@@ -257,7 +260,7 @@ export function TaskRow({
     <li
       {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}
       {...li}
-      className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0", li?.className)}
+      className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0", li?.className, isUnsaved(task.id) && "pointer-events-none opacity-60")}
       style={columns ? { gridTemplateColumns: tableColumns(showProject) } : undefined}
     >
       <button

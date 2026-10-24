@@ -15,7 +15,9 @@ import { currentArea } from "@/lib/area";
 import { addDays, endOfWeek } from "@/lib/dates";
 import { showToast } from "@/components/shell/toast";
 import { inBackground, trashInBackground } from "@/lib/background";
+import { forgetTask, showTask } from "@/lib/live-tasks";
 import { op } from "@/lib/ops-client";
+import { colorHex } from "@/lib/project-colors";
 import { cn } from "@/lib/utils";
 import {
   areaLabel,
@@ -64,6 +66,8 @@ type Draft = {
   notes: string;
   madeBy?: Task["madeBy"];
   createdAt?: Task["createdAt"];
+  /** The task as it was opened, so lists can show changes before they're saved. */
+  base?: Task;
   /** Why the last try to add it failed, when it's reopened to try again. */
   error?: string;
 };
@@ -114,6 +118,7 @@ export function TaskEditorProvider({
       notes: t.notes ?? "",
       madeBy: t.madeBy,
       createdAt: t.createdAt,
+      base: t,
     });
   }, []);
 
@@ -255,6 +260,8 @@ function TaskDialog({
     savedKey.current = key;
     changed.current = true;
     const { title, ...rest } = JSON.parse(key) as typeof fields;
+    // Lists show the change at once, before it's saved.
+    if (initial.base) showTask(asTask(JSON.parse(key), projects, initial.base));
     // A cleared name isn't saved; the rest still is.
     const update = title ? { id, title, ...rest } : { id, ...rest };
     saving.current = saving.current
@@ -264,7 +271,7 @@ function TaskDialog({
         (err) => (closed.current ? showToast(`Couldn't save the task. ${(err as Error).message}`) : setError((err as Error).message)),
       );
     return saving.current;
-  }, [initial.id, fieldsKey]);
+  }, [initial.id, initial.base, fieldsKey, projects]);
 
   useEffect(() => {
     if (isNew || fieldsKey === savedKey.current) return;
@@ -292,12 +299,20 @@ function TaskDialog({
     // The box closes at once; the task saves behind it and a toast says when it's in.
     const keep = { ...draft, dueDate, repeat, bucket };
     onClose();
+    // It shows in its list at once, faded, until it's saved.
+    const unsaved = asTask(fields, projects);
+    showTask(unsaved);
     void inBackground(() => op("create_task", fields), {
-      then: () => {
+      then: (task) => {
+        forgetTask(unsaved.id);
+        showTask(task);
         showToast(bucket === "today" ? "Task added" : `Task added to ${bucketLabel[bucket]}`);
         router.refresh();
       },
-      failed: (err) => onFailed({ ...keep, error: `Not added yet: ${err.message}` }),
+      failed: (err) => {
+        forgetTask(unsaved.id);
+        onFailed({ ...keep, error: `Not added yet: ${err.message}` });
+      },
       failure: "Couldn't add the task.",
     });
   }
@@ -626,4 +641,33 @@ function Chip({ active, onClick, children }: { active?: boolean; onClick: () => 
 function repeatChoices(current: Repeat | null): Repeat[] {
   const list: Repeat[] = [...repeats.slice(0, 2), "every_2_days", ...repeats.slice(2, 3), "every_2_weeks", ...repeats.slice(3)];
   return current && !list.includes(current) ? [...list, current] : list;
+}
+
+let unsavedCount = 0;
+
+/**
+ * The task as lists should show it: the box's fields on top of how it was opened,
+ * or, for a new one, a stand-in until the saved task arrives.
+ */
+function asTask(
+  fields: Omit<Task, "id" | "project" | "cardId" | "completedAt" | "createdAt" | "updatedAt" | "madeBy" | "title"> & { title: string; projectId: string | null },
+  projects: Project[],
+  base?: Task,
+): Task {
+  const { projectId, ...rest } = fields;
+  const project = projects.find((p) => p.id === projectId);
+  const now = new Date();
+  return {
+    id: base?.id ?? `unsaved-${++unsavedCount}`,
+    cardId: base?.cardId ?? null,
+    createdAt: base?.createdAt ?? now,
+    updatedAt: base?.updatedAt ?? now,
+    madeBy: base?.madeBy ?? { kind: "user", name: null, routine: null },
+    ...rest,
+    title: fields.title || base?.title || "",
+    // A task in a project is in that project's area.
+    area: project?.area ?? fields.area,
+    project: project ? { id: project.id, name: project.name, color: project.color, hex: colorHex(project.color) } : null,
+    completedAt: fields.status === "done" ? (base?.completedAt ?? now) : null,
+  };
 }
