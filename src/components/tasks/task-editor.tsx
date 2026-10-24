@@ -444,8 +444,8 @@ function TaskDialog({
               </Field>
             )}
 
-            {/* Aya's and Work's Today are split into Signal and Noise. */}
-            {isProjectArea(draft.area) && (
+            {/* Work's Today is split into Signal and Noise. */}
+            {draft.area === "work" && (
               <Field label="Card">
                 <Segmented
                   value={draft.lane}

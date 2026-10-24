@@ -235,7 +235,7 @@ export const fields = {
   lane: z
     .enum(lanes)
     .describe(
-      "signal or noise: which of the two cards it sits in on Aya's or Work's Today. Signal is the work that really matters; everything else is noise. New tasks go in noise. Only Aya and Work use it; repeating tasks keep it.",
+      "signal or noise: which of the two cards it sits in on Work's Today. Signal is the work that really matters; everything else is noise. New tasks go in noise. Only Work uses it (Aya's Today is one card); repeating tasks keep it.",
     ),
   notes: z.string().max(20_000).nullable().describe("Free text notes. null clears them."),
   repeat: z
