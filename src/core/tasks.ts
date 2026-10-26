@@ -237,7 +237,7 @@ export const fields = {
     .describe(
       "signal or noise: which of the two cards it sits in on Work's Today. Signal is the work that really matters; everything else is noise. New tasks go in noise. Only Work uses it (Aya's Today is one card); repeating tasks keep it.",
     ),
-  notes: z.string().max(20_000).nullable().describe("Free text notes. null clears them."),
+  notes: z.string().max(20_000).nullable().describe("Notes in Markdown: paragraphs, headings, lists, checklists (- [ ]), links. null clears them."),
   repeat: z
     .string()
     .nullable()

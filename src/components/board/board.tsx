@@ -260,11 +260,11 @@ function DraggableCard({
   showProject: boolean;
   onCycle: () => void;
 }) {
-  const { openTask } = useTaskEditor();
+  const { openTask, openId } = useTaskEditor();
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: task.id });
 
   return (
-    <li ref={setNodeRef} className={cn(isDragging && "opacity-40", isUnsaved(task.id) && "pointer-events-none opacity-60")} {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}>
+    <li ref={setNodeRef} className={cn(isDragging && "opacity-40", openId === task.id && "md:[&>*]:border-ink!", isUnsaved(task.id) && "pointer-events-none opacity-60")} {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}>
       <CardBody
         task={task}
         today={today}

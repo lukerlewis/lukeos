@@ -207,7 +207,7 @@ export function TaskRow({
   li?: React.ComponentProps<"li">;
 }) {
   const router = useRouter();
-  const { openTask } = useTaskEditor();
+  const { openTask, openId } = useTaskEditor();
   const [, startTransition] = useTransition();
   const [status, setOptimisticStatus] = useOptimistic(task.status);
   // Counts taps on the circle, so the tick animates afresh each time.
@@ -260,7 +260,7 @@ export function TaskRow({
     <li
       {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}
       {...li}
-      className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0", li?.className, isUnsaved(task.id) && "pointer-events-none opacity-60")}
+      className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0", li?.className, openId === task.id && "md:bg-selected", isUnsaved(task.id) && "pointer-events-none opacity-60")}
       style={columns ? { gridTemplateColumns: tableColumns(showProject) } : undefined}
     >
       <button
