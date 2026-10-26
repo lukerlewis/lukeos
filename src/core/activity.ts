@@ -408,6 +408,13 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       const n = ((r.updated as unknown[]) ?? []).length;
       return { summary: `Tagged ${n} ${n === 1 ? "thing" : "things"} in Inspiration` };
     }
+    case "add_link":
+    case "update_link":
+    case "delete_link": {
+      const l = r as { title?: string | null; url?: string; projectId?: string };
+      const verb = tool === "add_link" ? "Added link" : tool === "update_link" ? "Edited link" : "Removed link";
+      return { summary: `${verb} ${quote(l.title || l.url)}`, item: l.projectId ? { type: "project", id: l.projectId } : undefined };
+    }
     case "delete_inspiration":
       return { summary: `Moved ${quote(before)} from Inspiration to Trash`, item: { type: "inspiration", id: String(input.id) } };
     case "set_check_in_times":

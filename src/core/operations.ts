@@ -13,6 +13,7 @@ import { defineOperation, OperationError, type Actor, type Operation } from "./d
 import { focusOperations } from "./focus";
 import { folderOperations } from "./folders";
 import { inspirationOperations } from "./inspiration";
+import { linkOperations } from "./links";
 import { listenOperations } from "./listen";
 import { fromClaudeOperations } from "./from-claude";
 import { mentionOperations } from "./mentions";
@@ -63,6 +64,7 @@ export const operations = {
   ...portfolioOperations,
   ...whiteboardOperations,
   ...inspirationOperations,
+  ...linkOperations,
   ...artifactOperations,
   ...commentOperations,
   ...mentionOperations,

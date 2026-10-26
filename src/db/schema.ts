@@ -720,6 +720,26 @@ export const focusSessions = pgTable(
   (t) => [index("focus_sessions_ended_idx").on(t.endedAt)],
 );
 
+/** A saved web link on a project's Links tab: an address, a title and an optional note. */
+export const projectLinks = pgTable(
+  "project_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    title: text("title"),
+    note: text("note"),
+    createdByKind: madeBy.createdByKind,
+    createdByName: madeBy.createdByName,
+    createdByRoutine: madeBy.createdByRoutine,
+    createdAt: madeBy.createdAt,
+    updatedAt: madeBy.updatedAt,
+  },
+  (t) => [index("project_links_project_idx").on(t.projectId)],
+);
+
 /**
  * A whiteboard: frames, text, stickies, shapes and arrows, kept as one compact
  * JSON tree (see src/lib/whiteboard.ts). `version` goes up with every save, so

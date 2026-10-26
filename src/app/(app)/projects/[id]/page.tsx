@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, Folder as FolderIcon, Lightbulb, List, NotebookPen, SquareKanban } from "lucide-react";
+import { ChevronLeft, ChevronRight, Folder as FolderIcon, Lightbulb, Link2, List, NotebookPen, SquareKanban } from "lucide-react";
 import { ArtifactList } from "@/components/artifacts/artifact-list";
 import { AddButton } from "@/components/inspiration/add";
 import { InspirationBoard } from "@/components/inspiration/board";
@@ -13,6 +13,7 @@ import { getPipeline, listColumns } from "@/core/pipeline";
 import { NewFolderButton } from "@/components/notes/folder-dialog";
 import { NewNoteButton } from "@/components/notes/new-note-button";
 import { NoteList } from "@/components/notes/note-list";
+import { AddLinkButton, LinkList } from "@/components/projects/links";
 import { EditProjectButton } from "@/components/projects/project-dialog";
 import { EmptyState, Page } from "@/components/shell/page";
 import { QuickAdd, TaskList } from "@/components/tasks/task-list";
@@ -26,6 +27,7 @@ import { boardTasks } from "@/core/board";
 import { OperationError } from "@/core/define";
 import { listFolders } from "@/core/folders";
 import { listInspiration } from "@/core/inspiration";
+import { listLinks } from "@/core/links";
 import { listNotes } from "@/core/notes";
 import { getProject, listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
@@ -65,9 +67,10 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const boardView = view === "board" && grouping !== "pipeline" ? grouping : null;
   const notesView = view === "notes";
   const inspirationView = view === "inspiration";
-  const listView = !boardView && !pipelineView && !notesView && !inspirationView;
+  const linksView = view === "links";
+  const listView = !boardView && !pipelineView && !notesView && !inspirationView && !linksView;
 
-  const [project, tasks, timeZone, board, notes, documents, artifacts, folders, projects, inspiration, pipeline, dashboard] = await Promise.all([
+  const [project, tasks, timeZone, board, notes, documents, artifacts, folders, projects, inspiration, pipeline, links, dashboard] = await Promise.all([
     load(id),
     listView ? listTasks({ projectId: id, includeDone: true }) : [],
     getTimeZone(),
@@ -79,6 +82,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     notesView || inspirationView ? listProjects() : [],
     inspirationView ? listInspiration({ projectId: id }) : [],
     pipelineView ? getPipeline(id) : null,
+    linksView ? listLinks(id) : [],
     // Tasks here are ordered by the same saved sort as the dashboard.
     getDashboardView(),
   ]);
@@ -97,14 +101,18 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     <>
       <SegmentedLinks
         label="Layout"
+        // Five views don't fit a phone with icons, so phones show the words alone, spread across.
+        className="max-md:flex max-md:w-full max-md:[&_svg]:hidden max-md:[&>a]:flex-1 max-md:[&>a]:justify-center max-md:[&>a]:px-1.5"
         options={[
           { href: `${page}?view=list`, label: "List", icon: List, active: listView },
           { href: `${page}?view=board`, label: "Board", icon: SquareKanban, active: !!boardView || pipelineView },
           { href: `${page}?view=notes`, label: "Notes", icon: NotebookPen, active: notesView },
           { href: `${page}?view=inspiration`, label: "Inspiration", icon: Lightbulb, active: inspirationView },
+          { href: `${page}?view=links`, label: "Links", icon: Link2, active: linksView },
         ]}
       />
       {notesView && <NewNoteButton projectId={project.id} variant="outline" />}
+      {linksView && <AddLinkButton projectId={project.id} />}
       {notesView && <NewFolderButton projects={projects.map((p) => ({ id: p.id, name: p.name }))} projectId={project.id} />}
       {(boardView || pipelineView) && (
         <BoardViewSwitch pipeline view={grouping} href={(by) => `${page}?view=board&by=${by}`} />
@@ -130,7 +138,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         </span>
       }
       actions={<EditProjectButton project={{ id: project.id, name: project.name, color: project.color, area: project.area }} />}
-      newTask={inspirationView || pipelineView ? false : { projectId: project.id }}
+      newTask={inspirationView || pipelineView || linksView ? false : { projectId: project.id }}
     >
       {!pipelineView && <div className="flex flex-wrap items-center gap-2">{toolbar}</div>}
 
@@ -145,6 +153,10 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           today={date}
           toolbar={toolbar}
         />
+      ) : linksView ? (
+        <Card className="max-w-3xl">
+          <LinkList links={links} empty={<EmptyState>No links yet.</EmptyState>} />
+        </Card>
       ) : inspirationView ? (
         <InspirationBoard
           items={inspiration}
