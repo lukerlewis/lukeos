@@ -23,8 +23,10 @@ import { cn } from "@/lib/utils";
 
 const pill = "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[8px] px-3 text-preview font-medium whitespace-nowrap";
 
+const phoneAreaOrder: Record<Area, string> = { life: "order-1 md:order-none", work: "order-2 md:order-none", aya: "order-3 md:order-none" };
+
 /**
- * The switches at the top of the dashboard: Aya, Work or Life (Aya on computers only), the Today list or the Board, a
+ * The switches at the top of the dashboard: Aya, Work or Life (Life, Work, Aya on phones), the Today list or the Board, a
  * Filters menu for which statuses show and a Sort menu for the Today list. The area is
  * remembered on this device; the rest is saved, so it's the same next time and on other devices.
  */
@@ -98,8 +100,8 @@ export function DashboardControls({
         label="Aya, Work or Life"
         value={area}
         onChange={pickArea}
-        // Aya is for the computer; phones only get Work and Life.
-        options={areas.map((a) => ({ value: a, label: areaLabel[a], className: a === "aya" ? "hidden md:inline-flex" : undefined }))}
+        // Phones put them the other way round: Life, Work, Aya.
+        options={areas.map((a) => ({ value: a, label: areaLabel[a], className: phoneAreaOrder[a] }))}
       />
       <Choice<DashboardLayout>
         label="View"
