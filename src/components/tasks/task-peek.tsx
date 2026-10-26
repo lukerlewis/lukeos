@@ -17,7 +17,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Comments } from "@/components/comments/comments";
 import { showToast } from "@/components/shell/toast";
@@ -143,12 +143,40 @@ export function TaskPeek({
     [router],
   );
 
+  // It slides away before it goes, unless the device asks for less motion.
+  const [leaving, setLeaving] = useState(false);
+  const leave = useCallback(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return onClose();
+    setLeaving(true);
+    setTimeout(onClose, LEAVE_MS);
+  }, [onClose]);
+
   // Closing doesn't wait: the last change finishes saving behind the scenes.
   const close = useCallback(() => {
+    if (closed.current) return;
     closed.current = true;
     void flush().then(() => changed.current && router.refresh());
-    onClose();
-  }, [flush, onClose, router]);
+    leave();
+  }, [flush, leave, router]);
+
+  // A click anywhere outside it closes it (clicking another task opens that one instead),
+  // and so does going to another page.
+  const panel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      const target = e.target as Element | null;
+      if (!target?.isConnected || panel.current?.contains(target) || target.closest("dialog[open]")) return;
+      close();
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [close]);
+
+  const pathname = usePathname();
+  const openedOn = useRef(pathname);
+  useEffect(() => {
+    if (pathname !== openedOn.current) close();
+  }, [pathname, close]);
 
   // Escape closes it, unless something on top of it (a menu, a box) is open.
   useEffect(() => {
@@ -166,7 +194,7 @@ export function TaskPeek({
     const id = initial.id;
     // Any change still waiting is saved first, so Undo brings back the latest version.
     trashInBackground("task", id, () => saving.current.then(() => op("delete_task", { id })), { then: () => router.refresh() });
-    onClose();
+    leave();
   }
 
   const projectArea = isProjectArea(draft.area);
@@ -182,10 +210,12 @@ export function TaskPeek({
 
   return (
     <aside
+      ref={panel}
       role="dialog"
       aria-label="Task"
       className={cn(
-        "motion-peek fixed inset-0 z-30 flex flex-col bg-background text-foreground",
+        leaving ? "motion-peek-out pointer-events-none" : "motion-peek",
+        "fixed inset-0 z-30 flex flex-col bg-background text-foreground",
         "md:left-auto md:w-1/2 md:min-w-[30rem] md:border-l md:border-stroke",
         full && "md:w-full md:min-w-0 md:border-l-0",
       )}
@@ -362,6 +392,9 @@ export function TaskPeek({
     </aside>
   );
 }
+
+/** How long it takes to slide away; matches .motion-peek-out. */
+const LEAVE_MS = 180;
 
 const iconButton = "flex size-10 items-center justify-center rounded-lg text-icon hover:bg-muted hover:text-foreground md:size-9";
 
