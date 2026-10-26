@@ -81,6 +81,15 @@ function undoFor(
         label: `adding ${quote(r.title)} to the Work archive`,
         run: async () => void (await send("delete_archive_entry", { id: r.id })),
       };
+    case "add_link":
+      return { label: "adding a link", run: async () => void (await send("delete_link", { id: r.id })) };
+    case "delete_link": {
+      const d = result as Output<"delete_link">;
+      return {
+        label: "removing a link",
+        run: async () => void (await send("add_link", { projectId: d.projectId, url: d.url, title: d.title ?? undefined, note: d.note ?? undefined })),
+      };
+    }
     case "add_inspiration":
       return { label: "saving to Inspiration", run: async () => void (await send("delete_inspiration", { id: r.id })) };
     case "create_skill":
