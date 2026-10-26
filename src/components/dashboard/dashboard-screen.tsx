@@ -58,31 +58,34 @@ export function DashboardScreen({
       actions={<div className="hidden md:block">{controls}</div>}
     >
       <div className="md:hidden">{controls}</div>
-      {board ? (
-        isProjectArea(area) ? (
-          <WorkBoard key={area} tasks={tasks} projects={projects} area={area} today={today} show={view.show} sort={view.sort} />
+      {/* Computers draw the dashboard a step bigger than other pages (see .dashboard-type). */}
+      <div className="dashboard-type contents">
+        {board ? (
+          isProjectArea(area) ? (
+            <WorkBoard key={area} tasks={tasks} projects={projects} area={area} today={today} show={view.show} sort={view.sort} />
+          ) : (
+            <Board tasks={tasks} view="when" today={today} show={view.show} sort={view.sort} area={area} fill />
+          )
+        ) : isProjectArea(area) ? (
+          // Aya and Work put their project chips above both columns, so the Today card lines up with the Scratch pad.
+          <WorkToday
+            key={area}
+            tasks={sortTasks(todays, view.sort)}
+            projects={projects}
+            area={area}
+            show={view.show}
+            canAdd={canAdd}
+            today={today}
+            side={side}
+          />
         ) : (
-          <Board tasks={tasks} view="when" today={today} show={view.show} sort={view.sort} area={area} fill />
-        )
-      ) : isProjectArea(area) ? (
-        // Aya and Work put their project chips above both columns, so the Today card lines up with the Scratch pad.
-        <WorkToday
-          key={area}
-          tasks={sortTasks(todays, view.sort)}
-          projects={projects}
-          area={area}
-          show={view.show}
-          canAdd={canAdd}
-          today={today}
-          side={side}
-        />
-      ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          {/* Life's Today is split into Morning, Day and Evening. */}
-          <LifeToday tasks={todays} today={today} sort={view.sort} show={view.show} canAdd={canAdd} />
-          {side}
-        </div>
-      )}
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            {/* Life's Today is split into Morning, Day and Evening. */}
+            <LifeToday tasks={todays} today={today} sort={view.sort} show={view.show} canAdd={canAdd} />
+            {side}
+          </div>
+        )}
+      </div>
     </Page>
   );
 }
