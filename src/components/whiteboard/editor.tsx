@@ -172,10 +172,13 @@ function useHistory(initial: Item[]) {
 
 export function WhiteboardEditor({
   board,
+  projects,
   settings,
   comments,
 }: {
-  board: { id: string; title: string; version: number; items: Item[] };
+  board: { id: string; title: string; projectId: string | null; version: number; items: Item[] };
+  /** Projects the board can belong to, for the picker in its settings. */
+  projects: { id: string; name: string }[];
   settings: { snap: boolean };
   /** The board's comments, and whether to start with them showing (opened from a notification). */
   comments: { threads: Comment[]; timeZone: string; open: boolean };
@@ -184,6 +187,7 @@ export function WhiteboardEditor({
   const history = useHistory(board.items);
   const { items, itemsRef, commit, replace } = history;
   const [title, setTitle] = useState(board.title);
+  const [projectId, setProjectId] = useState(board.projectId);
   const [cam, setCamState] = useState<Camera>({ x: 0, y: 0, z: 1 });
   const camRef = useRef(cam);
   const setCam = useCallback((c: Camera) => {
@@ -1669,7 +1673,29 @@ export function WhiteboardEditor({
           {settingsOpen && (
             <>
               <button type="button" aria-label="Close settings" className="fixed inset-0 z-20 cursor-default" onClick={() => setSettingsOpen(false)} />
-              <div className="absolute top-full right-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-xl border border-stroke bg-card p-3">
+              <div className="absolute top-full right-0 z-30 mt-2 flex w-64 flex-col gap-3 rounded-xl border border-stroke bg-card p-3">
+                <label className="flex items-center justify-between gap-3">
+                  <span className="text-control">Project</span>
+                  <select
+                    value={projectId ?? ""}
+                    onChange={(e) => {
+                      const next = e.target.value || null;
+                      setProjectId(next);
+                      void op("update_whiteboard", { id: board.id, projectId: next })
+                        .then(() => router.refresh())
+                        .catch(() => showToast("Couldn't save the project."));
+                    }}
+                    aria-label="Project"
+                    className="h-8 min-w-0 max-w-40 rounded-lg border border-stroke-strong bg-card px-2 text-base text-foreground md:text-meta"
+                  >
+                    <option value="">No project</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <div className="flex items-center justify-between gap-3">
                   <span className="flex flex-col">
                     <span className="text-control">Snap</span>

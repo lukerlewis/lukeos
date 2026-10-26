@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { WhiteboardEditor } from "@/components/whiteboard/editor";
 import { listComments } from "@/core/comments";
 import { OperationError } from "@/core/define";
+import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { getWhiteboard, getWhiteboardSettings } from "@/core/whiteboards";
 
@@ -23,8 +24,9 @@ export async function generateMetadata({ params }: PageProps<"/whiteboard/[id]">
 
 export default async function WhiteboardPage({ params, searchParams }: PageProps<"/whiteboard/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const [board, settings, threads, timeZone] = await Promise.all([
+  const [board, projects, settings, threads, timeZone] = await Promise.all([
     load(id),
+    listProjects(),
     getWhiteboardSettings(),
     listComments({ targetType: "whiteboard", targetId: id }),
     getTimeZone(),
@@ -32,7 +34,8 @@ export default async function WhiteboardPage({ params, searchParams }: PageProps
   return (
     <WhiteboardEditor
       key={board.id}
-      board={{ id: board.id, title: board.title, version: board.version, items: board.items }}
+      board={{ id: board.id, title: board.title, projectId: board.projectId, version: board.version, items: board.items }}
+      projects={projects.map((p) => ({ id: p.id, name: p.name }))}
       settings={settings}
       comments={{ threads, timeZone, open: query.comments === "1" }}
     />

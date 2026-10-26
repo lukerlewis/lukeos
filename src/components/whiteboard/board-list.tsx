@@ -11,10 +11,10 @@ import { op } from "@/lib/ops-client";
 import { roughBounds, type Item } from "@/lib/whiteboard";
 import { ItemView } from "./item-view";
 
-export type BoardCard = { id: string; title: string; items: Item[]; madeBy: MadeBy; updatedAt: string };
+export type BoardCard = { id: string; title: string; project: { name: string; hex: string } | null; items: Item[]; madeBy: MadeBy; updatedAt: string };
 
-/** Makes an empty whiteboard and opens it. */
-export function NewWhiteboardButton() {
+/** Makes an empty whiteboard (in `projectId`, if given) and opens it. */
+export function NewWhiteboardButton({ projectId }: { projectId?: string | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   return (
@@ -24,7 +24,7 @@ export function NewWhiteboardButton() {
       onClick={async () => {
         setBusy(true);
         try {
-          const board = await op("create_whiteboard", {});
+          const board = await op("create_whiteboard", projectId ? { projectId } : {});
           router.push(`/whiteboard/${board.id}`);
         } catch (err) {
           alert((err as Error).message);
@@ -48,6 +48,12 @@ export function BoardGrid({ boards }: { boards: BoardCard[] }) {
             <div className="flex items-center gap-2 border-t px-4 py-3">
               <span className="grow truncate text-control font-medium text-foreground">{b.title || "Untitled"}</span>
               <ClaudeBadge madeBy={b.madeBy} />
+              {b.project && (
+                <span className="flex min-w-0 shrink items-center gap-1.5 text-meta text-muted-foreground">
+                  <span className="size-2 shrink-0 rounded-[3px]" style={{ background: b.project.hex }} aria-hidden />
+                  <span className="truncate">{b.project.name}</span>
+                </span>
+              )}
               <span className="shrink-0 text-meta text-muted-foreground">{ago(b.updatedAt)}</span>
             </div>
           </Link>

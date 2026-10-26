@@ -8,6 +8,7 @@ import { NewNoteButton, NewNoteFab } from "@/components/notes/new-note-button";
 import { NoteList } from "@/components/notes/note-list";
 import { EmptyState, Page } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
+import { chipProjects, countByProject, pickedFromQuery, ProjectChips, withProjects } from "@/components/ui/project-chips";
 import { listFolders } from "@/core/folders";
 import { listNotes } from "@/core/notes";
 import { listProjects } from "@/core/projects";
@@ -22,9 +23,11 @@ export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
 
   // Notes are Luke's own writing. What Claude makes on its own is an artifact, in Agents.
   // The main list shows folders, then the notes that aren't in one.
-  const [folders, notes, projects, timeZone] = await Promise.all([
+  const [folders, notes, allNotes, projects, timeZone] = await Promise.all([
     listFolders(),
     listNotes({ folderId }),
+    // Every note, filed or not, for the project chips on the main list.
+    folderId ? [] : listNotes(),
     listProjects(),
     getTimeZone(),
   ]);
@@ -72,30 +75,55 @@ export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
     );
   }
 
+  // Project chips: a note counts for its own project and its folder's. Picking projects shows their folders and the rest of their notes.
+  const picked = pickedFromQuery(query.project, projects);
+  // A new note gets the project when exactly one is picked.
+  const only = picked.length === 1 ? picked[0] : null;
+  const projectsOf = (n: (typeof allNotes)[number]) => {
+    const folderProject = n.folder && folders.find((f) => f.id === n.folder!.id)?.project?.id;
+    return [...new Set([n.project?.id, folderProject].filter(Boolean) as string[])];
+  };
+  const counts = countByProject(allNotes.flatMap(projectsOf));
+  const total = allNotes.length;
+  const shownFolders = picked.length ? folders.filter((f) => f.project && picked.includes(f.project.id)) : folders;
+  const shownNotes = picked.length
+    ? allNotes.filter(
+        (n) => projectsOf(n).some((id) => picked.includes(id)) && !(n.folder && shownFolders.some((f) => f.id === n.folder!.id)),
+      )
+    : notes;
+
   return (
     <Page
       title="Notes"
       actions={
         <>
           <NewFolderButton projects={projectOptions} />
-          <NewNoteButton className="max-md:hidden" />
+          <NewNoteButton projectId={only} className="max-md:hidden" />
         </>
       }
       newTask={false}
     >
       <div className="flex max-w-3xl flex-col gap-5">
-        {folders.length > 0 && (
+        <ProjectChips
+          projects={chipProjects(projects)}
+          counts={counts}
+          total={total}
+          picked={picked}
+          href={(ids) => withProjects("/notes", {}, ids)}
+          className="-mx-5 flex-nowrap overflow-x-auto px-5 md:mx-0 md:flex-wrap md:px-0"
+        />
+        {shownFolders.length > 0 && (
           <Card>
-            <FolderList folders={folders} />
+            <FolderList folders={shownFolders} />
           </Card>
         )}
-        {(notes.length > 0 || folders.length === 0) && (
+        {(shownNotes.length > 0 || shownFolders.length === 0) && (
           <Card>
-            <NoteList notes={notes} timeZone={timeZone} empty={<EmptyState>No notes yet.</EmptyState>} />
+            <NoteList notes={shownNotes} timeZone={timeZone} empty={<EmptyState>No notes yet.</EmptyState>} />
           </Card>
         )}
       </div>
-      <NewNoteFab />
+      <NewNoteFab projectId={only} />
     </Page>
   );
 }

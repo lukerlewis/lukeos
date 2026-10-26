@@ -36,7 +36,7 @@ export function NewNoteButton({
 }
 
 /** The round "+" on phones. */
-export function NewNoteFab({ folderId }: { folderId?: string | null }) {
-  const create = useNewNote({ folderId });
+export function NewNoteFab({ folderId, projectId }: { folderId?: string | null; projectId?: string | null }) {
+  const create = useNewNote({ folderId, projectId });
   return <Fab label="New note" onClick={create} />;
 }

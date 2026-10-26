@@ -32,7 +32,7 @@ export function NewDocumentButton({
 }
 
 /** The round "+" on phones. */
-export function NewDocumentFab() {
-  const create = useNewDocument();
+export function NewDocumentFab({ projectId }: { projectId?: string | null }) {
+  const create = useNewDocument(projectId);
   return <Fab label="New document" onClick={create} />;
 }

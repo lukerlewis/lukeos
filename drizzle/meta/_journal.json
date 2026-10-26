@@ -260,6 +260,13 @@
       "when": 1792768221522,
       "tag": "0036_aya_area",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793023267658,
+      "tag": "0037_whiteboard_project",
+      "breakpoints": true
     }
   ]
 }

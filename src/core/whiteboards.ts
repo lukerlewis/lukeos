@@ -25,6 +25,7 @@ import {
   type RawItem,
 } from "@/lib/whiteboard";
 import { defineOperation, madeByColumns, madeByOf, OperationError } from "./define";
+import { assertProject } from "./projects";
 
 const { whiteboards } = schema;
 const live = isNull(whiteboards.deletedAt);
@@ -35,19 +36,21 @@ const MAX_BYTES = 3_000_000;
 export type WhiteboardSummary = {
   id: string;
   title: string;
+  projectId: string | null;
   itemCount: number;
   madeBy: ReturnType<typeof madeByOf>;
   createdAt: Date;
   updatedAt: Date;
 };
 
-export type Whiteboard = { id: string; title: string; version: number; items: Item[]; madeBy: ReturnType<typeof madeByOf>; updatedAt: Date };
+export type Whiteboard = { id: string; title: string; projectId: string | null; version: number; items: Item[]; madeBy: ReturnType<typeof madeByOf>; updatedAt: Date };
 
 export async function listWhiteboards(): Promise<WhiteboardSummary[]> {
   const rows = await db.select().from(whiteboards).where(live).orderBy(desc(whiteboards.updatedAt));
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
+    projectId: r.projectId,
     itemCount: countItems(r.items),
     madeBy: madeByOf(r),
     createdAt: r.createdAt,
@@ -58,7 +61,7 @@ export async function listWhiteboards(): Promise<WhiteboardSummary[]> {
 /** Every board with its items, for the previews on the Whiteboard screen. */
 export async function listWhiteboardsWithItems() {
   const rows = await db.select().from(whiteboards).where(live).orderBy(desc(whiteboards.updatedAt));
-  return rows.map((r) => ({ id: r.id, title: r.title, items: r.items, madeBy: madeByOf(r), updatedAt: r.updatedAt }));
+  return rows.map((r) => ({ id: r.id, title: r.title, projectId: r.projectId, items: r.items, madeBy: madeByOf(r), updatedAt: r.updatedAt }));
 }
 
 export async function getWhiteboard(id: string): Promise<Whiteboard> {
@@ -68,7 +71,7 @@ export async function getWhiteboard(id: string): Promise<Whiteboard> {
     .where(and(eq(whiteboards.id, id), live))
     .limit(1);
   if (!row) throw new OperationError("That whiteboard doesn't exist, or it's in Trash.", 404);
-  return { id: row.id, title: row.title, version: row.version, items: orderKeys(row.items), madeBy: madeByOf(row), updatedAt: row.updatedAt };
+  return { id: row.id, title: row.title, projectId: row.projectId, version: row.version, items: orderKeys(row.items), madeBy: madeByOf(row), updatedAt: row.updatedAt };
 }
 
 /** Reads the board, lets `change` work on its items, and saves the result as the next version. */
@@ -130,6 +133,7 @@ const itemInput: z.ZodType<RawItem> = z.object({
 
 const FORMAT = `Items: {id, type, ...}. Types: frame (a container: name, color fill, w/h, children; with layout "row" or "column" it's Figma-style auto layout using gap, padX, padY and align start|center|end, and hugs its contents unless w/h are set), text (text, style, weight regular|medium, color default|muted, align start|center|end, w to wrap), sticky (text, color, w/h; default 220x220 yellow), shape (shape rect|ellipse|diamond, text, color, w/h), draw (a freehand pen line Luke drew: points [[x,y] or [x,y,pressure 0-1], ...] measured from the item's x/y, size its thickness (default 4; the pen offers 2, 4, 10), color default (black)|grey|red|orange|green|blue|purple; w/h stretch it, left out it's drawn at its natural size), arrow (from and to: item ids it joins, or start/end: [x,y] board pixels for an end left on the board; fromSide/toSide top|right|bottom|left pins a joined end to the middle of that side, otherwise it uses the side facing the other end; text for a label; head: "none" makes it a plain line; elbow: true runs it in horizontal and vertical lines with slightly rounded corners, routed for you, or through bends: [[x,y],...] corners in board pixels to steer it around things). Text styles (Luke's type scale, Geist): display 112px, h1 86, h2 66, h3 51, h4 39, sub-lg 30, sub-sm 23, body-lg 18 (default), body 14. Fills: white, grey, yellow, orange, red, pink, purple, blue, green, none. x/y are board pixels (inside a frame, relative to it; ignored in auto layout). Left-out fields use the defaults, so leave them out. Keep diagrams black and white (white, grey, none): add colour only when it means something the layout and words don't already show (Luke's skill "Diagrams and visualizations").`;
 
+const projectId = z.uuid().nullable().describe("The project it belongs to. null means it stands on its own.");
 const boardId = z.uuid().describe("The whiteboard's id, from list_whiteboards.");
 
 /** Places top-level items that came without a position below everything already there, side by side. */
@@ -214,10 +218,10 @@ export const whiteboardOperations = {
 
   list_whiteboards: defineOperation({
     name: "list_whiteboards",
-    description: "Luke's whiteboards (FigJam-style boards), most recently changed first: id, title and how many items each has.",
+    description: "Luke's whiteboards (FigJam-style boards), most recently changed first: id, title, project and how many items each has.",
     input: z.object({}),
     run: async () =>
-      (await listWhiteboards()).map((b) => ({ id: b.id, title: b.title, items: b.itemCount, updatedAt: b.updatedAt, madeBy: b.madeBy.kind })),
+      (await listWhiteboards()).map((b) => ({ id: b.id, title: b.title, projectId: b.projectId, items: b.itemCount, updatedAt: b.updatedAt, madeBy: b.madeBy.kind })),
   }),
 
   get_whiteboard: defineOperation({
@@ -234,7 +238,7 @@ export const whiteboardOperations = {
     run: async ({ id, ifNewerThan, points }) => {
       const board = await getWhiteboard(id);
       if (ifNewerThan !== undefined && board.version <= ifNewerThan) return { id, version: board.version, unchanged: true as const };
-      return { id: board.id, title: board.title, version: board.version, items: points ? board.items : withoutPoints(board.items) };
+      return { id: board.id, title: board.title, projectId: board.projectId, version: board.version, items: points ? board.items : withoutPoints(board.items) };
     },
   }),
 
@@ -243,28 +247,34 @@ export const whiteboardOperations = {
     description: `Make a new whiteboard, optionally with items on it. ${FORMAT}`,
     input: z.object({
       title: z.string().trim().max(200).optional(),
+      projectId: projectId.optional(),
       items: z.array(itemInput).max(2000).optional(),
     }),
-    run: async ({ title, items }, { actor }) => {
+    run: async ({ title, projectId, items }, { actor }) => {
+      if (projectId) await assertProject(projectId);
       const cleaned = cleanBoard(items ?? []);
       checkSize(cleaned);
       const [row] = await db
         .insert(whiteboards)
-        .values({ title: title ?? "", items: placeNew([], cleaned), ...madeByColumns(actor) })
+        .values({ title: title ?? "", projectId: projectId ?? null, items: placeNew([], cleaned), ...madeByColumns(actor) })
         .returning({ id: whiteboards.id });
       const board = await getWhiteboard(row.id);
-      return { id: board.id, title: board.title, version: board.version, items: board.items };
+      return { id: board.id, title: board.title, projectId: board.projectId, version: board.version, items: board.items };
     },
   }),
 
   update_whiteboard: defineOperation({
     name: "update_whiteboard",
-    description: "Rename a whiteboard.",
-    input: z.object({ id: boardId, title: z.string().trim().max(200) }),
-    run: async ({ id, title }) => {
+    description: "Rename a whiteboard, or change which project it belongs to.",
+    input: z.object({ id: boardId, title: z.string().trim().max(200).optional(), projectId: projectId.optional() }),
+    run: async ({ id, title, projectId }) => {
       await getWhiteboard(id);
-      await db.update(whiteboards).set({ title, updatedAt: new Date() }).where(eq(whiteboards.id, id));
-      return { id, title };
+      if (projectId) await assertProject(projectId);
+      await db
+        .update(whiteboards)
+        .set({ ...(title !== undefined && { title }), ...(projectId !== undefined && { projectId }), updatedAt: new Date() })
+        .where(eq(whiteboards.id, id));
+      return getWhiteboard(id).then((b) => ({ id, title: b.title, projectId: b.projectId }));
     },
   }),
 

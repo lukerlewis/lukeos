@@ -8,13 +8,11 @@ import { areaLabel, laneLabel, lanes, type Lane, type ProjectArea, type Status }
 import { Board } from "@/components/board/board";
 import { QuickAdd, TaskList, type CellProject } from "@/components/tasks/task-list";
 import { Card } from "@/components/ui/card";
+import { countByProject, ProjectChips } from "@/components/ui/project-chips";
 import { useLiveTasks } from "@/lib/live-tasks";
-import { cn } from "@/lib/utils";
 import { DraggableRow, DropCard, TaskCards } from "./task-cards";
 
 const laneIcon: Record<Lane, LucideIcon> = { signal: Signal, noise: AudioWaveform };
-
-const chip = "inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-meta";
 
 /**
  * Aya's or Work's Today: chips to show only some of its projects (any number at once), then the tasks. Work splits them into two cards, Signal (what really matters)
@@ -162,37 +160,16 @@ function ProjectFilter({
   picked: string[];
   onPick: (ids: string[]) => void;
 }) {
-  const count = (id: string) => tasks.filter((t) => t.project?.id === id).length;
-  const chips = projects.filter((p) => picked.includes(p.id) || count(p.id) > 0);
-  if (chips.length === 0) return null;
-  const all = picked.length === 0;
   return (
-    <div role="group" aria-label={`${areaLabel[area]} projects`} className="hidden flex-wrap items-center gap-1.5 md:flex">
-      <button
-        type="button"
-        aria-pressed={all}
-        onClick={() => onPick([])}
-        className={cn(chip, all ? "bg-selected font-medium text-ink" : "border bg-card text-muted-foreground hover:bg-muted")}
-      >
-        All {area === "work" ? "work" : areaLabel[area]}
-        <span className="text-muted-foreground">{tasks.length}</span>
-      </button>
-      {chips.map((p) => {
-        const on = picked.includes(p.id);
-        return (
-          <button
-            key={p.id}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onPick(on ? picked.filter((id) => id !== p.id) : [...picked, p.id])}
-            className={cn(chip, on ? "bg-selected font-medium text-ink" : "border bg-card text-muted-foreground hover:bg-muted")}
-          >
-            <span className="size-2 rounded-[3px]" style={{ background: p.hex }} aria-hidden />
-            {p.name}
-            <span className="text-muted-foreground">{count(p.id)}</span>
-          </button>
-        );
-      })}
-    </div>
+    <ProjectChips
+      projects={projects}
+      counts={countByProject(tasks.map((t) => t.project?.id))}
+      total={tasks.length}
+      picked={picked}
+      onPick={onPick}
+      allLabel={`All ${area === "work" ? "work" : areaLabel[area]}`}
+      label={`${areaLabel[area]} projects`}
+      className="hidden md:flex"
+    />
   );
 }
