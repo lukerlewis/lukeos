@@ -339,7 +339,7 @@ export function NoteEditor({
         }}
       />
 
-      <div className="min-h-[50dvh] cursor-text pb-10" onClick={(e) => e.target === e.currentTarget && editor?.commands.focus("end")}>
+      <div className="min-h-[50dvh] cursor-text pb-[50dvh]" onClick={(e) => e.target === e.currentTarget && editor?.commands.focus("end")}>
         <EditorContent editor={editor} />
       </div>
     </div>

@@ -181,7 +181,7 @@ export function DocumentEditor({
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col pb-[40dvh] print:pb-0">
       <div className="flex flex-col gap-3 pb-3">
         <textarea
           ref={titleRef}
