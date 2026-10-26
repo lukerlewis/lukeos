@@ -997,3 +997,50 @@
     --player-space: 4.25rem;
   }
 }
+
+/*
+ * The dashboard on a computer reads one step bigger (Luke, 2026-10-26): task names 16, details and counts 14, card headings 18.
+ * Tags and chips at 12 stay as they are. Rows, chips and icons grow with the text so nothing gets cramped.
+ */
+@media (min-width: 768px) {
+  .dashboard-type {
+    font-size: 16px;
+  }
+  .dashboard-type :is(.text-meta, .md\:text-meta) {
+    font-size: 14px;
+  }
+  .dashboard-type :is(.text-control, .md\:text-control) {
+    font-size: 16px;
+  }
+  .dashboard-type .text-heading {
+    font-size: 18px;
+  }
+  /* Tick circles and card heading icons, 18 to 19. */
+  .dashboard-type :is(.size-\[18px\], .md\:size-\[18px\]) {
+    width: 19px;
+    height: 19px;
+  }
+  /* Repeat icons and the icon in a focus type chip. */
+  .dashboard-type .size-3 {
+    width: 13px;
+    height: 13px;
+  }
+  .dashboard-type .tag.h-6 {
+    height: 26px;
+  }
+  .dashboard-type .tag.h-6 .size-3\.5 {
+    width: 15px;
+    height: 15px;
+  }
+  /* A bit more room in each task row, and for the due date. */
+  .dashboard-type li > button.py-3 {
+    padding-block: 14px;
+  }
+  /* The tick circle's box is as tall as the first line of the row, so the circle sits level with the name. */
+  .dashboard-type li > button.md\:size-10 {
+    height: 52px;
+  }
+  .dashboard-type .md\:w-20 {
+    width: 88px;
+  }
+}
