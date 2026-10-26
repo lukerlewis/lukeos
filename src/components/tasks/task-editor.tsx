@@ -136,7 +136,8 @@ export function TaskEditorProvider({
             projects={projects}
             today={today}
             timeZone={timeZone}
-            onClose={() => setDraft(null)}
+            // Only if it's still the one open: clicking another task while this one slides away opens that one.
+            onClose={() => setDraft((open) => (open?.id === draft.id ? null : open))}
           />
         ) : (
           <TaskDialog
