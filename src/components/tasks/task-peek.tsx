@@ -248,7 +248,7 @@ export function TaskPeek({
       </div>
 
       <div className="min-h-0 grow overflow-y-auto overscroll-contain">
-        <div className={cn("mx-auto flex w-full flex-col px-5 pt-1 pb-[max(env(safe-area-inset-bottom),4rem)] md:px-12 md:pt-4", full ? "max-w-3xl" : "max-w-2xl")}>
+        <div className={cn("mx-auto flex w-full flex-col px-5 pt-1 pb-[max(env(safe-area-inset-bottom),40dvh)] md:px-12 md:pt-4", full ? "max-w-3xl" : "max-w-2xl")}>
           <div className="flex items-start gap-3">
             <button
               type="button"
