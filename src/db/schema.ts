@@ -730,6 +730,7 @@ export const whiteboards = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     title: text("title").notNull().default(""),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
     items: jsonb("items").$type<WhiteboardItem[]>().notNull().default([]),
     version: integer("version").notNull().default(1),
     ...madeBy,

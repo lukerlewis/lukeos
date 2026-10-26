@@ -340,7 +340,13 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "create_whiteboard":
       return { summary: `Made whiteboard ${quote(task.title)}`, item: { type: "whiteboard", id: task.id } };
     case "update_whiteboard":
-      return { summary: `Renamed whiteboard ${quote(before)} to ${quote(String(input.title))}`, item: { type: "whiteboard", id: String(input.id) } };
+      return {
+        summary:
+          input.title === undefined
+            ? `Changed whiteboard ${quote(before)}'s project`
+            : `Renamed whiteboard ${quote(before)} to ${quote(String(input.title))}`,
+        item: { type: "whiteboard", id: String(input.id) },
+      };
     case "delete_whiteboard":
       return { summary: `Moved whiteboard ${quote(before)} to Trash`, item: { type: "whiteboard", id: String(input.id) } };
     case "add_whiteboard_items":

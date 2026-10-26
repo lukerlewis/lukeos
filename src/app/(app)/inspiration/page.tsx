@@ -5,6 +5,7 @@ import { SearchBox, TagChips } from "@/components/inspiration/filters";
 import { EmptyState, Page } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
 import { SegmentedLinks } from "@/components/ui/segmented-links";
+import { chipProjects, countByProject, pickedFromQuery, ProjectChips, withProjects } from "@/components/ui/project-chips";
 import { getInspiration, inspirationTags, listInspiration, type InspirationItem } from "@/core/inspiration";
 import { listProjects } from "@/core/projects";
 import { inspirationKinds, kindPlural, type InspirationKind } from "@/lib/inspiration";
@@ -22,12 +23,14 @@ export default async function InspirationPage({ searchParams }: PageProps<"/insp
   const kind = inspirationKinds.find((k) => k === one(query.kind)) as InspirationKind | undefined;
   const itemId = one(query.item);
 
-  const [items, tags, projects, usage] = await Promise.all([
+  const [found, tags, projects, usage] = await Promise.all([
     listInspiration({ search: q, tag: tag ?? undefined, kind }),
     inspirationTags(),
     listProjects(),
     storageUsage(),
   ]);
+  const picked = pickedFromQuery(query.project, projects);
+  const items = picked.length ? found.filter((i) => i.project && picked.includes(i.project.id)) : found;
   let openItem: InspirationItem | null = null;
   if (itemId && /^[0-9a-f-]{36}$/i.test(itemId)) openItem = items.find((i) => i.id === itemId) ?? (await getInspiration(itemId).catch(() => null));
 
@@ -37,10 +40,11 @@ export default async function InspirationPage({ searchParams }: PageProps<"/insp
     if (next.q) params.set("q", next.q);
     if (next.tag) params.set("tag", next.tag);
     if (next.kind) params.set("kind", next.kind);
+    if (picked.length) params.set("project", picked.join(","));
     const s = params.toString();
     return s ? `/inspiration?${s}` : "/inspiration";
   };
-  const filtered = Boolean(q || tag || kind);
+  const filtered = Boolean(q || tag || kind || picked.length);
 
   return (
     <Page title="Inspiration" newTask={false}>
@@ -70,6 +74,14 @@ export default async function InspirationPage({ searchParams }: PageProps<"/insp
               ]}
             />
           </div>
+          <ProjectChips
+            projects={chipProjects(projects)}
+            counts={countByProject(found.map((i) => i.project?.id))}
+            total={found.length}
+            picked={picked}
+            href={(ids) => withProjects("/inspiration", { q, tag: tag ?? undefined, kind }, ids)}
+            className="-mx-5 flex-nowrap overflow-x-auto px-5 md:mx-0 md:flex-wrap md:px-0"
+          />
           <TagChips tags={tags.slice(0, 30)} active={tag} />
         </div>
       </InspirationBoard>
