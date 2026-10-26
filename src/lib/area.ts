@@ -1,7 +1,6 @@
 /**
  * Aya, Work or Life on the dashboard. It's chosen on each device: a computer starts on Work and a
  * phone on Life, and switching is remembered on that device (a cookie) until switched back.
- * Aya is for computers only: phones just get Work and Life.
  */
 import type { Area } from "./task-fields";
 
@@ -16,10 +15,9 @@ export function isPhone(userAgent: string | null) {
   return !!userAgent && /iPhone|iPod|Android.+Mobile|Mobile Safari/i.test(userAgent);
 }
 
-/** The area a device shows: the one it last picked, except that phones never show Aya. */
+/** The area a device shows: the one it last picked. */
 export function areaFor(saved: string | undefined | null, userAgent: string | null): Area {
-  const area = parseArea(saved) ?? defaultAreaFor(userAgent);
-  return area === "aya" && isPhone(userAgent) ? defaultAreaFor(userAgent) : area;
+  return parseArea(saved) ?? defaultAreaFor(userAgent);
 }
 
 export function parseArea(value: string | undefined | null): Area | null {

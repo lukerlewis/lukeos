@@ -21,7 +21,6 @@ import { AREA_COOKIE, areaFor } from "@/lib/area";
 export default async function DashboardPage() {
   const view = await getDashboardView();
   // Aya, Work or Life is picked on each device: computers start on Work, phones on Life.
-  // Aya is for computers only.
   const area = areaFor((await cookies()).get(AREA_COOKIE)?.value, (await headers()).get("user-agent"));
   // Every area's tasks and both tabs come at once, so switching between them is instant.
   const [{ date, tasks }, activity, scratch, timeZone, projects] = await Promise.all([

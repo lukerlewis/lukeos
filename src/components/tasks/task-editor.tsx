@@ -321,12 +321,7 @@ function TaskDialog({
                   if (draft.projectId && projects.find((p) => p.id === draft.projectId)?.area !== v) set("projectId", null);
                   set("area", v);
                 }}
-                // Aya is for the computer; a phone only shows it for a task already in Aya.
-                options={areas.map((a) => ({
-                  value: a,
-                  label: areaLabel[a],
-                  className: a === "aya" && draft.area !== "aya" ? "hidden md:inline-flex" : undefined,
-                }))}
+                options={areas.map((a) => ({ value: a, label: areaLabel[a] }))}
               />
             </Field>
 
