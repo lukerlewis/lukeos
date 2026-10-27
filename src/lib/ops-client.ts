@@ -83,11 +83,20 @@ function undoFor(
       };
     case "add_link":
       return { label: "adding a link", run: async () => void (await send("delete_link", { id: r.id })) };
+    case "update_link": {
+      // Only a pin or unpin is undone this way; edits from the box aren't.
+      if (Object.keys(input).length !== 2 || typeof input.pinned !== "boolean") break;
+      const pinned = input.pinned;
+      return {
+        label: pinned ? "pinning a link" : "unpinning a link",
+        run: async () => void (await send("update_link", { id: r.id, pinned: !pinned })),
+      };
+    }
     case "delete_link": {
       const d = result as Output<"delete_link">;
       return {
         label: "removing a link",
-        run: async () => void (await send("add_link", { projectId: d.projectId, url: d.url, title: d.title ?? undefined, note: d.note ?? undefined })),
+        run: async () => void (await send("add_link", { projectId: d.projectId, url: d.url, title: d.title ?? undefined, note: d.note ?? undefined, pinned: d.pinned })),
       };
     }
     case "add_inspiration":

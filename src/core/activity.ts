@@ -412,7 +412,9 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "update_link":
     case "delete_link": {
       const l = r as { title?: string | null; url?: string; projectId?: string };
-      const verb = tool === "add_link" ? "Added link" : tool === "update_link" ? "Edited link" : "Removed link";
+      const pin = tool === "update_link" && Object.keys(input).length === 2 && typeof input.pinned === "boolean";
+      const verb =
+        tool === "add_link" ? "Added link" : pin ? (input.pinned ? "Pinned link" : "Unpinned link") : tool === "update_link" ? "Edited link" : "Removed link";
       return { summary: `${verb} ${quote(l.title || l.url)}`, item: l.projectId ? { type: "project", id: l.projectId } : undefined };
     }
     case "delete_inspiration":

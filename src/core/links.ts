@@ -1,5 +1,5 @@
 import "server-only";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { fetchPreview, safeWebUrl } from "@/lib/link-preview";
@@ -17,6 +17,8 @@ export type ProjectLink = {
   note: string | null;
   /** The web address's site, e.g. figma.com. */
   site: string;
+  /** Kept at the top of the list. */
+  pinned: boolean;
   madeBy: MadeBy;
   createdAt: Date;
 };
@@ -33,14 +35,19 @@ function toLink(row: typeof projectLinks.$inferSelect): ProjectLink {
     title: row.title,
     note: row.note,
     site,
+    pinned: row.pinnedAt !== null,
     madeBy: madeByOf(row),
     createdAt: row.createdAt,
   };
 }
 
-/** A project's links, newest first. */
+/** A project's links: pinned ones first (newest pin on top), then the rest newest first. */
 export async function listLinks(projectId: string): Promise<ProjectLink[]> {
-  const rows = await db.select().from(projectLinks).where(eq(projectLinks.projectId, projectId)).orderBy(desc(projectLinks.createdAt));
+  const rows = await db
+    .select()
+    .from(projectLinks)
+    .where(eq(projectLinks.projectId, projectId))
+    .orderBy(sql`${projectLinks.pinnedAt} desc nulls last`, desc(projectLinks.createdAt));
   return rows.map(toLink);
 }
 
@@ -73,12 +80,13 @@ const title = z
   .max(300)
   .nullable()
   .describe("What the link is called. Left out or empty, the page's own title is used.");
+const pinned = z.boolean().describe("true pins it to the top of the project's Links list; false unpins it.");
 const note = z.string().trim().max(4000).nullable().describe("A short note about the link.");
 
 export const linkOperations = {
   list_links: defineOperation({
     name: "list_links",
-    description: "List the links saved on a project's Links tab (web address, title, note), newest first.",
+    description: "List the links saved on a project's Links tab (web address, title, note, pinned), pinned ones first, then newest first.",
     input: z.object({ projectId: z.uuid().describe("The project's id.") }),
     run: async ({ projectId }) => {
       await assertProject(projectId);
@@ -90,7 +98,7 @@ export const linkOperations = {
     name: "add_link",
     description:
       "Save a web link on a project's Links tab, for pages Luke keeps coming back to for that project (a Figma file, a doc, a site). Without a title, the page's own title is used.",
-    input: z.object({ projectId: z.uuid().describe("The project to save it on."), url, title: title.optional(), note: note.optional() }),
+    input: z.object({ projectId: z.uuid().describe("The project to save it on."), url, title: title.optional(), note: note.optional(), pinned: pinned.optional() }),
     run: async (input, { actor }) => {
       await assertProject(input.projectId);
       const href = cleanUrl(input.url);
@@ -101,6 +109,7 @@ export const linkOperations = {
           url: href,
           title: input.title || (await pageTitle(href)),
           note: input.note || null,
+          pinnedAt: input.pinned ? new Date() : null,
           ...madeByColumns(actor),
         })
         .returning();
@@ -110,10 +119,10 @@ export const linkOperations = {
 
   update_link: defineOperation({
     name: "update_link",
-    description: "Change a saved link's web address, title or note. Fields left out stay as they are; null or empty clears the title or note.",
-    input: z.object({ id, url: url.optional(), title: title.optional(), note: note.optional() }),
-    run: async ({ id, url, title, note }) => {
-      await getLink(id);
+    description: "Change a saved link's web address, title or note, or pin or unpin it. Fields left out stay as they are; null or empty clears the title or note.",
+    input: z.object({ id, url: url.optional(), title: title.optional(), note: note.optional(), pinned: pinned.optional() }),
+    run: async ({ id, url, title, note, pinned }) => {
+      const link = await getLink(id);
       const href = url !== undefined ? cleanUrl(url) : undefined;
       await db
         .update(projectLinks)
@@ -121,6 +130,8 @@ export const linkOperations = {
           ...(href !== undefined && { url: href }),
           ...(title !== undefined && { title: title || null }),
           ...(note !== undefined && { note: note || null }),
+          // Pinning an already pinned link keeps its place.
+          ...(pinned !== undefined && pinned !== link.pinned && { pinnedAt: pinned ? new Date() : null }),
           updatedAt: new Date(),
         })
         .where(eq(projectLinks.id, id));
@@ -135,7 +146,7 @@ export const linkOperations = {
     run: async ({ id }) => {
       const link = await getLink(id);
       await db.delete(projectLinks).where(eq(projectLinks.id, id));
-      return { deleted: id, projectId: link.projectId, url: link.url, title: link.title, note: link.note };
+      return { deleted: id, projectId: link.projectId, url: link.url, title: link.title, note: link.note, pinned: link.pinned };
     },
   }),
 };
