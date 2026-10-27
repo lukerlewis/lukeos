@@ -44,6 +44,7 @@ const kinds = {
 import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
+import { OpenLinks } from "@/components/notes/open-links";
 
 /** The longest description allowed (the same as Claude's own skills). */
 const DESCRIPTION_MAX = 1024;
@@ -94,6 +95,7 @@ export function SkillEditor({ skill, autoFocus, kind = "skill" }: { skill: Skill
         placeholder: k.body,
       }),
       Markdown,
+      OpenLinks,
     ],
     content: skill.body,
     contentType: "markdown",

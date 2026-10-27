@@ -571,6 +571,7 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   text-decoration-color: var(--ring);
+  cursor: pointer;
 }
 .note-body ul,
 .note-body ol {

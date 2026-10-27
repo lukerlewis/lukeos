@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { ClaudeTag } from "./claude-tag";
 import { PinButton } from "./pin-button";
 import { shrinkPhoto } from "./photos";
+import { OpenLinks } from "./open-links";
 
 type SaveState = "saved" | "saving" | "error";
 type Change = {
@@ -192,6 +193,7 @@ export function NoteEditor({
       Image,
       Placeholder.configure({ placeholder: "Start writing…" }),
       Markdown,
+      OpenLinks,
       ClaudeTag,
     ],
     content: note.content,

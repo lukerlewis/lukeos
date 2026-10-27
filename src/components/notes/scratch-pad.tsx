@@ -7,6 +7,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import { ClaudeTag } from "./claude-tag";
 import { useAutosave } from "./note-editor";
+import { OpenLinks } from "./open-links";
 
 /**
  * The dashboard's scratch pad: one running page, saved as you type. Type
@@ -22,6 +23,7 @@ export function ScratchPad({ id, content }: { id: string; content: string }) {
       TaskItem.configure({ nested: true }),
       Placeholder.configure({ placeholder: "Jot things down…" }),
       Markdown,
+      OpenLinks,
       ClaudeTag,
     ],
     content,

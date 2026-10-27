@@ -12,6 +12,7 @@ import { imageFiles, Toolbar } from "@/components/notes/note-editor";
 import { shrinkPhoto } from "@/components/notes/photos";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
+import { OpenLinks } from "@/components/notes/open-links";
 
 /**
  * A task's notes, with the same formatting as notes: headings, lists,
@@ -61,6 +62,7 @@ export function TaskNotes({
       Image,
       Placeholder.configure({ placeholder: "Add notes…" }),
       Markdown,
+      OpenLinks,
       ClaudeTag,
     ],
     content: keepLineBreaks(value),
