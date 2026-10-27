@@ -47,7 +47,8 @@ export function Page({
           !fill && "pb-[calc(7rem+var(--player-space))] md:pb-10",
         )}
       >
-        <div className="flex items-end justify-between gap-4 pt-8 md:pt-0">
+        {/* On computers the buttons drop below the heading when there isn't room beside it. */}
+        <div className="flex items-end justify-between gap-4 pt-8 md:flex-wrap md:pt-0">
           <div className="min-w-0">
             {eyebrow && <div className="text-meta text-muted-foreground">{eyebrow}</div>}
             <h1 className="mt-0.5 text-title font-medium break-words text-ink md:mt-1">
@@ -55,7 +56,7 @@ export function Page({
             </h1>
           </div>
           <div className="grow" />
-          {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+          {actions && <div className="flex max-w-full shrink-0 items-center gap-2">{actions}</div>}
           <Link
             href="/settings"
             aria-label="Settings"
