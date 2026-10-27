@@ -19,6 +19,7 @@ import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { checkInsLabel, dayNames, timeLabel, type CheckIns, type Frequency } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
+import { OpenLinks } from "@/components/notes/open-links";
 
 const MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0];
 
@@ -78,6 +79,7 @@ export function RoutineEditor({
         placeholder: "What should happen each time?",
       }),
       Markdown,
+      OpenLinks,
     ],
     content: routine.instructions,
     contentType: "markdown",

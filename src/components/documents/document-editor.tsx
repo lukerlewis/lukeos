@@ -36,6 +36,7 @@ import type { Document } from "@/core/documents";
 import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
+import { OpenLinks } from "@/components/notes/open-links";
 
 /**
  * A document: its name and details above a printable page (US Letter, 1 inch
@@ -106,6 +107,7 @@ export function DocumentEditor({
       TableKit.configure({ table: { resizable: false } }),
       Placeholder.configure({ placeholder: "Start writing…" }),
       Markdown,
+      OpenLinks,
     ],
     content: doc.content,
     contentType: "markdown",

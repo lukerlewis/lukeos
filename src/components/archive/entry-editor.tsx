@@ -19,6 +19,7 @@ import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { EntryFiles } from "./entry-files";
+import { OpenLinks } from "@/components/notes/open-links";
 
 type Detail = "company" | "role" | "period" | "outcome";
 const details: { key: Detail; label: string }[] = [
@@ -96,6 +97,7 @@ export function EntryEditor({ entry, autoFocus }: { entry: Entry; autoFocus?: bo
       Image,
       Placeholder.configure({ placeholder: "Tell the story…" }),
       Markdown,
+      OpenLinks,
     ],
     content: entry.story,
     contentType: "markdown",
