@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe, Pencil, Plus, Trash2 } from "lucide-react";
+import { Globe, Pencil, Pin, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ClaudeBadge } from "@/components/tasks/made-by";
@@ -9,20 +9,40 @@ import { Dialog } from "@/components/ui/dialog";
 import type { ProjectLink } from "@/core/links";
 import { hide, inBackground, unhide, useWithoutHidden } from "@/lib/background";
 import { op } from "@/lib/ops-client";
+import { cn } from "@/lib/utils";
 
 const field =
   "rounded-lg border bg-card px-3 text-body border-stroke-strong outline-none md:text-control focus-visible:border-ring";
 
 /** A project's saved links, each opening in a new tab. */
 export function LinkList({ links, empty }: { links: ProjectLink[]; empty: React.ReactNode }) {
-  const shown = useWithoutHidden(links);
+  const router = useRouter();
   const [editing, setEditing] = useState<ProjectLink | null>(null);
+  // Pins tapped here, shown at once while the server catches up: id -> when pinned, or null when unpinned.
+  const [pins, setPins] = useState<Record<string, number | null>>({});
+  const [seen, setSeen] = useState(links);
+  if (seen !== links) {
+    setSeen(links);
+    setPins({});
+  }
+  const shown = sortByPin(useWithoutHidden(links), pins);
+
+  function togglePin(link: ProjectLink & { pinned: boolean }) {
+    const pinned = !link.pinned;
+    setPins((p) => ({ ...p, [link.id]: pinned ? Date.now() : null }));
+    void inBackground(() => op("update_link", { id: link.id, pinned }), {
+      then: () => router.refresh(),
+      failed: () => setPins((p) => ({ ...p, [link.id]: link.pinned ? 0 : null })),
+      failure: pinned ? "Couldn't pin the link." : "Couldn't unpin the link.",
+    });
+  }
+
   if (shown.length === 0) return <>{empty}</>;
   return (
     <>
       <ul>
         {shown.map((l) => (
-          <li key={l.id} className="flex items-center border-b last:border-b-0">
+          <li key={l.id} className="group flex items-center border-b last:border-b-0">
             <a
               href={l.url}
               target="_blank"
@@ -41,6 +61,21 @@ export function LinkList({ links, empty }: { links: ProjectLink[]; empty: React.
             </a>
             <button
               type="button"
+              onClick={() => togglePin(l)}
+              aria-label={l.pinned ? `Unpin ${l.title || l.site}` : `Pin ${l.title || l.site}`}
+              aria-pressed={l.pinned}
+              title={l.pinned ? "Unpin" : "Pin to top"}
+              className={cn(
+                "flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted hover:text-foreground",
+                l.pinned
+                  ? "text-foreground"
+                  : "text-muted-foreground md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100",
+              )}
+            >
+              <Pin className={cn("size-4", l.pinned && "fill-current")} aria-hidden />
+            </button>
+            <button
+              type="button"
               onClick={() => setEditing(l)}
               aria-label={`Edit ${l.title || l.site}`}
               className="mr-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -53,6 +88,22 @@ export function LinkList({ links, empty }: { links: ProjectLink[]; empty: React.
       {editing && <LinkDialog projectId={editing.projectId} link={editing} onClose={() => setEditing(null)} />}
     </>
   );
+}
+
+/**
+ * The links with any pins tapped here applied: pinned first (a fresh pin on
+ * top, then the server's pin order), then the rest newest first.
+ */
+function sortByPin(links: ProjectLink[], pins: Record<string, number | null>) {
+  const withPins = links.map((l, i) => {
+    const tapped = l.id in pins;
+    const pinned = tapped ? pins[l.id] !== null : l.pinned;
+    // Server pins keep their order below anything pinned just now.
+    return { ...l, pinned, rank: tapped && pins[l.id] ? pins[l.id]! : -i };
+  });
+  const pinned = withPins.filter((l) => l.pinned).sort((a, b) => b.rank - a.rank);
+  const rest = withPins.filter((l) => !l.pinned).sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  return [...pinned, ...rest];
 }
 
 /** The site's own little icon, or a globe if it has none. */

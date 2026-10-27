@@ -274,6 +274,13 @@
       "when": 1793025923617,
       "tag": "0038_project_links",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793129264983,
+      "tag": "0039_link_pins",
+      "breakpoints": true
     }
   ]
 }

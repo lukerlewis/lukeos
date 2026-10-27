@@ -731,6 +731,8 @@ export const projectLinks = pgTable(
     url: text("url").notNull(),
     title: text("title"),
     note: text("note"),
+    // Set while pinned to the top of the list; newest pin first.
+    pinnedAt: timestamp("pinned_at", { withTimezone: true }),
     createdByKind: madeBy.createdByKind,
     createdByName: madeBy.createdByName,
     createdByRoutine: madeBy.createdByRoutine,

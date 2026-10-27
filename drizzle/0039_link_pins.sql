@@ -1,0 +1,1 @@
+ALTER TABLE "project_links" ADD COLUMN "pinned_at" timestamp with time zone;
