@@ -1,6 +1,6 @@
 "use client";
 
-import { Image } from "@tiptap/extension-image";
+import { ResizableImage } from "@/components/notes/resizable-image";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
 import { Markdown } from "@tiptap/markdown";
@@ -20,7 +20,7 @@ export function MarkdownView({ content }: { content: string }) {
         }),
         TaskList,
         TaskItem.configure({ nested: true }),
-        Image,
+        ResizableImage,
         TableKit.configure({ table: { resizable: false } }),
         Markdown,
       ],

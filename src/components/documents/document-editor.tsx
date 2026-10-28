@@ -1,6 +1,6 @@
 "use client";
 
-import { Image } from "@tiptap/extension-image";
+import { ResizableImage } from "@/components/notes/resizable-image";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extensions";
@@ -103,7 +103,7 @@ export function DocumentEditor({
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      Image,
+      ResizableImage,
       TableKit.configure({ table: { resizable: false } }),
       Placeholder.configure({ placeholder: "Start writing…" }),
       Markdown,

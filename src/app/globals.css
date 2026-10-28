@@ -688,8 +688,9 @@
   border-radius: 10px;
   border: 1px solid var(--stroke);
 }
-.note-body img.ProseMirror-selectednode {
-  outline: 2px solid var(--ring);
+.note-body .img-frame.ProseMirror-selectednode img,
+.note-body .img-frame.is-resizing img {
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 .note-body p.is-editor-empty:first-child::before {
@@ -858,9 +859,51 @@
   height: auto;
   border-radius: 4px;
 }
-.doc-body img.ProseMirror-selectednode {
-  outline: 2px solid var(--ring);
+.doc-body .img-frame.ProseMirror-selectednode img,
+.doc-body .img-frame.is-resizing img {
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+/* Photos with a handle on each corner to resize them (resizable-image.ts). */
+.img-frame {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+}
+.img-frame.is-sized img {
+  width: 100%;
+}
+.img-handle {
+  position: absolute;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  display: none;
+  touch-action: none;
+}
+.img-handle::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  background: var(--background);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+}
+.img-handle[data-corner="nw"] { top: -10px; left: -10px; cursor: nwse-resize; }
+.img-handle[data-corner="ne"] { top: -10px; right: -10px; cursor: nesw-resize; }
+.img-handle[data-corner="sw"] { bottom: -10px; left: -10px; cursor: nesw-resize; }
+.img-handle[data-corner="se"] { bottom: -10px; right: -10px; cursor: nwse-resize; }
+.ProseMirror[contenteditable="true"] .img-frame.ProseMirror-selectednode .img-handle,
+.ProseMirror[contenteditable="true"] .img-frame.is-resizing .img-handle {
+  display: block;
+}
+@media (hover: hover) {
+  .ProseMirror[contenteditable="true"] .img-frame:hover .img-handle {
+    display: block;
+  }
+}
+.img-frame.is-resizing {
+  user-select: none;
 }
 .doc-body p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);

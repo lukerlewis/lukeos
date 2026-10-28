@@ -1,7 +1,7 @@
 "use client";
 
 import { TaskItem, TaskList } from "@tiptap/extension-list";
-import { Image } from "@tiptap/extension-image";
+import { ResizableImage } from "@/components/notes/resizable-image";
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
@@ -190,7 +190,7 @@ export function NoteEditor({
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      Image,
+      ResizableImage,
       Placeholder.configure({ placeholder: "Start writing…" }),
       Markdown,
       OpenLinks,
