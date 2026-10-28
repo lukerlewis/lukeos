@@ -394,31 +394,26 @@
     }
   }
 
-  /* The sidebar glides open, its contents fading in; while it grows, rows keep
-     their full width and are uncovered rather than squashed. Collapsed, it
-     slides away off the left edge and the page closes up the gap; it slides
-     back out over the page when the pointer reaches that edge. */
-  .sidebar-opening {
-    animation: sidebar-open 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* The sidebar glides between full width and its strip of icons. Opening,
+     rows keep their full width and are uncovered rather than squashed, and
+     their labels fade in. */
+  .sidebar-glide {
+    transition: width 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .sidebar-opening > * {
     min-width: 13.5rem;
     animation: fade-in 180ms 40ms ease-out both;
-  }
-  .sidebar-closing {
-    animation: sidebar-close 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .sidebar-float {
-    transition: translate 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .sidebar-slide-away {
-    animation: sidebar-slide-away 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   /* Each new screen fades in. Opacity only, so nothing on it shifts. */
   main > * {
     animation: fade-in 180ms ease-out;
   }
+}
+
+/* Scrolls without showing a scrollbar, e.g. the collapsed sidebar's strip of icons. */
+.no-scrollbar {
+  scrollbar-width: none;
 }
 
 /* Wide rows show a tap by shading instead of shrinking. */
@@ -442,21 +437,6 @@
 @keyframes fade-in {
   from {
     opacity: 0;
-  }
-}
-@keyframes sidebar-open {
-  from {
-    width: 0;
-  }
-}
-@keyframes sidebar-close {
-  from {
-    width: 15rem;
-  }
-}
-@keyframes sidebar-slide-away {
-  from {
-    translate: 0;
   }
 }
 @keyframes peek-in {
