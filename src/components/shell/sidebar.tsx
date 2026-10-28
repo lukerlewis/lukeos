@@ -1,9 +1,9 @@
 "use client";
 
-import { ChevronDown, Ellipsis, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Ellipsis, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useCommandMenu } from "@/components/command/command-menu";
 import { useFocus } from "@/components/focus/focus-provider";
 import { SEEN_EVENT } from "@/components/from-claude/mark-seen";
@@ -24,34 +24,19 @@ export function Sidebar({
   projects: SidebarProject[];
   newFromClaude: number;
   unreadMessages: number;
-  /** Starts hidden off the left edge. */
+  /** Starts as a narrow strip of icons. */
   collapsed?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(startCollapsed);
-  // Animates only after a toggle, so it doesn't slide about on every page load.
+  // Animates only after a toggle, so it doesn't glide about on every page load.
   const [animate, setAnimate] = useState(false);
-  // While collapsed it's hidden off the left edge, and slides out over the page
-  // when the pointer reaches that edge, like the Mac's Dock.
-  const [peek, setPeek] = useState(false);
-  const hideTimer = useRef<number | undefined>(undefined);
-  const show = useCallback(() => {
-    window.clearTimeout(hideTimer.current);
-    setPeek(true);
-  }, []);
-  const hideSoon = useCallback(() => {
-    window.clearTimeout(hideTimer.current);
-    hideTimer.current = window.setTimeout(() => setPeek(false), 300);
-  }, []);
-  useEffect(() => () => window.clearTimeout(hideTimer.current), []);
   const toggle = useCallback(() => {
-    // Pinning it while it's slid out keeps it where it is, so no animation.
-    setAnimate(!peek);
-    setPeek(false);
+    setAnimate(true);
     setCollapsed((c) => {
       document.cookie = `${SIDEBAR_COOKIE}=${c ? "open" : "collapsed"}; path=/; max-age=31536000; samesite=lax`;
       return !c;
     });
-  }, [peek]);
+  }, []);
   // Cmd+. (Ctrl+. elsewhere) collapses or expands it from anywhere.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -64,45 +49,48 @@ export function Sidebar({
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle]);
 
-  const contents = (
-    <SidebarContents
-      projects={projects}
-      newFromClaude={newFromClaude}
-      unreadMessages={unreadMessages}
-      pinned={!collapsed}
-      onToggle={toggle}
-    />
-  );
-
-  if (!collapsed)
-    return (
-      <aside
-        className={cn(
-          "hidden w-60 shrink-0 flex-col gap-4 overflow-hidden border-r bg-sidebar px-3 py-3.5 md:flex",
-          animate && "sidebar-opening",
-        )}
-      >
-        {contents}
-      </aside>
-    );
+  // Collapsed, each icon names itself in a label beside the strip on hover or keyboard focus.
+  const [tip, setTip] = useState<{ label: string; top: number } | null>(null);
+  const showTip = (e: React.SyntheticEvent) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-tip]");
+    if (!collapsed || !el) return setTip(null);
+    const r = el.getBoundingClientRect();
+    setTip({ label: el.dataset.tip!, top: r.top + r.height / 2 });
+  };
 
   return (
     <>
-      {/* Closes up the space the sidebar left, rather than the page jumping. */}
-      {animate && <div className="sidebar-closing hidden w-0 shrink-0 md:block" aria-hidden />}
-      <div className="fixed inset-y-0 left-0 z-40 hidden w-2 md:block" onMouseEnter={show} onClick={show} aria-hidden />
       <aside
-        inert={!peek}
-        onMouseEnter={show}
-        onMouseLeave={hideSoon}
+        onPointerOver={showTip}
+        onPointerLeave={() => setTip(null)}
+        onFocus={showTip}
+        onBlur={() => setTip(null)}
+        onScrollCapture={() => setTip(null)}
+        onClick={() => setTip(null)}
         className={cn(
-          "sidebar-float fixed inset-y-0 left-0 z-50 hidden w-60 flex-col gap-4 border-r bg-sidebar px-3 py-3.5 md:flex",
-          !peek && "-translate-x-full",
-          animate && "sidebar-slide-away",
+          "hidden shrink-0 flex-col gap-4 overflow-hidden border-r bg-sidebar px-3 py-3.5 md:flex",
+          collapsed ? "w-[68px]" : "w-60",
+          animate && "sidebar-glide",
+          animate && !collapsed && "sidebar-opening",
         )}
       >
-        {contents}
+        <SidebarContents
+          projects={projects}
+          newFromClaude={newFromClaude}
+          unreadMessages={unreadMessages}
+          rail={collapsed}
+          onToggle={toggle}
+        />
       </aside>
+      {collapsed && tip && (
+        <div
+          role="tooltip"
+          className="pointer-events-none fixed left-[76px] z-50 -translate-y-1/2 rounded-md bg-primary px-2 py-1 text-meta whitespace-nowrap text-primary-foreground"
+          style={{ top: tip.top }}
+        >
+          {tip.label}
+        </div>
+      )}
     </>
   );
 }
@@ -111,14 +99,14 @@ function SidebarContents({
   projects,
   newFromClaude,
   unreadMessages,
-  pinned,
+  rail,
   onToggle,
 }: {
   projects: SidebarProject[];
   newFromClaude: number;
   unreadMessages: number;
-  /** In place beside the page, rather than slid out over it. */
-  pinned: boolean;
+  /** Collapsed to a strip of icons. */
+  rail: boolean;
   onToggle: () => void;
 }) {
   const pathname = usePathname();
@@ -143,43 +131,66 @@ function SidebarContents({
     "/messages": unread,
   };
 
-  const toggleLabel = pinned ? "Collapse sidebar" : "Keep sidebar open";
+  const toggleLabel = rail ? "Expand sidebar" : "Collapse sidebar";
+  const toggleKeys = isMac ? "⌘." : "Ctrl+.";
 
   return (
     <>
-      <div className="flex items-center gap-2.5 py-1.5 pl-2">
-        <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-medium text-primary-foreground">
-          L
-        </span>
-        <span className="grow font-medium text-ink">Luke&apos;s space</span>
+      {rail ? (
         <button
           type="button"
           onClick={onToggle}
-          title={`${toggleLabel} (${isMac ? "⌘." : "Ctrl+."})`}
+          data-tip={`${toggleLabel} (${toggleKeys})`}
           aria-label={toggleLabel}
           aria-keyshortcuts={isMac ? "Meta+." : "Control+."}
-          className="-my-1.5 flex size-9 items-center justify-center rounded-lg text-icon hover:bg-muted hover:text-foreground"
+          className="flex size-11 shrink-0 items-center justify-center rounded-lg text-icon hover:bg-muted hover:text-foreground"
         >
-          {pinned ? <PanelLeftClose className="size-[18px]" aria-hidden /> : <PanelLeftOpen className="size-[18px]" aria-hidden />}
+          <PanelLeftOpen className="size-[18px]" aria-hidden />
         </button>
-      </div>
+      ) : (
+        <div className="flex items-center gap-2.5 py-1.5 pl-2">
+          <span className="flex size-7 items-center justify-center rounded-[8px] bg-primary text-meta font-medium text-primary-foreground">
+            L
+          </span>
+          <span className="grow font-medium whitespace-nowrap text-ink">Luke&apos;s space</span>
+          <button
+            type="button"
+            onClick={onToggle}
+            title={`${toggleLabel} (${toggleKeys})`}
+            aria-label={toggleLabel}
+            aria-keyshortcuts={isMac ? "Meta+." : "Control+."}
+            className="-my-1.5 flex size-9 items-center justify-center rounded-lg text-icon hover:bg-muted hover:text-foreground"
+          >
+            <PanelLeftClose className="size-[18px]" aria-hidden />
+          </button>
+        </div>
+      )}
 
       <button
         type="button"
         onClick={openMenu}
+        aria-label={rail ? "Search" : undefined}
+        data-tip={`Search (${isMac ? "⌘K" : "Ctrl K"})`}
         aria-keyshortcuts={isMac ? "Meta+K" : "Control+K"}
-        className="pressable flex h-10 shrink-0 items-center gap-2 rounded-lg border border-stroke-strong bg-card px-3 text-left whitespace-nowrap text-muted-foreground hover:text-foreground"
+        className={cn(
+          "pressable flex shrink-0 items-center gap-2 rounded-lg border border-stroke-strong bg-card text-left whitespace-nowrap text-muted-foreground hover:text-foreground",
+          rail ? "size-11 justify-center" : "h-10 px-3",
+        )}
       >
         <Search className="size-4 text-icon" aria-hidden />
-        <span className="grow truncate">Search</span>
-        <kbd className="rounded-md border border-stroke bg-muted px-1.5 text-xs">{isMac ? "⌘K" : "Ctrl K"}</kbd>
+        {!rail && (
+          <>
+            <span className="grow truncate">Search</span>
+            <kbd className="rounded-md border border-stroke bg-muted px-1.5 text-xs">{isMac ? "⌘K" : "Ctrl K"}</kbd>
+          </>
+        )}
       </button>
 
       {/* The page links and projects scroll together if the window is short. */}
-      <div className="-mx-1 flex min-h-0 flex-col gap-4 overflow-y-auto px-1">
+      <div className={cn("-mx-1 flex min-h-0 flex-col gap-4 overflow-y-auto px-1", rail && "no-scrollbar")}>
         <nav className="flex flex-col gap-0.5" aria-label="Main">
           {mainNav.map((item) =>
-            item.href === "/listen" ? (
+            item.href === "/listen" && !rail ? (
               // Hovering Music shows the player's controls over the end of its row.
               <div key={item.href} className="group/music relative">
                 <NavLink {...item} active={isActive(pathname, item.href)} prefetch />
@@ -193,20 +204,25 @@ function SidebarContents({
                 prefetch
                 count={counts[item.href]}
                 aside={item.href === "/focus" ? running : null}
+                rail={rail}
               />
             ),
           )}
-          <MoreNav pathname={pathname} counts={counts} />
+          <MoreNav pathname={pathname} counts={counts} rail={rail} />
         </nav>
 
         <div className="flex flex-col gap-0.5">
-          <div className="flex items-center justify-between px-3 pb-1 text-meta font-medium text-muted-foreground">
-            <Link href="/projects" className="hover:text-foreground">
-              Projects
-            </Link>
-            <NewProjectIconButton />
-          </div>
-          {projects.length === 0 && <p className="px-3 text-meta text-muted-foreground">No projects yet</p>}
+          {rail ? (
+            <div className="mx-2 mb-2 border-t" aria-hidden />
+          ) : (
+            <div className="flex items-center justify-between px-3 pb-1 text-meta font-medium whitespace-nowrap text-muted-foreground">
+              <Link href="/projects" className="hover:text-foreground">
+                Projects
+              </Link>
+              <NewProjectIconButton />
+            </div>
+          )}
+          {projects.length === 0 && !rail && <p className="px-3 text-meta text-muted-foreground">No projects yet</p>}
           {projects.map((p) => {
             const href = `/projects/${p.id}`;
             const active = pathname === href;
@@ -215,16 +231,23 @@ function SidebarContents({
                 key={p.id}
                 href={href}
                 aria-current={active ? "page" : undefined}
+                aria-label={rail ? p.name : undefined}
+                data-tip={p.name}
                 className={cn(
-                  "pressable flex h-11 items-center gap-3 rounded-lg px-3 text-control text-muted-foreground hover:bg-muted",
+                  "pressable flex h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-control whitespace-nowrap text-muted-foreground hover:bg-muted",
+                  rail && "w-11",
                   active && "bg-selected font-medium text-ink",
                 )}
               >
                 <span className="flex size-[18px] shrink-0 items-center justify-center" aria-hidden>
                   <span className="size-2.5 rounded-[3px]" style={{ background: p.hex }} />
                 </span>
-                <span className="grow truncate">{p.name}</span>
-                {p.open > 0 && <span className="text-meta text-muted-foreground">{p.open}</span>}
+                {!rail && (
+                  <>
+                    <span className="grow truncate">{p.name}</span>
+                    {p.open > 0 && <span className="text-meta text-muted-foreground">{p.open}</span>}
+                  </>
+                )}
               </Link>
             );
           })}
@@ -233,8 +256,8 @@ function SidebarContents({
 
       <div className="grow" />
       <div className="flex flex-col gap-0.5">
-        <NavLink href="/trash" label="Trash" icon={Trash2} active={isActive(pathname, "/trash")} />
-        <NavLink href="/settings" label="Settings" icon={SlidersHorizontal} active={isActive(pathname, "/settings")} />
+        <NavLink href="/trash" label="Trash" icon={Trash2} active={isActive(pathname, "/trash")} rail={rail} />
+        <NavLink href="/settings" label="Settings" icon={SlidersHorizontal} active={isActive(pathname, "/settings")} rail={rail} />
       </div>
     </>
   );
@@ -252,7 +275,7 @@ function readMoreOpen() {
 }
 
 /** Inspiration, Work archive, Portfolio, Agents, Messages and All tasks, folded under one row. */
-function MoreNav({ pathname, counts }: { pathname: string; counts: Record<string, number> }) {
+function MoreNav({ pathname, counts, rail }: { pathname: string; counts: Record<string, number>; rail: boolean }) {
   const inside = moreNav.some((item) => isActive(pathname, item.href));
   // Starts open on one of its own pages, or if it was left open last time.
   const remembered = useSyncExternalStore(noSubscribe, readMoreOpen, () => false);
@@ -265,6 +288,7 @@ function MoreNav({ pathname, counts }: { pathname: string; counts: Record<string
     } catch {}
   };
   const total = moreNav.reduce((sum, item) => sum + (counts[item.href] ?? 0), 0);
+  const highlight = !open && inside;
 
   return (
     <>
@@ -272,29 +296,46 @@ function MoreNav({ pathname, counts }: { pathname: string; counts: Record<string
         type="button"
         onClick={toggle}
         aria-expanded={open}
+        aria-label={rail ? (open ? "Less" : "More") : undefined}
+        data-tip={open ? "Less" : "More"}
         className={cn(
-          "group pressable flex h-11 items-center gap-3 rounded-lg px-3 text-left text-control text-muted-foreground hover:bg-muted",
-          !open && inside && "bg-selected font-medium text-ink",
+          "group pressable relative flex h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-left text-control whitespace-nowrap text-muted-foreground hover:bg-muted",
+          rail && "w-11",
+          highlight && "bg-selected font-medium text-ink",
         )}
       >
-        <Ellipsis className={cn("size-[18px]", !open && inside ? "text-foreground" : "text-icon")} aria-hidden />
-        <span className="grow">More</span>
-        {!open && total > 0 && (
-          <span className="min-w-5 rounded-full bg-notification px-1.5 text-center text-xs leading-5 font-medium text-on-notification">
-            {total}
-            <span className="sr-only"> new</span>
-          </span>
+        {rail && open ? (
+          <ChevronUp className="size-[18px] text-icon" aria-hidden />
+        ) : (
+          <Ellipsis className={cn("size-[18px]", highlight ? "text-foreground" : "text-icon")} aria-hidden />
         )}
-        <ChevronDown className={cn("size-4 text-icon transition-transform", open && "rotate-180")} aria-hidden />
+        {!rail && <span className="grow">More</span>}
+        {!open && total > 0 && <Count n={total} rail={rail} />}
+        {!rail && <ChevronDown className={cn("size-4 text-icon transition-transform", open && "rotate-180")} aria-hidden />}
       </button>
       {open && (
-        <div className="flex flex-col gap-0.5 pl-3">
+        <div className={cn("flex flex-col gap-0.5", !rail && "pl-3")}>
           {moreNav.map((item) => (
-            <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]} />
+            <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} count={counts[item.href]} rail={rail} />
           ))}
         </div>
       )}
     </>
+  );
+}
+
+/** A red count badge: at the end of a row, or on the icon's corner in the collapsed strip. */
+function Count({ n, rail }: { n: number; rail: boolean }) {
+  return (
+    <span
+      className={cn(
+        "min-w-5 rounded-full bg-notification px-1.5 text-center text-xs leading-5 font-medium text-on-notification",
+        rail && "absolute top-0.5 right-0.5 min-w-4 px-1 text-[10px] leading-4",
+      )}
+    >
+      {n}
+      <span className="sr-only"> new</span>
+    </span>
   );
 }
 
@@ -306,6 +347,7 @@ function NavLink({
   count,
   aside,
   prefetch,
+  rail = false,
 }: {
   href: string;
   label: string;
@@ -316,26 +358,27 @@ function NavLink({
   aside?: string | null;
   /** Load the whole screen ahead of time, so opening it is instant. For the main screens. */
   prefetch?: boolean;
+  /** Icon only, in the collapsed strip. */
+  rail?: boolean;
 }) {
   return (
     <Link
       href={href}
       prefetch={prefetch || null}
       aria-current={active ? "page" : undefined}
+      aria-label={rail ? label : undefined}
+      data-tip={aside ? `${label} · ${aside}` : label}
       className={cn(
-        "group pressable flex h-11 items-center gap-3 rounded-lg px-3 text-control text-muted-foreground hover:bg-muted",
+        "group pressable relative flex h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-control whitespace-nowrap text-muted-foreground hover:bg-muted",
+        rail && "w-11",
         active && "bg-selected font-medium text-ink",
       )}
     >
-      <Icon className={cn("size-[18px]", active ? "text-foreground" : "text-icon")} aria-hidden />
-      <span className="grow">{label}</span>
-      {aside && <span className="text-meta text-muted-foreground tabular-nums">{aside}</span>}
-      {!!count && (
-        <span className="min-w-5 rounded-full bg-notification px-1.5 text-center text-xs leading-5 font-medium text-on-notification">
-          {count}
-          <span className="sr-only"> new</span>
-        </span>
-      )}
+      <Icon className={cn("size-[18px] shrink-0", active ? "text-foreground" : "text-icon")} aria-hidden />
+      {!rail && <span className="grow">{label}</span>}
+      {aside && !rail && <span className="text-meta text-muted-foreground tabular-nums">{aside}</span>}
+      {aside && rail && <span className="absolute top-2 right-2 size-1.5 rounded-full bg-foreground" aria-hidden />}
+      {!!count && <Count n={count} rail={rail} />}
     </Link>
   );
 }
