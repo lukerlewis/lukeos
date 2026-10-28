@@ -58,7 +58,7 @@ const live = isNull(archiveEntries.deletedAt);
 
 /** The first photo in a story, e.g. /api/images/<id>. */
 export function coverOf(story: string) {
-  return story.match(/!\[[^\]]*\]\((\/api\/images\/[0-9a-f-]{36})\)/i)?.[1] ?? null;
+  return story.match(/!\[[^\]]*\]\((\/api\/images\/[0-9a-f-]{36})(?:#[^)]*)?\)/i)?.[1] ?? null;
 }
 
 type Row = typeof archiveEntries.$inferSelect;

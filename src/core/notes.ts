@@ -205,7 +205,7 @@ const content = z
   .string()
   .max(1_000_000)
   .describe(
-    'The note\'s body. For Markdown notes: headings (#), lists (-), checklists (- [ ] and - [x]), links, and photos as ![](url) using a url from save_image. For format "html", a complete HTML page.',
+    'The note\'s body. For Markdown notes: headings (#), lists (-), checklists (- [ ] and - [x]), links, and photos as ![](url) using a url from save_image (add #width=50 to the url to show a photo at 50% of the text width). For format "html", a complete HTML page.',
   );
 const projectId = z.uuid().nullable().describe("The project it belongs to. null means it stands on its own.");
 const folderId = z.uuid().nullable().describe("The folder to file it in (see list_folders). null means it isn't in a folder.");

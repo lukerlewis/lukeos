@@ -1,7 +1,7 @@
 "use client";
 
 import { TaskItem, TaskList } from "@tiptap/extension-list";
-import { Image } from "@tiptap/extension-image";
+import { ResizableImage } from "@/components/notes/resizable-image";
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
@@ -94,7 +94,7 @@ export function EntryEditor({ entry, autoFocus }: { entry: Entry; autoFocus?: bo
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      Image,
+      ResizableImage,
       Placeholder.configure({ placeholder: "Tell the story…" }),
       Markdown,
       OpenLinks,

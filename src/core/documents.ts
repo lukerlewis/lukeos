@@ -132,7 +132,7 @@ const content = z
   .string()
   .max(1_000_000)
   .describe(
-    "The page's text in Markdown: start with a # heading for the document's title on the page, then ## and ### headings, paragraphs, **bold**, *italic*, lists, checklists (- [ ]), > quotes, tables, links, --- for a divider, and photos as ![](url) using a url from save_image. The page is US Letter and prints as it looks, so write it as a finished, printable document.",
+    "The page's text in Markdown: start with a # heading for the document's title on the page, then ## and ### headings, paragraphs, **bold**, *italic*, lists, checklists (- [ ]), > quotes, tables, links, --- for a divider, and photos as ![](url) using a url from save_image (add #width=50 to the url to show a photo at 50% of the page width). The page is US Letter and prints as it looks, so write it as a finished, printable document.",
   );
 const projectId = z.uuid().nullable().describe("The project it belongs to. null means it stands on its own.");
 

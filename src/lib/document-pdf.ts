@@ -5,6 +5,7 @@ import { marked, type Token, type Tokens } from "marked";
 import pdfmake from "pdfmake";
 import sharp from "sharp";
 import { getImage } from "@/core/notes";
+import { splitImageSrc } from "@/lib/image-width";
 
 /**
  * Turns a document's Markdown into a real PDF (selectable text, not a
@@ -154,8 +155,12 @@ class Builder {
     for (const t of tokens ?? []) {
       if (t.type === "image") {
         flush();
-        const pic = this.pictures.get((t as Tokens.Image).href);
-        if (pic) out.push({ image: pic.data, width: pic.width, margin: [0, 2, 0, GAP + 2] });
+        const href = (t as Tokens.Image).href;
+        const pic = this.pictures.get(href);
+        // A photo resized in the editor fills the same share of the page.
+        const sized = splitImageSrc(href).width;
+        const width = sized ? Math.round((CONTENT_WIDTH * sized) / 100) : pic?.width;
+        if (pic) out.push({ image: pic.data, width, margin: [0, 2, 0, GAP + 2] });
       } else run.push(t);
     }
     flush();
