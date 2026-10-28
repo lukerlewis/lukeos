@@ -24,8 +24,10 @@ export type NoteSummary = {
   project: { id: string; name: string; color: ProjectColor; hex: string } | null;
   /** The folder it's filed in, if any. */
   folder: { id: string; name: string } | null;
-  /** Pinned notes sit at the top of every list of notes. */
+  /** Pinned notes sit in a row of cards above every list of notes. */
   pinned: boolean;
+  /** When it was pinned, for putting the newest pin first. */
+  pinnedAt: Date | null;
   madeBy: ReturnType<typeof madeByOf>;
   createdAt: Date;
   updatedAt: Date;
@@ -128,6 +130,7 @@ export async function listNotes(
     project: projectOf(project),
     folder,
     pinned: note.pinnedAt !== null,
+    pinnedAt: note.pinnedAt,
     madeBy: madeByOf(note),
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
@@ -176,6 +179,7 @@ export async function getNote(id: string): Promise<Note> {
     project: projectOf(project),
     folder,
     pinned: note.pinnedAt !== null,
+    pinnedAt: note.pinnedAt,
     madeBy: madeByOf(note),
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,

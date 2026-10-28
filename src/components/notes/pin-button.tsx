@@ -3,7 +3,7 @@
 import { Pin, PinOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-/** Pins a note to the top of the notes list, or unpins it. */
+/** Pins a note or document to the row of cards above its list, or unpins it. */
 export function PinButton({ pinned, onChange }: { pinned: boolean; onChange: (pinned: boolean) => void }) {
   const Icon = pinned ? PinOff : Pin;
   return (

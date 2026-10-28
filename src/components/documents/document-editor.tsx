@@ -37,6 +37,7 @@ import { trashInBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { OpenLinks } from "@/components/notes/open-links";
+import { PinButton } from "@/components/notes/pin-button";
 
 /**
  * A document: its name and details above a printable page (US Letter, 1 inch
@@ -56,6 +57,7 @@ export function DocumentEditor({
   const { state, queue, flush } = useAutosave(doc.id, "update_document");
   const [title, setTitle] = useState(doc.title);
   const [projectId, setProjectId] = useState(doc.project?.id ?? null);
+  const [pinned, setPinned] = useState(doc.pinned);
   const [uploading, setUploading] = useState(0);
   const [exporting, setExporting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -231,6 +233,13 @@ export function DocumentEditor({
             {uploading > 0 ? "Adding photo..." : state === "saving" ? "Saving..." : state === "error" ? "Not saved yet, retrying" : "Saved"}
           </span>
           <span className="grow" />
+          <PinButton
+            pinned={pinned}
+            onChange={(next) => {
+              setPinned(next);
+              queue({ pinned: next }, 0);
+            }}
+          />
           <Button variant="outline" size="sm" onClick={exportPdf} disabled={exporting}>
             {exporting ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
             Export PDF

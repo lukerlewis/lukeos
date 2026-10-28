@@ -23,6 +23,10 @@ export type DocumentSummary = {
   isNew: boolean;
   /** Comments not yet resolved (not counting replies). */
   openComments: number;
+  /** Pinned documents sit in a row of cards above the list. */
+  pinned: boolean;
+  /** When it was pinned, for putting the newest pin first. */
+  pinnedAt: Date | null;
 };
 
 export type Document = DocumentSummary & { content: string };
@@ -58,6 +62,7 @@ export async function listDocuments(
           title: documents.title,
           start: sql<string>`left(${documents.content}, 2000)`,
           claudeChangedAt: documents.claudeChangedAt,
+          pinnedAt: documents.pinnedAt,
           createdByKind: documents.createdByKind,
           createdByName: documents.createdByName,
           createdByRoutine: documents.createdByRoutine,
@@ -70,7 +75,8 @@ export async function listDocuments(
       .from(documents)
       .leftJoin(projects, eq(projects.id, documents.projectId))
       .where(and(...where))
-      .orderBy(desc(documents.updatedAt))
+      // Pinned documents first (the most recently pinned on top), then the rest by when they were changed.
+      .orderBy(sql`${documents.pinnedAt} desc nulls last`, desc(documents.updatedAt))
       .limit(filter.limit ?? 200),
     seenAt(),
   ]);
@@ -84,6 +90,8 @@ export async function listDocuments(
     updatedAt: doc.updatedAt,
     isNew: doc.claudeChangedAt !== null && doc.claudeChangedAt > seen,
     openComments,
+    pinned: doc.pinnedAt !== null,
+    pinnedAt: doc.pinnedAt,
   }));
 }
 
@@ -123,6 +131,8 @@ export async function getDocument(id: string): Promise<Document> {
     updatedAt: doc.updatedAt,
     isNew: doc.claudeChangedAt !== null && doc.claudeChangedAt > seen,
     openComments: row.openComments,
+    pinned: doc.pinnedAt !== null,
+    pinnedAt: doc.pinnedAt,
   };
 }
 
@@ -140,7 +150,7 @@ export const documentOperations = {
   list_documents: defineOperation({
     name: "list_documents",
     description:
-      "List Luke's documents (printable pages, by Luke or Claude), most recently changed first, with a short excerpt of each and how many unresolved comments it has. Filter by project, by who made them, by routine, or search the title and text.",
+      "List Luke's documents (printable pages, by Luke or Claude): pinned ones first, then the most recently changed, with a short excerpt of each and how many unresolved comments it has. Filter by project, by who made them, by routine, or search the title and text.",
     input: z.object({
       projectId: z.uuid().nullable().optional().describe("Only this project's documents. null means ones with no project."),
       madeBy: z.enum(["luke", "claude"]).optional().describe("Only documents Luke made, or only ones Claude made."),
@@ -182,15 +192,16 @@ export const documentOperations = {
   update_document: defineOperation({
     name: "update_document",
     description:
-      "Change a document: its title, its whole text, or its project. Luke edits documents too, so read the latest with get_document first and keep his changes. To add to the end without rewriting it (a running log, say), use append instead of content. Fields left out stay as they are. To act on Luke's comments: update the document, then reply_to_comment and resolve_comment.",
+      "Change a document: its title, its whole text, its project, or whether it's pinned above Luke's documents. Luke edits documents too, so read the latest with get_document first and keep his changes. To add to the end without rewriting it (a running log, say), use append instead of content. Fields left out stay as they are. To act on Luke's comments: update the document, then reply_to_comment and resolve_comment.",
     input: z.object({
       id,
       title: title.optional(),
       content: content.optional(),
       append: z.string().max(200_000).optional().describe("Markdown to add to the end of the document, as a new paragraph."),
       projectId: projectId.optional(),
+      pinned: z.boolean().optional().describe("true pins the document above Luke's documents; false unpins it."),
     }),
-    run: async ({ id, title, content, append, projectId }, { actor }) => {
+    run: async ({ id, title, content, append, projectId, pinned }, { actor }) => {
       const current = await getDocument(id);
       if (projectId) await assertProject(projectId);
       let body = content;
@@ -203,11 +214,17 @@ export const documentOperations = {
         ...(body !== undefined && { content: body }),
         ...(projectId !== undefined && { projectId }),
       };
-      if (Object.keys(set).length) {
-        const now = new Date();
+      const now = new Date();
+      // Pinning isn't editing, so on its own it doesn't change when the document was last edited.
+      const pin = pinned !== undefined && pinned !== current.pinned ? { pinnedAt: pinned ? now : null } : {};
+      if (Object.keys(set).length || Object.keys(pin).length) {
         await db
           .update(documents)
-          .set({ ...set, updatedAt: now, ...(actor.kind === "agent" && { claudeChangedAt: now }) })
+          .set({
+            ...set,
+            ...pin,
+            ...(Object.keys(set).length && { updatedAt: now, ...(actor.kind === "agent" && { claudeChangedAt: now }) }),
+          })
           .where(eq(documents.id, id));
       }
       return getDocument(id);

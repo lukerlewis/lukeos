@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DocumentList } from "@/components/documents/document-list";
 import { NewDocumentButton, NewDocumentFab } from "@/components/documents/new-document-button";
+import { PinnedRow } from "@/components/pinned/pinned-row";
 import { MarkFromClaudeSeen } from "@/components/from-claude/mark-seen";
 import { EmptyState, Page } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { chipProjects, countByProject, pickedFromQuery, ProjectChips, withProjec
 import { listDocuments } from "@/core/documents";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
+import { pinnedDocument } from "@/lib/pinned";
 
 export const metadata: Metadata = { title: "Documents · LukeOS" };
 
@@ -30,6 +32,9 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
   // A new document gets the project when exactly one is picked.
   const only = picked.length === 1 ? picked[0] : null;
   const documents = picked.length ? all.filter((d) => d.project && picked.includes(d.project.id)) : all;
+  // Pinned documents sit in their own row on top, not in the list below.
+  const pinned = documents.filter((d) => d.pinned);
+  const rest = documents.filter((d) => !d.pinned);
 
   return (
     <Page title="Documents" actions={<NewDocumentButton projectId={only} className="max-md:hidden" />} newTask={false}>
@@ -53,13 +58,16 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
           href={(ids) => withProjects("/documents", { by }, ids)}
           className="-mx-5 flex-nowrap overflow-x-auto px-5 md:mx-0 md:flex-wrap md:px-0"
         />
-        <Card>
-          <DocumentList
-            documents={documents}
-            timeZone={timeZone}
-            empty={<EmptyState>{by === "claude" ? "Nothing from Claude yet." : "No documents yet."}</EmptyState>}
-          />
-        </Card>
+        <PinnedRow items={pinned.map(pinnedDocument)} />
+        {(rest.length > 0 || pinned.length === 0) && (
+          <Card>
+            <DocumentList
+              documents={rest}
+              timeZone={timeZone}
+              empty={<EmptyState>{by === "claude" ? "Nothing from Claude yet." : "No documents yet."}</EmptyState>}
+            />
+          </Card>
+        )}
       </div>
       <NewDocumentFab projectId={only} />
     </Page>

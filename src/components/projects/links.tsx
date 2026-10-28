@@ -1,20 +1,23 @@
 "use client";
 
-import { Globe, Pencil, Pin, Plus, Trash2 } from "lucide-react";
+import { Pencil, Pin, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PinnedRow } from "@/components/pinned/pinned-row";
+import { SiteIcon } from "@/components/projects/site-icon";
 import { ClaudeBadge } from "@/components/tasks/made-by";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import type { ProjectLink } from "@/core/links";
 import { hide, inBackground, unhide, useWithoutHidden } from "@/lib/background";
 import { op } from "@/lib/ops-client";
+import { pinnedLink } from "@/lib/pinned";
 import { cn } from "@/lib/utils";
 
-const field =
-  "rounded-lg border bg-card px-3 text-body border-stroke-strong outline-none md:text-control focus-visible:border-ring";
+const field = "rounded-lg border bg-card px-3 text-body border-stroke-strong outline-none md:text-control focus-visible:border-ring";
 
-/** A project's saved links, each opening in a new tab. */
+/** A project's saved links, each opening in a new tab: pinned ones as a row of cards, the rest in a list below. */
 export function LinkList({ links, empty }: { links: ProjectLink[]; empty: React.ReactNode }) {
   const router = useRouter();
   const [editing, setEditing] = useState<ProjectLink | null>(null);
@@ -37,54 +40,67 @@ export function LinkList({ links, empty }: { links: ProjectLink[]; empty: React.
     });
   }
 
-  if (shown.length === 0) return <>{empty}</>;
+  if (shown.length === 0) return <Card>{empty}</Card>;
+  const pinned = shown.filter((l) => l.pinned);
+  const rest = shown.filter((l) => !l.pinned);
+  const linkOf = (id: string) => shown.find((l) => l.id === id)!;
   return (
     <>
-      <ul>
-        {shown.map((l) => (
-          <li key={l.id} className="group flex items-center border-b last:border-b-0">
-            <a
-              href={l.url}
-              target="_blank"
-              rel="noreferrer"
-              className="press-tint flex min-w-0 grow items-start gap-3 py-4 pr-2 pl-4 hover:bg-muted/50"
-            >
-              <SiteIcon site={l.site} />
-              <span className="flex min-w-0 grow flex-col gap-0.5">
-                <span className="flex items-center gap-1.5">
-                  <span className="min-w-0 truncate text-control font-medium">{l.title || l.site}</span>
-                  <ClaudeBadge madeBy={l.madeBy} />
-                </span>
-                <span className="truncate text-meta text-muted-foreground">{l.site}</span>
-                {l.note && <span className="line-clamp-3 text-meta whitespace-pre-line text-subtle-foreground">{l.note}</span>}
-              </span>
-            </a>
-            <button
-              type="button"
-              onClick={() => togglePin(l)}
-              aria-label={l.pinned ? `Unpin ${l.title || l.site}` : `Pin ${l.title || l.site}`}
-              aria-pressed={l.pinned}
-              title={l.pinned ? "Unpin" : "Pin to top"}
-              className={cn(
-                "flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted hover:text-foreground",
-                l.pinned
-                  ? "text-foreground"
-                  : "text-muted-foreground md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100",
-              )}
-            >
-              <Pin className={cn("size-4", l.pinned && "fill-current")} aria-hidden />
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditing(l)}
-              aria-label={`Edit ${l.title || l.site}`}
-              className="mr-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <Pencil className="size-4" aria-hidden />
-            </button>
-          </li>
-        ))}
-      </ul>
+      <PinnedRow
+        items={pinned.map(pinnedLink)}
+        showProject={false}
+        onUnpin={(i) => togglePin(linkOf(i.id))}
+        onEdit={(i) => setEditing(linkOf(i.id))}
+      />
+      {rest.length > 0 && (
+        <Card>
+          <ul>
+            {rest.map((l) => (
+              <li key={l.id} className="group flex items-center border-b last:border-b-0">
+                <a
+                  href={l.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="press-tint flex min-w-0 grow items-start gap-3 py-4 pr-2 pl-4 hover:bg-muted/50"
+                >
+                  <SiteIcon site={l.site} />
+                  <span className="flex min-w-0 grow flex-col gap-0.5">
+                    <span className="flex items-center gap-1.5">
+                      <span className="min-w-0 truncate text-control font-medium">{l.title || l.site}</span>
+                      <ClaudeBadge madeBy={l.madeBy} />
+                    </span>
+                    <span className="truncate text-meta text-muted-foreground">{l.site}</span>
+                    {l.note && <span className="line-clamp-3 text-meta whitespace-pre-line text-subtle-foreground">{l.note}</span>}
+                  </span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => togglePin(l)}
+                  aria-label={l.pinned ? `Unpin ${l.title || l.site}` : `Pin ${l.title || l.site}`}
+                  aria-pressed={l.pinned}
+                  title={l.pinned ? "Unpin" : "Pin to top"}
+                  className={cn(
+                    "flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted hover:text-foreground",
+                    l.pinned
+                      ? "text-foreground"
+                      : "text-muted-foreground md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100",
+                  )}
+                >
+                  <Pin className={cn("size-4", l.pinned && "fill-current")} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditing(l)}
+                  aria-label={`Edit ${l.title || l.site}`}
+                  className="mr-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <Pencil className="size-4" aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
       {editing && <LinkDialog projectId={editing.projectId} link={editing} onClose={() => setEditing(null)} />}
     </>
   );
@@ -104,25 +120,6 @@ function sortByPin(links: ProjectLink[], pins: Record<string, number | null>) {
   const pinned = withPins.filter((l) => l.pinned).sort((a, b) => b.rank - a.rank);
   const rest = withPins.filter((l) => !l.pinned).sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
   return [...pinned, ...rest];
-}
-
-/** The site's own little icon, or a globe if it has none. */
-function SiteIcon({ site }: { site: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <Globe className="mt-0.5 size-5 shrink-0 text-icon" aria-hidden />;
-  return (
-    // eslint-disable-next-line @next/next/no-img-element -- a tiny remote icon, not worth the image optimiser
-    <img
-      // An icon that failed before the page came alive never fires onError, so check on mount too.
-      ref={(img) => {
-        if (img?.complete && img.naturalWidth === 0) setFailed(true);
-      }}
-      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(site)}&sz=64`}
-      alt=""
-      className="mt-0.5 size-5 shrink-0 rounded-[4px]"
-      onError={() => setFailed(true)}
-    />
-  );
 }
 
 export function AddLinkButton({ projectId }: { projectId: string }) {
