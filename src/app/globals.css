@@ -88,6 +88,8 @@
 }
 
 @theme inline {
+  /* Phone layout only below 640px, so a half-width laptop window stays desktop (Luke, 2026-10-28). Keep in step with PHONE_QUERY in src/lib/breakpoint.ts. */
+  --breakpoint-md: 40rem;
   --color-grey-0: var(--grey-0);
   --color-grey-50: var(--grey-50);
   --color-grey-100: var(--grey-100);
@@ -1034,7 +1036,7 @@
 :root {
   --player-space: 0px;
 }
-@media (max-width: 767px) {
+@media (max-width: 639.98px) {
   :root[data-player] {
     --player-space: 4.25rem;
   }
@@ -1044,7 +1046,7 @@
  * The dashboard on a computer reads one step bigger (Luke, 2026-10-26): task names 16, details and counts 14, card headings 18.
  * Tags and chips at 12 stay as they are. Rows, chips and icons grow with the text so nothing gets cramped.
  */
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .dashboard-type {
     font-size: 16px;
   }

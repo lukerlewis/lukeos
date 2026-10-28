@@ -284,7 +284,7 @@ function Picture({ a, className }: { a: ThreadAttachment; className?: string }) 
     <img
       src={a.thumb ?? a.url}
       srcSet={a.thumb && a.width ? `${a.thumb} 640w, ${a.url} ${a.width}w` : undefined}
-      sizes="(max-width: 768px) 70vw, 360px"
+      sizes="(max-width: 640px) 70vw, 360px"
       width={a.width ?? undefined}
       height={a.height ?? undefined}
       alt={a.name}
