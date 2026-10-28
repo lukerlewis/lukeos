@@ -32,6 +32,7 @@ import { ClaudeTag } from "./claude-tag";
 import { PinButton } from "./pin-button";
 import { shrinkPhoto } from "./photos";
 import { OpenLinks } from "./open-links";
+import { PHONE_QUERY } from "@/lib/breakpoint";
 
 type SaveState = "saved" | "saving" | "error";
 type Change = {
@@ -441,7 +442,7 @@ function useScreenTop() {
     const vv = window.visualViewport;
     if (!vv) return;
     // Computers scroll the screen area, not the page, so only phones need this.
-    const phone = window.matchMedia("(max-width: 767px)");
+    const phone = window.matchMedia(PHONE_QUERY);
     const update = () => setTop(phone.matches ? Math.max(0, Math.round(vv.offsetTop)) : 0);
     update();
     vv.addEventListener("resize", update);

@@ -62,6 +62,7 @@ import {
 } from "@/lib/whiteboard";
 import { inkOf, ItemView, strokePath } from "./item-view";
 import { Inks, Panel, PenSizes } from "./panel";
+import { PHONE_QUERY } from "@/lib/breakpoint";
 
 type Rect = { x: number; y: number; w: number; h: number };
 type Camera = { x: number; y: number; z: number };
@@ -437,7 +438,7 @@ export function WhiteboardEditor({
     if (!at || !view) return;
     const c = camRef.current;
     setCam({ ...c, x: view.clientWidth / 2 - at.x * c.z, y: view.clientHeight / 2 - at.y * c.z });
-    if (window.matchMedia("(max-width: 767px)").matches) setCommentsOpen(false);
+    if (window.matchMedia(PHONE_QUERY).matches) setCommentsOpen(false);
   };
 
   // ---- Picking what was clicked ----
@@ -803,7 +804,7 @@ export function WhiteboardEditor({
     if (tool === "pen" || tool === "eraser") {
       // Only the Pencil (or a mouse) draws, so a resting hand can't. One finger does nothing; two fingers still pinch and pan.
       // On a phone, where there's no Pencil, a finger draws.
-      if (e.pointerType === "touch" && !window.matchMedia("(max-width: 767px)").matches) return;
+      if (e.pointerType === "touch" && !window.matchMedia(PHONE_QUERY).matches) return;
       if (tool === "eraser") {
         history.begin();
         gesture.current = { kind: "erase", pointer: e.pointerId, last: world };

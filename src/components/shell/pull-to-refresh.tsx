@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
+import { PHONE_QUERY } from "@/lib/breakpoint";
 
 /** How far (after damping) a pull has to go before letting go refreshes. */
 const TRIGGER = 64;
@@ -15,7 +16,7 @@ const MIN_SPIN_MS = 500;
 
 const isInstalled = () =>
   window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
-const isPhone = () => window.matchMedia("(max-width: 767.98px)").matches;
+const isPhone = () => window.matchMedia(PHONE_QUERY).matches;
 
 /** True when the touch started somewhere a downward drag means something else. */
 function startsElsewhere(target: EventTarget | null) {
