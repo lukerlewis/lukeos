@@ -17,8 +17,9 @@ export type ProjectLink = {
   note: string | null;
   /** The web address's site, e.g. figma.com. */
   site: string;
-  /** Kept at the top of the list. */
+  /** Kept in the row of pinned cards above the list. */
   pinned: boolean;
+  pinnedAt: Date | null;
   madeBy: MadeBy;
   createdAt: Date;
 };
@@ -36,6 +37,7 @@ function toLink(row: typeof projectLinks.$inferSelect): ProjectLink {
     note: row.note,
     site,
     pinned: row.pinnedAt !== null,
+    pinnedAt: row.pinnedAt,
     madeBy: madeByOf(row),
     createdAt: row.createdAt,
   };

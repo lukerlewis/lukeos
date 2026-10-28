@@ -13,6 +13,7 @@ import { getPipeline, listColumns } from "@/core/pipeline";
 import { NewFolderButton } from "@/components/notes/folder-dialog";
 import { NewNoteButton } from "@/components/notes/new-note-button";
 import { NoteList } from "@/components/notes/note-list";
+import { PinnedRow } from "@/components/pinned/pinned-row";
 import { AddLinkButton, LinkList } from "@/components/projects/links";
 import { EditProjectButton } from "@/components/projects/project-dialog";
 import { EmptyState, Page } from "@/components/shell/page";
@@ -35,6 +36,7 @@ import { getDashboardView } from "@/core/dashboard";
 import { sortTasks } from "@/lib/board";
 import { listTasks } from "@/core/tasks";
 import { todayIn } from "@/lib/dates";
+import { byPin, pinnedDocument, pinnedNote } from "@/lib/pinned";
 import { colorHex } from "@/lib/project-colors";
 
 async function load(id: string) {
@@ -89,7 +91,10 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const sort = dashboard.sort;
   // Notes in the folders attached to this project show under their folder.
   const folderIds = new Set(folders.map((f) => f.id));
-  const looseNotes = notes.filter((n) => !n.folder || !folderIds.has(n.folder.id));
+  // Pinned notes and documents sit together in a row on top, and not in the lists below.
+  const pinned = byPin([...notes.filter((n) => n.pinned).map(pinnedNote), ...documents.filter((d) => d.pinned).map(pinnedDocument)]);
+  const looseNotes = notes.filter((n) => !n.pinned && (!n.folder || !folderIds.has(n.folder.id)));
+  const listedDocuments = documents.filter((d) => !d.pinned);
   const date = todayIn(timeZone);
   // Like the dashboard's Today: one list, with Done hidden unless switched on in Filters.
   const shown = sortTasks(
@@ -154,9 +159,9 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           toolbar={toolbar}
         />
       ) : linksView ? (
-        <Card className="max-w-3xl">
+        <div className="flex max-w-3xl flex-col gap-5">
           <LinkList links={links} empty={<EmptyState>No links yet.</EmptyState>} />
-        </Card>
+        </div>
       ) : inspirationView ? (
         <InspirationBoard
           items={inspiration}
@@ -172,8 +177,10 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         </InspirationBoard>
       ) : notesView ? (
         <div className="flex max-w-3xl flex-col gap-5">
+          <PinnedRow items={pinned} showProject={false} />
           {folders.map((folder) => {
-            const inFolder = notes.filter((n) => n.folder?.id === folder.id);
+            const filed = notes.filter((n) => n.folder?.id === folder.id);
+            const inFolder = filed.filter((n) => !n.pinned);
             return (
               <section key={folder.id} className="flex flex-col gap-2">
                 <Link
@@ -182,21 +189,23 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
                 >
                   <FolderIcon className="size-4 text-muted-foreground" aria-hidden />
                   {folder.name}
-                  <span className="text-xs font-normal text-muted-foreground">{inFolder.length}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{filed.length}</span>
                   <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
                 </Link>
-                <Card>
-                  <NoteList
-                    notes={inFolder}
-                    timeZone={timeZone}
-                    showProject={false}
-                    empty={<EmptyState>No notes in this folder yet.</EmptyState>}
-                  />
-                </Card>
+                {(inFolder.length > 0 || filed.length === 0) && (
+                  <Card>
+                    <NoteList
+                      notes={inFolder}
+                      timeZone={timeZone}
+                      showProject={false}
+                      empty={<EmptyState>No notes in this folder yet.</EmptyState>}
+                    />
+                  </Card>
+                )}
               </section>
             );
           })}
-          {(looseNotes.length > 0 || folders.length === 0) && (
+          {(looseNotes.length > 0 || (folders.length === 0 && pinned.length === 0)) && (
             <Card>
               <NoteList
                 notes={looseNotes}
@@ -206,11 +215,11 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
               />
             </Card>
           )}
-          {documents.length > 0 && (
+          {listedDocuments.length > 0 && (
             <section className="flex flex-col gap-2">
               <h2 className="px-1 text-sm font-medium">Documents</h2>
               <Card>
-                <DocumentList documents={documents} timeZone={timeZone} showProject={false} />
+                <DocumentList documents={listedDocuments} timeZone={timeZone} showProject={false} />
               </Card>
             </section>
           )}

@@ -210,6 +210,8 @@ export const documents = pgTable(
     content: text("content").notNull().default(""),
     /** When Claude last made or changed it, for the New count in the sidebar. */
     claudeChangedAt: timestamp("claude_changed_at", { withTimezone: true }),
+    /** When Luke pinned it above his documents; null when it isn't pinned. */
+    pinnedAt: timestamp("pinned_at", { withTimezone: true }),
     ...madeBy,
   },
   (t) => [index("documents_project_idx").on(t.projectId), index("documents_updated_idx").on(t.updatedAt)],

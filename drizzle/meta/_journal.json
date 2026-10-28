@@ -281,6 +281,13 @@
       "when": 1793129264983,
       "tag": "0039_link_pins",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793196859835,
+      "tag": "0040_document_pins",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import { EditFolderButton, NewFolderButton } from "@/components/notes/folder-dia
 import { FolderList } from "@/components/notes/folder-list";
 import { NewNoteButton, NewNoteFab } from "@/components/notes/new-note-button";
 import { NoteList } from "@/components/notes/note-list";
+import { PinnedRow } from "@/components/pinned/pinned-row";
 import { EmptyState, Page } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
 import { chipProjects, countByProject, pickedFromQuery, ProjectChips, withProjects } from "@/components/ui/project-chips";
@@ -13,6 +14,7 @@ import { listFolders } from "@/core/folders";
 import { listNotes } from "@/core/notes";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
+import { pinnedNote } from "@/lib/pinned";
 
 export const metadata: Metadata = { title: "Notes · LukeOS" };
 
@@ -66,9 +68,16 @@ export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
               {folder.project.name}
             </Link>
           )}
-          <Card>
-            <NoteList notes={notes} timeZone={timeZone} empty={<EmptyState>No notes in this folder yet.</EmptyState>} />
-          </Card>
+          <PinnedRow items={notes.filter((n) => n.pinned).map(pinnedNote)} />
+          {(notes.some((n) => !n.pinned) || notes.length === 0) && (
+            <Card>
+              <NoteList
+                notes={notes.filter((n) => !n.pinned)}
+                timeZone={timeZone}
+                empty={<EmptyState>No notes in this folder yet.</EmptyState>}
+              />
+            </Card>
+          )}
         </div>
         <NewNoteFab folderId={folder.id} />
       </Page>
@@ -86,11 +95,12 @@ export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
   const counts = countByProject(allNotes.flatMap(projectsOf));
   const total = allNotes.length;
   const shownFolders = picked.length ? folders.filter((f) => f.project && picked.includes(f.project.id)) : folders;
-  const shownNotes = picked.length
-    ? allNotes.filter(
-        (n) => projectsOf(n).some((id) => picked.includes(id)) && !(n.folder && shownFolders.some((f) => f.id === n.folder!.id)),
-      )
-    : notes;
+  const inPicked = (n: (typeof allNotes)[number]) => !picked.length || projectsOf(n).some((id) => picked.includes(id));
+  // Pinned notes sit in their own row on top, filed or not, and not in the list below.
+  const pinned = allNotes.filter((n) => n.pinned && inPicked(n));
+  const shownNotes = (
+    picked.length ? allNotes.filter((n) => inPicked(n) && !(n.folder && shownFolders.some((f) => f.id === n.folder!.id))) : notes
+  ).filter((n) => !n.pinned);
 
   return (
     <Page
@@ -112,12 +122,13 @@ export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
           href={(ids) => withProjects("/notes", {}, ids)}
           className="-mx-5 flex-nowrap overflow-x-auto px-5 md:mx-0 md:flex-wrap md:px-0"
         />
+        <PinnedRow items={pinned.map(pinnedNote)} />
         {shownFolders.length > 0 && (
           <Card>
             <FolderList folders={shownFolders} />
           </Card>
         )}
-        {(shownNotes.length > 0 || shownFolders.length === 0) && (
+        {(shownNotes.length > 0 || (shownFolders.length === 0 && pinned.length === 0)) && (
           <Card>
             <NoteList notes={shownNotes} timeZone={timeZone} empty={<EmptyState>No notes yet.</EmptyState>} />
           </Card>
