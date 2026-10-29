@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { after } from "next/server";
 import { Suspense } from "react";
 import { CommandMenuProvider } from "@/components/command/command-menu";
+import { PlaceMemory } from "@/components/shell/place-memory";
 import { PullToRefresh } from "@/components/shell/pull-to-refresh";
 import { KeepFresh } from "@/components/shell/keep-fresh";
 import { PushListener } from "@/components/shell/push-listener";
@@ -64,6 +65,9 @@ async function AppShell({ children, sidebarCollapsed }: { children: React.ReactN
         <PushListener />
         <KeepFresh renderedAt={renderedAt} />
         <PullToRefresh />
+        <Suspense>
+          <PlaceMemory />
+        </Suspense>
         <div className="flex min-h-dvh md:h-dvh">
           <Sidebar
             projects={projects.map((p) => ({ id: p.id, name: p.name, hex: colorHex(p.color), open: p.openTasks }))}

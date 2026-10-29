@@ -6,6 +6,7 @@ import { useFocus } from "@/components/focus/focus-provider";
 import { useUnreadMessages } from "@/components/messages/unread";
 import { cn } from "@/lib/utils";
 import { isActive, phoneTabs } from "./nav";
+import { MORE_TAB, useSectionLink } from "@/lib/places";
 
 export function TabBar({ unreadMessages = 0 }: { unreadMessages?: number }) {
   const pathname = usePathname();
@@ -22,9 +23,11 @@ export function TabBar({ unreadMessages = 0 }: { unreadMessages?: number }) {
         // Messages lives under More on phones, so its unread count shows there.
         const count = href === "/projects" ? unread : 0;
         return (
-          <Link
+          <Tab
             key={href}
             href={href}
+            remember={href === "/projects" ? MORE_TAB : href}
+            active={active}
             // Load each tab's screen in full ahead of time, so tapping it shows straight away.
             prefetch
             aria-current={active ? "page" : undefined}
@@ -44,9 +47,15 @@ export function TabBar({ unreadMessages = 0 }: { unreadMessages?: number }) {
             </span>
             {/* A running timer shows its time in place of "Focus". */}
             {href === "/focus" && running ? <span className="tabular-nums">{running}</span> : label}
-          </Link>
+          </Tab>
         );
       })}
     </nav>
   );
+}
+
+/** A tab that goes back to the page Luke was last on in it. */
+function Tab({ href, remember, active, ...props }: React.ComponentProps<typeof Link> & { href: string; remember: string; active: boolean }) {
+  const link = useSectionLink(href, remember, active);
+  return <Link {...props} {...link} />;
 }

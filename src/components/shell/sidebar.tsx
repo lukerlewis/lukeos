@@ -12,6 +12,7 @@ import { MiniControls } from "@/components/listen/mini-controls";
 import { NewProjectIconButton } from "@/components/projects/project-dialog";
 import { cn } from "@/lib/utils";
 import { isActive, mainNav, moreNav, SIDEBAR_COOKIE } from "./nav";
+import { useSectionLink } from "@/lib/places";
 
 type SidebarProject = { id: string; name: string; hex: string; open: number };
 
@@ -223,34 +224,9 @@ function SidebarContents({
             </div>
           )}
           {projects.length === 0 && !rail && <p className="px-3 text-meta text-muted-foreground">No projects yet</p>}
-          {projects.map((p) => {
-            const href = `/projects/${p.id}`;
-            const active = pathname === href;
-            return (
-              <Link
-                key={p.id}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                aria-label={rail ? p.name : undefined}
-                data-tip={p.name}
-                className={cn(
-                  "pressable flex h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-control whitespace-nowrap text-muted-foreground hover:bg-muted",
-                  rail && "w-11",
-                  active && "bg-selected font-medium text-ink",
-                )}
-              >
-                <span className="flex size-[18px] shrink-0 items-center justify-center" aria-hidden>
-                  <span className="size-2.5 rounded-[3px]" style={{ background: p.hex }} />
-                </span>
-                {!rail && (
-                  <>
-                    <span className="grow truncate">{p.name}</span>
-                    {p.open > 0 && <span className="text-meta text-muted-foreground">{p.open}</span>}
-                  </>
-                )}
-              </Link>
-            );
-          })}
+          {projects.map((p) => (
+            <ProjectLink key={p.id} project={p} active={pathname === `/projects/${p.id}`} rail={rail} />
+          ))}
         </div>
       </div>
 
@@ -339,6 +315,33 @@ function Count({ n, rail }: { n: number; rail: boolean }) {
   );
 }
 
+function ProjectLink({ project: p, active, rail }: { project: SidebarProject; active: boolean; rail: boolean }) {
+  const link = useSectionLink(`/projects/${p.id}`, `/projects/${p.id}`, active);
+  return (
+    <Link
+      {...link}
+      aria-current={active ? "page" : undefined}
+      aria-label={rail ? p.name : undefined}
+      data-tip={p.name}
+      className={cn(
+        "pressable flex h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-control whitespace-nowrap text-muted-foreground hover:bg-muted",
+        rail && "w-11",
+        active && "bg-selected font-medium text-ink",
+      )}
+    >
+      <span className="flex size-[18px] shrink-0 items-center justify-center" aria-hidden>
+        <span className="size-2.5 rounded-[3px]" style={{ background: p.hex }} />
+      </span>
+      {!rail && (
+        <>
+          <span className="grow truncate">{p.name}</span>
+          {p.open > 0 && <span className="text-meta text-muted-foreground">{p.open}</span>}
+        </>
+      )}
+    </Link>
+  );
+}
+
 function NavLink({
   href,
   label,
@@ -361,9 +364,11 @@ function NavLink({
   /** Icon only, in the collapsed strip. */
   rail?: boolean;
 }) {
+  // Coming back to a section opens the page Luke was last on there.
+  const link = useSectionLink(href, href, active);
   return (
     <Link
-      href={href}
+      {...link}
       prefetch={prefetch || null}
       aria-current={active ? "page" : undefined}
       aria-label={rail ? label : undefined}

@@ -25,6 +25,7 @@ import { MadeByLabel } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import type { Note } from "@/core/notes";
 import { trashInBackground } from "@/lib/background";
+import { forgetPlace } from "@/lib/places";
 import { clearEarlyTitle, earlyTitle } from "@/lib/early-title";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
@@ -172,10 +173,12 @@ export function NoteEditor({
     return () => {
       mounted.current = false;
       setTimeout(() => {
-        if (!mounted.current && !text.title && !text.content)
+        if (!mounted.current && !text.title && !text.content) {
+          forgetPlace(`/notes/${note.id}`);
           op("delete_note", { id: note.id })
             .then(() => op("delete_forever", { type: "note", id: note.id }))
             .catch(() => {});
+        }
       }, 0);
     };
   }, [note.id]);
