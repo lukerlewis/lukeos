@@ -284,7 +284,7 @@ function TaskPicker({
                       <span className={cell}>{t.effort && <FocusChip effort={t.effort} />}</span>
                       <span className={cell}>{t.priority && <PriorityChip priority={t.priority} />}</span>
                       <span className="flex min-w-0 grow flex-col gap-1 md:justify-center md:border-l md:px-3 md:py-2">
-                        <span className="text-control break-words text-foreground">{t.title}</span>
+                        <span className="text-control break-words text-foreground md:truncate">{t.title}</span>
                         {chips && (
                           <span className="flex flex-wrap items-center gap-1.5 md:hidden">
                             {t.effort && <FocusChip effort={t.effort} />}
@@ -293,7 +293,7 @@ function TaskPicker({
                           </span>
                         )}
                       </span>
-                      <span className={cn(cell, "min-w-0")}>{t.project && <ProjectChip project={t.project} />}</span>
+                      <span className={cell}>{t.project && <ProjectChip project={t.project} />}</span>
                     </button>
                   </li>
                 );
@@ -318,7 +318,7 @@ function TaskPicker({
 
 const headCell = "border-l px-2 py-1.5";
 /** A table cell in the picker, computers only. */
-const cell = "hidden items-center border-l px-2 md:flex";
+const cell = "hidden min-w-0 items-center overflow-hidden border-l px-2 md:flex";
 
 /**
  * A place to jot down whatever comes to mind mid-sprint, so it's out of Luke's

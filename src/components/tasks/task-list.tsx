@@ -109,9 +109,12 @@ export function TaskList({
 /**
  * The column widths of the table: tick, focus type, priority, name, and project unless it's left out (on a project's page).
  * Luke drags the header lines to change them; they're kept on this device and shared by every table.
+ * When the table is narrow the other columns give way first, so the name keeps room for a line of text.
  */
 export const tableColumns = (project: boolean) =>
-  `28px var(--col-focus, 120px) var(--col-priority, 76px) minmax(0, 1fr)${project ? " var(--col-project, 120px)" : ""}`;
+  `28px ${fit("focus", 120)} ${fit("priority", 76)} minmax(${nameMin}px, 1fr)${project ? ` ${fit("project", 120)}` : ""}`;
+const fit = (column: Column, width: number) => `minmax(${minWidth}px, var(--col-${column}, ${width}px))`;
+const nameMin = 180;
 const headCell = "relative border-l px-2 py-1.5";
 
 type Column = "focus" | "priority" | "project";
@@ -273,7 +276,7 @@ export function TaskRow({
       </button>
       {columns && (
         <>
-          <span className="hidden border-l md:flex">
+          <span className="hidden min-w-0 overflow-hidden border-l md:flex">
             <CellMenu
               label={`Focus type of "${task.title}"`}
               value={cells.effort}
@@ -283,7 +286,7 @@ export function TaskRow({
               {cells.effort && <FocusChip effort={cells.effort} />}
             </CellMenu>
           </span>
-          <span className="hidden border-l md:flex">
+          <span className="hidden min-w-0 overflow-hidden border-l md:flex">
             <CellMenu
               label={`Priority of "${task.title}"`}
               value={cells.priority}
@@ -306,8 +309,11 @@ export function TaskRow({
         <span
           className={cn(
             "min-w-0 grow text-body font-medium md:text-control break-words",
+            // In the table a long name stays on one line and ends in "…"; the full name is in the task box.
+            columns && "md:truncate",
             done && "text-muted-foreground line-through",
           )}
+          title={columns ? task.title : undefined}
         >
           {task.title}
         </span>
@@ -339,7 +345,7 @@ export function TaskRow({
         </span>
       </button>
       {columns && showProject && (
-        <span className="-mr-4 hidden min-w-0 border-l md:flex">
+        <span className="-mr-4 hidden min-w-0 overflow-hidden border-l md:flex">
           <CellMenu
             label={`Project of "${task.title}"`}
             value={cells.project?.id ?? null}
