@@ -194,12 +194,11 @@ function SidebarContents({
         <nav className="flex flex-col gap-0.5" aria-label="Main">
           {mainNav.map((item) =>
             item.href === "/listen" ? (
-              // While something plays, little bouncing bars sit beside Music on every page.
+              // While something plays, little bouncing bars sit beside Music on every page
+              // (in the collapsed strip they take the place of its icon).
               <div key={item.href} className="relative">
-                <NavLink {...item} active={isActive(pathname, item.href)} prefetch rail={rail} />
-                {playing && (
-                  <PlayingBars className={cn("pointer-events-none absolute", rail ? "top-1 right-0.5 scale-75" : "top-1/2 right-3 -translate-y-1/2")} />
-                )}
+                <NavLink {...item} icon={playing && rail ? PlayingIcon : item.icon} active={isActive(pathname, item.href)} prefetch rail={rail} />
+                {playing && !rail && <PlayingBars className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2" />}
               </div>
             ) : (
               <NavLink
@@ -240,6 +239,15 @@ function SidebarContents({
         <NavLink href="/settings" label="Settings" icon={SlidersHorizontal} active={isActive(pathname, "/settings")} rail={rail} />
       </div>
     </>
+  );
+}
+
+/** Music's icon in the collapsed strip while something plays. */
+function PlayingIcon({ className }: { className?: string }) {
+  return (
+    <span className={cn("flex items-center justify-center", className)}>
+      <PlayingBars className="h-3.5" />
+    </span>
   );
 }
 
