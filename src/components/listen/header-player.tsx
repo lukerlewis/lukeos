@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useListen } from "./listen-provider";
@@ -9,14 +10,16 @@ import { Artwork, NowPlaying } from "./player-bar";
 const button = "press flex size-8 shrink-0 items-center justify-center rounded-full text-subtle-foreground hover:bg-selected hover:text-foreground [&_svg]:size-4";
 
 /**
- * What's playing, in the top bar on computers: artwork, title, back,
- * play/pause and skip, with a thin progress line. Click the title for the
- * full player. Nothing while nothing's in the player.
+ * What's playing, in Music's top bar on computers (Luke, 2026-10-30: Music
+ * only; other pages just show bars beside Music in the sidebar): artwork,
+ * title, back, play/pause and skip, with a thin progress line. Click the
+ * title for the full player. Nothing while nothing's in the player.
  */
 export function HeaderPlayer({ className }: { className?: string }) {
   const listen = useListen();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  if (!listen?.current) return null;
+  if (!listen?.current || !pathname.startsWith("/listen")) return null;
   const { current, playing, loading, position, duration } = listen;
   const progress = duration ? Math.min(1, position / duration) : 0;
 
@@ -36,7 +39,7 @@ export function HeaderPlayer({ className }: { className?: string }) {
           title={current.show ? `${current.title} · ${current.show}` : current.title}
         >
           <Artwork episode={current} className="size-7 rounded-[5px]" />
-          {playing && <Bars />}
+          {playing && <PlayingBars />}
           <span className="hidden min-w-0 max-w-52 truncate text-meta font-medium text-foreground lg:block">{current.title}</span>
         </button>
         <button type="button" aria-label="Previous" title="Previous" className={button} onClick={listen.previous}>
@@ -58,9 +61,9 @@ export function HeaderPlayer({ className }: { className?: string }) {
 }
 
 /** Three little bouncing bars, so it's plain at a glance that something is playing. */
-function Bars() {
+export function PlayingBars({ className }: { className?: string }) {
   return (
-    <span className="flex h-3 shrink-0 items-end gap-[2px]" aria-hidden>
+    <span className={cn("flex h-3 shrink-0 items-end gap-[2px]", className)} aria-hidden>
       {[0, 1, 2].map((i) => (
         <span key={i} className="playing-bar w-[3px] rounded-full bg-foreground" style={{ animationDelay: `${i * -0.3}s` }} />
       ))}
