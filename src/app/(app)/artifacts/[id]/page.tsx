@@ -9,6 +9,7 @@ import { listComments } from "@/core/comments";
 import { OperationError } from "@/core/define";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
+import { HeaderPlayer } from "@/components/listen/header-player";
 
 async function load(id: string, version?: number) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -49,6 +50,7 @@ export default async function ArtifactPage({ params, searchParams }: PageProps<"
           <ChevronLeft className="size-4" aria-hidden />
           {back.label}
         </Link>
+        <HeaderPlayer className="ml-auto" />
       </header>
       <div className="flex flex-col gap-2 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[calc(7rem+var(--player-space))] md:px-10 md:pt-8 md:pb-10">
         <Link

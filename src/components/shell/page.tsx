@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { NewTaskFab, NewTaskHeaderButton } from "@/components/tasks/new-task-button";
+import { HeaderPlayer } from "@/components/listen/header-player";
 import { AddNew } from "./add-new";
 
 /**
@@ -37,6 +38,7 @@ export function Page({
     <div className="flex min-w-0 grow flex-col">
       <header className="hidden h-14 shrink-0 items-center border-b border-stroke bg-muted px-6 md:flex">
         <span className="grow font-medium text-foreground">{title}</span>
+        <HeaderPlayer className="mr-3" />
         {addNew ? <AddNew /> : newTask !== false && <NewTaskHeaderButton defaults={newTask} />}
       </header>
       <div

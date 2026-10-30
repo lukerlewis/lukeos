@@ -321,7 +321,7 @@ function SpeedButton() {
 }
 
 /** The full player: big artwork, the scrubber, skip buttons, speed, and what's up next. */
-function NowPlaying({ onClose }: { onClose: () => void }) {
+export function NowPlaying({ onClose }: { onClose: () => void }) {
   const listen = useListen()!;
   const { current, queue, index } = listen;
   if (!current) return null;

@@ -431,6 +431,28 @@
   }
 }
 
+/* The top bar's mini player: three bars bounce while something plays. */
+.playing-bar {
+  height: 100%;
+  transform-origin: bottom;
+  animation: playing-bar 0.9s ease-in-out infinite;
+}
+@keyframes playing-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .playing-bar {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+}
+
 @keyframes pull-spin {
   to {
     rotate: 360deg;
