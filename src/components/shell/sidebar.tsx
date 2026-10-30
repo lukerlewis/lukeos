@@ -8,7 +8,8 @@ import { useCommandMenu } from "@/components/command/command-menu";
 import { useFocus } from "@/components/focus/focus-provider";
 import { SEEN_EVENT } from "@/components/from-claude/mark-seen";
 import { useUnreadMessages } from "@/components/messages/unread";
-import { MiniControls } from "@/components/listen/mini-controls";
+import { PlayingBars } from "@/components/listen/header-player";
+import { useListen } from "@/components/listen/listen-provider";
 import { NewProjectIconButton } from "@/components/projects/project-dialog";
 import { cn } from "@/lib/utils";
 import { isActive, mainNav, moreNav, SIDEBAR_COOKIE } from "./nav";
@@ -111,6 +112,7 @@ function SidebarContents({
   onToggle: () => void;
 }) {
   const pathname = usePathname();
+  const playing = !!useListen()?.playing;
   const { openMenu } = useCommandMenu();
   // Macs use ⌘K; Windows and others Ctrl+K. Only known in the browser.
   const isMac = useSyncExternalStore(
@@ -191,11 +193,13 @@ function SidebarContents({
       <div className={cn("-mx-1 flex min-h-0 flex-col gap-4 overflow-y-auto px-1", rail && "no-scrollbar")}>
         <nav className="flex flex-col gap-0.5" aria-label="Main">
           {mainNav.map((item) =>
-            item.href === "/listen" && !rail ? (
-              // Hovering Music shows the player's controls over the end of its row.
-              <div key={item.href} className="group/music relative">
-                <NavLink {...item} active={isActive(pathname, item.href)} prefetch />
-                <MiniControls className="absolute inset-y-0 right-1.5 hidden items-center gap-0.5 group-hover/music:flex group-has-[:focus-visible]/music:flex" />
+            item.href === "/listen" ? (
+              // While something plays, little bouncing bars sit beside Music on every page.
+              <div key={item.href} className="relative">
+                <NavLink {...item} active={isActive(pathname, item.href)} prefetch rail={rail} />
+                {playing && (
+                  <PlayingBars className={cn("pointer-events-none absolute", rail ? "top-1 right-0.5 scale-75" : "top-1/2 right-3 -translate-y-1/2")} />
+                )}
               </div>
             ) : (
               <NavLink

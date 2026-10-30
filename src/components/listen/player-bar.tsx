@@ -64,7 +64,7 @@ export function PlayerBar() {
         </div>
       </div>
 
-      {/* Computers (on ice: hovering Music in the sidebar has the controls instead) */}
+      {/* Computers (on ice: Music's top bar has a mini player instead) */}
       {DESKTOP_PLAYER_BAR_ON && (
       <div className="hidden h-[72px] shrink-0 items-center gap-4 border-t border-stroke bg-sidebar px-4 md:flex">
         <button type="button" onClick={() => setOpen(true)} className="flex w-64 min-w-0 shrink-0 items-center gap-3 text-left" aria-label="Open the player">

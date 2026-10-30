@@ -15,7 +15,6 @@ import { doneMentionIds } from "@/core/mentions";
 import { listProjects } from "@/core/projects";
 import { getTimeZone } from "@/core/settings";
 import { COMMENTABLE } from "@/lib/comments";
-import { HeaderPlayer } from "@/components/listen/header-player";
 
 type Query = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
@@ -70,7 +69,6 @@ export default async function NotePage({ params, searchParams }: PageProps<"/not
           <ChevronLeft className="size-4" aria-hidden />
           {back.label}
         </Link>
-        <HeaderPlayer className="ml-auto" />
       </header>
       <div className="flex flex-col gap-2 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[calc(7rem+var(--player-space))] md:px-10 md:pt-8 md:pb-10">
         <Link
