@@ -6,7 +6,7 @@ import { Greeting, TodayDate } from "@/components/greeting";
 import { Page } from "@/components/shell/page";
 import type { Task } from "@/core/tasks";
 import { sortTasks } from "@/lib/board";
-import type { DashboardLayout, DashboardView } from "@/lib/dashboard";
+import type { DashboardLayout, DashboardSort, DashboardView } from "@/lib/dashboard";
 import { isProjectArea, type Area, type ProjectArea } from "@/lib/task-fields";
 import type { CellProject } from "@/components/tasks/task-list";
 import { DashboardControls } from "./controls";
@@ -38,14 +38,15 @@ export function DashboardScreen({
   // refresh that lands later can't flip it back.
   const [area, setArea] = useState(startArea);
   const [layout, setLayout] = useState<DashboardLayout>(view.layout);
+  const [sort, setSort] = useState<DashboardSort>(view.sort);
   const board = layout === "board";
-  const shown = { ...view, layout };
+  const shown = { ...view, layout, sort };
   const tasks = allTasks.filter((t) => t.area === area);
   const projects = allProjects.filter((p) => p.area === area);
   const todays = tasks.filter((t) => t.bucket === "today");
   const canAdd = view.show.includes("todo");
 
-  const controls = <DashboardControls view={shown} area={area} onArea={setArea} onLayout={setLayout} />;
+  const controls = <DashboardControls view={shown} area={area} onArea={setArea} onLayout={setLayout} onSort={setSort} />;
 
   return (
     <Page
@@ -62,15 +63,15 @@ export function DashboardScreen({
       <div className="dashboard-type contents">
         {board ? (
           isProjectArea(area) ? (
-            <WorkBoard key={area} tasks={tasks} projects={projects} area={area} today={today} show={view.show} sort={view.sort} />
+            <WorkBoard key={area} tasks={tasks} projects={projects} area={area} today={today} show={view.show} sort={sort} />
           ) : (
-            <Board tasks={tasks} view="when" today={today} show={view.show} sort={view.sort} area={area} fill />
+            <Board tasks={tasks} view="when" today={today} show={view.show} sort={sort} area={area} fill />
           )
         ) : isProjectArea(area) ? (
           // Aya and Work put their project chips above both columns, so the Today card lines up with the Scratch pad.
           <WorkToday
             key={area}
-            tasks={sortTasks(todays, view.sort)}
+            tasks={sortTasks(todays, sort)}
             projects={projects}
             area={area}
             show={view.show}
@@ -81,7 +82,7 @@ export function DashboardScreen({
         ) : (
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
             {/* Life's Today is split into Morning, Day and Evening. */}
-            <LifeToday tasks={todays} today={today} sort={view.sort} show={view.show} canAdd={canAdd} />
+            <LifeToday tasks={todays} today={today} sort={sort} show={view.show} canAdd={canAdd} />
             {side}
           </div>
         )}

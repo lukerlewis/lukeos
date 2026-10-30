@@ -25,7 +25,18 @@ export const sortDirLabel: Record<SortKey, Record<SortDir, string>> = {
   name: { desc: "Z to A", asc: "A to Z" },
   created: { desc: "Newest first", asc: "Oldest first" },
 };
-export type DashboardSort = { by: SortKey; dir: SortDir };
+/** One level of sorting. */
+export type SortRule = { by: SortKey; dir: SortDir };
+/** Sorts in order of importance: ties on the first are broken by the second, and so on. Empty means the usual order. */
+export type DashboardSort = SortRule[];
+/** Which way round a newly added sort starts: A to Z for names, high or newest first for the rest. */
+export const defaultSortDir = (by: SortKey): SortDir => (by === "name" || by === "project" ? "asc" : "desc");
+/** How a sort reads on its button: the field when there's one, "2 sorts" when there are more. */
+export function sortSummary(sort: DashboardSort): string {
+  if (sort.length === 0) return "Sort";
+  if (sort.length === 1) return sortLabel[sort[0].by];
+  return `${sort.length} sorts`;
+}
 
 export const dashboardLayouts = ["list", "board"] as const;
 export type DashboardLayout = (typeof dashboardLayouts)[number];
@@ -38,14 +49,14 @@ export type DashboardView = {
   layout: DashboardLayout;
   /** Which statuses to show. Starts with To do and Doing, so finished tasks are hidden. */
   show: Status[];
-  /** How the Today list is sorted. */
+  /** How the Today list and Board columns are sorted, most important first. */
   sort: DashboardSort;
 };
 
 export const defaultDashboardView: DashboardView = {
   layout: "list",
   show: ["todo", "doing"],
-  sort: { by: "priority", dir: "desc" },
+  sort: [{ by: "priority", dir: "desc" }],
 };
 
 /** Reads a saved view, falling back to the default for anything missing or unknown. */
@@ -53,13 +64,23 @@ export function parseDashboardView(raw: unknown): DashboardView {
   const v = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const layout = dashboardLayouts.find((l) => l === v.layout) ?? defaultDashboardView.layout;
   const show = Array.isArray(v.show) ? statuses.filter((s) => v.show && (v.show as unknown[]).includes(s)) : [];
-  const sort = (v.sort && typeof v.sort === "object" ? v.sort : {}) as Record<string, unknown>;
   return {
     layout,
     show: show.length ? show : defaultDashboardView.show,
-    sort: {
-      by: sortKeys.find((k) => k === sort.by) ?? defaultDashboardView.sort.by,
-      dir: sortDirs.find((d) => d === sort.dir) ?? defaultDashboardView.sort.dir,
-    },
+    sort: parseSort(v.sort),
   };
+}
+
+/** Reads saved sorts, each field once. A single sort saved before there could be several still reads. */
+function parseSort(raw: unknown): DashboardSort {
+  if (raw === undefined || raw === null) return defaultDashboardView.sort;
+  const list = Array.isArray(raw) ? raw : [raw];
+  const rules: SortRule[] = [];
+  for (const item of list) {
+    const r = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+    const by = sortKeys.find((k) => k === r.by);
+    if (!by || rules.some((x) => x.by === by)) continue;
+    rules.push({ by, dir: sortDirs.find((d) => d === r.dir) ?? defaultSortDir(by) });
+  }
+  return rules;
 }
