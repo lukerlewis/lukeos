@@ -4,7 +4,7 @@
  * app and a move by Claude do exactly the same thing.
  */
 import type { Task } from "@/core/tasks";
-import type { DashboardSort } from "./dashboard";
+import type { DashboardSort, SortKey } from "./dashboard";
 import { whenOf } from "./dates";
 import { bucketLabel, buckets, statuses, statusLabel, type Bucket, type Status } from "./task-fields";
 
@@ -72,12 +72,12 @@ const effortRank = { deep: 0, focus: 1, shallow: 2 } as const;
 
 /**
  * The Today list in the order Luke picked (Sort): Doing, To do, then Done as always, then by
- * the chosen field. Tasks without that field go last either way round; ties fall back to the usual order.
+ * each chosen field in turn, the next one breaking ties on the one before. Tasks without a field
+ * go last for it either way round; ties on all of them fall back to the usual order.
  */
 export function sortTasks(tasks: Task[], sort: DashboardSort): Task[] {
-  const flip = sort.dir === "asc" ? -1 : 1;
-  const key = (t: Task): number | string | null => {
-    switch (sort.by) {
+  const key = (t: Task, by: SortKey): number | string | null => {
+    switch (by) {
       case "priority":
         return t.priority ? priorityRank[t.priority] : null;
       case "effort":
@@ -90,18 +90,19 @@ export function sortTasks(tasks: Task[], sort: DashboardSort): Task[] {
         return -new Date(t.createdAt).getTime();
     }
   };
-  // Ranks and times above already put "high" / newest first; names sort A to Z by default, so they flip.
-  const textFlip = sort.by === "project" || sort.by === "name" ? -flip : flip;
   return [...tasks].sort((a, b) => {
     const byStatus = statusRank[a.status] - statusRank[b.status];
     if (byStatus) return byStatus;
-    const ka = key(a);
-    const kb = key(b);
-    if (ka !== kb) {
+    for (const { by, dir } of sort) {
+      const ka = key(a, by);
+      const kb = key(b, by);
+      if (ka === kb) continue;
       if (ka === null) return 1;
       if (kb === null) return -1;
+      // Ranks and times above already put "high" / newest first; names sort A to Z by default, so they flip.
+      const flip = (dir === "asc" ? -1 : 1) * (by === "project" || by === "name" ? -1 : 1);
       const c = typeof ka === "string" ? ka.localeCompare(kb as string) : ka - (kb as number);
-      if (c) return c * textFlip;
+      if (c) return c * flip;
     }
     return compareTasks(a, b);
   });

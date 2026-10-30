@@ -1,19 +1,24 @@
 "use client";
 
-import { ArrowDownUp, Check, ChevronDown, List, SlidersHorizontal, SquareKanban } from "lucide-react";
+import { ArrowDownUp, Check, ChevronDown, GripVertical, List, Plus, SlidersHorizontal, SquareKanban, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { StatusIcon } from "@/components/tasks/status-circle";
 import { rememberArea } from "@/lib/area";
 import {
   defaultDashboardView,
+  defaultSortDir,
   sortDirLabel,
   sortDirs,
   sortKeys,
   sortLabel,
+  sortSummary,
   type DashboardLayout,
   type DashboardSort,
   type DashboardView,
+  type SortDir,
+  type SortKey,
+  type SortRule,
 } from "@/lib/dashboard";
 import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
@@ -35,12 +40,14 @@ export function DashboardControls({
   area,
   onArea,
   onLayout,
+  onSort,
 }: {
   view: DashboardView;
   area: Area;
-  /** The screen switches area and tab itself, straight away; these save the choice behind it. */
+  /** The screen switches area, tab and sort itself, straight away; these save the choice behind it. */
   onArea: (area: Area) => void;
   onLayout: (layout: DashboardLayout) => void;
+  onSort: (sort: DashboardSort) => void;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -67,6 +74,22 @@ export function DashboardControls({
         refreshBehind();
       },
       failed: () => onLayout(undoTo),
+      failure: "Couldn't save that.",
+    });
+  }
+
+  function pickSort(sort: DashboardSort, undoTo = view.sort) {
+    onSort(sort);
+    void inBackground(() => op("set_dashboard_view", { sort }), {
+      then: () => {
+        pushUndo("changing the sort", async () => {
+          onSort(undoTo);
+          await op("set_dashboard_view", { sort: undoTo });
+          refreshBehind();
+        });
+        refreshBehind();
+      },
+      failed: () => onSort(undoTo),
       failure: "Couldn't save that.",
     });
   }
@@ -117,7 +140,7 @@ export function DashboardControls({
         <Filters count={changedFilters}>
           <ShowToggle show={current.show} onToggle={toggle} />
         </Filters>
-        <SortMenu sort={current.sort} onChange={(sort) => change({ sort })} />
+        <SortMenu sort={view.sort} onChange={(sort) => pickSort(sort)} />
       </div>
     </div>
   );
@@ -159,46 +182,187 @@ function ShowToggle({ show, onToggle }: { show: Status[]; onToggle: (status: Sta
   );
 }
 
-/** The Sort dropdown: what tasks are ordered by, and which way round. */
+/**
+ * The Sort dropdown, like Notion's: a list of sorts, most important first, each with its field
+ * and which way round. Add more, remove one, or drag them by the handle to change which counts first.
+ */
 function SortMenu({ sort, onChange }: { sort: DashboardSort; onChange: (sort: DashboardSort) => void }) {
   return (
     <Menu
-      label={sortLabel[sort.by]}
+      label={sortSummary(sort)}
       icon={ArrowDownUp}
-      aria-label={`Sort by ${sortLabel[sort.by]}, ${sortDirLabel[sort.by][sort.dir]}`}
+      aria-label={
+        sort.length ? `Sort by ${sort.map((r) => `${sortLabel[r.by]}, ${sortDirLabel[r.by][r.dir]}`).join(", then ")}` : "Sort"
+      }
     >
-      {(close) => (
-        <div role="menu" className="flex w-56 flex-col gap-0.5">
-          <span className="px-2.5 pt-1 pb-1 text-xs font-medium text-muted-foreground">Sort by</span>
-          {sortKeys.map((by) => (
-            <MenuItem
-              key={by}
-              on={sort.by === by}
-              onClick={() => {
-                close();
-                if (sort.by !== by) onChange({ by, dir: by === "name" || by === "project" ? "asc" : "desc" });
-              }}
-            >
-              {sortLabel[by]}
-            </MenuItem>
-          ))}
-          <div className="my-1 border-t" />
-          {sortDirs.map((dir) => (
-            <MenuItem
-              key={dir}
-              on={sort.dir === dir}
-              onClick={() => {
-                close();
-                if (sort.dir !== dir) onChange({ ...sort, dir });
-              }}
-            >
-              {sortDirLabel[sort.by][dir]}
-            </MenuItem>
-          ))}
-        </div>
-      )}
+      {(close) => <SortPanel sort={sort} onChange={onChange} close={close} />}
     </Menu>
   );
+}
+
+const ROW = 44;
+const select = "h-9 min-w-0 rounded-lg border bg-card px-2 text-preview border-stroke-strong";
+
+function SortPanel({ sort, onChange, close }: { sort: DashboardSort; onChange: (sort: DashboardSort) => void; close: () => void }) {
+  const [picking, setPicking] = useState(sort.length === 0);
+  // While a sort is being dragged: where it started, where it would land, and how far the pointer has gone.
+  const [drag, setDrag] = useState<{ from: number; to: number; dy: number } | null>(null);
+  const unused = sortKeys.filter((k) => !sort.some((r) => r.by === k));
+
+  const rows = drag ? moved(sort, drag.from, drag.to) : sort;
+  const set = (i: number, rule: SortRule) => onChange(sort.map((r, j) => (j === i ? rule : r)));
+
+  function add(by: SortKey) {
+    setPicking(false);
+    onChange([...sort, { by, dir: defaultSortDir(by) }]);
+  }
+
+  function grab(e: React.PointerEvent, from: number) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const startY = e.clientY;
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    let to = from;
+    const move = (ev: PointerEvent) => {
+      const dy = ev.clientY - startY;
+      to = Math.max(0, Math.min(sort.length - 1, from + Math.round(dy / ROW)));
+      setDrag({ from, to, dy });
+    };
+    const drop = () => {
+      target.removeEventListener("pointermove", move);
+      target.removeEventListener("pointerup", drop);
+      target.removeEventListener("pointercancel", drop);
+      setDrag(null);
+      if (to !== from) onChange(moved(sort, from, to));
+    };
+    setDrag({ from, to, dy: 0 });
+    target.addEventListener("pointermove", move);
+    target.addEventListener("pointerup", drop);
+    target.addEventListener("pointercancel", drop);
+  }
+
+  function nudge(e: React.KeyboardEvent, i: number) {
+    const by = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+    if (!by || i + by < 0 || i + by >= sort.length) return;
+    e.preventDefault();
+    onChange(moved(sort, i, i + by));
+  }
+
+  if (picking)
+    return (
+      <div role="menu" className="flex w-56 flex-col gap-0.5">
+        <span className="px-2.5 pt-1 pb-1 text-xs font-medium text-muted-foreground">Sort by</span>
+        {unused.map((by) => (
+          <MenuItem key={by} on={false} onClick={() => add(by)}>
+            {sortLabel[by]}
+          </MenuItem>
+        ))}
+      </div>
+    );
+
+  return (
+    <div className="flex w-[22rem] flex-col gap-1">
+      <ol aria-label="Sorts, most important first" className="flex flex-col">
+        {rows.map((rule, i) => {
+          const dragging = drag !== null && rule.by === sort[drag.from].by;
+          return (
+            <li
+              key={rule.by}
+              className={cn("relative flex h-11 items-center gap-1.5 rounded-lg px-1", dragging && "z-10 bg-muted")}
+              style={dragging ? { transform: `translateY(${drag.dy - (drag.to - drag.from) * ROW}px)` } : undefined}
+            >
+              <button
+                type="button"
+                aria-label={`Move ${sortLabel[rule.by]} sort. Use the arrow keys to move it up or down.`}
+                title="Drag to reorder"
+                onPointerDown={(e) => grab(e, i)}
+                onKeyDown={(e) => nudge(e, i)}
+                className={cn(
+                  "flex h-9 w-6 shrink-0 touch-none items-center justify-center rounded-md text-muted-foreground hover:bg-muted",
+                  dragging ? "cursor-grabbing" : "cursor-grab",
+                  sort.length === 1 && "invisible",
+                )}
+              >
+                <GripVertical className="size-4" aria-hidden />
+              </button>
+              <select
+                value={rule.by}
+                onChange={(e) => {
+                  const by = e.target.value as SortKey;
+                  set(i, { by, dir: defaultSortDir(by) });
+                }}
+                aria-label={`Sort ${i + 1} field`}
+                className={cn(select, "grow basis-0")}
+              >
+                {sortKeys
+                  .filter((k) => k === rule.by || !sort.some((r) => r.by === k))
+                  .map((k) => (
+                    <option key={k} value={k}>
+                      {sortLabel[k]}
+                    </option>
+                  ))}
+              </select>
+              <select
+                value={rule.dir}
+                onChange={(e) => set(i, { ...rule, dir: e.target.value as SortDir })}
+                aria-label={`Sort ${i + 1} order`}
+                className={cn(select, "grow-[1.3] basis-0")}
+              >
+                {sortDirs.map((d) => (
+                  <option key={d} value={d}>
+                    {sortDirLabel[rule.by][d]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                aria-label={`Remove ${sortLabel[rule.by]} sort`}
+                onClick={() => {
+                  const next = sort.filter((_, j) => j !== i);
+                  onChange(next);
+                  if (!next.length) close();
+                }}
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="flex flex-col gap-0.5 border-t pt-1">
+        {unused.length > 0 && (
+          <button type="button" onClick={() => setPicking(true)} className={footerButton}>
+            <Plus className="size-4" aria-hidden />
+            Add sort
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            close();
+            onChange([]);
+          }}
+          className={footerButton}
+        >
+          <Trash2 className="size-4" aria-hidden />
+          Delete sort
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const footerButton =
+  "press-tint flex h-9 items-center gap-2 rounded-lg px-2.5 text-left text-preview text-muted-foreground hover:bg-muted hover:text-foreground";
+
+/** The list with the item at `from` taken out and put back at `to`. */
+function moved<T>(list: T[], from: number, to: number): T[] {
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
 }
 
 /**
@@ -285,7 +449,7 @@ function MenuItem({ on, onClick, children }: { on: boolean; onClick: () => void;
   );
 }
 
-/** A button like Filters that opens a small menu below it. Closes on a pick, a click outside or Escape. */
+/** A button like Filters that opens a small menu below it. Closes on a click outside or Escape. */
 function Menu({
   label,
   icon: Icon,
@@ -329,7 +493,8 @@ function Menu({
         <ChevronDown className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
-        <div className="motion-pop absolute right-0 z-30 mt-2 origin-top-right sm:right-auto sm:left-0 sm:origin-top-left rounded-xl border bg-card p-1 border-stroke">
+        // Lines up with the button's right edge: Sort sits at the right of the page, and its panel is wide.
+        <div className="motion-pop absolute right-0 z-30 mt-2 origin-top-right rounded-xl border bg-card p-1 border-stroke">
           {children(() => setOpen(false))}
         </div>
       )}

@@ -9,6 +9,8 @@ import { defineOperation } from "./define";
 
 const KEY = "dashboard";
 
+const sortRule = z.object({ by: z.enum(sortKeys), dir: z.enum(sortDirs) });
+
 /** How Luke last set up his dashboard. Saved in the app, so it's the same on every device. */
 export async function getDashboardView(): Promise<DashboardView> {
   const [row] = await db.select().from(schema.appSettings).where(eq(schema.appSettings.key, KEY)).limit(1);
@@ -43,9 +45,11 @@ export const dashboardOperations = {
       layout: z.enum(dashboardLayouts).optional().describe('"list" (the Today tab) or "board".'),
       show: showField.optional().describe("Which statuses to show, e.g. [\"todo\"] or [\"todo\", \"doing\"]."),
       sort: z
-        .object({ by: z.enum(sortKeys), dir: z.enum(sortDirs) })
+        .union([sortRule.array().max(sortKeys.length), sortRule])
         .optional()
-        .describe('How the Today list and each Board column are sorted: by priority, effort (focus type), project, name or created (date added); dir "desc" (high to low, newest first) or "asc".'),
+        .describe(
+          'How the Today list and each Board column are sorted, most important first: each later sort only breaks ties on the ones before it, e.g. [{"by":"priority","dir":"desc"},{"by":"project","dir":"asc"}]. Fields: priority, effort (focus type), project, name or created (date added); dir "desc" (high to low, newest first) or "asc". Pass the whole list; [] means no sort.',
+        ),
     }),
     run: async (changes) => {
       const current = await getDashboardView();
