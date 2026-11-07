@@ -7,6 +7,7 @@ import { showToast } from "@/components/shell/toast";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import type { Episode } from "@/core/listen";
+import * as keepAlive from "@/lib/keep-alive-audio";
 import { SPEEDS } from "@/lib/listen";
 
 /**
@@ -224,6 +225,8 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
       // Safari: keeps playing with the phone locked or on silent.
       const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
       if (session) session.type = "playback";
+      // Keeps the installed app awake after a pause, so lock-screen Play still works.
+      keepAlive.wake();
       // One thing playing at a time: brown noise stops when an episode starts.
       const f = focusRef.current;
       if (f?.noise) f.toggleNoise();
@@ -356,6 +359,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
 
   const close = useCallback(() => {
     savePosition(true);
+    keepAlive.stop();
     const audio = audioRef.current;
     if (audio) {
       audio.pause();
@@ -398,6 +402,22 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     [close],
   );
 
+  /**
+   * The lock screen's Play and Pause. Play goes through `start`, which keeps the
+   * app awake (see keep-alive-audio) and the audio session set to playback.
+   */
+  const claimPlayPause = useCallback(() => {
+    if (!("mediaSession" in navigator)) return;
+    const ms = navigator.mediaSession;
+    try {
+      ms.setActionHandler("play", () => {
+        const ep = state.current.queue[state.current.index];
+        if (ep) start(ep);
+      });
+      ms.setActionHandler("pause", () => audioRef.current?.pause());
+    } catch {}
+  }, [start]);
+
   // The audio element's own events keep the player right, including when
   // it's paused or played from the lock screen or headphones.
   useEffect(() => {
@@ -406,6 +426,8 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
     const onPlay = () => {
       setPlaying(true);
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+      // Brown noise sets its own Play and Pause; the music takes them back.
+      claimPlayPause();
     };
     const onPlaying = () => setLoading(false);
     const onPause = () => {
@@ -413,6 +435,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
       savePosition(true);
+      keepAlive.windDown();
     };
     const onTime = () => {
       setPosition(audio.currentTime);
@@ -457,6 +480,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
         start(q[nextIndex]);
       } else {
         setPosition(0);
+        keepAlive.windDown();
       }
     };
     audio.addEventListener("play", onPlay);
@@ -483,7 +507,7 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("pagehide", leave);
       document.removeEventListener("visibilitychange", hidden);
     };
-  }, [router, savePosition, start]);
+  }, [router, savePosition, start, claimPlayPause]);
 
   // Lock-screen controls and what they show.
   useEffect(() => {
@@ -503,18 +527,14 @@ export function ListenProvider({ children }: { children: React.ReactNode }) {
         ms.setActionHandler(action, handler);
       } catch {}
     };
-    // Play and pause are left to the phone, which works the audio element itself. A paused
-    // app in the background gets frozen after a minute or so, and then a play handler of
-    // ours never runs, so the lock-screen Play button did nothing.
-    set("play", null);
-    set("pause", null);
+    claimPlayPause();
     set("seekto", (d) => d.seekTime != null && seek(d.seekTime));
     set("seekbackward", (d) => skip(-(d.seekOffset ?? BACK)));
     set("seekforward", (d) => skip(d.seekOffset ?? FORWARD));
     // iPhones show previous/next instead of skip buttons when these are set, so long episodes leave them off.
     set("previoustrack", long ? null : () => previous());
     set("nexttrack", long || (index >= queue.length - 1 && !loops(queue)) ? null : () => next());
-  }, [current, duration, index, queue, seek, skip, next, previous]);
+  }, [current, duration, index, queue, seek, skip, next, previous, claimPlayPause]);
 
   async function decide(remove: boolean) {
     const ep = finished;
