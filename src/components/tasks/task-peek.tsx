@@ -340,7 +340,7 @@ export function TaskPeek({
                 options={[{ value: "", label: "Never" }, ...repeatChoices(draft.repeat).map((r) => ({ value: r, label: repeatName(r) }))]}
               />
             </Prop>
-            {/* Focus type is for Aya and Work; one already set still shows, so it can be cleared. */}
+            {/* Focus type is for Work; one already set still shows, so it can be cleared. */}
             {(projectArea || draft.effort) && (
               <Prop icon={Target} label="Focus" className={hide}>
                 <PropSelect

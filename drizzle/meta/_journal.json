@@ -288,6 +288,13 @@
       "when": 1793196859835,
       "tag": "0040_document_pins",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794265656145,
+      "tag": "0041_remove_aya_area",
+      "breakpoints": true
     }
   ]
 }

@@ -18,7 +18,7 @@ export type Project = {
   id: string;
   name: string;
   color: ProjectColor;
-  /** Aya or Work: Life has no projects (kept in case it gets them later). Its tasks are in the same one. */
+  /** Always Work: Life has no projects (kept in case it gets them later). Its tasks are in the same one. */
   area: ProjectArea;
   openTasks: number;
   doneTasks: number;
@@ -27,7 +27,7 @@ export type Project = {
 };
 
 const colorInput = z.enum(projectColorNames).describe(`One of: ${projectColorNames.join(", ")}.`);
-const areaInput = z.enum(projectAreas).describe("aya or work: which of the two the project sits in on the dashboard (Life has no projects).");
+const areaInput = z.enum(projectAreas).describe("work: every project sits in Work on the dashboard (Life has no projects).");
 
 /** Live (not in Trash) projects, oldest first, with task counts. */
 export async function listProjects(): Promise<Project[]> {
@@ -109,7 +109,7 @@ export const projectOperations = {
 
   create_project: defineOperation({
     name: "create_project",
-    description: "Create a project in Aya or Work (Work if area is left out). If no colour is given, an unused one is picked.",
+    description: "Create a project (in Work). If no colour is given, an unused one is picked.",
     input: z.object({
       name: z.string().trim().min(1).max(200),
       color: colorInput.optional(),
@@ -126,7 +126,7 @@ export const projectOperations = {
 
   update_project: defineOperation({
     name: "update_project",
-    description: "Rename a project, change its colour, or move it between Aya and Work (its tasks move with it).",
+    description: "Rename a project or change its colour.",
     input: z.object({
       id,
       name: z.string().trim().min(1).max(200).optional(),
