@@ -15,7 +15,7 @@ import { WorkBoard, WorkToday } from "./work-today";
 
 /**
  * The dashboard. Every area's tasks are here at once, so switching between
- * Aya, Work and Life, or Today and Board, changes the screen straight away;
+ * Work and Life, or Today and Board, changes the screen straight away;
  * the choice is saved behind it.
  */
 export function DashboardScreen({
@@ -68,7 +68,7 @@ export function DashboardScreen({
             <Board tasks={tasks} view="when" today={today} show={view.show} sort={sort} area={area} fill />
           )
         ) : isProjectArea(area) ? (
-          // Aya and Work put their project chips above both columns, so the Today card lines up with the Scratch pad.
+          // Work puts its project chips above both columns, so the Today card lines up with the Scratch pad.
           <WorkToday
             key={area}
             tasks={sortTasks(todays, sort)}

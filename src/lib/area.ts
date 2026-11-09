@@ -1,5 +1,5 @@
 /**
- * Aya, Work or Life on the dashboard. It's chosen on each device: a computer starts on Work and a
+ * Work or Life on the dashboard. It's chosen on each device: a computer starts on Work and a
  * phone on Life, and switching is remembered on that device (a cookie) until switched back.
  */
 import type { Area } from "./task-fields";
@@ -21,7 +21,7 @@ export function areaFor(saved: string | undefined | null, userAgent: string | nu
 }
 
 export function parseArea(value: string | undefined | null): Area | null {
-  return value === "aya" || value === "work" || value === "life" ? value : null;
+  return value === "work" || value === "life" ? value : null;
 }
 
 /** In the browser: the area this device is showing, for new tasks. */

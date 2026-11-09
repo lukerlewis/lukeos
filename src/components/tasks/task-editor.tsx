@@ -394,7 +394,7 @@ function TaskDialog({
               </select>
             </Field>
 
-            {/* Focus type is for Aya and Work; Life keeps it simple. One already set still shows, so it can be cleared. */}
+            {/* Focus type is for Work; Life keeps it simple. One already set still shows, so it can be cleared. */}
             {(isProjectArea(draft.area) || draft.effort) && (
               <Field label="Focus">
                 <Segmented
@@ -427,7 +427,7 @@ function TaskDialog({
               />
             </Field>
 
-            {/* Projects are all in Aya or Work, so Life tasks don't get the choice. */}
+            {/* Projects are all in Work, so Life tasks don't get the choice. */}
             {(isProjectArea(draft.area) || draft.projectId) && (
               <Field label="Project">
                 <select
