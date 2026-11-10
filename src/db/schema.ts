@@ -94,6 +94,8 @@ export const cards = pgTable(
     notes: text("notes"),
     /** Order within its column: lowest first. A card moved to a column goes to the end. */
     position: integer("position").notNull().default(0),
+    /** The day it's planned for (e.g. when a post goes out), YYYY-MM-DD. Places it on the pipeline's Calendar. */
+    date: date("date"),
     /**
      * Set when Luke rejects a suggested idea from the Inbox column. The card is
      * hidden everywhere but kept, so Claude knows not to suggest it again.

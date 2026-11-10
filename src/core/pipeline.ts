@@ -1,7 +1,8 @@
 import "server-only";
-import { and, asc, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, lte, inArray, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
+import { isoDay } from "@/lib/dates";
 import { isInbox } from "@/lib/inbox";
 import { colorHex, type ProjectColor } from "@/lib/project-colors";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type MadeBy } from "./define";
@@ -31,6 +32,8 @@ export type CardSummary = {
   /** The first line or two of its notes, for the board. */
   excerpt: string;
   columnId: string | null;
+  /** The day it's planned for (YYYY-MM-DD), or null. Places it on the Calendar. */
+  date: string | null;
   project: { id: string; name: string; color: ProjectColor; hex: string };
   /** The tasks inside it. */
   taskCount: { open: number; done: number };
@@ -85,6 +88,7 @@ function toSummary(
     title: card.title,
     excerpt: plainExcerpt(card.notes),
     columnId: card.columnId,
+    date: card.date,
     project: { id: project.id, name: project.name, color: project.color as ProjectColor, hex: colorHex(project.color) },
     taskCount: { open: counts.open, done: counts.done },
     attachmentCount: counts.attachments,
@@ -105,10 +109,14 @@ export async function listColumns(projectId: string): Promise<PipelineColumn[]> 
 }
 
 /** Live cards, in column order, then their order within the column. */
-export async function listCards(filter: { projectId?: string; columnId?: string; search?: string; limit?: number } = {}): Promise<CardSummary[]> {
+export async function listCards(
+  filter: { projectId?: string; columnId?: string; search?: string; from?: string; to?: string; limit?: number } = {},
+): Promise<CardSummary[]> {
   const where: (SQL | undefined)[] = [liveCard];
   if (filter.projectId) where.push(eq(cards.projectId, filter.projectId));
   if (filter.columnId) where.push(eq(cards.columnId, filter.columnId));
+  if (filter.from) where.push(gte(cards.date, filter.from));
+  if (filter.to) where.push(lte(cards.date, filter.to));
   if (filter.search?.trim()) {
     const q = `%${filter.search.trim().replace(/[\\%_]/g, "\\$&")}%`;
     where.push(or(ilike(cards.title, q), ilike(sql`coalesce(${cards.notes}, '')`, q)));
@@ -265,6 +273,10 @@ const projectId = z.uuid().describe("The project's id.");
 const cardId = z.uuid().describe("The card's id.");
 const columnName = z.string().trim().min(1).max(100);
 const to = z.string().trim().min(1).max(100).describe("The column's id or its name, e.g. \"Drafting\".");
+const day = z.string().regex(isoDay, "Use YYYY-MM-DD.");
+const cardDate = day.describe(
+  "The day it's planned for, YYYY-MM-DD (e.g. when a post goes out). It places the card on that day in the pipeline's Calendar (Board > Calendar). Work out \"Friday\" from get_today's date.",
+);
 const attachable = z
   .enum(attachableTypes)
   .describe('"task" (it goes inside the card), "document", "note", "inspiration" (an Inspiration item) or "entry" (a Work archive entry).');
@@ -273,28 +285,31 @@ export const pipelineOperations = {
   get_pipeline: defineOperation({
     name: "get_pipeline",
     description:
-      "A project's pipeline, as Luke sees it on the project's Board: its columns in order (e.g. Ideas, Drafting, Review, Scheduled, Published), each with its cards. A card is a piece of work moving through the pipeline, not a task: it has a title, notes, tasks inside it, and attached documents, notes, Inspiration items and Work archive entries. Columns is empty if the project has no pipeline yet.",
+      "A project's pipeline, as Luke sees it on the project's Board: its columns in order (e.g. Ideas, Drafting, Review, Scheduled, Published), each with its cards. A card is a piece of work moving through the pipeline, not a task: it has a title, notes, an optional date (the day it's planned for, which places it on the Board's Calendar), tasks inside it, and attached documents, notes, Inspiration items and Work archive entries. Columns is empty if the project has no pipeline yet.",
     input: z.object({ projectId }),
     run: async ({ projectId }) => getPipeline(projectId),
   }),
 
   list_cards: defineOperation({
     name: "list_cards",
-    description: "List pipeline cards, in column order: every project's, or one project's or column's. Search looks in titles and notes.",
+    description:
+      "List pipeline cards, in column order: every project's, or one project's or column's. Search looks in titles and notes. from/to give only cards dated in that range (what's on the Calendar then).",
     input: z.object({
       projectId: projectId.optional().describe("Only this project's cards."),
       column: z.string().optional().describe("Only cards in this column (its id or name). Needs projectId when it's a name."),
       search: z.string().optional().describe("Words to look for in the title or notes."),
+      from: day.optional().describe("Only cards dated on or after this day (YYYY-MM-DD)."),
+      to: day.optional().describe("Only cards dated on or before this day (YYYY-MM-DD)."),
       limit: z.number().int().min(1).max(500).optional(),
     }),
-    run: async ({ projectId, column, search, limit }) => {
+    run: async ({ projectId, column, search, from, to, limit }) => {
       let columnId: string | undefined;
       if (column) {
         if (projectId) columnId = (await findColumn(projectId, column)).id;
         else if (z.uuid().safeParse(column).success) columnId = column;
         else throw new OperationError("Give projectId to find a column by its name.");
       }
-      return listCards({ projectId, columnId, search, limit });
+      return listCards({ projectId, columnId, search, from, to, limit });
     },
   }),
 
@@ -404,14 +419,15 @@ export const pipelineOperations = {
       title: z.string().trim().min(1).max(500),
       notes: z.string().max(20_000).optional().describe("Free text notes about it."),
       column: to.optional().describe("The column it starts in (id or name). Leave out for the first column."),
+      date: cardDate.optional(),
     }),
-    run: async ({ projectId, title, notes: text, column }, { actor }) => {
+    run: async ({ projectId, title, notes: text, column, date }, { actor }) => {
       await assertProject(projectId);
       const target = column ? await findColumn(projectId, column) : (await listColumns(projectId))[0];
       if (!target) throw new OperationError("This project has no pipeline yet. Start one with set_up_pipeline (only if Luke asked).");
       const [row] = await db
         .insert(cards)
-        .values({ projectId, title, notes: text?.trim() || null, columnId: target.id, position: await endOf(target.id), ...madeByColumns(actor) })
+        .values({ projectId, title, notes: text?.trim() || null, date: date ?? null, columnId: target.id, position: await endOf(target.id), ...madeByColumns(actor) })
         .returning({ id: cards.id });
       return getCard(row.id);
     },
@@ -419,18 +435,21 @@ export const pipelineOperations = {
 
   update_card: defineOperation({
     name: "update_card",
-    description: "Change a card's title or notes, or move it to another column. Fields left out stay as they are.",
+    description:
+      "Change a card's title, notes or date, or move it to another column. Fields left out stay as they are. Changing the date is what dragging the card to another day on the Calendar does.",
     input: z.object({
       id: cardId,
       title: z.string().trim().min(1).max(500).optional(),
       notes: z.string().max(20_000).nullable().optional().describe("null clears them."),
       column: to.optional().describe("Move it to this column (id or name), at the end."),
+      date: cardDate.nullable().optional().describe("The day it's planned for, YYYY-MM-DD; null takes it off the Calendar."),
     }),
-    run: async ({ id, title, notes: text, column }) => {
+    run: async ({ id, title, notes: text, column, date }) => {
       const card = await getCard(id);
       const set: Partial<CardRow> = { updatedAt: new Date() };
       if (title !== undefined) set.title = title;
       if (text !== undefined) set.notes = text?.trim() || null;
+      if (date !== undefined) set.date = date;
       if (column !== undefined) {
         const target = await findColumn(card.project.id, column);
         if (target.id !== card.columnId) {
