@@ -1,5 +1,5 @@
 import { Pin } from "lucide-react";
-import Link from "next/link";
+import { NoteRow } from "./item-menus";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import type { NoteSummary } from "@/core/notes";
 import { dayAndMonth, shortDate, todayIn } from "@/lib/dates";
@@ -28,8 +28,7 @@ export function NoteList({
   return (
     <ul>
       {notes.map((n) => (
-        <li key={n.id} className="border-b last:border-b-0">
-          <Link href={`/notes/${n.id}`} className="press-tint flex items-start px-4 py-4.5 hover:bg-muted/50">
+        <NoteRow key={n.id} note={n} className="press-tint flex items-start px-4 py-4.5 hover:bg-muted/50">
             <span className="flex min-w-0 grow flex-col gap-0.5">
               <span className="flex items-baseline gap-3">
                 <span className="min-w-0 grow truncate text-control font-medium">{n.title || "Untitled"}</span>
@@ -50,8 +49,7 @@ export function NoteList({
                 </span>
               )}
             </span>
-          </Link>
-        </li>
+        </NoteRow>
       ))}
     </ul>
   );

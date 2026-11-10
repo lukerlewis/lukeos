@@ -1,6 +1,12 @@
 "use client";
 
-import { FileText, Globe, Play, Quote } from "lucide-react";
+import { Copy, Download, ExternalLink, FileText, FolderInput, Globe, Maximize2, Play, Quote, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { contextMenu, type MenuEntry } from "@/components/ui/context-menu";
+import { showToast } from "@/components/shell/toast";
+import { trashInBackground } from "@/lib/background";
+import { copyLinkItem, projectItems, tryOp } from "@/lib/menus";
+import { op } from "@/lib/ops-client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { InspirationItem } from "@/core/inspiration";
 import { fileDetail } from "@/lib/inspiration";
@@ -114,13 +120,52 @@ function Picture({ item, className }: { item: InspirationItem; className?: strin
   );
 }
 
+function copyText(text: string) {
+  navigator.clipboard.writeText(text).then(
+    () => showToast("Copied"),
+    () => showToast("Couldn't copy"),
+  );
+}
+
+function tileMenu(item: InspirationItem, onOpen: () => void, refresh: () => void): MenuEntry[] {
+  const download = (href: string, name: string) => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = name;
+    a.click();
+  };
+  return [
+    { label: "Open", icon: Maximize2, onSelect: onOpen },
+    item.url && { label: "Open original", icon: ExternalLink, onSelect: () => window.open(item.url!, "_blank", "noreferrer") },
+    "-",
+    item.kind === "text" && item.body && { label: "Copy quote", icon: Copy, onSelect: () => copyText(item.body) },
+    item.url && { label: "Copy address", icon: Copy, onSelect: () => copyText(item.url!) },
+    item.image && { label: "Download picture", icon: Download, onSelect: () => download(item.image!, `${item.title || "picture"}.webp`) },
+    item.file && { label: "Download file", icon: Download, onSelect: () => download(item.file!.url, item.file!.name) },
+    {
+      label: "Project",
+      icon: FolderInput,
+      items: projectItems(item.project?.id, (projectId) => tryOp(() => op("update_inspiration", { id: item.id, projectId }), refresh)),
+    },
+    copyLinkItem(`/inspiration?item=${item.id}`),
+    "-",
+    {
+      label: "Delete",
+      icon: Trash2,
+      onSelect: () => trashInBackground("inspiration", item.id, () => op("delete_inspiration", { id: item.id }), { then: refresh }),
+    },
+  ];
+}
+
 function Tile({ item, onOpen }: { item: InspirationItem; onOpen: () => void }) {
+  const router = useRouter();
   const label = item.title || item.site || { image: "Picture", link: "Link", video: "Video", text: "Quote", file: "File" }[item.kind];
   return (
     <button
       type="button"
       onClick={onOpen}
       aria-label={label}
+      {...contextMenu(() => tileMenu(item, onOpen, () => router.refresh()), { ask: { kind: "inspiration item", id: item.id, title: label }, hold: true })}
       className="pressable group block w-full overflow-hidden rounded-xl border bg-card text-left border-stroke hover:border-foreground/20"
     >
       {item.kind === "image" && <Picture item={item} className="transition-transform group-hover:scale-[1.015]" />}

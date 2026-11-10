@@ -16,7 +16,9 @@ import {
   type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { CalendarDays, Check, CheckSquare, Columns3, MessageSquare, Paperclip, Plus, X } from "lucide-react";
+import { ArrowRightLeft, CalendarDays, Check, CheckSquare, Columns3, ExternalLink, MessageSquare, Paperclip, Plus, Trash2, X } from "lucide-react";
+import { contextMenu, type MenuEntry } from "@/components/ui/context-menu";
+import { copyLinkItem } from "@/lib/menus";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useOptimistic, useState, useTransition } from "react";
 import { Fab } from "@/components/shell/fab";
@@ -28,7 +30,7 @@ import type { CardSummary, PipelineColumn } from "@/core/pipeline";
 import { friendlyDay } from "@/lib/dates";
 import { isInbox } from "@/lib/inbox";
 import { op } from "@/lib/ops-client";
-import { useWithoutHidden } from "@/lib/background";
+import { trashInBackground, useWithoutHidden } from "@/lib/background";
 import { cn } from "@/lib/utils";
 import { CardDialog, type BoardChange, type CardDraft } from "./card-dialog";
 import { ColumnsDialog } from "./columns-dialog";
@@ -101,7 +103,10 @@ export function PipelineBoard({
     setDraggingId(null);
     const card = items.find((c) => c.id === active.id);
     if (!card || !over || over.id === card.columnId) return;
-    const to = String(over.id);
+    moveTo(card, String(over.id));
+  }
+
+  function moveTo(card: CardSummary, to: string) {
     startTransition(async () => {
       move({ id: card.id, to });
       try {
@@ -174,6 +179,28 @@ export function PipelineBoard({
     if (card) return action === "approve" ? approve(card) : reject(card);
   }
 
+  function cardMenu(card: CardSummary & { columnId: string }, inbox: boolean): MenuEntry[] {
+    const canApprove = card.columnId !== list.at(-1)?.id;
+    return [
+      { label: "Open", icon: ExternalLink, onSelect: () => setDraft({ id: card.id }) },
+      "-",
+      inbox && canApprove && { label: "Approve", icon: Check, onSelect: () => approve(card) },
+      inbox && { label: "Reject", icon: X, onSelect: () => reject(card) },
+      {
+        label: "Move to",
+        icon: ArrowRightLeft,
+        items: list.map((c) => ({ label: c.name, checked: c.id === card.columnId, onSelect: () => c.id !== card.columnId && moveTo(card, c.id) })),
+      },
+      copyLinkItem(`/cards/${card.id}`),
+      "-",
+      {
+        label: "Delete",
+        icon: Trash2,
+        onSelect: () => trashInBackground("card", card.id, () => op("delete_card", { id: card.id }), { then: () => router.refresh() }),
+      },
+    ];
+  }
+
   const newCard = (columnId?: string) => setDraft({ projectId, columnId: columnId ?? list[0]?.id });
 
   return (
@@ -230,6 +257,7 @@ export function PipelineBoard({
                       card={card}
                       today={today}
                       onOpen={() => setDraft({ id: card.id })}
+                      menu={() => cardMenu(card, isInbox(column))}
                       review={isInbox(column) ? { onApprove: () => approve(card), onReject: () => reject(card), canApprove: column.id !== list.at(-1)?.id } : undefined}
                     />
                   ))}
@@ -344,10 +372,10 @@ function Column({
 
 type Review = { onApprove: () => void; onReject: () => void; canApprove: boolean };
 
-function DraggableCard({ card, today, onOpen, review }: { card: CardSummary; today: string; onOpen: () => void; review?: Review }) {
+function DraggableCard({ card, today, onOpen, menu, review }: { card: CardSummary; today: string; onOpen: () => void; menu: () => MenuEntry[]; review?: Review }) {
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: card.id });
   return (
-    <li ref={setNodeRef} className={cn(isDragging && "opacity-40")}>
+    <li ref={setNodeRef} className={cn(isDragging && "opacity-40")} {...contextMenu(menu, { ask: { kind: "pipeline card", id: card.id, title: card.title } })}>
       <CardBody
         card={card}
         today={today}

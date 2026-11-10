@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, NotebookPen, Pencil, Pin } from "lucide-react";
+import { ExternalLink, FileText, Link2, NotebookPen, Pencil, Pin, PinOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,6 +9,8 @@ import { ClaudeBadge } from "@/components/tasks/made-by";
 import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import type { PinnedItem } from "@/lib/pinned";
+import { contextMenu, copyLink } from "@/components/ui/context-menu";
+import { showToast } from "@/components/shell/toast";
 
 const save = { note: "update_note", document: "update_document", link: "update_link" } as const;
 
@@ -66,6 +68,13 @@ export function PinnedRow({
   );
 }
 
+function copyText(text: string) {
+  navigator.clipboard.writeText(text).then(
+    () => showToast("Copied"),
+    () => showToast("Couldn't copy"),
+  );
+}
+
 function PinnedCard({
   item,
   showProject,
@@ -77,6 +86,7 @@ function PinnedCard({
   onUnpin: () => void;
   onEdit?: () => void;
 }) {
+  const router = useRouter();
   const body = (
     <>
       <span className="flex h-6 items-center">
@@ -105,9 +115,24 @@ function PinnedCard({
     </>
   );
   const face = "press-tint flex grow flex-col p-4 hover:bg-muted/50";
+  const link = item.kind === "link";
+  const menu = contextMenu(
+    () => [
+      {
+        label: "Open",
+        icon: ExternalLink,
+        onSelect: () => (link ? window.open(item.href, "_blank", "noreferrer") : router.push(item.href)),
+      },
+      "-",
+      { label: "Unpin", icon: PinOff, onSelect: onUnpin },
+      onEdit && { label: "Edit", icon: Pencil, onSelect: onEdit },
+      { label: link ? "Copy address" : "Copy link", icon: Link2, onSelect: () => (link ? copyText(item.href) : copyLink(item.href, showToast)) },
+    ],
+    { ask: link ? undefined : { kind: item.kind, id: item.id, title: item.title } },
+  );
 
   return (
-    <div className="relative flex w-full overflow-hidden rounded-xl border border-stroke bg-card">
+    <div className="relative flex w-full overflow-hidden rounded-xl border border-stroke bg-card" {...menu}>
       {item.kind === "link" ? (
         <a href={item.href} target="_blank" rel="noreferrer" className={face}>
           {body}

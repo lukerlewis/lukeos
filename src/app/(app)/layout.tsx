@@ -10,6 +10,7 @@ import { SIDEBAR_COOKIE } from "@/components/shell/nav";
 import { Sidebar } from "@/components/shell/sidebar";
 import { TabBar } from "@/components/shell/tab-bar";
 import { Toaster } from "@/components/shell/toast";
+import { ContextMenuHost } from "@/components/ui/context-menu";
 import { FocusProvider } from "@/components/focus/focus-provider";
 import { ListenProvider } from "@/components/listen/listen-provider";
 import { PlayerBar } from "@/components/listen/player-bar";
@@ -83,6 +84,7 @@ async function AppShell({ children, sidebarCollapsed }: { children: React.ReactN
           <TabBar unreadMessages={unreadMessages} />
         </div>
         <Toaster />
+        <ContextMenuHost />
         </ListenProvider>
         </FocusProvider>
       </CommandMenuProvider>

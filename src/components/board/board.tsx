@@ -33,6 +33,8 @@ import { useWithoutHidden } from "@/lib/background";
 import { isUnsaved, useLiveTasks } from "@/lib/live-tasks";
 import { repeatName, type Area, type Bucket, type Status } from "@/lib/task-fields";
 import { askClaudeAbout } from "@/lib/ask-claude";
+import { contextMenu } from "@/components/ui/context-menu";
+import { taskMenu } from "@/components/tasks/task-menu";
 import { cn, pause } from "@/lib/utils";
 
 type Change = { id: string; changes: Partial<Pick<Task, "bucket" | "status">> };
@@ -260,11 +262,19 @@ function DraggableCard({
   showProject: boolean;
   onCycle: () => void;
 }) {
+  const router = useRouter();
   const { openTask, openId } = useTaskEditor();
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: task.id });
 
   return (
-    <li ref={setNodeRef} className={cn(isDragging && "opacity-40", openId === task.id && "md:[&>*]:border-ink!", isUnsaved(task.id) && "pointer-events-none opacity-60")} {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}>
+    <li
+      ref={setNodeRef}
+      className={cn(isDragging && "opacity-40", openId === task.id && "md:[&>*]:border-ink!", isUnsaved(task.id) && "pointer-events-none opacity-60")}
+      {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}
+      {...contextMenu(() => taskMenu(task, { open: () => openTask(task), refresh: () => router.refresh() }), {
+        ask: { kind: "task", id: task.id, title: task.title },
+      })}
+    >
       <CardBody
         task={task}
         today={today}

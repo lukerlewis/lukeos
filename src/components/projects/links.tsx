@@ -1,6 +1,8 @@
 "use client";
 
-import { Pencil, Pin, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Link2, Pencil, Pin, PinOff, Plus, Trash2 } from "lucide-react";
+import { contextMenu } from "@/components/ui/context-menu";
+import { showToast } from "@/components/shell/toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PinnedRow } from "@/components/pinned/pinned-row";
@@ -40,6 +42,40 @@ export function LinkList({ links, empty }: { links: ProjectLink[]; empty: React.
     });
   }
 
+  function remove(link: ProjectLink) {
+    hide(link.id);
+    void inBackground(() => op("delete_link", { id: link.id }), {
+      then: () => {
+        showToast("Link removed");
+        router.refresh();
+      },
+      failed: () => unhide(link.id),
+      failure: "Couldn't remove the link.",
+    });
+  }
+
+  const menu = (l: ProjectLink & { pinned: boolean }) =>
+    contextMenu(
+      () => [
+        { label: "Open", icon: ExternalLink, onSelect: () => window.open(l.url, "_blank", "noreferrer") },
+        "-",
+        l.pinned ? { label: "Unpin", icon: PinOff, onSelect: () => togglePin(l) } : { label: "Pin", icon: Pin, onSelect: () => togglePin(l) },
+        { label: "Edit", icon: Pencil, onSelect: () => setEditing(l) },
+        {
+          label: "Copy address",
+          icon: Link2,
+          onSelect: () =>
+            navigator.clipboard.writeText(l.url).then(
+              () => showToast("Copied"),
+              () => showToast("Couldn't copy"),
+            ),
+        },
+        "-",
+        { label: "Delete", icon: Trash2, onSelect: () => remove(l) },
+      ],
+      { hold: true },
+    );
+
   if (shown.length === 0) return <Card>{empty}</Card>;
   const pinned = shown.filter((l) => l.pinned);
   const rest = shown.filter((l) => !l.pinned);
@@ -56,7 +92,7 @@ export function LinkList({ links, empty }: { links: ProjectLink[]; empty: React.
         <Card>
           <ul>
             {rest.map((l) => (
-              <li key={l.id} className="group flex items-center border-b last:border-b-0">
+              <li key={l.id} className="group flex items-center border-b last:border-b-0" {...menu(l)}>
                 <a
                   href={l.url}
                   target="_blank"

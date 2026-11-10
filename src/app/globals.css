@@ -418,6 +418,15 @@
   scrollbar-width: none;
 }
 
+/* Things with a press-and-hold menu on phones: no text selection or the phone's own link preview. */
+@media (pointer: coarse) {
+  [data-hold-menu] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
 /* Wide rows show a tap by shading instead of shrinking. */
 .press-tint:active {
   background-color: var(--muted);

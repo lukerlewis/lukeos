@@ -1,5 +1,5 @@
 import { Archive, Briefcase, Lock, Sparkles, Trophy } from "lucide-react";
-import Link from "next/link";
+import { EntryCard } from "./entry-menu";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import type { EntrySummary } from "@/core/archive";
 import { sizeLabel, stageLabel, type EntrySize } from "@/lib/archive";
@@ -15,9 +15,9 @@ export function EntryGrid({ entries }: { entries: EntrySummary[] }) {
         const Icon = sizeIcon[e.size];
         const details = [sizeLabel[e.size], e.company, e.period].filter(Boolean).join(" · ");
         return (
-          <li key={e.id} className="min-w-0">
-            <Link
-              href={`/archive/${e.id}`}
+          <EntryCard
+              key={e.id}
+              entry={{ id: e.id, title: e.title, stage: e.stage }}
               className="pressable group flex h-full flex-col overflow-hidden rounded-xl border bg-card border-stroke hover:border-foreground/20"
             >
               <span className="relative block aspect-[4/3] overflow-hidden bg-muted">
@@ -58,8 +58,7 @@ export function EntryGrid({ entries }: { entries: EntrySummary[] }) {
                   </span>
                 )}
               </span>
-            </Link>
-          </li>
+          </EntryCard>
         );
       })}
     </ul>

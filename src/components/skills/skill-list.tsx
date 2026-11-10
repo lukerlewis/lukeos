@@ -1,5 +1,5 @@
 import { ScrollText } from "lucide-react";
-import Link from "next/link";
+import { MenuRow } from "@/components/ui/menu-row";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import type { SkillSummary } from "@/core/skills";
 
@@ -8,8 +8,7 @@ export function SkillList({ skills, when }: { skills: SkillSummary[]; when: Reco
   return (
     <ul>
       {skills.map((s) => (
-        <li key={s.id} className="border-b last:border-b-0">
-          <Link href={`/agents/skills/${s.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
+        <MenuRow key={s.id} kind="skill" id={s.id} title={s.title} href={`/agents/skills/${s.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
             <ScrollText className="mt-0.5 size-[18px] shrink-0 text-muted-foreground md:size-4" aria-hidden />
             <span className="flex min-w-0 grow flex-col gap-0.5">
               <span className="flex items-baseline gap-3">
@@ -25,8 +24,7 @@ export function SkillList({ skills, when }: { skills: SkillSummary[]; when: Reco
                 </span>
               )}
             </span>
-          </Link>
-        </li>
+        </MenuRow>
       ))}
     </ul>
   );
