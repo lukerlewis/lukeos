@@ -1,6 +1,9 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { ExternalLink, FolderInput, Pencil, Plus, Trash2 } from "lucide-react";
+import { askRename, contextMenu } from "@/components/ui/context-menu";
+import { trashInBackground, useWithoutHidden } from "@/lib/background";
+import { copyLinkItem, projectItems, tryOp } from "@/lib/menus";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,7 +14,7 @@ import { op } from "@/lib/ops-client";
 import { roughBounds, type Item } from "@/lib/whiteboard";
 import { ItemView } from "./item-view";
 
-export type BoardCard = { id: string; title: string; project: { name: string; hex: string } | null; items: Item[]; madeBy: MadeBy; updatedAt: string };
+export type BoardCard = { id: string; title: string; projectId?: string | null; project: { name: string; hex: string } | null; items: Item[]; madeBy: MadeBy; updatedAt: string };
 
 /** Makes an empty whiteboard (in `projectId`, if given) and opens it. */
 export function NewWhiteboardButton({ projectId }: { projectId?: string | null }) {
@@ -39,10 +42,33 @@ export function NewWhiteboardButton({ projectId }: { projectId?: string | null }
 }
 
 export function BoardGrid({ boards }: { boards: BoardCard[] }) {
+  const router = useRouter();
+  const shown = useWithoutHidden(boards);
+  const refresh = () => router.refresh();
+  const save = (b: BoardCard, change: { title?: string; projectId?: string | null }) =>
+    tryOp(() => op("update_whiteboard", { id: b.id, ...change }), refresh);
+  const menu = (b: BoardCard) =>
+    contextMenu(
+      () => [
+        { label: "Open", icon: ExternalLink, onSelect: () => router.push(`/whiteboard/${b.id}`) },
+        "-",
+        { label: "Rename", icon: Pencil, onSelect: () => askRename("Rename whiteboard", b.title, (title) => save(b, { title })) },
+        { label: "Project", icon: FolderInput, items: projectItems(b.projectId, (projectId) => save(b, { projectId })) },
+        "-",
+        copyLinkItem(`/whiteboard/${b.id}`),
+        "-",
+        {
+          label: "Delete",
+          icon: Trash2,
+          onSelect: () => trashInBackground("whiteboard", b.id, () => op("delete_whiteboard", { id: b.id }), { then: refresh }),
+        },
+      ],
+      { ask: { kind: "whiteboard", id: b.id, title: b.title }, hold: true },
+    );
   return (
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {boards.map((b) => (
-        <li key={b.id}>
+      {shown.map((b) => (
+        <li key={b.id} {...menu(b)}>
           <Link href={`/whiteboard/${b.id}`} className="group flex flex-col overflow-hidden rounded-xl border border-stroke bg-card hover:border-stroke-strong">
             <Thumbnail items={b.items} />
             <div className="flex items-center gap-2 border-t px-4 py-3">

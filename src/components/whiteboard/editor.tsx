@@ -1,6 +1,13 @@
 "use client";
 
 import {
+  BoxSelect,
+  ClipboardPaste,
+  Copy,
+  CopyPlus,
+  Rows3,
+  Scissors,
+  ZoomIn,
   ChevronLeft,
   CornerDownRight,
   Diamond,
@@ -33,6 +40,7 @@ import type { Comment } from "@/core/comments";
 import type { CommentPin } from "@/db/schema";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
+import { openContextMenu, type MenuEntry } from "@/components/ui/context-menu";
 import {
   allIds,
   ancestorsOf,
@@ -601,6 +609,61 @@ export function WhiteboardEditor({
     setSelection([...made, ...arrows.map((a) => a.id)]);
   };
 
+  /** Cmd+C (or Cmd+X, which then deletes it): keeps the selection to paste. */
+  const copySelection = (cut = false) => {
+    const ids = topSelected();
+    if (!ids.length) return;
+    const picked = ids.map((id) => locate(itemsRef.current, id)!.item);
+    setClipboard([...picked, ...arrowsAmong(itemsRef.current, picked)]);
+    if (cut) deleteSelection();
+  };
+
+  /** Cmd+V: copies of what was copied, a little down and to the right. */
+  const pasteItems = () => {
+    if (!clipboard.length) return;
+    const taken = allIds(itemsRef.current);
+    const copies = cloneWithNewIds(clipboard, taken).map((c) => (c.type === "arrow" ? shiftArrow(c, 24, 24) : { ...c, x: (c.x ?? 0) + 24, y: (c.y ?? 0) + 24 }));
+    // An arrow comes along if each end did, or is on the board, or is still here to join to.
+    const ids = new Set([...allIds(copies), ...taken]);
+    const keep = copies.filter((c) => c.type !== "arrow" || ((!c.from || ids.has(c.from)) && (!c.to || ids.has(c.to))));
+    commit(insertItems(itemsRef.current, null, itemsRef.current.length, keep));
+    setSelection(keep.map((c) => c.id));
+  };
+
+  /** Right-click: picks what's under the pointer (keeping a selection it's part of), then offers what can be done with it. */
+  const onContextMenuBoard = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("[data-wb-ui], [data-wb-editor]")) return;
+    e.preventDefault();
+    if (editingId) return;
+    const hit = pick(chainAt(e.target), e.metaKey || e.ctrlKey) ?? (e.target as Element).closest?.("[data-wb-arrow]")?.getAttribute("data-wb-arrow") ?? null;
+    let ids = selectionRef.current;
+    if (hit && !ids.includes(hit)) ids = [hit];
+    else if (!hit) ids = [];
+    setSelection(ids);
+    const one = ids.length === 1 ? locate(itemsRef.current, ids[0])?.item : undefined;
+    const editable = one && one.type !== "frame" && one.type !== "arrow" && one.type !== "draw";
+    const entries: MenuEntry[] = ids.length
+      ? [
+          editable && { label: "Edit text", icon: Type, onSelect: () => setEditingId(one.id) },
+          editable && "-",
+          { label: "Copy", icon: Copy, onSelect: () => copySelection() },
+          { label: "Cut", icon: Scissors, onSelect: () => copySelection(true) },
+          clipboard.length > 0 && { label: "Paste", icon: ClipboardPaste, onSelect: pasteItems },
+          { label: "Duplicate", icon: CopyPlus, onSelect: () => duplicate(selectionRef.current) },
+          "-",
+          { label: "Auto layout", icon: Rows3, onSelect: addAutoLayout },
+          { label: "Zoom to selection", icon: ZoomIn, onSelect: () => fit(selectionRef.current) },
+          "-",
+          { label: "Delete", icon: Trash2, onSelect: deleteSelection },
+        ]
+      : [
+          clipboard.length > 0 && { label: "Paste", icon: ClipboardPaste, onSelect: pasteItems },
+          itemsRef.current.length > 0 && { label: "Select all", icon: BoxSelect, onSelect: () => setSelection(itemsRef.current.map((i) => i.id)) },
+          itemsRef.current.length > 0 && { label: "Zoom to fit", icon: Maximize, onSelect: () => fit() },
+        ];
+    openContextMenu(e.clientX, e.clientY, entries);
+  };
+
   /** Shift+A: wrap the selection in an auto layout frame, or turn auto layout on for a selected frame. */
   const addAutoLayout = () => {
     const ids = topSelected();
@@ -715,6 +778,8 @@ export function WhiteboardEditor({
   function onPointerDown(e: React.PointerEvent) {
     if ((e.target as HTMLElement).closest("[data-wb-ui]")) return;
     if ((e.target as HTMLElement).closest("[data-wb-editor]")) return;
+    // A right-click only opens the menu (onContextMenuBoard), never drags.
+    if (e.button === 2) return;
     const now = gesture.current;
     if (e.pointerType === "touch") {
       // A hand on the screen while the Pencil draws or erases, or just after, is ignored.
@@ -1481,23 +1546,13 @@ export function WhiteboardEditor({
       return;
     }
     if (mod && (key === "c" || key === "x")) {
-      const ids = topSelected();
-      if (!ids.length) return;
-      const picked = ids.map((id) => locate(itemsRef.current, id)!.item);
-      setClipboard([...picked, ...arrowsAmong(itemsRef.current, picked)]);
-      if (key === "x") deleteSelection();
+      copySelection(key === "x");
       return;
     }
     if (mod && key === "v") {
       if (!clipboard.length) return;
       e.preventDefault();
-      const taken = allIds(itemsRef.current);
-      const copies = cloneWithNewIds(clipboard, taken).map((c) => (c.type === "arrow" ? shiftArrow(c, 24, 24) : { ...c, x: (c.x ?? 0) + 24, y: (c.y ?? 0) + 24 }));
-      // An arrow comes along if each end did, or is on the board, or is still here to join to.
-      const ids = new Set([...allIds(copies), ...taken]);
-      const keep = copies.filter((c) => c.type !== "arrow" || ((!c.from || ids.has(c.from)) && (!c.to || ids.has(c.to))));
-      commit(insertItems(itemsRef.current, null, itemsRef.current.length, keep));
-      setSelection(keep.map((c) => c.id));
+      pasteItems();
       return;
     }
     if (mod && (key === "=" || key === "+")) {
@@ -1765,6 +1820,7 @@ export function WhiteboardEditor({
           if (!gesture.current) setAnchor(null);
         }}
         onDoubleClick={onDoubleClick}
+        onContextMenu={onContextMenuBoard}
       >
         <div
           ref={worldRef}

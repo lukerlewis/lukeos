@@ -10,6 +10,7 @@ import type { TrashItem } from "@/core/trash";
 import { daysBetween, dayAndMonth, todayIn } from "@/lib/dates";
 import { inBackground } from "@/lib/background";
 import { op } from "@/lib/ops-client";
+import { contextMenu } from "@/components/ui/context-menu";
 
 function plural(n: number, word: string) {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -113,7 +114,17 @@ function TrashRow({ item, timeZone }: { item: TrashItem; timeZone: string }) {
   const contains = containsText?.join(", ");
 
   return (
-    <li className="flex flex-col gap-2 border-b px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:gap-3">
+    <li
+      className="flex flex-col gap-2 border-b px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:gap-3"
+      {...contextMenu(
+        () => [
+          { label: "Restore", icon: RotateCcw, onSelect: restore },
+          "-",
+          { label: "Delete for good", icon: Trash2, onSelect: () => void removeForever() },
+        ],
+        { hold: true },
+      )}
+    >
       <div className="flex min-w-0 grow items-start gap-3">
         <Icon className="mt-0.5 size-[18px] shrink-0 text-muted-foreground md:size-4" aria-hidden />
         <div className="flex min-w-0 grow flex-col gap-0.5">

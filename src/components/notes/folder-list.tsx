@@ -1,5 +1,5 @@
 import { ChevronRight, Folder as FolderIcon } from "lucide-react";
-import Link from "next/link";
+import { FolderRow } from "./item-menus";
 import type { Folder } from "@/core/folders";
 
 /** A list of folders, e.g. inside a Card. Each row opens the folder. */
@@ -7,8 +7,7 @@ export function FolderList({ folders, showProject = true }: { folders: Folder[];
   return (
     <ul>
       {folders.map((f) => (
-        <li key={f.id} className="border-b last:border-b-0">
-          <Link href={`/notes?folder=${f.id}`} className="press-tint flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
+        <FolderRow key={f.id} folder={f} className="press-tint flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
             <FolderIcon className="size-[18px] shrink-0 text-muted-foreground md:size-4" aria-hidden />
             <span className="min-w-0 grow truncate text-control font-medium">{f.name}</span>
             {showProject && f.project && (
@@ -19,8 +18,7 @@ export function FolderList({ folders, showProject = true }: { folders: Folder[];
             )}
             <span className="shrink-0 text-meta text-muted-foreground tabular-nums">{f.noteCount}</span>
             <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          </Link>
-        </li>
+        </FolderRow>
       ))}
     </ul>
   );

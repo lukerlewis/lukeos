@@ -1,8 +1,13 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Ellipsis, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Ellipsis, ExternalLink, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useTaskEditor } from "@/components/tasks/task-editor";
+import { askRename, contextMenu } from "@/components/ui/context-menu";
+import { trashInBackground } from "@/lib/background";
+import { copyLinkItem, tryOp } from "@/lib/menus";
+import { op } from "@/lib/ops-client";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useCommandMenu } from "@/components/command/command-menu";
 import { useFocus } from "@/components/focus/focus-provider";
@@ -329,8 +334,36 @@ function Count({ n, rail }: { n: number; rail: boolean }) {
 
 function ProjectLink({ project: p, active, rail }: { project: SidebarProject; active: boolean; rail: boolean }) {
   const link = useSectionLink(`/projects/${p.id}`, `/projects/${p.id}`, active);
+  const router = useRouter();
+  const { newTask } = useTaskEditor();
+  const href = `/projects/${p.id}`;
+  const menu = contextMenu(
+    () => [
+      { label: "Open", icon: ExternalLink, onSelect: () => router.push(href) },
+      { label: "New task", icon: Plus, onSelect: () => newTask({ projectId: p.id, area: "work" }) },
+      "-",
+      {
+        label: "Rename",
+        icon: Pencil,
+        onSelect: () => askRename("Rename project", p.name, (name) => tryOp(() => op("update_project", { id: p.id, name }), () => router.refresh())),
+      },
+      copyLinkItem(href),
+      "-",
+      {
+        label: "Delete",
+        icon: Trash2,
+        onSelect: () => {
+          if (!confirm(`Move "${p.name}" and all its tasks and notes to Trash? You can get them back within 30 days.`)) return;
+          if (active) router.push("/projects");
+          trashInBackground("project", p.id, () => op("delete_project", { id: p.id }), { then: () => router.refresh() });
+        },
+      },
+    ],
+    { ask: { kind: "project", id: p.id, title: p.name } },
+  );
   return (
     <Link
+      {...menu}
       {...link}
       aria-current={active ? "page" : undefined}
       aria-label={rail ? p.name : undefined}

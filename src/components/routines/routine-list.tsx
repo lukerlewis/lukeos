@@ -1,5 +1,5 @@
 import { CalendarClock } from "lucide-react";
-import Link from "next/link";
+import { MenuRow } from "@/components/ui/menu-row";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import type { RoutineSummary } from "@/core/routines";
 import { cn } from "@/lib/utils";
@@ -11,8 +11,7 @@ export function RoutineList({ routines, timeZone }: { routines: RoutineSummary[]
   return (
     <ul>
       {routines.map((r) => (
-        <li key={r.id} className="border-b last:border-b-0">
-          <Link href={`/agents/routines/${r.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
+        <MenuRow key={r.id} kind="routine" id={r.id} title={r.title} href={`/agents/routines/${r.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
             <CalendarClock
               className={cn("mt-0.5 size-[18px] shrink-0 md:size-4", r.enabled ? "text-muted-foreground" : "text-muted-foreground/50")}
               aria-hidden
@@ -42,8 +41,7 @@ export function RoutineList({ routines, timeZone }: { routines: RoutineSummary[]
                 </span>
               )}
             </span>
-          </Link>
-        </li>
+        </MenuRow>
       ))}
     </ul>
   );

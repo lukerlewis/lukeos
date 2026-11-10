@@ -1,5 +1,5 @@
 import { UserRound } from "lucide-react";
-import Link from "next/link";
+import { MenuRow } from "@/components/ui/menu-row";
 import { ClaudeBadge } from "@/components/tasks/made-by";
 import type { ContextSummary } from "@/core/context";
 
@@ -8,8 +8,7 @@ export function ContextList({ files, when }: { files: ContextSummary[]; when: Re
   return (
     <ul>
       {files.map((f) => (
-        <li key={f.id} className="border-b last:border-b-0">
-          <Link href={`/agents/context/${f.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
+        <MenuRow key={f.id} kind="context" id={f.id} title={f.title} href={`/agents/context/${f.id}`} className="press-tint flex items-start gap-3 px-4 py-3 hover:bg-muted/50">
             <UserRound className="mt-0.5 size-[18px] shrink-0 text-muted-foreground md:size-4" aria-hidden />
             <span className="flex min-w-0 grow flex-col gap-0.5">
               <span className="flex items-baseline gap-3">
@@ -25,8 +24,7 @@ export function ContextList({ files, when }: { files: ContextSummary[]; when: Re
                 </span>
               )}
             </span>
-          </Link>
-        </li>
+        </MenuRow>
       ))}
     </ul>
   );

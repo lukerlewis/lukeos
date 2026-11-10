@@ -34,6 +34,8 @@ import { StatusIcon } from "./status-circle";
 import { CellMenu } from "./cell-menu";
 import { FocusChip, PriorityChip, ProjectChip } from "./task-chips";
 import { useTaskEditor } from "./task-editor";
+import { taskMenu } from "./task-menu";
+import { contextMenu } from "@/components/ui/context-menu";
 
 /** How long the tick animation takes to play out. */
 export const TICK_MS = 400;
@@ -262,6 +264,11 @@ export function TaskRow({
   return (
     <li
       {...askClaudeAbout({ kind: "task", id: task.id, title: task.title })}
+      {...contextMenu(() => taskMenu({ ...task, status }, { open: () => openTask(task), refresh: () => router.refresh(), toggle }), {
+        ask: { kind: "task", id: task.id, title: task.title },
+        // Rows that drag already use a press and hold.
+        hold: !li,
+      })}
       {...li}
       className={cn("flex items-start gap-3 border-b px-4 last:border-b-0", columns && "md:grid md:items-stretch md:gap-0", li?.className, openId === task.id && "md:bg-selected", isUnsaved(task.id) && "pointer-events-none opacity-60")}
       style={columns ? { gridTemplateColumns: tableColumns(showProject) } : undefined}

@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, CircleCheck, Ellipsis, ListPlus, Pencil, Play, Plus, Trash2, Undo2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, CircleCheck, Ellipsis, ListPlus, Pause, Pencil, Play, Plus, Trash2, Undo2 } from "lucide-react";
+import { askRename, contextMenu, type MenuEntry } from "@/components/ui/context-menu";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { showToast } from "@/components/shell/toast";
@@ -53,9 +54,10 @@ export function EpisodeRow({
   inPlaylist?: { id: string; order: string[] };
   extra?: React.ReactNode;
 }) {
+  const router = useRouter();
   const listen = useListen();
   const selection = useSelection();
-  const [menu, setMenu] = useState(false);
+  const [menu, setMenu] = useState<false | "menu" | "delete">(false);
   const isHidden = useHidden(episode.id);
   if (isHidden) return null;
   const current = listen?.current?.id === episode.id;
@@ -64,8 +66,61 @@ export function EpisodeRow({
   const selecting = !!selection?.selecting;
   const on = !!selection?.picked.has(episode.id);
 
+  function rightClick(): MenuEntry[] {
+    const run = (work: () => Promise<unknown>, done?: string) =>
+      work().then(
+        () => {
+          if (done) showToast(done);
+          router.refresh();
+        },
+        (err: Error) => showToast(err.message),
+      );
+    const at = inPlaylist ? inPlaylist.order.indexOf(episode.id) : -1;
+    const move = (by: number) => {
+      const order = [...inPlaylist!.order];
+      order.splice(at, 1);
+      order.splice(at + by, 0, episode.id);
+      return run(() => op("update_playlist", { id: inPlaylist!.id, episodeIds: order }));
+    };
+    const playing = current && listen?.playing;
+    return [
+      {
+        label: playing ? "Pause" : "Play",
+        icon: playing ? Pause : Play,
+        onSelect: () => (current ? listen?.toggle() : listen?.play(toPlayer(episode), queue.map(toPlayer))),
+      },
+      "-",
+      {
+        label: "Add to playlist",
+        icon: ListPlus,
+        items: playlists.length
+          ? playlists.map((p) => ({ label: p.title, onSelect: () => run(() => op("add_to_playlist", { playlistId: p.id, episodeIds: [episode.id] }), `Added to ${p.title}`) }))
+          : [{ label: "No playlists yet", disabled: true }],
+      },
+      inPlaylist && at > 0 && { label: "Move up", icon: ArrowUp, onSelect: () => move(-1) },
+      inPlaylist && at >= 0 && at < inPlaylist.order.length - 1 && { label: "Move down", icon: ArrowDown, onSelect: () => move(1) },
+      inPlaylist && {
+        label: "Take off this playlist",
+        icon: Undo2,
+        onSelect: () => run(() => op("remove_from_playlist", { playlistId: inPlaylist.id, episodeIds: [episode.id] }), "Taken off the playlist"),
+      },
+      episode.kind === "podcast" && {
+        label: episode.finishedAt ? "Mark as not finished" : "Mark as finished",
+        icon: Check,
+        onSelect: () => run(() => op("update_episode", { id: episode.id, finished: !episode.finishedAt })),
+      },
+      selection && { label: "Select", icon: CircleCheck, onSelect: () => selection.start(episode.id) },
+      { label: "Rename", icon: Pencil, onSelect: () => askRename("Rename", episode.title, (title) => run(() => op("update_episode", { id: episode.id, title }))) },
+      "-",
+      { label: "Delete", icon: Trash2, onSelect: () => setMenu("delete") },
+    ];
+  }
+
   return (
-    <li className={cn("flex items-center gap-1 border-b pr-1 last:border-b-0", on && "bg-muted/60")}>
+    <li
+      className={cn("flex items-center gap-1 border-b pr-1 last:border-b-0", on && "bg-muted/60")}
+      {...(selecting ? {} : contextMenu(rightClick, { hold: true }))}
+    >
       <button
         type="button"
         aria-pressed={selecting ? on : undefined}
@@ -107,7 +162,7 @@ export function EpisodeRow({
           <button
             type="button"
             aria-label={`Options for ${episode.title}`}
-            onClick={() => setMenu(true)}
+            onClick={() => setMenu("menu")}
             className="press flex size-11 shrink-0 items-center justify-center rounded-full text-icon hover:bg-muted"
           >
             <Ellipsis className="size-5" aria-hidden />
@@ -120,6 +175,7 @@ export function EpisodeRow({
           queue={queue}
           playlists={playlists}
           inPlaylist={inPlaylist}
+          startOn={menu}
           onSelect={selection && (() => selection.start(episode.id))}
           onClose={() => setMenu(false)}
         />
@@ -146,6 +202,7 @@ function EpisodeMenu({
   queue,
   playlists,
   inPlaylist,
+  startOn = "menu",
   onSelect,
   onClose,
 }: {
@@ -153,13 +210,15 @@ function EpisodeMenu({
   queue: Episode[];
   playlists: PlaylistSummary[];
   inPlaylist?: { id: string; order: string[] };
+  /** "delete" opens straight on the delete question, e.g. from the right-click menu. */
+  startOn?: "menu" | "delete";
   /** Starts picking several, this one first. */
   onSelect?: (() => void) | null;
   onClose: () => void;
 }) {
   const router = useRouter();
   const listen = useListen();
-  const [view, setView] = useState<"menu" | "playlists" | "rename" | "delete">("menu");
+  const [view, setView] = useState<"menu" | "playlists" | "rename" | "delete">(startOn);
   const [title, setTitle] = useState(episode.title);
   const [busy, setBusy] = useState(false);
 

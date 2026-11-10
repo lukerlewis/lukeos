@@ -1,6 +1,8 @@
 "use client";
 
-import { Check, ChevronRight, Mic, Music, Play, Plus, Search, Shuffle, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronRight, ExternalLink, Mic, Music, Pencil, Play, Plus, Search, Shuffle, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { askRename, contextMenu, type MenuEntry } from "@/components/ui/context-menu";
+import { copyLinkItem, tryOp } from "@/lib/menus";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -44,8 +46,25 @@ function matches(e: Episode, query: string) {
 const totalSeconds = (episodes: Episode[]) => episodes.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0);
 
 /** Music's screen: finished things to decide on, then a card with All songs and Podcasts, and a card of playlists. */
-export function ListenScreen({ episodes: all, playlists }: { episodes: Episode[]; playlists: Playlist[] }) {
+export function ListenScreen({ episodes: all, playlists: allPlaylists }: { episodes: Episode[]; playlists: Playlist[] }) {
+  const router = useRouter();
   const episodes = useWithoutHidden(all);
+  const playlists = useWithoutHidden(allPlaylists);
+  const playlistMenu = (p: Playlist): MenuEntry[] => [
+    { label: "Open", icon: ExternalLink, onSelect: () => router.push(`/listen/playlists/${p.id}`) },
+    "-",
+    { label: "Rename", icon: Pencil, onSelect: () => askRename("Rename playlist", p.title, (title) => tryOp(() => op("update_playlist", { id: p.id, title }), () => router.refresh())) },
+    copyLinkItem(`/listen/playlists/${p.id}`),
+    "-",
+    {
+      label: "Delete",
+      icon: Trash2,
+      onSelect: () => {
+        if (!confirm(`Delete the playlist "${p.title}"? Its songs and episodes are kept.`)) return;
+        void tryOp(() => op("delete_playlist", { id: p.id }), () => router.refresh());
+      },
+    },
+  ];
   const toDecide = episodes.filter((e) => e.kind === "podcast" && e.finishedAt && !e.kept);
   const shelved = episodes.filter((e) => !toDecide.includes(e));
   const songs = pick(shelved, "songs");
@@ -71,6 +90,7 @@ export function ListenScreen({ episodes: all, playlists }: { episodes: Episode[]
                 cover={<PlaylistCover playlist={p} className="size-12" />}
                 count={p.count}
                 seconds={p.seconds}
+                menu={() => playlistMenu(p)}
               />
             ))}
           </ul>
@@ -87,6 +107,7 @@ function LibraryRow({
   cover,
   count,
   seconds,
+  menu,
 }: {
   href: string;
   title: string;
@@ -94,9 +115,10 @@ function LibraryRow({
   cover?: React.ReactNode;
   count: number;
   seconds: number;
+  menu?: () => MenuEntry[];
 }) {
   return (
-    <li className="border-b last:border-b-0">
+    <li className="border-b last:border-b-0" {...(menu && contextMenu(menu, { hold: true }))}>
       <Link href={href} className="press-tint flex min-h-16 items-center gap-3 px-3 py-2.5 hover:bg-muted/50">
         {cover ?? (
           <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-muted text-icon [&_svg]:size-6" aria-hidden>
