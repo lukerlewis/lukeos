@@ -16,7 +16,7 @@ import {
   type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { ArrowRightLeft, Check, CheckSquare, Columns3, ExternalLink, MessageSquare, Paperclip, Plus, Trash2, X } from "lucide-react";
+import { ArrowRightLeft, CalendarDays, Check, CheckSquare, Columns3, ExternalLink, MessageSquare, Paperclip, Plus, Trash2, X } from "lucide-react";
 import { contextMenu, type MenuEntry } from "@/components/ui/context-menu";
 import { copyLinkItem } from "@/lib/menus";
 import { useRouter } from "next/navigation";
@@ -27,11 +27,12 @@ import { ClaudeBadge } from "@/components/tasks/made-by";
 import { Button } from "@/components/ui/button";
 import { Card as Panel } from "@/components/ui/card";
 import type { CardSummary, PipelineColumn } from "@/core/pipeline";
+import { friendlyDay } from "@/lib/dates";
 import { isInbox } from "@/lib/inbox";
 import { op } from "@/lib/ops-client";
 import { trashInBackground, useWithoutHidden } from "@/lib/background";
 import { cn } from "@/lib/utils";
-import { CardDialog, type CardDraft } from "./card-dialog";
+import { CardDialog, type BoardChange, type CardDraft } from "./card-dialog";
 import { ColumnsDialog } from "./columns-dialog";
 
 export type PipelineData = (PipelineColumn & { cards: CardSummary[] })[];
@@ -68,11 +69,13 @@ export function PipelineBoard({
   const [, startTransition] = useTransition();
   const cards = columns.flatMap((c) => c.cards.map((card) => ({ ...card, columnId: c.id })));
   // to: null hides the card (a rejected idea).
-  const [all, move] = useOptimistic(cards, (state, { id, to }: { id: string; to: string | null }) => {
+  const [all, move] = useOptimistic(cards, (state, { id, to, date }: BoardChange) => {
     const card = state.find((c) => c.id === id);
     if (!card) return state;
     const rest = state.filter((c) => c.id !== id);
-    return to ? [...rest, { ...card, columnId: to }] : rest;
+    if (to === null) return rest;
+    const moved = { ...card, ...(to && { columnId: to }), ...(date !== undefined && { date }) };
+    return to && to !== card.columnId ? [...rest, moved] : state.map((c) => (c.id === id ? moved : c));
   });
   // A card just deleted leaves at once.
   const items = useWithoutHidden(all);
@@ -159,7 +162,7 @@ export function PipelineBoard({
   };
 
   /** A change made inside an open card: the board shows it at once and saves behind it. */
-  function inBoard(change: { id: string; to: string | null } | null, request: () => Promise<unknown>) {
+  function inBoard(change: BoardChange | null, request: () => Promise<unknown>) {
     startTransition(async () => {
       if (change) move(change);
       try {
@@ -252,6 +255,7 @@ export function PipelineBoard({
                     <DraggableCard
                       key={card.id}
                       card={card}
+                      today={today}
                       onOpen={() => setDraft({ id: card.id })}
                       menu={() => cardMenu(card, isInbox(column))}
                       review={isInbox(column) ? { onApprove: () => approve(card), onReject: () => reject(card), canApprove: column.id !== list.at(-1)?.id } : undefined}
@@ -262,7 +266,7 @@ export function PipelineBoard({
             })}
           </div>
           <DragOverlay dropAnimation={null}>
-            {dragging && <CardBody card={dragging} className="motion-lift scale-[1.03] rotate-1" />}
+            {dragging && <CardBody card={dragging} today={today} className="motion-lift scale-[1.03] rotate-1" />}
           </DragOverlay>
         </DndContext>
       )}
@@ -293,7 +297,7 @@ export function PipelineBoard({
 }
 
 /** A project with no pipeline yet: one button to start one with the usual columns. */
-function StartPipeline({ projectId }: { projectId: string }) {
+export function StartPipeline({ projectId }: { projectId: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   async function start() {
@@ -368,12 +372,13 @@ function Column({
 
 type Review = { onApprove: () => void; onReject: () => void; canApprove: boolean };
 
-function DraggableCard({ card, onOpen, menu, review }: { card: CardSummary; onOpen: () => void; menu: () => MenuEntry[]; review?: Review }) {
+function DraggableCard({ card, today, onOpen, menu, review }: { card: CardSummary; today: string; onOpen: () => void; menu: () => MenuEntry[]; review?: Review }) {
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: card.id });
   return (
     <li ref={setNodeRef} className={cn(isDragging && "opacity-40")} {...contextMenu(menu, { ask: { kind: "pipeline card", id: card.id, title: card.title } })}>
       <CardBody
         card={card}
+        today={today}
         {...attributes}
         {...listeners}
         aria-roledescription="card"
@@ -411,9 +416,9 @@ function ReviewButtons({ onApprove, onReject, canApprove }: Review) {
   );
 }
 
-function CardBody({ card, className, children, ...rest }: { card: CardSummary } & React.ComponentProps<"div">) {
+function CardBody({ card, today, className, children, ...rest }: { card: CardSummary; today: string } & React.ComponentProps<"div">) {
   const tasks = card.taskCount.open + card.taskCount.done;
-  const meta = tasks > 0 || card.attachmentCount > 0 || card.openComments > 0 || card.madeBy.kind === "agent";
+  const meta = !!card.date || tasks > 0 || card.attachmentCount > 0 || card.openComments > 0 || card.madeBy.kind === "agent";
   return (
     <div
       {...rest}
@@ -426,6 +431,12 @@ function CardBody({ card, className, children, ...rest }: { card: CardSummary } 
       {card.excerpt && <span className="line-clamp-2 text-meta text-muted-foreground">{card.excerpt}</span>}
       {meta && (
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-0.5 text-meta text-muted-foreground">
+          {card.date && (
+            <span className="inline-flex items-center gap-1">
+              <CalendarDays className="size-3.5" aria-hidden />
+              {friendlyDay(card.date, today)}
+            </span>
+          )}
           {tasks > 0 && (
             <span className="inline-flex items-center gap-1" title={`${card.taskCount.done} of ${tasks} tasks done`}>
               <CheckSquare className="size-3.5" aria-hidden />

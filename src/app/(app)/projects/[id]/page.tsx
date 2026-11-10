@@ -9,6 +9,7 @@ import { Board } from "@/components/board/board";
 import { TaskFilterMenu, TaskSortMenu } from "@/components/dashboard/controls";
 import { BoardViewSwitch, type BoardGrouping } from "@/components/board/view-switch";
 import { PipelineBoard } from "@/components/pipeline/pipeline-board";
+import { PipelineCalendar } from "@/components/pipeline/pipeline-calendar";
 import { getPipeline, listColumns } from "@/core/pipeline";
 import { NewFolderButton } from "@/components/notes/folder-dialog";
 import { NewNoteButton } from "@/components/notes/new-note-button";
@@ -35,7 +36,7 @@ import { getTimeZone } from "@/core/settings";
 import { getDashboardView } from "@/core/dashboard";
 import { sortTasks } from "@/lib/board";
 import { listTasks } from "@/core/tasks";
-import { todayIn } from "@/lib/dates";
+import { isoDay, todayIn } from "@/lib/dates";
 import { byPin, pinnedDocument, pinnedNote } from "@/lib/pinned";
 import { colorHex } from "@/lib/project-colors";
 
@@ -64,9 +65,10 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   // A project with a pipeline opens on its board; otherwise on its list. The board starts By when either way.
   const view = query.view ?? (hasPipeline ? "board" : "list");
   const grouping: BoardGrouping =
-    query.by === "when" || query.by === "status" || query.by === "pipeline" ? query.by : "when";
-  const pipelineView = view === "board" && grouping === "pipeline";
-  const boardView = view === "board" && grouping !== "pipeline" ? grouping : null;
+    query.by === "when" || query.by === "status" || query.by === "pipeline" || query.by === "calendar" ? query.by : "when";
+  const calendarView = view === "board" && grouping === "calendar";
+  const pipelineView = view === "board" && (grouping === "pipeline" || calendarView);
+  const boardView = view === "board" && grouping !== "pipeline" && grouping !== "calendar" ? grouping : null;
   const notesView = view === "notes";
   const inspirationView = view === "inspiration";
   const linksView = view === "links";
@@ -148,7 +150,19 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
       {!pipelineView && <div className="flex flex-wrap items-center gap-2">{toolbar}</div>}
 
 
-      {pipelineView && pipeline ? (
+      {calendarView && pipeline ? (
+        <PipelineCalendar
+          key={`${query.span}-${query.day}`}
+          projectId={project.id}
+          columns={pipeline.columns}
+          span={query.span === "week" ? "week" : "month"}
+          day={typeof query.day === "string" && isoDay.test(query.day) ? query.day : date}
+          base={`${page}?view=board&by=calendar`}
+          timeZone={timeZone}
+          today={date}
+          toolbar={toolbar}
+        />
+      ) : pipelineView && pipeline ? (
         <PipelineBoard
           key={typeof query.card === "string" ? query.card : "pipeline"}
           projectId={project.id}

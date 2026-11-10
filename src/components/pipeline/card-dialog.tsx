@@ -20,7 +20,10 @@ import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 
 /** An existing card to open, or where a new one goes. */
-export type CardDraft = { id?: string; projectId?: string; columnId?: string };
+export type CardDraft = { id?: string; projectId?: string; columnId?: string; date?: string };
+
+/** A change the board shows at once: the card moves to a column (null hides it), or to a day (null: no date). */
+export type BoardChange = { id: string; to?: string | null; date?: string | null };
 
 const field =
   "w-full rounded-lg border bg-card px-3 py-2 text-body border-stroke-strong outline-none placeholder:text-muted-foreground focus-visible:border-ring md:text-preview";
@@ -41,7 +44,7 @@ export function CardDialog({
   today: string;
   onClose: () => void;
   /** Saves behind the board, moving the card there at once if `change` says where. */
-  inBoard: (change: { id: string; to: string | null } | null, request: () => Promise<unknown>) => void;
+  inBoard: (change: BoardChange | null, request: () => Promise<unknown>) => void;
   /** Approve or Reject, done the same way as on the board. */
   onReview: (id: string, action: "approve" | "reject") => void;
 }) {
@@ -51,6 +54,7 @@ export function CardDialog({
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [columnId, setColumnId] = useState(initial.id ? "" : (initial.columnId ?? columns[0]?.id ?? ""));
+  const [date, setDate] = useState(initial.date ?? "");
   const [error, setError] = useState<string | null>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,6 +69,7 @@ export function CardDialog({
           setTitle(next.title);
           setNotes(next.notes ?? "");
           setColumnId(next.columnId ?? "");
+          setDate(next.date ?? "");
         })
         .catch((err: Error) => setError(err.message));
     },
@@ -93,11 +98,27 @@ export function CardDialog({
     }
     if (card) {
       const moved = !!columnId && columnId !== card.columnId;
-      const fields = { id: card.id, title: name, notes: notes.trim() || null, ...(moved && { column: columnId }) };
-      if (name !== card.title || fields.notes !== (card.notes ?? null) || moved)
-        inBoard(moved ? { id: card.id, to: columnId } : null, () => op("update_card", fields));
+      const redated = (date || null) !== card.date;
+      const fields = {
+        id: card.id,
+        title: name,
+        notes: notes.trim() || null,
+        ...(moved && { column: columnId }),
+        ...(redated && { date: date || null }),
+      };
+      if (name !== card.title || fields.notes !== (card.notes ?? null) || moved || redated)
+        inBoard(
+          moved || redated ? { id: card.id, ...(moved && { to: columnId }), ...(redated && { date: date || null }) } : null,
+          () => op("update_card", fields),
+        );
     } else if (initial.projectId) {
-      const fields = { projectId: initial.projectId, title: name, notes: notes.trim() || undefined, column: columnId || undefined };
+      const fields = {
+        projectId: initial.projectId,
+        title: name,
+        notes: notes.trim() || undefined,
+        column: columnId || undefined,
+        date: date || undefined,
+      };
       inBoard(null, () =>
         op("create_card", fields).then(
           () => showToast("Card added"),
@@ -182,6 +203,24 @@ export function CardDialog({
                 </option>
               ))}
             </select>
+          </Row>
+
+          <Row label="Date">
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                aria-label="Date"
+                disabled={loading}
+                className="h-9 rounded-lg border bg-card px-2.5 text-body border-stroke-strong md:text-meta"
+              />
+              {date && (
+                <Button variant="ghost" size="sm" onClick={() => setDate("")} disabled={loading}>
+                  No date
+                </Button>
+              )}
+            </div>
           </Row>
 
           <Row label="Notes">
