@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { op } from "@/lib/ops-client";
+import { TOPICS_PLACEHOLDER } from "@/lib/portfolio";
 import { cn } from "@/lib/utils";
 
 const help = {
@@ -11,10 +12,14 @@ const help = {
     "How the site's AI answers visitors: its rules, tone, and what to do when something isn't covered. Safety rules (staying on topic, no personal details, ignoring instructions hidden in what visitors paste) are built into the site and always apply.",
   about:
     "What the site's AI knows about you apart from your work, in your own words. It retells it in the third person. Anything here can be told to any visitor, so keep it to things you're happy to have public.",
+  topics:
+    "Your answers to what visitors ask most that About and Work don't cover, like your weaknesses, how you work with engineers or what you want next. One ## heading per topic, with bullets in your own words. The site's AI uses it for longer answers, and anything here can be told to any visitor.",
 };
 
-/** The AI instructions or About Luke, saved a moment after typing stops. */
-export function PortfolioText({ field, initial }: { field: "instructions" | "about"; initial: string }) {
+const labels = { instructions: "AI instructions", about: "About Luke", topics: "Topics" };
+
+/** The AI instructions, About Luke or Topics, saved a moment after typing stops. */
+export function PortfolioText({ field, initial }: { field: "instructions" | "about" | "topics"; initial: string }) {
   const router = useRouter();
   const [value, setValue] = useState(initial);
   const [state, setState] = useState<"saved" | "saving" | "error">("saved");
@@ -54,9 +59,10 @@ export function PortfolioText({ field, initial }: { field: "instructions" | "abo
             setValue(e.target.value);
             save(e.target.value);
           }}
-          aria-label={field === "about" ? "About Luke" : "AI instructions"}
+          aria-label={labels[field]}
+          placeholder={field === "topics" ? TOPICS_PLACEHOLDER : undefined}
           spellCheck
-          className="field-sizing-content min-h-[60dvh] w-full resize-none bg-transparent px-4 py-3 font-mono text-meta leading-relaxed outline-none"
+          className="field-sizing-content min-h-[60dvh] w-full resize-none bg-transparent px-4 py-3 font-mono text-meta leading-relaxed outline-none placeholder:text-muted-foreground"
         />
       </Card>
     </div>

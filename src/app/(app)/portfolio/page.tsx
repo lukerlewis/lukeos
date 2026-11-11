@@ -47,9 +47,10 @@ async function Tab({ tab, search }: { tab: PortfolioTab; search?: string }) {
     case "work":
       return <PortfolioWorkList entries={await listPortfolioEntries()} />;
     case "instructions":
-    case "about": {
+    case "about":
+    case "topics": {
       const text = await getPortfolioText();
-      return <PortfolioText key={tab} field={tab} initial={tab === "about" ? text.about : text.instructions} />;
+      return <PortfolioText key={tab} field={tab} initial={text[tab]} />;
     }
     case "setup": {
       const h = await headers();
