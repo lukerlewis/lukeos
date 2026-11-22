@@ -61,7 +61,7 @@ final class NotesModel {
     }
 
     func setPinned(_ n: NoteSummary, _ on: Bool) {
-        if let i = notes.firstIndex(of: n) { withAnimation(.snappy) { notes[i].pinned = on } }
+        if let i = notes.firstIndex(of: n) { withAnimation(Motion.snappy) { notes[i].pinned = on } }
         Task { await Repo.change("update_note", ["id": .string(n.id), "pinned": .bool(on)]) }
     }
 
@@ -79,7 +79,7 @@ final class NotesModel {
     }
 
     func delete(_ n: NoteSummary) {
-        withAnimation(.snappy) { notes.removeAll { $0.id == n.id } }
+        withAnimation(Motion.snappy) { notes.removeAll { $0.id == n.id } }
         Task { await Repo.change("delete_note", ["id": .string(n.id)]) }
         Toasts.shared.show("Moved to Trash") { [weak self] in
             Task {
@@ -109,6 +109,9 @@ struct NotesList: View {
     @State private var newName = ""
     @State private var creatingFolder = false
     @State private var openNote: String?
+    /// The note just made with the + button, which may be left empty and thrown away.
+    @State private var newNoteId: String?
+    @Namespace private var zoom
     @Environment(\.dismiss) private var dismiss
 
     init(folder: Folder?) {
@@ -137,7 +140,7 @@ struct NotesList: View {
                 }
                 if !pinned.isEmpty {
                     Section {
-                        PinnedRow(items: pinned.map { PinnedRow.Item(id: $0.id, title: $0.displayTitle, excerpt: $0.excerpt, project: $0.project, madeBy: $0.madeBy) }) { openNote = $0 }
+                        PinnedRow(items: pinned.map { PinnedRow.Item(id: $0.id, title: $0.displayTitle, excerpt: $0.excerpt, project: $0.project, madeBy: $0.madeBy) }, zoom: zoom) { openNote = $0 }
                             .listRowInsets(EdgeInsets())
                             .listRowBackground(Color.clear)
                     } header: { SectionTitle(text: "Pinned") }
@@ -175,7 +178,9 @@ struct NotesList: View {
         .task(id: query) { await model.search(query) }
         .refreshable { await model.load() }
         .task { await model.load() }
-        .navigationDestination(item: $openNote) { NoteScreen(noteId: $0) }
+        .navigationDestination(item: $openNote) { id in
+            NoteScreen(noteId: id, preview: model.notes.first { $0.id == id }?.displayTitle, isNew: id == newNoteId).zoomTransition(id, in: zoom)
+        }
         .toolbar {
             if let folder {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -200,7 +205,11 @@ struct NotesList: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    Task { openNote = await model.newNote() }
+                    Task {
+                        let id = await model.newNote()
+                        newNoteId = id
+                        openNote = id
+                    }
                 } label: { Image(systemName: "square.and.pencil") }
                     .accessibilityLabel("New note")
             }

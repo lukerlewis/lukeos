@@ -34,7 +34,8 @@ struct BoardView: View {
                         }
                         return true
                     } isTargeted: { on in
-                        withAnimation(.snappy) { target = on ? column.id : (target == column.id ? nil : target) }
+                        if on, target != column.id { Haptics.select() }
+                        withAnimation(Motion.snappy) { target = on ? column.id : (target == column.id ? nil : target) }
                     }
                 }
             }
@@ -58,7 +59,7 @@ struct BoardColumnView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: Space.s) {
                 Text(title).textStyle(.heading, medium: true, color: .ink)
-                Text("\(tasks.count)").textStyle(.meta, color: .mutedText).monospacedDigit()
+                Text("\(tasks.count)").textStyle(.meta, color: .mutedText).rollingNumber(tasks.count)
                 Spacer()
             }
             .padding(.horizontal, Space.inset)

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The home screen: the date and a greeting, Work | Life and Today | Board,
-/// then Today's cards (Life: Morning, Day, Evening; Work: Signal, Noise) or the board.
+/// The home screen, titled Today with the date under it. Work | Life sits in the top bar and
+/// Today | Board in the filter menu, so the first screen is the tasks themselves.
+/// Today's cards: Life has Morning, Day, Evening; Work has Signal, Noise.
 struct DashboardScreen: View {
     @Environment(AppModel.self) private var app
     @State private var store = TaskStore.shared
@@ -16,8 +17,9 @@ struct DashboardScreen: View {
             Group {
                 if layout == "board" {
                     ScrollView {
-                        header(inList: false)
+                        dateLine.padding(.horizontal, Space.page)
                         BoardView(tasks: areaTasks, onOpen: { editing = $0 })
+                            .padding(.top, Space.s)
                     }
                 } else {
                     todayList
@@ -25,10 +27,14 @@ struct DashboardScreen: View {
             }
             .pageBackground()
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { FiltersMenu() }
+                ToolbarItem(placement: .principal) { areaPicker.frame(width: Size.areaSwitch) }
+                ToolbarItem(placement: .topBarTrailing) { FiltersMenu(layout: $layout) }
             }
-            .navigationTitle(greeting)
+            .navigationTitle(layout == "board" ? "Board" : "Today")
             .toolbarTitleDisplayMode(.large)
+            .onChange(of: layout) { _, new in
+                Task { await Repo.change("set_dashboard_view", ["layout": .string(new)]) }
+            }
             .refreshable { await reload() }
             .overlay(alignment: .bottomTrailing) { addButton }
             .sheet(item: $editing) { task in
@@ -65,62 +71,30 @@ struct DashboardScreen: View {
 
     // MARK: Header
 
-    private var greeting: String {
-        let h = Calendar.current.component(.hour, from: .now)
-        return h < 12 ? "Good morning, Luke" : h < 18 ? "Good afternoon, Luke" : "Good evening, Luke"
-    }
-
     private var areaPicker: some View {
         @Bindable var app = app
-        return Picker("Area", selection: $app.area.animation(.snappy)) {
+        return Picker("Area", selection: $app.area.animation(Motion.snappy)) {
             ForEach(Area.allCases, id: \.self) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
     }
 
-    private var layoutPicker: some View {
-        Picker("Layout", selection: $layout.animation(.snappy)) {
-            Text("Today").tag("list")
-            Text("Board").tag("board")
-        }
-        .pickerStyle(.segmented)
-    }
-
-    /// In the list, rows already sit inside the list's margin; on the board they don't.
-    private func header(inList: Bool) -> some View {
-        @Bindable var app = app
-        return VStack(alignment: .leading, spacing: Space.l) {
-            Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                .textStyle(.preview, color: .mutedText)
-            // Side by side; stacked when the text is set very large.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: Space.m) {
-                    areaPicker.frame(width: Size.areaSwitch)
-                    layoutPicker
-                }
-                VStack(spacing: Space.s) {
-                    areaPicker
-                    layoutPicker
-                }
-            }
-            .onChange(of: layout) { _, new in
-                Task { await Repo.change("set_dashboard_view", ["layout": .string(new)]) }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, inList ? Space.xs : Space.page)
-        .padding(.top, Space.xs)
-        .padding(.bottom, Space.xs)
+    /// The date, quietly, under the large title.
+    private var dateLine: some View {
+        Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
+            .textStyle(.control, color: .mutedText)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Today
 
     private var todayList: some View {
         List {
-            Section {
-                header(inList: true).controlRow()
+            // The date as the first section's header: close under the title, one section gap above the first card.
+            Section {} header: {
+                dateLine.textCase(nil).padding(.leading, -Space.xl).padding(.top, -Space.l)
             }
-
+            .listSectionSpacing(Space.l)
             if !store.loaded && store.tasks.isEmpty {
                 ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear)
             } else if let error = store.error, store.tasks.isEmpty {
@@ -190,37 +164,58 @@ struct TaskCardSection: View {
     var dropChange: () -> Input
     var onOpen: (LukeTask) -> Void
     @State private var store = TaskStore.shared
+    /// Which parts of this card a dragged task is over (a row's id, "add", "header").
+    @State private var over: Set<String> = []
+
+    private var targeted: Bool { !over.isEmpty }
+
+    /// Any part of the card takes a dropped task; the whole card lights up while one is over it.
+    private func dropTarget<V: View>(_ v: V, part: String) -> some View {
+        v.dropDestination(for: String.self) { ids, _ in
+            for id in ids { store.update(id, dropChange()) }
+            over = []
+            return true
+        } isTargeted: { on in
+            let was = targeted
+            if on { over.insert(part) } else { over.remove(part) }
+            if !was && targeted { Haptics.select() }
+        }
+    }
 
     var body: some View {
         Section {
             ForEach(tasks) { task in
-                TaskRow(task: task, onOpen: { onOpen(task) })
-                    .taskRowInsets()
-                    .taskRowActions(task, onOpen: { onOpen(task) })
-                    .draggable(task.id)
+                dropTarget(
+                    TaskRow(task: task, onOpen: { onOpen(task) })
+                        .draggable(task.id),
+                    part: task.id
+                )
+                .taskRowInsets()
+                .taskRowActions(task, onOpen: { onOpen(task) })
             }
-            .dropDestination(for: String.self) { ids, _ in
-                for id in ids { store.update(id, dropChange()) }
-            }
-            QuickAddRow(placeholder: "Add to \(title)", base: newTask)
+            dropTarget(QuickAddRow(placeholder: "Add to \(title)", base: newTask), part: "add")
         } header: {
             HStack(spacing: Space.s) {
                 Image(systemName: symbol).font(.icon(.row)).foregroundStyle(Color.icon)
                 Text(title).textStyle(.heading, medium: true, color: .ink)
-                Text("\(tasks.count)").textStyle(.preview, color: .mutedText).monospacedDigit()
+                Text("\(tasks.count)").textStyle(.preview, color: .mutedText).rollingNumber(tasks.count)
             }
             .textCase(nil)
             .padding(.leading, -4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
-            .dropDestination(for: String.self) { ids, _ in
-                for id in ids { store.update(id, dropChange()) }
-                return true
-            }
+            .modifier(DropTargetModifier(apply: { dropTarget($0, part: "header") }))
         }
-        .listRowBackground(Color.card)
+        .listRowBackground(targeted ? Color.muted : Color.card)
+        .animation(Motion.snappy, value: targeted)
         .listRowSeparatorTint(Color.hairline)
     }
+}
+
+/// Lets a header use the same drop handling as the rows.
+private struct DropTargetModifier<Out: View>: ViewModifier {
+    var apply: (AnyView) -> Out
+    func body(content: Content) -> some View { apply(AnyView(content)) }
 }
 
 extension View {

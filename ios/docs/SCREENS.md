@@ -51,6 +51,17 @@ Icons beside text match the text: 14 to 16 pt beside meta text, 18 to 20 pt as r
 - The player artwork leaves room so the title is not pushed to the bottom; the task editor's title is `heading`-sized, not a headline.
 - Large navigation titles stay the system size (that is the iPhone norm), but nothing else on a screen competes with them.
 
+## Design audit decisions (Luke, 22 Nov 2026)
+
+Luke read the audit (LukeOS Document "LukeOS iPhone app: design audit") and picked four items. These are now rules for the iPhone app:
+
+- **Dashboard header:** see Dashboard below. The first screen belongs to the tasks.
+- **Task editor:** opens at half height (medium and large stops, grabber shown) with the name, Status, List and Due in view; the rest is reached by pulling up. Status and List each have a small grey caption above a full-width segmented control. Due is one row showing the date or "None", with a menu: Today, Tomorrow, This weekend, Next week, Pick a date…, No date. There is no row of quick-date chips. Opening a task never focuses the name.
+- **Motion** (`DesignSystem/Motion.swift`): a page opened from a card, tile or artwork zooms out of it (`zoomSource` / `zoomTransition`): pinned notes and documents, Inspiration tiles, playlists, the mini player. A zoomed page draws its first frame from what is already known (the saved copy or the card's own text); a spinner may only appear after 0.4 s. Counts that change on screen roll (`rollingNumber`). A card or column lights up with a selection tick while a dragged task is over it. All springs go through `Motion.snappy`, which is a short ease when Reduce Motion is on. The task editor is a plain sheet, not a zoom (a zoom source on a list row swallowed taps).
+- **Notes:** formatted while typing; the Markdown marks show only on the line being edited. The saved text is still the same Markdown the web app writes, and opening and closing a note without typing must change nothing.
+
+Not picked, so not built: the other audit items (row restyling, tabs, loading and empty states, accessibility pass, Focus and system surfaces) and the widget ideas.
+
 ## Design system on iPhone
 
 - **Colours** (from `src/app/globals.css`, `--grey-0` to `--grey-950`, with a dark set under `.dark`): port the grey steps as a colour set that follows the system appearance. Named roles: background (0), sidebar/group fill (50), card (light 0, dark 50), muted (100), selected (200), border/dividers (200), stroke for cards and outline buttons (300), icons (600), secondary text (700), body text (800), foreground (900), titles "ink" (950). Red only for count badges, blue only for the 8 pt unread dot, project colours only for the project dot or chip.
@@ -71,8 +82,8 @@ Dashboard, Notes, Focus, Music, More (web: `phoneTabs` in `src/components/shell/
 
 Reference: `dashboard-work-today.png`, `dashboard-work-today-dark.png`, `dashboard-life-today-desktop.png`, `quick-add.png`, `new-task.png`, `task-editor-dark.png`, `task-comments.png`.
 
-- Header: the date ("Thursday, October 22") and "Good morning / afternoon / evening, Luke".
-- Two segmented switches: Work | Life (remembered on the device; the phone starts on Life) and Today | Board. A Filters menu: which statuses show, and Sort (several sorts in order; `src/lib/dashboard.ts`).
+- Header (iPhone app, changed 22 Nov 2026 after the design audit, Luke's pick): the large title is "Today" (or "Board" in the board layout) with the date as one quiet line under it. No greeting and no summary line. The web app still shows the greeting.
+- Work | Life is the centred switch in the top bar (remembered on the device; the phone starts on Life). Today | Board is the first section of the Filters menu, which also holds which statuses show and Sort (several sorts in order; `src/lib/dashboard.ts`). Nothing sits between the date and the first card.
 - Today, Life: three cards, Morning, Day, Evening, each with a count and its tasks, and an "Add to Morning" row at the bottom of each card. Today, Work: two cards, Signal then Noise, same pattern. A new task takes the card's `timeOfDay` or `lane`, the current area, and `bucket: today`.
 - Task row: circle, title (one or two lines), then a quiet second line: due date if any, High/Medium/Low priority shown as 3/2/1 small flames, focus type, project chip (dot plus name), repeat icon, comment count, Claude sparkle. Done tasks are struck through and faded.
 - Native gestures: swipe right to tick; swipe left for Move (Today, Tomorrow, This week, Later) and Delete; press and hold for the full menu (status, list, priority, time of day or lane, project, delete); drag between cards on Today to change time of day or lane.

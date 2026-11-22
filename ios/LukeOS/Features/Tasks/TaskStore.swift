@@ -119,7 +119,7 @@ final class TaskStore {
         let before = tasks[index]
         var after = before
         apply(changes, to: &after)
-        withAnimation(.snappy) { tasks[index] = after }
+        withAnimation(Motion.snappy) { tasks[index] = after }
         let wasDone = before.status != .done && after.status == .done
         if wasDone { Haptics.success() }
         Task {
@@ -149,7 +149,7 @@ final class TaskStore {
         setStatus(task, .done)
         Task {
             try? await Task.sleep(for: .milliseconds(450))
-            _ = withAnimation(.snappy) { lingering.remove(task.id) }
+            _ = withAnimation(Motion.snappy) { lingering.remove(task.id) }
         }
         Toasts.shared.show("Done") { [weak self] in self?.setStatus(task, task.status) }
     }
@@ -202,7 +202,7 @@ final class TaskStore {
         var draft = LukeTask(id: id, title: input["title"]?.stringValue ?? "")
         apply(input, to: &draft)
         if input["bucket"] == nil { draft.bucket = Day.bucket(for: draft.dueDate, today: today) }
-        withAnimation(.snappy) { tasks.append(draft) }
+        withAnimation(Motion.snappy) { tasks.append(draft) }
         saveForWidget()
         if let data = await Repo.change("create_task", input),
            let created = try? LukeAPI.decoder.decode(LukeTask.self, from: data),
@@ -213,7 +213,7 @@ final class TaskStore {
     }
 
     func delete(_ task: LukeTask) {
-        withAnimation(.snappy) { tasks.removeAll { $0.id == task.id } }
+        withAnimation(Motion.snappy) { tasks.removeAll { $0.id == task.id } }
         Task { await Repo.change("delete_task", ["id": .string(task.id)]) }
         Toasts.shared.show("Moved to Trash") { [weak self] in
             Task {

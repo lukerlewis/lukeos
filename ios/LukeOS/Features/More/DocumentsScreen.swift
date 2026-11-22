@@ -28,6 +28,7 @@ struct DocumentsScreen: View {
     @State private var filter = "all"
     @State private var query = ""
     @State private var openDoc: String?
+    @Namespace private var zoom
 
     private var shown: [DocumentSummary] {
         docs.filter {
@@ -51,7 +52,7 @@ struct DocumentsScreen: View {
             let pinned = shown.filter { $0.pinned == true }
             if !pinned.isEmpty, query.isEmpty {
                 Section {
-                    PinnedRow(items: pinned.map { .init(id: $0.id, title: $0.title, excerpt: $0.excerpt, project: $0.project, madeBy: $0.madeBy, unread: $0.isNew == true) }) { openDoc = $0 }
+                    PinnedRow(items: pinned.map { .init(id: $0.id, title: $0.title, excerpt: $0.excerpt, project: $0.project, madeBy: $0.madeBy, unread: $0.isNew == true) }, zoom: zoom) { openDoc = $0 }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                 } header: { SectionTitle(text: "Pinned") }
@@ -83,7 +84,9 @@ struct DocumentsScreen: View {
         .pageBackground()
         .navigationTitle("Documents")
         .searchable(text: $query, prompt: "Search documents")
-        .navigationDestination(item: $openDoc) { DocumentScreen(documentId: $0) }
+        .navigationDestination(item: $openDoc) { id in
+            DocumentScreen(documentId: id, preview: docs.first { $0.id == id }?.title).zoomTransition(id, in: zoom)
+        }
         .task { await load() }
         .refreshable { await load() }
         .onDisappear {
@@ -124,7 +127,14 @@ struct DocumentRow: View {
 /// A document as a page: rendered Markdown, comments, Share as PDF, Edit on the web.
 struct DocumentScreen: View {
     var documentId: String
+    var preview: String? = nil
     @State private var doc: LukeDocument?
+
+    init(documentId: String, preview: String? = nil) {
+        self.documentId = documentId
+        self.preview = preview
+        _doc = State(initialValue: SavedCopy.document(documentId))
+    }
     @State private var showComments = false
     @State private var showWeb = false
     @State private var pdf: URL?
@@ -151,7 +161,8 @@ struct DocumentScreen: View {
                         if let c = self.doc?.content { Task { await Repo.change("update_document", ["id": .string(documentId), "content": .string(c)]) } }
                     }
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.section * 2)
+                    if let preview { Text(preview).textStyle(.title, medium: true, color: .ink) }
+                    DelayedSpinner()
                 }
             }
             .padding(.horizontal, Space.xxl)

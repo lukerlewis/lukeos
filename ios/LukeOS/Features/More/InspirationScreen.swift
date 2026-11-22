@@ -28,6 +28,8 @@ struct TagCount: Codable, Hashable, Sendable { var tag: String; var count: Int }
 /// Inspiration: a two-column masonry of pictures, links, quotes and files, with tag filters and search.
 struct InspirationScreen: View {
     @State private var items: [InspirationItem] = []
+    @State private var openItem: String?
+    @Namespace private var zoom
     @State private var tags: [TagCount] = []
     @State private var tag: String?
     @State private var query = ""
@@ -57,6 +59,9 @@ struct InspirationScreen: View {
         }
         .pageBackground()
         .navigationTitle("Inspiration")
+        .navigationDestination(item: $openItem) { id in
+            InspirationDetail(itemId: id, known: items.first { $0.id == id }).zoomTransition(id, in: zoom)
+        }
         .searchable(text: $query, prompt: "Search")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -114,8 +119,9 @@ struct InspirationScreen: View {
     private func column(_ list: [InspirationItem]) -> some View {
         LazyVStack(spacing: Space.m) {
             ForEach(list) { item in
-                NavigationLink(value: MoreRoute.inspirationItem(item.id)) { InspirationCard(item: item) }
+                Button { openItem = item.id } label: { InspirationCard(item: item) }
                     .buttonStyle(.plain)
+                    .zoomSource(item.id, in: zoom)
                     .contextMenu {
                         Button("Delete", systemImage: "trash", role: .destructive) { delete(item) }
                     }
@@ -202,6 +208,13 @@ struct InspirationCard: View {
 struct InspirationDetail: View {
     var itemId: String
     @State private var item: InspirationItem?
+
+    /// `known` is the tile's own item, so the picture is there from the first frame.
+    init(itemId: String, known: InspirationItem? = nil) {
+        self.itemId = itemId
+        _item = State(initialValue: known ?? Repo.cachedNow("get_inspiration", ["id": .string(itemId)], as: InspirationItem.self))
+        _note = State(initialValue: known?.note ?? "")
+    }
     @State private var note = ""
     @Environment(\.dismiss) private var dismiss
 
@@ -235,7 +248,7 @@ struct InspirationDetail: View {
                         .background(Color.card, in: .rect(cornerRadius: Radius.control))
                         .onSubmit { save() }
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.section * 2)
+                    DelayedSpinner()
                 }
             }
             .padding(Space.l)

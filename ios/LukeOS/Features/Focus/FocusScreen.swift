@@ -423,7 +423,7 @@ struct FocusStatsSheet: View {
                 if let stats {
                     Section {
                         VStack(alignment: .leading, spacing: Space.xs) {
-                            Text(Self.hours(stats.totalSeconds)).textStyle(.title, medium: true, color: .ink)
+                            Text(Self.hours(stats.totalSeconds)).textStyle(.title, medium: true, color: .ink).rollingNumber(Int(stats.totalSeconds / 60))
                             Text("Focused in the last \(days) days").textStyle(.meta, color: .mutedText)
                             Chart(stats.days, id: \.date) { d in
                                 BarMark(x: .value("Day", Day.toLocal(d.date), unit: .day), y: .value("Hours", d.seconds / 3600))

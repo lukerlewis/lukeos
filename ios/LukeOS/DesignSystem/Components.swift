@@ -70,7 +70,7 @@ struct StatusCircle: View {
             }
         }
         .frame(width: size, height: size)
-        .animation(.snappy(duration: 0.22), value: status)
+        .animation(Motion.snappy, value: status)
         .accessibilityLabel(status.label)
     }
 
@@ -167,6 +167,22 @@ struct EmptyNote: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Space.section + Space.m)
+    }
+}
+
+/// A spinner that only appears if loading takes longer than a moment, so pages that open
+/// from something already on screen never flash one.
+struct DelayedSpinner: View {
+    @State private var show = false
+    var body: some View {
+        ProgressView()
+            .opacity(show ? 1 : 0)
+            .frame(maxWidth: .infinity)
+            .padding(.top, Space.section * 2)
+            .task {
+                try? await Task.sleep(for: .milliseconds(400))
+                withAnimation(.easeIn(duration: 0.2)) { show = true }
+            }
     }
 }
 

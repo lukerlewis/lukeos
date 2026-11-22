@@ -9,7 +9,7 @@ struct TaskEditor: View {
     @State private var loaded: LukeTask?
     @State private var title = ""
     @State private var notes = ""
-    @State private var showDate = false
+    @State private var pickingDate = false
     @State private var confirmDelete = false
     @State private var notesTask: Task<Void, Never>?
 
@@ -20,16 +20,28 @@ struct TaskEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Task name", text: $title, axis: .vertical)
-                        .font(.geist(.heading, medium: true))
-                        .tracking(LukeType.heading.tracking)
-                        .foregroundStyle(Color.ink)
-                        .padding(.vertical, Space.xs)
-                        .onSubmit(saveTitle)
-                        .submitLabel(.done)
-                        .onChange(of: title) { _, new in
-                            if new.contains("\n") { title = new.replacingOccurrences(of: "\n", with: ""); saveTitle() }
+                    // The name, with the close tick beside it, right under the grabber.
+                    HStack(alignment: .firstTextBaseline, spacing: Space.m) {
+                        TextField("Task name", text: $title, axis: .vertical)
+                            .font(.geist(.heading, medium: true))
+                            .tracking(LukeType.heading.tracking)
+                            .foregroundStyle(Color.ink)
+                            .padding(.vertical, Space.xs)
+                            .onSubmit(saveTitle)
+                            .submitLabel(.done)
+                            .onChange(of: title) { _, new in
+                                if new.contains("\n") { title = new.replacingOccurrences(of: "\n", with: ""); saveTitle() }
+                            }
+                        Button { close() } label: {
+                            Image(systemName: "checkmark").font(.icon(.row, weight: .medium))
+                                .foregroundStyle(Color.onSolid)
+                                .frame(width: Size.smallButton, height: Size.smallButton)
                         }
+                        .buttonStyle(.glassProminent)
+                        .buttonBorderShape(.circle)
+                        .tint(.ink)
+                        .accessibilityLabel("Close")
+                    }
                     if task.madeBy.isClaude {
                         Label("Added by \(task.madeBy.name ?? "Claude")\(task.madeBy.routine.map { " (\($0))" } ?? "")", systemImage: "sparkle")
                             .textStyle(.meta, color: .mutedText)
@@ -38,10 +50,22 @@ struct TaskEditor: View {
 
                 // The two things changed most, as switches; everything else as menus in one compact list.
                 Section {
-                    segmented(TaskStatus.allCases, task.status, \.label) { set(["status": .string($0.rawValue)]) }
-                    segmented(Bucket.allCases, task.bucket, \.label) { set(["bucket": .string($0.rawValue)]) }
+                    captioned("Status") {
+                        segmented(TaskStatus.allCases, task.status, \.label) { set(["status": .string($0.rawValue)]) }
+                    }
+                    captioned("List") {
+                        segmented(Bucket.allCases, task.bucket, \.label) { set(["bucket": .string($0.rawValue)]) }
+                    }
+                    dueRow
+                    if pickingDate {
+                        DatePicker("", selection: Binding(
+                            get: { Day.toLocal(task.dueDate ?? today) },
+                            set: { set(["dueDate": .string(Day.fromLocal($0))]); withAnimation(Motion.snappy) { pickingDate = false } }
+                        ), displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                        .tint(.ink)
+                    }
                 }
-                Section { dueControls }
                 Section {
                     menuRow("Repeat", "repeat", Binding(get: { task.repeat ?? "" }, set: { set(["repeat": $0.isEmpty ? .null : .string($0)]) })) {
                         Text("Never").tag("")
@@ -100,12 +124,8 @@ struct TaskEditor: View {
             .scrollContentBackground(.hidden)
             .background(Color.page)
             .listSectionSpacing(Space.xxl)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(role: .confirm) { close() }
-                }
-            }
+            .contentMargins(.top, Space.s, for: .scrollContent)
+            .toolbar(.hidden, for: .navigationBar)
             .confirmationDialog("Delete this task?", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Move to Trash", role: .destructive) {
                     store.delete(task)
@@ -113,8 +133,10 @@ struct TaskEditor: View {
                 }
             }
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        // A solid surface at every height, so the cards read as cards (the glass sheet looks muddy at half height).
+        .presentationBackground(Color.page)
         .onAppear {
             title = task.title
             notes = task.notes ?? ""
@@ -159,47 +181,47 @@ struct TaskEditor: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
-        .listRowInsets(EdgeInsets(top: Space.m, leading: Space.m, bottom: Space.m, trailing: Space.m))
     }
 
-    private var dueControls: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            HStack(spacing: Space.m) {
-                Image(systemName: "calendar").font(.icon(.row)).foregroundStyle(Color.icon)
-                if let due = task.dueDate {
-                    Text(Day.friendly(due, today: today)).textStyle(.control, medium: due < today, color: due < today ? .ink : .text)
-                } else {
-                    Text("No date").textStyle(.control, color: .mutedText)
-                }
-                Spacer()
-                DatePicker("", selection: Binding(
-                    get: { Day.toLocal(task.dueDate ?? today) },
-                    set: { set(["dueDate": .string(Day.fromLocal($0))]) }
-                ), displayedComponents: .date)
-                .labelsHidden()
-            }
-            ScrollView(.horizontal) {
-                HStack(spacing: Space.s) {
-                    quick("Today", today)
-                    quick("Tomorrow", Day.add(today, days: 1))
-                    quick("This weekend", Day.endOfWeek(today) == today ? today : Day.add(Day.endOfWeek(today), days: -1))
-                    quick("Next week", Day.add(Day.endOfWeek(today), days: 1))
-                    Button("No date") { set(["dueDate": .null]) }
-                        .buttonStyle(.bordered)
-                        .disabled(task.dueDate == nil)
-                }
-                .font(.geist(.preview, medium: true))
-            }
-            .scrollIndicators(.hidden)
+    /// A small grey caption above a control, so the control keeps the card's full width.
+    private func captioned<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: Space.s) {
+            Text(title).textStyle(.meta, medium: true, color: .mutedText)
+            content()
         }
         .padding(.vertical, Space.xs)
     }
 
-    private func quick(_ label: String, _ day: String) -> some View {
-        Button(label) { set(["dueDate": .string(day)]) }
-            .buttonStyle(.bordered)
-            .tint(task.dueDate == day ? .ink : .subtleText)
+    /// "Due": the date on the right; tap for Today, Tomorrow, This weekend, Next week, a calendar or no date.
+    private var dueRow: some View {
+        Menu {
+            Button("Today") { set(["dueDate": .string(today)]) }
+            Button("Tomorrow") { set(["dueDate": .string(Day.add(today, days: 1))]) }
+            Button("This weekend") { set(["dueDate": .string(Day.endOfWeek(today) == today ? today : Day.add(Day.endOfWeek(today), days: -1))]) }
+            Button("Next week") { set(["dueDate": .string(Day.add(Day.endOfWeek(today), days: 1))]) }
+            Divider()
+            Button("Pick a date…", systemImage: "calendar") { withAnimation(Motion.snappy) { pickingDate = true } }
+            if task.dueDate != nil {
+                Button("No date", systemImage: "xmark", role: .destructive) { set(["dueDate": .null]) }
+            }
+        } label: {
+            HStack(spacing: Space.m) {
+                Text("Due").textStyle(.control, color: .text)
+                Spacer()
+                if let due = task.dueDate {
+                    Text(Day.friendly(due, today: today))
+                        .textStyle(.control, medium: due < today, color: due < today ? .ink : .mutedText)
+                } else {
+                    Text("None").textStyle(.control, color: .mutedText)
+                }
+                Image(systemName: "chevron.up.chevron.down").font(.icon(.meta)).foregroundStyle(Color.mutedText)
+            }
+            .frame(minHeight: Size.tap)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
     }
+
 
     // MARK: Saving
 

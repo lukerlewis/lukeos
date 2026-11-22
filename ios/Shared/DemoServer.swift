@@ -45,6 +45,11 @@ actor DemoServer {
             ?? same.first
         if let pick, let data = read(pick.file) {
             if let id = input["id"]?.stringValue, pick.input["id"] != nil, pick.input["id"]?.stringValue != id,
+               name == "get_task" {
+                // A task the fixtures don't have: let the screen keep what it already shows.
+                throw APIError.server("Not in the demo.", 404)
+            }
+            if let id = input["id"]?.stringValue, pick.input["id"] != nil, pick.input["id"]?.stringValue != id,
                name.hasPrefix("get_") {
                 // A different item than the one captured: show the captured one with this id.
                 if var obj = try? JSONDecoder().decode([String: JSON].self, from: data) {

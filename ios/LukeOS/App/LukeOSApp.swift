@@ -69,7 +69,7 @@ struct ToastView: View {
             .padding(.bottom, Size.bottomClearance)
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .id(toast.id)
-            .animation(.snappy, value: toasts.current)
+            .animation(Motion.snappy, value: toasts.current)
         }
     }
 }

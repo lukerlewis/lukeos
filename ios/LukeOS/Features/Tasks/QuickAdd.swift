@@ -31,7 +31,7 @@ struct QuickAddRow: View {
             }
         }
         .frame(minHeight: Size.tap)
-        .animation(.snappy, value: entry.matches.count)
+        .animation(Motion.snappy, value: entry.matches.count)
     }
 
     private func add() {
@@ -91,12 +91,19 @@ struct SmartChips: View {
 
 /// Which statuses the dashboard shows, and how it's sorted. Shared with every device.
 struct FiltersMenu: View {
+    /// Today or Board.
+    @Binding var layout: String
     @State private var store = TaskStore.shared
 
     private let sortKeys: [(String, String)] = [("priority", "Priority"), ("effort", "Focus type"), ("project", "Project"), ("name", "Name"), ("created", "Date added")]
 
     var body: some View {
         Menu {
+            Picker("View", selection: $layout.animation(Motion.snappy)) {
+                Label("Today", systemImage: "list.bullet").tag("list")
+                Label("Board", systemImage: "rectangle.split.3x1").tag("board")
+            }
+            .pickerStyle(.inline)
             Section("Show") {
                 ForEach(TaskStatus.allCases, id: \.self) { s in
                     Toggle(s.label, isOn: Binding(
@@ -154,7 +161,7 @@ struct FiltersMenu: View {
             if let i = store.view.sort.firstIndex(where: { $0.by == key }) { sort.insert(SortRule(by: key, dir: dir), at: min(i, sort.count)) }
             else { sort.append(SortRule(by: key, dir: dir)) }
         }
-        withAnimation(.snappy) { store.view.sort = sort }
+        withAnimation(Motion.snappy) { store.view.sort = sort }
         Task {
             await Repo.change("set_dashboard_view", ["sort": .array(sort.map { .object(["by": .string($0.by), "dir": .string($0.dir)]) })])
         }

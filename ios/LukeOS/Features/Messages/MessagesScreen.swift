@@ -73,7 +73,7 @@ final class MessagesModel {
     func send(text: String, attachments: [Message.Attachment], replyTo: Message?) {
         let local = Message(id: UUID().uuidString.lowercased(), text: text, attachments: attachments, from: "luke", createdAt: ISO8601DateFormatter.withFractional.string(from: .now),
                             replyTo: replyTo.map { Message.Reply(id: $0.id, from: $0.from, snippet: String($0.text.prefix(80))) }, sending: true)
-        withAnimation(.snappy) { messages.append(local) }
+        withAnimation(Motion.snappy) { messages.append(local) }
         var input: Input = ["text": .string(text)]
         if let r = replyTo { input["replyTo"] = .string(r.id) }
         if !attachments.isEmpty {
@@ -94,7 +94,7 @@ final class MessagesModel {
     }
 
     func unsend(_ m: Message) {
-        if let i = messages.firstIndex(of: m) { withAnimation(.snappy) { messages[i].unsent = true; messages[i].text = ""; messages[i].attachments = [] } }
+        if let i = messages.firstIndex(of: m) { withAnimation(Motion.snappy) { messages[i].unsent = true; messages[i].text = ""; messages[i].attachments = [] } }
         Task { await Repo.change("unsend_message", ["id": .string(m.id)]) }
     }
 
@@ -307,7 +307,7 @@ struct MessagesScreen: View {
                     }
                 }
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: Radius.bubble))
-                .animation(.snappy, value: canSend)
+                .animation(Motion.snappy, value: canSend)
             }
         }
         .padding(.horizontal, Space.m)
