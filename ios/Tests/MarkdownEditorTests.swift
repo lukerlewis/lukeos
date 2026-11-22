@@ -171,3 +171,32 @@ final class NoteLeaveTests: XCTestCase {
         XCTAssertEqual(d(true, true, "Idea", ""), .save)
     }
 }
+
+/// After a change, the saved copy is Luke's latest text; a server copy fetched while his change is
+/// still queued doesn't replace it.
+@MainActor
+final class SavedCopyTests: XCTestCase {
+    func testSaveWritesTheSavedCopyAndQueuedChangesWin() async throws {
+        let id = "test-\(UUID().uuidString.lowercased())"
+        let input: Input = ["id": .string(id)]
+        defer { Outbox.shared.discard { $0.input["id"]?.stringValue == id } }
+
+        // Saving writes the saved copy.
+        let mine = Note(id: id, title: "Mine", format: "markdown", content: "new text")
+        await Repo.remember("get_note", input, mine)
+        XCTAssertEqual(Repo.cachedNow("get_note", input, as: Note.self)?.content, "new text")
+
+        // With Luke's change still queued, an older server copy doesn't win.
+        Outbox.shared.add("update_note", ["id": .string(id), "content": "new text"])
+        let older = try JSONEncoder().encode(Note(id: id, title: "Mine", format: "markdown", content: "old text"))
+        await Repo.storeFetched("get_note", input, older)
+        XCTAssertEqual(Repo.cachedNow("get_note", input, as: Note.self)?.content, "new text")
+        let pending = await Repo.hasPendingChange(for: "get_note", input)
+        XCTAssertTrue(pending)
+
+        // Once it has gone, a fetched copy is kept as usual.
+        Outbox.shared.discard { $0.input["id"]?.stringValue == id }
+        await Repo.storeFetched("get_note", input, older)
+        XCTAssertEqual(Repo.cachedNow("get_note", input, as: Note.self)?.content, "old text")
+    }
+}

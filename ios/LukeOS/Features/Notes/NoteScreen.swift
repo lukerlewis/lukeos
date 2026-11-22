@@ -187,7 +187,10 @@ struct NoteScreen: View {
             if let note {
                 Button(note.pinned == true ? "Unpin" : "Pin", systemImage: note.pinned == true ? "pin.slash" : "pin") {
                     self.note?.pinned = !(note.pinned ?? false)
-                    Task { await Repo.change("update_note", ["id": .string(noteId), "pinned": .bool(!(note.pinned ?? false))]) }
+                    Task {
+                        await Repo.change("update_note", ["id": .string(noteId), "pinned": .bool(!(note.pinned ?? false))])
+                        await rememberNote()
+                    }
                 }
                 Menu("Move to folder", systemImage: "folder") {
                     Button("No folder") { setFolder(nil) }
@@ -218,9 +221,13 @@ struct NoteScreen: View {
     private func load() async {
         if let cached = await Repo.cached("get_note", ["id": .string(noteId)], as: Note.self) { show(cached); loaded = true }
         do {
-            show(try await Repo.fetch("get_note", ["id": .string(noteId)], as: Note.self))
+            let fresh = try await Repo.fetch("get_note", ["id": .string(noteId)], as: Note.self)
+            // A change of Luke's is still waiting to be sent: the server's copy is older, so keep his.
+            if await !Repo.hasPendingChange(for: "get_note", ["id": .string(noteId)]) {
+                show(fresh)
+                SavedCopy.forget(note: noteId)
+            }
             loaded = true
-            SavedCopy.forget(note: noteId)
         } catch {
             if note == nil {
                 if isNew {
@@ -276,6 +283,14 @@ struct NoteScreen: View {
         n.content = c
         note = n
         saved = true
+        await rememberNote()
+    }
+
+    /// The note as it now stands becomes the saved copy, sent or still queued.
+    private func rememberNote() async {
+        guard let note else { return }
+        await Repo.remember("get_note", ["id": .string(noteId)], note)
+        SavedCopy.forget(note: noteId)
     }
 
     private func leave() {
@@ -290,12 +305,18 @@ struct NoteScreen: View {
 
     private func setFolder(_ f: Folder?) {
         note?.folder = f.map { FolderRef(id: $0.id, name: $0.name) }
-        Task { await Repo.change("update_note", ["id": .string(noteId), "folderId": .optional(f?.id)]) }
+        Task {
+            await Repo.change("update_note", ["id": .string(noteId), "folderId": .optional(f?.id)])
+            await rememberNote()
+        }
     }
 
     private func setProject(_ p: Project?) {
         note?.project = p?.ref
-        Task { await Repo.change("update_note", ["id": .string(noteId), "projectId": .optional(p?.id)]) }
+        Task {
+            await Repo.change("update_note", ["id": .string(noteId), "projectId": .optional(p?.id)])
+            await rememberNote()
+        }
     }
 
     /// Shrinks the photo (1600 px, JPEG), saves it to LukeOS, and puts it in the note.

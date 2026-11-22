@@ -64,6 +64,12 @@ final class Outbox {
 
     /// Queues a change. A newer change to the same thing replaces one still waiting (a podcast's place,
     /// a note's text), so hours offline don't pile up hundreds of saves.
+    /// Takes items out of the queue (used by tests).
+    func discard(where match: (Item) -> Bool) {
+        items.removeAll(where: match)
+        save()
+    }
+
     func add(_ name: String, _ input: Input) {
         let coalesce: Set<String> = ["update_episode", "update_note", "update_scratch_pad", "update_document", "log_focus_session"]
         if coalesce.contains(name), let last = items.indices.last(where: { items[$0].name == name && items[$0].input["id"] == input["id"] }),
@@ -133,12 +139,35 @@ enum Repo {
         do {
             let data = try await api.opData(name, input)
             let value = try LukeAPI.decoder.decode(T.self, from: data)
-            await ResponseCache.shared.write(key(name, input), data)
+            await storeFetched(name, input, data)
             return value
         } catch APIError.signedOut {
             await MainActor.run { NotificationCenter.default.post(name: .lukeOSSignedOut, object: nil) }
             throw APIError.signedOut
         }
+    }
+
+    /// Keeps a fetched answer as the saved copy, unless a change to the same thing is still waiting
+    /// to be sent: then the server's copy is older than what Luke has, and the local one stays.
+    static func storeFetched(_ name: String, _ input: Input, _ data: Data) async {
+        if await hasPendingChange(for: name, input) { return }
+        await ResponseCache.shared.write(key(name, input), data)
+    }
+
+    /// Writes what the app now knows as the saved copy after a change (sent or queued), so the next
+    /// open starts from Luke's latest text, not the last fetch.
+    static func remember<T: Encodable>(_ name: String, _ input: Input, _ value: T) async {
+        guard let data = try? JSONEncoder().encode(value) else { return }
+        await ResponseCache.shared.write(key(name, input), data)
+    }
+
+    /// The change operation that edits what a read returns (get_note → update_note), for the Outbox check.
+    private static let changeFor: [String: String] = ["get_note": "update_note", "get_document": "update_document", "get_task": "update_task"]
+
+    /// A change to the thing this read returns is still waiting in the Outbox.
+    static func hasPendingChange(for name: String, _ input: Input) async -> Bool {
+        guard let change = changeFor[name], let id = input["id"] else { return false }
+        return await MainActor.run { Outbox.shared.items.contains { $0.name == change && $0.input["id"] == id } }
     }
 
     /// Makes a change. Offline, it's queued and sent later (returns nil). Server errors show as a toast.
