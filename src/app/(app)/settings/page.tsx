@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PushSettings } from "@/components/messages/push-toggle";
 import { Page } from "@/components/shell/page";
 import { Card, CardHeader } from "@/components/ui/card";
+import { apnsDeviceCount, apnsKeyInfo } from "@/core/apns";
 import { pushDeviceCount } from "@/core/push";
 import { trashCount } from "@/core/trash";
 import { db, schema } from "@/db";
@@ -16,6 +17,7 @@ import { StorageMeter } from "@/components/inspiration/storage-notice";
 import { storageUsage } from "@/lib/storage";
 import { hasShortcutKey } from "@/lib/shortcut-key";
 import { AddDeviceButton, NewDeviceLink, RemoveDeviceButton, SignOutButton } from "./devices";
+import { IPhoneAppKey } from "./iphone-app";
 import { ThemeSwitch } from "./theme-switch";
 
 export const metadata: Metadata = { title: "Settings · LukeOS" };
@@ -34,7 +36,14 @@ export default async function SettingsPage() {
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
   const connectorAddress = `${proto}://${host}/api/mcp`;
-  const [inTrash, pushDevices, usage, shortcutKey] = await Promise.all([trashCount(), pushDeviceCount(), storageUsage(), hasShortcutKey()]);
+  const [inTrash, pushDevices, usage, shortcutKey, apnsKey, iPhones] = await Promise.all([
+    trashCount(),
+    pushDeviceCount(),
+    storageUsage(),
+    hasShortcutKey(),
+    apnsKeyInfo(),
+    apnsDeviceCount(),
+  ]);
 
   return (
     <Page title="Settings" newTask={false}>
@@ -49,6 +58,11 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader title="Notifications" />
           <PushSettings devices={pushDevices} />
+        </Card>
+
+        <Card>
+          <CardHeader title="iPhone app notifications" />
+          <IPhoneAppKey keyId={apnsKey?.keyId ?? null} phones={iPhones} />
         </Card>
 
         <Card>
