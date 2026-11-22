@@ -94,6 +94,7 @@
 		B6C3F3C1096B4DCF504C1185 /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C3AC3B4AC80884C2BEE92C /* WidgetViews.swift */; };
 		B80A014D581F2ABDFAAA45B8 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */; };
 		BA8ABD4FD98542210A7B3872 /* ScreenTimeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE448B8390A999D773262B8 /* ScreenTimeScreen.swift */; };
+		BFCD67C048A11BC2308403AE /* HealthSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6361048705FD43D6F762553E /* HealthSections.swift */; };
 		C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
 		C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */; };
 		C3A32E9422EF835236D5419C /* ProjectScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C2BD9EE1BCF23629CCF015 /* ProjectScreen.swift */; };
@@ -104,6 +105,7 @@
 		CC1C270197956507A3B8566E /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */; };
 		CE26374481EBEB3880677161 /* GeistMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C49E3F806D7DC7EB411FCC4E /* GeistMono-Regular.ttf */; };
 		CFDF5655DE675284CDC56DEB /* MessagesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A8EC3AA2EB8960E29672F39 /* MessagesScreen.swift */; };
+		D05F94EFEA2B22C869A4F7DB /* HealthDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B248FC3DCE406530FEA26427 /* HealthDetailScreen.swift */; };
 		D0E23CB0783A41CA8C3F1448 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
 		D3E4035A665C6DAE59035FF8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
 		D3F0BD333A4E0A8869A01994 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
@@ -228,6 +230,7 @@
 		607793720F40DE07F244CEFA /* NoteSegments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteSegments.swift; sourceTree = "<group>"; };
 		60D48F34E41F2D888443094C /* LukeOSScreenTimeAction.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSScreenTimeAction.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		614355A0BF4CA86EB170F69E /* Comments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Comments.swift; sourceTree = "<group>"; };
+		6361048705FD43D6F762553E /* HealthSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSections.swift; sourceTree = "<group>"; };
 		6A8EC3AA2EB8960E29672F39 /* MessagesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesScreen.swift; sourceTree = "<group>"; };
 		7224A97F06EDA2C071E93974 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		73CADE5D302CDEDEECC713F7 /* Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Push.swift; sourceTree = "<group>"; };
@@ -254,6 +257,7 @@
 		9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LukeOSApp.swift; sourceTree = "<group>"; };
 		AABE02CA05ECDA1E61BCFFA4 /* Repo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repo.swift; sourceTree = "<group>"; };
 		AE1031236A45CEC619949344 /* Action.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Action.swift; sourceTree = "<group>"; };
+		B248FC3DCE406530FEA26427 /* HealthDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDetailScreen.swift; sourceTree = "<group>"; };
 		B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImage.swift; sourceTree = "<group>"; };
 		B73FA9D0A65B898B6C40A645 /* NotesModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesModels.swift; sourceTree = "<group>"; };
 		B8289459495AA326BE2099C2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -481,7 +485,9 @@
 			isa = PBXGroup;
 			children = (
 				486301A741FFD0760B961706 /* DocumentsScreen.swift */,
+				B248FC3DCE406530FEA26427 /* HealthDetailScreen.swift */,
 				EE28F35B9CF8792D55D0073A /* HealthScreen.swift */,
+				6361048705FD43D6F762553E /* HealthSections.swift */,
 				14E9C0D3FA1B38DF347D0649 /* InspirationScreen.swift */,
 				7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */,
 				97C2BD9EE1BCF23629CCF015 /* ProjectScreen.swift */,
@@ -876,7 +882,9 @@
 				FA59E5A4A66A2005FC7C5F02 /* FocusActivity.swift in Sources */,
 				09913344B2BFE017C10F4379 /* FocusScreen.swift in Sources */,
 				97D12FE3EC6DB71CDD221E0C /* FocusTimer.swift in Sources */,
+				D05F94EFEA2B22C869A4F7DB /* HealthDetailScreen.swift in Sources */,
 				F9F49766984726D5B21B7F9F /* HealthScreen.swift in Sources */,
+				BFCD67C048A11BC2308403AE /* HealthSections.swift in Sources */,
 				29D6690D0165537C3AA425B5 /* Home.swift in Sources */,
 				A34332821F1B1714A9160FFA /* InspirationScreen.swift in Sources */,
 				ECC99BBFE2E5AA4D835CC12E /* Intents.swift in Sources */,

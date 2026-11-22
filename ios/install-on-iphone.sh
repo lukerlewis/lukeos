@@ -5,14 +5,16 @@
 set -e
 cd "$(dirname "$0")"
 DEVICE=${DEVICE:-546DBE0A-2198-5194-A996-07E4109DF0E4}
+# Another build folder (e.g. DERIVED=~/Developer/dd-health) keeps parallel builds apart.
+DERIVED=${DERIVED:-$HOME/Developer/DerivedData}
 echo "Updating the code…"
 git pull --quiet --no-rebase || echo "(couldn't pull; building what's here)"
 command -v xcodegen >/dev/null && xcodegen generate --quiet
 echo "Building (a few minutes the first time)…"
 xcodebuild -project LukeOS.xcodeproj -scheme LukeOS -configuration Release \
-  -destination "generic/platform=iOS" -derivedDataPath ~/Developer/DerivedData \
+  -destination "generic/platform=iOS" -derivedDataPath "$DERIVED" \
   -allowProvisioningUpdates -quiet build
 echo "Installing on the iPhone…"
-xcrun devicectl device install app --device "$DEVICE" ~/Developer/DerivedData/Build/Products/Release-iphoneos/LukeOS.app
+xcrun devicectl device install app --device "$DEVICE" "$DERIVED"/Build/Products/Release-iphoneos/LukeOS.app
 xcrun devicectl device process launch --device "$DEVICE" com.lewisdesign.lukeos >/dev/null 2>&1 || true
 echo "Done. LukeOS is on your iPhone."

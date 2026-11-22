@@ -723,6 +723,18 @@ Pull the latest from Fitbit now. Slow, because the server talks to Google, so th
 - Output: `{ synced: boolean, lastSyncAt: string | null, days, failedTypes }`
 - Demo response: `Fixtures/sync_health.json`
 
+### `get_health_day`
+
+One day in detail, fetched live from Google Health, for the Health section pages (Sleep, Steps, Resting heart rate, Active zone minutes).
+
+- Input: `{ date: "YYYY-MM-DD" }` (Luke's time zone)
+- Output: the day's summary fields (as in a `get_health` day: `date`, `steps`, … `sleep`, `workouts`) plus:
+  - `stepsByHour`: 24 numbers from local midnight, `null` for an hour with nothing recorded.
+  - `heartRate`: `[{ time: ISO, bpm, min, max }]` in 5-minute buckets.
+  - `sleepStages`: `[{ stage: "AWAKE" | "LIGHT" | "DEEP" | "REM" (or "ASLEEP" / "RESTLESS" for classic nights), start: ISO, end: ISO }]` for the night that ended that morning. A night can be split in two with a gap.
+- The app keeps each date's answer while it runs (and saved, for offline) and fetches it again on pull to refresh.
+- Demo response: `Fixtures/get_health_day.json` (input `{"date": "2026-11-21"}`), made to match that day in `get_health.json`. Demo mode answers every date with it.
+
 ### `get_health_raw`
 
 Google's own saved data points for one day. The app doesn't use it.
