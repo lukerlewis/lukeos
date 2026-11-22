@@ -25,6 +25,7 @@ targets:
     sources:
       - path: LukeOS
       - path: Shared
+      - path: ScreenTime/Shared
       - path: Fixtures
         type: folder
         buildPhase: resources
@@ -40,6 +41,40 @@ targets:
     dependencies:
       - target: LukeOSWidgets
       - target: LukeOSShare
+      - target: LukeOSScreenTimeMonitor
+      - target: LukeOSScreenTimeShield
+  # Screen Time: locks the picked apps again at the start of each day, without the app running.
+  LukeOSScreenTimeMonitor:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ScreenTime/Monitor
+      - path: ScreenTime/Shared
+      - path: Shared/SharedConfig.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lewisdesign.lukeos.screentime-monitor
+        PRODUCT_NAME: LukeOSScreenTimeMonitor
+        INFOPLIST_FILE: ScreenTime/Monitor/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ScreenTime/Monitor/Monitor.entitlements
+        SWIFT_VERSION: "5.0"
+        SWIFT_STRICT_CONCURRENCY: minimal
+  # Screen Time: the screen shown over a blocked app.
+  LukeOSScreenTimeShield:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ScreenTime/Shield
+      - path: ScreenTime/Shared
+      - path: Shared/SharedConfig.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lewisdesign.lukeos.screentime-shield
+        PRODUCT_NAME: LukeOSScreenTimeShield
+        INFOPLIST_FILE: ScreenTime/Shield/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ScreenTime/Shield/Shield.entitlements
+        SWIFT_VERSION: "5.0"
+        SWIFT_STRICT_CONCURRENCY: minimal
   LukeOSWidgets:
     type: app-extension
     platform: iOS
