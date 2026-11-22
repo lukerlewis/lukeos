@@ -79,6 +79,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         UNUserNotificationCenter.current().delegate = self
         Task { @MainActor in
             AudioPlayer.shared.configureSession()
+            Dictation.shared.listen()
             if AppModel.shared.signedIn, !SharedConfig.isDemo { await Push.registerIfAllowed() }
         }
         return true

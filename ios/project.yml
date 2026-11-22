@@ -18,6 +18,11 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     # The LukeOS server. Override per build (e.g. LUKEOS_BASE_URL=http://localhost:3000) for a local server.
     LUKEOS_BASE_URL: https://lukeos-kappa.vercel.app
+packages:
+  # Whisper speech-to-text that runs on the phone (dictation). Free and open source.
+  WhisperKit:
+    url: https://github.com/argmaxinc/WhisperKit.git
+    from: "1.1.1"
 targets:
   LukeOS:
     type: application
@@ -40,6 +45,9 @@ targets:
     dependencies:
       - target: LukeOSWidgets
       - target: LukeOSShare
+      - target: LukeOSKeyboard
+      - package: WhisperKit
+        product: WhisperKit
   LukeOSWidgets:
     type: app-extension
     platform: iOS
@@ -68,6 +76,24 @@ targets:
         INFOPLIST_FILE: Share/Info.plist
         CODE_SIGN_ENTITLEMENTS: Share/Share.entitlements
         # NSItemProvider isn't Sendable; the extension runs one short task, so Swift 5 checking is enough.
+        SWIFT_VERSION: "5.0"
+        SWIFT_STRICT_CONCURRENCY: minimal
+  LukeOSKeyboard:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Keyboard
+      - path: Shared
+      - path: LukeOS/Resources/Fonts
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lewisdesign.lukeos.keyboard
+        PRODUCT_NAME: LukeOSKeyboard
+        INFOPLIST_FILE: Keyboard/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Keyboard/Keyboard.entitlements
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # UIKit's keyboard classes predate Swift 6 checking; the keyboard is one small screen.
         SWIFT_VERSION: "5.0"
         SWIFT_STRICT_CONCURRENCY: minimal
   LukeOSTests:
