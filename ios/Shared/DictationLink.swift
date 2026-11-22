@@ -45,6 +45,25 @@ enum DictationLink {
         try? data.write(to: fileURL, options: .atomic)
     }
 
+    // MARK: Last transcript
+
+    /// The newest transcript in the app's History, shared so the keyboard's copy button can reach it.
+    private static var lastURL: URL { SharedConfig.containerURL.appendingPathComponent("dictation-last.txt") }
+
+    static func readLast() -> String? {
+        guard let text = try? String(contentsOf: lastURL, encoding: .utf8), !text.isEmpty else { return nil }
+        return text
+    }
+
+    /// `nil` when History is empty.
+    static func writeLast(_ text: String?) {
+        if let text, !text.isEmpty {
+            try? Data(text.utf8).write(to: lastURL, options: .atomic)
+        } else {
+            try? FileManager.default.removeItem(at: lastURL)
+        }
+    }
+
     /// Sends a signal to the other side (it arrives only if that process is running).
     static func post(_ signal: Signal) {
         CFNotificationCenterPostNotification(

@@ -77,6 +77,9 @@ final class KeyboardModel: ObservableObject {
     @Published var phase: Phase = .idle
     @Published var showsGlobe = false
     @Published var needsAccess = false
+    /// A short word shown under the mic after the copy button ("Copied").
+    @Published var notice: String?
+    private var noticeTimer: Task<Void, Never>?
     weak var controller: KeyboardViewController?
 
     /// Waiting for the app to answer a "start". No answer means the app isn't running.
@@ -119,6 +122,24 @@ final class KeyboardModel: ObservableObject {
             expire(after: 45)
         case .opening, .transcribing:
             break
+        }
+    }
+
+    /// Copies the newest transcript from the app's History, in case typing it in went wrong.
+    func copyLast() {
+        guard !needsAccess else { return }
+        if let text = DictationLink.readLast() {
+            UIPasteboard.general.string = text
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            notice = "Copied"
+        } else {
+            notice = "Nothing to copy yet"
+        }
+        noticeTimer?.cancel()
+        noticeTimer = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            self?.notice = nil
         }
     }
 
@@ -210,6 +231,20 @@ struct KeyboardView: View {
         .padding(.top, Space.s)
         .padding(.bottom, Space.xs)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .topTrailing) {
+            Button { model.copyLast() } label: {
+                Image(systemName: "doc.on.doc")
+                    .font(.icon(.row))
+                    .foregroundStyle(model.needsAccess ? Color.disabled : Color.icon)
+                    .frame(width: Size.tap, height: Size.tap)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .disabled(model.needsAccess)
+            .padding(.top, Space.xs)
+            .padding(.trailing, Space.s)
+            .accessibilityLabel("Copy last transcript")
+        }
     }
 
     private var recording: Bool {
@@ -250,6 +285,7 @@ struct KeyboardView: View {
 
     private var label: String {
         if model.needsAccess { return "Turn on Allow Full Access in Settings" }
+        if let notice = model.notice { return notice }
         switch model.phase {
         case .idle: return "Tap to talk"
         case .opening: return "Opening LukeOS"

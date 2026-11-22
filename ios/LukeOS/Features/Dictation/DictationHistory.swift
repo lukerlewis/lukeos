@@ -36,6 +36,12 @@ final class DictationHistory {
             entries = saved
         }
         prune()
+        share()
+    }
+
+    /// Hands the newest transcript to the keyboard's copy button.
+    private func share() {
+        DictationLink.writeLast(entries.first { !$0.failed }?.text)
     }
 
     /// The entries still inside the week.
@@ -102,6 +108,7 @@ final class DictationHistory {
     }
 
     private func save() {
+        share()
         guard let data = try? JSONEncoder().encode(entries) else { return }
         try? data.write(to: file, options: .atomic)
     }
