@@ -6,6 +6,8 @@ import WebKit
 struct WebScreen: View {
     var path: String
     var title: String?
+    /// Called when the page reaches this path (e.g. "/health/connected" after signing in).
+    var onReach: (path: String, action: () -> Void)? = nil
     @State private var page = WebPage()
 
     var body: some View {
@@ -20,6 +22,9 @@ struct WebScreen: View {
                     }
                 }
             }
+            .onChange(of: page.url) { _, url in
+                if let onReach, let url, url.path().hasPrefix(onReach.path) { onReach.action() }
+            }
             .task {
                 if let cookie = LukeAPI.shared.sessionCookie {
                     await WKWebsiteDataStore.default().httpCookieStore.setCookie(cookie)
@@ -33,11 +38,13 @@ struct WebScreen: View {
 struct WebSheet: View {
     var path: String
     var title: String?
+    /// Closes the sheet by itself when the page reaches this path.
+    var closeOn: String? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
-            WebScreen(path: path, title: title)
+            WebScreen(path: path, title: title, onReach: closeOn.map { p in (path: p, action: { dismiss() }) })
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button(role: .close) { dismiss() }

@@ -690,3 +690,32 @@ Permanently delete something that's already in Trash.
 Permanently delete everything in Trash.
 
 - Input: `{  }`
+
+## Health
+
+Data from Luke's Fitbit (Fitbit Air) through the Google Health API, synced on the server. Every field may be null or missing; the app reads numbers as decimals and ignores fields it doesn't know.
+
+### `get_health`
+
+Daily health numbers for the last `days` days (1 to 90, default 30), oldest first, with whether Fitbit is connected.
+
+- Input: `{ days?: integer }`
+- Output: `{ configured: boolean, connected: boolean, lastSyncAt: string | null, today: "YYYY-MM-DD", timeZone: string, days: [{ date, steps, distanceMeters, activeMinutes, caloriesOut, restingHeartRate, hrvMs, breathingRate, spo2, skinTempDeviation, vo2Max, sleep: { minutes, start, end, deepMinutes, lightMinutes, remMinutes, awakeMinutes } | null, workouts: [{ type, minutes, startedAt, calories, distanceMeters }] }] }`
+- `today` and `timeZone` are Luke's; the app uses them for "today" and "last night". `skinTempDeviation` is °C against his baseline.
+- Demo responses: `Fixtures/get_health.json` (input `{"days": 30}`), `Fixtures/get_health.notconfigured.json` (demo input `{"demoState": "notconfigured"}`)
+
+### `sync_health`
+
+Pull the latest from Fitbit now.
+
+- Input: `{  }`
+- Output: `{ synced: boolean, lastSyncAt: string | null }`
+- Demo response: `Fixtures/sync_health.json`
+
+### `disconnect_health`
+
+Forget the Fitbit connection and stop syncing.
+
+- Input: `{  }`
+
+Connecting happens on the web: the app opens `/health/connect` in the signed-in web sheet and closes it at `/health/connected`.

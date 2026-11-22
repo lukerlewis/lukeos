@@ -145,7 +145,7 @@ Reference: `messages-chain.png`, `messages-hold-menu.png`, `messages-replying.pn
 
 Reference: `more-tab.png` (older; the list is longer now).
 
-Native rows: Messages (with unread badge), Search, All tasks, Documents (with a New count), Inspiration, Trash, Settings. Then Projects (colour dot, name, open task count) and New project. Then "On the web": Whiteboard, Work archive, Portfolio, Agents: each opens the site's page in an in-app web view signed in with the token cookie.
+Native rows: Messages (with unread badge), Search, All tasks, Documents (with a New count), Inspiration, Health, Trash, Settings. Then Projects (colour dot, name, open task count) and New project. Then "On the web": Whiteboard, Work archive, Portfolio, Agents: each opens the site's page in an in-app web view signed in with the token cookie.
 
 - **Search** (`src/core/search.ts`): one field, results grouped by kind (tasks, notes, documents, projects, inspiration), tapping opens the thing.
 - **All tasks** (`src/app/(app)/tasks/page.tsx`): every task with filters for area, project, status and list.
@@ -154,6 +154,21 @@ Native rows: Messages (with unread badge), Search, All tasks, Documents (with a 
 - **Inspiration** (`src/components/inspiration/*`, `inspiration.png`): a two-column masonry of pictures, links, quotes and files, tag and project filters, search. Opening one shows it large with title, note, tags, source link. Add from the photo library, a pasted link or typed text.
 - **Trash** (`src/core/trash.ts`): everything deleted in the last 30 days by kind, Restore, Delete forever, Empty Trash.
 - **Settings**: notifications on/off and Send a test, Face ID lock, downloads and storage used, time zone, appearance follows the system, Open settings on the web (devices, Claude connector), Sign out, app version.
+
+## Health (iPhone only; data from Luke's Fitbit through Google Health)
+
+Screenshots: `ios/screenshots/health/` (light and dark pairs). Code: `ios/LukeOS/Features/More/HealthScreen.swift`. Opens from the Health row in More, or the link `/health`.
+
+- **Not connected** (`configured` or `connected` false): only a "Connect Fitbit" row. It opens `/health/connect` in the signed-in web sheet; the sheet closes itself when the page reaches `/health/connected`, and the page reloads.
+- **Last night**: total sleep, bed and wake times in Luke's time zone (the server's `timeZone`), a stages bar, and Deep / REM / Light / Awake minutes. "Last night" is the sleep on the server's `today`, or yesterday's if today hasn't synced; anything older shows "No sleep recorded."
+- **Today**: four tiles (steps, resting heart rate, active zone minutes, distance in miles), each with the average over the chosen range. A missing value shows a dash, never 0.
+- **7 days / 30 days**: a segmented control for everything below.
+- **Body**: breathing rate, blood oxygen, HRV, skin temperature against baseline (°F, signed) and VO2 max. Each row shows the latest value and the range average. Rows with no data in the range are hidden, as is the whole group if none have data.
+- **Charts**: sleep hours and steps as bars (today in ink, a dashed average line), resting heart rate as a line. Days without data are gaps, not zeros. Each chart has one VoiceOver label with its average.
+- **Workouts**: the last eight, newest first: type with an icon, the day, distance in miles and calories when there, minutes.
+- **Footer**: "From Fitbit · updated <when>" from `lastSyncAt`.
+- **Menu (…)**: Update now (`sync_health`, then reload) and Disconnect Fitbit (asks first, then `disconnect_health`). Pull to refresh reloads `get_health` without syncing.
+- **Offline**: the saved copy shows; with no saved copy, "You're offline." Demo: `-healthState notconfigured` shows the not-connected state.
 
 ## iPhone extras
 

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0093C104660DCAA58C219C79 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
 		00DF40CB7AE24091088A66F9 /* SmartEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098058FF06B81882280685AE /* SmartEntry.swift */; };
+		028C1016FC717523D2EF6EC2 /* HealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C552DAF18AB6949C387987 /* HealthTests.swift */; };
 		0470D2E09326A8059242F706 /* TaskEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3525035D1DF9BE9D5887F0CA /* TaskEditor.swift */; };
 		0805A72D42A60BBFFE2D87E4 /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
 		0941F2AD43169DE87D1EEC41 /* Geist-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2F7A6BD04903E1695F8113DD /* Geist-Italic.ttf */; };
@@ -103,6 +104,7 @@
 		ED395E52CAADA9D98ED3CC29 /* MarkdownEditorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9974DEC44C764ADA9D0FFB69 /* MarkdownEditorTests.swift */; };
 		F174C81EEEEEA95C303BB284 /* Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73CADE5D302CDEDEECC713F7 /* Push.swift */; };
 		F98F60E63DFFD314E5C7F302 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
+		F9F49766984726D5B21B7F9F /* HealthScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE28F35B9CF8792D55D0073A /* HealthScreen.swift */; };
 		FA59E5A4A66A2005FC7C5F02 /* FocusActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */; };
 		FADA218B56BBB17D0F277F8F /* DecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */; };
 /* End PBXBuildFile section */
@@ -216,10 +218,12 @@
 		D5809A8B8B13B2188B471B73 /* LukeOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LukeOS.entitlements; sourceTree = "<group>"; };
 		DC534031F9B58133C59F899B /* Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Appearance.swift; sourceTree = "<group>"; };
 		E3A657BE5A28CE81E9AA3A47 /* WriteExercise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WriteExercise.swift; sourceTree = "<group>"; };
+		E3C552DAF18AB6949C387987 /* HealthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthTests.swift; sourceTree = "<group>"; };
 		E4132CBAEC848204B8501F91 /* LukeOSShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5B4EE6AAF2908A4D409CAD4 /* NowPlaying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlaying.swift; sourceTree = "<group>"; };
 		E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-MediumItalic.ttf"; sourceTree = "<group>"; };
 		ED62D3DC669FCDDBBC443602 /* Home.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Home.swift; sourceTree = "<group>"; };
+		EE28F35B9CF8792D55D0073A /* HealthScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthScreen.swift; sourceTree = "<group>"; };
 		F3A4BBA3095CC6D9FEA3B101 /* LukeOSTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LukeOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F9E126DF4D92FDE499CC37C7 /* Share.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Share.entitlements; sourceTree = "<group>"; };
 		FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicScreen.swift; sourceTree = "<group>"; };
@@ -306,6 +310,7 @@
 			isa = PBXGroup;
 			children = (
 				CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */,
+				E3C552DAF18AB6949C387987 /* HealthTests.swift */,
 				9974DEC44C764ADA9D0FFB69 /* MarkdownEditorTests.swift */,
 				FE36D3AC0DBA7575855B7E05 /* recorded-writes.jsonl */,
 			);
@@ -370,6 +375,7 @@
 			isa = PBXGroup;
 			children = (
 				486301A741FFD0760B961706 /* DocumentsScreen.swift */,
+				EE28F35B9CF8792D55D0073A /* HealthScreen.swift */,
 				14E9C0D3FA1B38DF347D0649 /* InspirationScreen.swift */,
 				7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */,
 				97C2BD9EE1BCF23629CCF015 /* ProjectScreen.swift */,
@@ -675,6 +681,7 @@
 				FA59E5A4A66A2005FC7C5F02 /* FocusActivity.swift in Sources */,
 				09913344B2BFE017C10F4379 /* FocusScreen.swift in Sources */,
 				97D12FE3EC6DB71CDD221E0C /* FocusTimer.swift in Sources */,
+				F9F49766984726D5B21B7F9F /* HealthScreen.swift in Sources */,
 				29D6690D0165537C3AA425B5 /* Home.swift in Sources */,
 				A34332821F1B1714A9160FFA /* InspirationScreen.swift in Sources */,
 				ECC99BBFE2E5AA4D835CC12E /* Intents.swift in Sources */,
@@ -722,6 +729,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FADA218B56BBB17D0F277F8F /* DecodingTests.swift in Sources */,
+				028C1016FC717523D2EF6EC2 /* HealthTests.swift in Sources */,
 				ED395E52CAADA9D98ED3CC29 /* MarkdownEditorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
