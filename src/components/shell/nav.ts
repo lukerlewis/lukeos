@@ -1,4 +1,4 @@
-import { Archive, Bot, Globe, FileText, Lightbulb, CheckSquare, Ellipsis, LayoutDashboard, MessagesSquare, Music, NotebookPen, Shapes, Timer } from "lucide-react";
+import { Archive, Bot, Globe, FileText, HeartPulse, Lightbulb, CheckSquare, Ellipsis, LayoutDashboard, MessagesSquare, Music, NotebookPen, Shapes, Timer } from "lucide-react";
 
 export const mainNav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -11,6 +11,7 @@ export const mainNav = [
 
 /** On computers, these sit under More in the sidebar. */
 export const moreNav = [
+  { href: "/health", label: "Health", icon: HeartPulse },
   { href: "/inspiration", label: "Inspiration", icon: Lightbulb },
   { href: "/archive", label: "Work archive", icon: Archive },
   { href: "/portfolio", label: "Portfolio", icon: Globe },
@@ -19,13 +20,13 @@ export const moreNav = [
   { href: "/tasks", label: "All tasks", icon: CheckSquare },
 ] as const;
 
-/** On phones, Messages, Search, Projects, All tasks, Documents, Whiteboard, Inspiration, Work archive, Portfolio, Agents and Trash live under More. */
+/** On phones, Messages, Health, Search, Projects, All tasks, Documents, Whiteboard, Inspiration, Work archive, Portfolio, Agents and Trash live under More. */
 export const phoneTabs = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, also: [] },
   { href: "/notes", label: "Notes", icon: NotebookPen, also: [] },
   { href: "/focus", label: "Focus", icon: Timer, also: [] },
   { href: "/listen", label: "Music", icon: Music, also: [] },
-  { href: "/projects", label: "More", icon: Ellipsis, also: ["/messages", "/search", "/tasks", "/documents", "/whiteboard", "/inspiration", "/archive", "/portfolio", "/agents", "/trash", "/artifacts", "/claude"] },
+  { href: "/projects", label: "More", icon: Ellipsis, also: ["/messages", "/health", "/search", "/tasks", "/documents", "/whiteboard", "/inspiration", "/archive", "/portfolio", "/agents", "/trash", "/artifacts", "/claude"] },
 ] as const;
 
 export function isActive(pathname: string, href: string) {
