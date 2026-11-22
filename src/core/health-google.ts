@@ -400,7 +400,9 @@ const sources: Source[] = [
   {
     type: "sleep",
     // Sleep can only be filtered by when it ended; a night counts towards the morning he woke up.
-    fetch: (first, end) => listPoints("sleep", `sleep.interval.civil_end_time >= "${first}" AND sleep.interval.civil_end_time < "${end}"`, 25),
+    // The civil-time filter came back empty for Luke's account, so this asks by UTC with a day to spare each side.
+    fetch: (first, end) =>
+      listPoints("sleep", `sleep.interval.end_time >= "${addDays(first, -1)}T00:00:00Z" AND sleep.interval.end_time < "${addDays(end, 1)}T00:00:00Z"`, 25),
     dayOf: (p) => ymd((field(p, "sleep").interval as { civilEndTime?: CivilDateTime } | undefined)?.civilEndTime?.date),
     apply: (s, points) => {
       const sleeps = points.map((p) => field(p, "sleep"));
