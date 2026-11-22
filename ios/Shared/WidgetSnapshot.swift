@@ -10,6 +10,8 @@ struct WidgetSnapshot: Codable, Sendable {
         var project: String?
         var projectColor: String?
         var dueDate: String?
+        /// Life's Morning, Day or Evening card (older saved copies have none: Day).
+        var timeOfDay: TimeOfDay?
     }
 
     var today: String

@@ -9,6 +9,8 @@ struct DashboardScreen: View {
     @State private var home = Home.shared
     @State private var editing: LukeTask?
     @State private var adding = false
+    /// Morning, Day or Evening picked on a widget for the new task.
+    @State private var addSlot: String?
     @AppStorage("dashboardLayout", store: SharedConfig.defaults) private var layout = "list"
 
     var body: some View {
@@ -41,7 +43,7 @@ struct DashboardScreen: View {
                 TaskEditor(taskId: task.id, fallback: task)
             }
             .sheet(isPresented: $adding) {
-                NewTaskSheet(area: app.area)
+                NewTaskSheet(area: app.area, startSlot: addSlot)
             }
             .task { await reload() }
             .onChange(of: app.pendingLink) { _, _ in openLink() }
@@ -60,7 +62,14 @@ struct DashboardScreen: View {
 
     private func openLink() {
         guard let link = app.take("/?") else { return }
-        if link.contains("new=task") { adding = true; return }
+        if link.contains("new=task") {
+            let items = URLComponents(string: link)?.queryItems ?? []
+            if let a = items.first(where: { $0.name == "area" })?.value.flatMap(Area.init(rawValue:)) { app.area = a }
+            addSlot = items.first(where: { $0.name == "time" })?.value
+            editing = nil
+            adding = true
+            return
+        }
         if let id = link.components(separatedBy: "task=").last?.components(separatedBy: "&").first {
             editing = store.task(id) ?? LukeTask(id: id, title: "")
         }
@@ -141,6 +150,7 @@ struct DashboardScreen: View {
 
     private var addButton: some View {
         Button {
+            addSlot = nil
             adding = true
         } label: {
             Image(systemName: "plus")

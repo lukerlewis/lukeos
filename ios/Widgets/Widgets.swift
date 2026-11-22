@@ -7,6 +7,9 @@ import WidgetKit
 struct LukeOSWidgetBundle: WidgetBundle {
     var body: some Widget {
         TodayWidget()
+        DayPlanWidget()
+        QuickTaskWidget()
+        QuickNoteWidget()
         FocusLiveActivity()
     }
 }
@@ -34,6 +37,52 @@ struct TodayWidget: Widget {
         .configurationDisplayName("Today")
         .description("Your Today list.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular])
+    }
+}
+
+/// Life's Today, split into Morning, Day and Evening.
+struct DayPlanWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "DayPlan", provider: TodayProvider()) { entry in
+            DayPlanWidgetView(entry: entry)
+                .containerBackground(Color.card, for: .widget)
+        }
+        .configurationDisplayName("Day plan")
+        .description("Today's tasks by morning, day and evening.")
+        .supportedFamilies([.systemLarge])
+    }
+}
+
+struct QuickAddProvider: TimelineProvider {
+    struct Entry: TimelineEntry { var date: Date }
+    func placeholder(in context: Context) -> Entry { Entry(date: .now) }
+    func getSnapshot(in context: Context, completion: @escaping (Entry) -> Void) { completion(Entry(date: .now)) }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
+        completion(Timeline(entries: [Entry(date: .now)], policy: .never))
+    }
+}
+
+struct QuickTaskWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "QuickTask", provider: QuickAddProvider()) { _ in
+            QuickAddWidgetView(kind: .task)
+                .containerBackground(Color.card, for: .widget)
+        }
+        .configurationDisplayName("New task")
+        .description("Add a task in one tap.")
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular])
+    }
+}
+
+struct QuickNoteWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "QuickNote", provider: QuickAddProvider()) { _ in
+            QuickAddWidgetView(kind: .note)
+                .containerBackground(Color.card, for: .widget)
+        }
+        .configurationDisplayName("New note")
+        .description("Start a note in one tap.")
+        .supportedFamilies([.systemSmall, .accessoryCircular])
     }
 }
 
