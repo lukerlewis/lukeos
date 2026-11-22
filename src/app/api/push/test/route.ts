@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
-import { sendPush } from "@/core/push";
+import { runOperation } from "@/core/operations";
 import { getSession } from "@/lib/auth/session";
 
-/** Sends a test notification to every device that has them on. */
+/** Sends a test notification to every device that has them on. Same as the send_test_notification operation. */
 export async function POST() {
   if (!(await getSession())) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  const reached = await sendPush({
-    title: "LukeOS",
-    body: "Notifications are working. Claude's messages will show up like this.",
-    url: "/messages",
-    tag: "lukeos-test",
-  });
-  return NextResponse.json({ reached });
+  const outcome = await runOperation("send_test_notification", {}, { kind: "user" });
+  if (!outcome.ok) return NextResponse.json({ error: outcome.error }, { status: outcome.status });
+  return NextResponse.json(outcome.result);
 }
