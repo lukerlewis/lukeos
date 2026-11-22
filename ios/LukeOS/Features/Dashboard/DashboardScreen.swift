@@ -16,7 +16,7 @@ struct DashboardScreen: View {
             Group {
                 if layout == "board" {
                     ScrollView {
-                        header
+                        header(inList: false)
                         BoardView(tasks: areaTasks, onOpen: { editing = $0 })
                     }
                 } else {
@@ -70,7 +70,8 @@ struct DashboardScreen: View {
         return h < 12 ? "Good morning, Luke" : h < 18 ? "Good afternoon, Luke" : "Good evening, Luke"
     }
 
-    private var header: some View {
+    /// In the list, rows already sit inside the list's margin; on the board they don't.
+    private func header(inList: Bool) -> some View {
         @Bindable var app = app
         return VStack(alignment: .leading, spacing: 12) {
             Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
@@ -92,7 +93,7 @@ struct DashboardScreen: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, inList ? 0 : 20)
         .padding(.top, 4)
         .padding(.bottom, 6)
     }
@@ -101,7 +102,7 @@ struct DashboardScreen: View {
 
     private var todayList: some View {
         List {
-            header
+            header(inList: true)
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)

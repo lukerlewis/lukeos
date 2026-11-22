@@ -72,6 +72,16 @@ final class AppModel {
             } else if url.host() == "add-task" {
                 tab = .dashboard
                 pendingLink = "/?new=task"
+            } else if let host = url.host() {
+                // lukeos://task/<id>, lukeos://note/<id>, lukeos://document/<id>, lukeos://messages
+                let id = url.pathComponents.dropFirst().first ?? ""
+                switch host {
+                case "task": open("/?task=\(id)")
+                case "note": open("/notes/\(id)")
+                case "document": open("/documents/\(id)")
+                case "project": open("/projects/\(id)")
+                default: open("/\(host)")
+                }
             }
         } else {
             var path = url.path()

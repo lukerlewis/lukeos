@@ -1,0 +1,81 @@
+{"input":{"area":"life","bucket":"today","dueDate":"2026-11-22","id":"367fb04a-87af-47fc-af58-6f6917ece6ee","repeat":"every_2_weeks","timeOfDay":"morning","title":"Call mum"},"op":"create_task"}
+{"input":{"area":"work","id":"bfc4cdb9-83d3-40ad-84b7-45af6e742c12","lane":"signal","projectId":"b85d9177-fbdd-45f3-9a0f-225cbe1db5ad","title":"Draft hooks"},"op":"create_task"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","status":"done"},"op":"update_task"}
+{"input":{"id":"367fb04a-87af-47fc-af58-6f6917ece6ee","type":"task"},"op":"restore_from_trash"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","status":"doing"},"op":"update_task"}
+{"input":{"area":"work","id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a"},"op":"update_task"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","priority":"high"},"op":"update_task"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","notes":null},"op":"update_task"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","status":"doing"},"op":"update_task"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","lane":"signal"},"op":"update_task"}
+{"input":{"bucket":"today","id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a"},"op":"update_task"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","repeat":null},"op":"update_task"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","timeOfDay":"day"},"op":"update_task"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","title":"Finish the Helix case study"},"op":"update_task"}
+{"input":{"dueDate":null,"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a"},"op":"update_task"}
+{"input":{"effort":"deep","id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a"},"op":"update_task"}
+{"input":{"dueDate":null,"effort":"deep","id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","notes":"- [ ] one","priority":null,"repeat":"weekdays"},"op":"update_task"}
+{"input":{"area":"work","bucket":"today","dueDate":null,"effort":"deep","id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","lane":"signal","notes":null,"priority":"high","projectId":"da7a68cf-5076-4891-8ff0-77dcc28fdf61","repeat":null,"status":"doing","timeOfDay":"day","title":"Finish the Helix case study"},"op":"update_task"}
+{"input":{"id":"367fb04a-87af-47fc-af58-6f6917ece6ee"},"op":"delete_task"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","projectId":"da7a68cf-5076-4891-8ff0-77dcc28fdf61"},"op":"update_task"}
+{"input":{"layout":"board"},"op":"set_dashboard_view"}
+{"input":{"show":["todo","doing","done"]},"op":"set_dashboard_view"}
+{"input":{"sort":[{"by":"priority","dir":"desc"},{"by":"project","dir":"asc"}]},"op":"set_dashboard_view"}
+{"input":{"content":"","id":"3eb7d28d-c8d0-4a6d-abee-87337b10ea76","title":""},"op":"create_note"}
+{"input":{"content":"# Ideas\n\n- [ ] one","id":"3eb7d28d-c8d0-4a6d-abee-87337b10ea76","title":"Ideas"},"op":"update_note"}
+{"input":{"name":"Recipes"},"op":"create_folder"}
+{"input":{"folderId":"20accd31-659b-4da7-98aa-1a6b7d538695","id":"07873f1c-a1a7-41f3-a77e-f4f8297ba067"},"op":"update_note"}
+{"input":{"id":"07873f1c-a1a7-41f3-a77e-f4f8297ba067","pinned":true},"op":"update_note"}
+{"input":{"id":"07873f1c-a1a7-41f3-a77e-f4f8297ba067","projectId":"b85d9177-fbdd-45f3-9a0f-225cbe1db5ad"},"op":"update_note"}
+{"input":{"id":"07873f1c-a1a7-41f3-a77e-f4f8297ba067"},"op":"delete_note"}
+{"input":{"id":"20accd31-659b-4da7-98aa-1a6b7d538695","name":"Journal 2026"},"op":"update_folder"}
+{"input":{"id":"20accd31-659b-4da7-98aa-1a6b7d538695","projectId":"b85d9177-fbdd-45f3-9a0f-225cbe1db5ad"},"op":"update_folder"}
+{"input":{"id":"20accd31-659b-4da7-98aa-1a6b7d538695"},"op":"delete_folder"}
+{"input":{"content":"Jot","id":"29da446d-0885-45f8-98c1-ef17237dc954"},"op":"update_note"}
+{"input":{"body":"@claude can you help?","targetId":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","targetType":"task"},"op":"add_comment"}
+{"input":{"body":"Thanks","id":"1b949c36-d270-4fe2-9597-f2bc2dbcbaa2"},"op":"reply_to_comment"}
+{"input":{"id":"1b949c36-d270-4fe2-9597-f2bc2dbcbaa2","resolved":true},"op":"resolve_comment"}
+{"input":{"id":"67b306b0-b428-4892-8c1b-f426ba54e622"},"op":"delete_comment"}
+{"input":{"endedAt":"2026-11-22T02:43:27.284Z","id":"144a02e3-5563-4dda-9733-a1f96d7026fc","kind":"sprint","label":"Finish the Helix case study","seconds":1499,"startedAt":"2026-11-22T02:18:27.283Z"},"op":"log_focus_session"}
+{"input":{"endedAt":"2026-11-22T02:43:27.254Z","id":"99bc5e80-a891-4477-bffa-001f4ee96891","kind":"pomodoro","seconds":599,"startedAt":"2026-11-22T02:33:27.251Z"},"op":"log_focus_session"}
+{"input":{"endedAt":"2026-11-22T02:43:27.271Z","id":"6436f565-f317-4a49-a228-5902d1a313e6","kind":"timer","seconds":299,"startedAt":"2026-11-22T02:43:27.260Z"},"op":"log_focus_session"}
+{"input":{"text":"Email Dana"},"op":"update_scratch_pad"}
+{"input":{"focusMinutes":30,"longBreakMinutes":20,"roundsBeforeLongBreak":4,"shortBreakMinutes":5},"op":"update_focus_settings"}
+{"input":{"id":"0b39ba7c-c4fa-42fe-b899-dfea2a0fa8ca","seconds":1200},"op":"update_focus_session"}
+{"input":{"id":"0b39ba7c-c4fa-42fe-b899-dfea2a0fa8ca"},"op":"delete_focus_session"}
+{"input":{"episodeIds":["76af267b-d65b-4bdc-9018-1ae95674de5f"],"playlistId":"c8aa4fac-7767-4ee2-95eb-c706d4df3c5a"},"op":"remove_from_playlist"}
+{"input":{"id":"76af267b-d65b-4bdc-9018-1ae95674de5f","played":true},"op":"update_episode"}
+{"input":{"finished":true,"id":"76af267b-d65b-4bdc-9018-1ae95674de5f"},"op":"update_episode"}
+{"input":{"episodeIds":["76af267b-d65b-4bdc-9018-1ae95674de5f"],"playlistId":"c8aa4fac-7767-4ee2-95eb-c706d4df3c5a"},"op":"add_to_playlist"}
+{"input":{"id":"76af267b-d65b-4bdc-9018-1ae95674de5f","kept":true},"op":"update_episode"}
+{"input":{"episodeIds":["76af267b-d65b-4bdc-9018-1ae95674de5f"],"id":"c8aa4fac-7767-4ee2-95eb-c706d4df3c5a"},"op":"update_playlist"}
+{"input":{"excludeFromShuffle":true,"id":"c8aa4fac-7767-4ee2-95eb-c706d4df3c5a"},"op":"update_playlist"}
+{"input":{"id":"c8aa4fac-7767-4ee2-95eb-c706d4df3c5a"},"op":"delete_playlist"}
+{"input":{"title":"Running"},"op":"create_playlist"}
+{"input":{"id":"76af267b-d65b-4bdc-9018-1ae95674de5f"},"op":"delete_episode"}
+{"input":{"name":"Garden"},"op":"create_project"}
+{"input":{"replyTo":"f9ad0490-68b7-454a-b8fc-436925404586","text":"Can you check the invoice?"},"op":"send_message"}
+{"input":{"id":"2511ee41-f4c4-481a-b8d0-91cda9866fb8"},"op":"unsend_message"}
+{"input":{"id":"2511ee41-f4c4-481a-b8d0-91cda9866fb8","text":"Edited text"},"op":"edit_message"}
+{"input":{},"op":"mark_messages_read"}
+{"input":{},"op":"mark_messages_read"}
+{"input":{"attachments":[{"fileId":"7c15cd7b-5aa8-4931-874b-06ccf3afd1e6","height":900,"name":"Photo.jpg","thumbId":"96491bdf-9222-48e5-950d-f55211b6d04a","width":1200}],"text":"Photo"},"op":"send_message"}
+{"input":{"id":"b85d9177-fbdd-45f3-9a0f-225cbe1db5ad","name":"Content 2"},"op":"update_project"}
+{"input":{"color":"teal","id":"b85d9177-fbdd-45f3-9a0f-225cbe1db5ad"},"op":"update_project"}
+{"input":{"projectId":"b85d9177-fbdd-45f3-9a0f-225cbe1db5ad","url":"https:\/\/apple.com"},"op":"add_link"}
+{"input":{"id":"39ca761e-f81e-4452-bf4d-e61db2b9df69","pinned":false},"op":"update_link"}
+{"input":{"id":"39ca761e-f81e-4452-bf4d-e61db2b9df69"},"op":"delete_link"}
+{"input":{"id":"93e1e741-f28f-4cf3-840e-362a0c87314b","pinned":false},"op":"update_document"}
+{"input":{"content":"# Plan\n\n- [x] Done","id":"93e1e741-f28f-4cf3-840e-362a0c87314b"},"op":"update_document"}
+{"input":{},"op":"mark_from_claude_seen"}
+{"input":{"url":"https:\/\/apple.com\/design"},"op":"add_inspiration"}
+{"input":{"text":"Less, but better."},"op":"add_inspiration"}
+{"input":{"id":"fa3d0929-d7aa-42a6-9660-4ab77e9dec5a","note":"Love the blur"},"op":"update_inspiration"}
+{"input":{"id":"fa3d0929-d7aa-42a6-9660-4ab77e9dec5a"},"op":"delete_inspiration"}
+{"input":{"id":"93e1e741-f28f-4cf3-840e-362a0c87314b"},"op":"delete_document"}
+{"input":{"id":"f9ad0490-68b7-454a-b8fc-436925404586","type":"message"},"op":"delete_forever"}
+{"input":{},"op":"empty_trash"}
+{"input":{"id":"b85d9177-fbdd-45f3-9a0f-225cbe1db5ad"},"op":"delete_project"}
+{"input":{"timeZone":"America\/New_York"},"op":"set_time_zone"}
+{"input":{"id":"c2a804d0-9665-4c65-b3cd-8bcb69c1771a","status":"done"},"op":"update_task"}
+{"input":{"area":"work","dueDate":"2026-12-01","id":"587b341a-e53d-4676-8e8d-e758d363a3d8","repeat":"monthly","title":"Pay rent"},"op":"create_task"}
