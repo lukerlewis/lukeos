@@ -74,6 +74,11 @@ final class AppModel {
             } else if url.host() == "add-task" {
                 tab = .dashboard
                 pendingLink = "/?new=task"
+            } else if url.host() == "dictate" {
+                // The LukeOS keyboard opens this to turn the mic on.
+                open("/dictation")
+                Dictation.shared.openedByKeyboard = true
+                Task { await Dictation.shared.turnOn() }
             } else if let host = url.host() {
                 // lukeos://task/<id>, lukeos://note/<id>, lukeos://document/<id>, lukeos://messages
                 let id = url.pathComponents.dropFirst().first ?? ""

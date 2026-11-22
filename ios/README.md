@@ -33,9 +33,19 @@ A build made this way lasts a year. Run the command again to renew it or to upda
 | `Widgets` | The Today widget and the focus Live Activity |
 | `ScreenTime` | Blocking apps until focus time or tasks are done: saved protocols, the extension that re-locks each day and times cooldowns, the block screen and its buttons (see `docs/SCREEN_TIME.md`) |
 | `Share` | "Save to LukeOS" in the share sheet |
+| `Keyboard` | The LukeOS keyboard: a mic button that types what Luke says into any app |
 | `Fixtures` | Real server answers, used by demo mode and the tests |
 | `docs` | The API guide and screen notes |
 | `screenshots` | How every screen looks, light and dark |
+
+## Dictation
+
+More › Dictation and the LukeOS keyboard turn speech into text with Whisper, on the phone, with no service and no cost.
+
+- A keyboard can't use the microphone, so the app does the recording. The keyboard's mic button sends "start" and "stop" to the app and types the text that comes back (`Shared/DictationLink.swift`).
+- The first tap in a while opens LukeOS to turn the mic on; swipe back and tap again. The mic then stays on for 15 minutes after it was last used (`Dictation.staysOn`).
+- The model (Fast, Balanced, Most accurate) is downloaded once from More › Dictation and kept in the app's Documents.
+- Set up once: Settings › General › Keyboard › Keyboards › Add New Keyboard › LukeOS, then tap LukeOS in that list and turn on Allow Full Access (needed for the keyboard and the app to share a folder).
 
 ## For developers
 
