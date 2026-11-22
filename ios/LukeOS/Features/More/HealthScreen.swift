@@ -83,6 +83,13 @@ enum HealthMath {
         return nil
     }
 
+    /// The days labelled under a chart: every day for a week, otherwise today and every 7th day
+    /// before it, so the newest week is always labelled. Oldest first.
+    static func axisDays(today: String, range: Int) -> [String] {
+        let step = range <= 7 ? 1 : 7
+        return stride(from: 0, to: range, by: step).map { Day.add(today, days: -$0) }.reversed()
+    }
+
     /// Splits a day-by-day series into unbroken stretches (a day without a value ends one).
     static func runs(_ values: [(String, Double?)]) -> [(id: Int, points: [(String, Double)])] {
         var out: [(id: Int, points: [(String, Double)])] = []
@@ -465,8 +472,12 @@ struct HealthScreen: View {
     }
 
     private var dayAxis: some AxisContent {
-        AxisMarks(values: .stride(by: .day, count: range == 7 ? 1 : 7)) {
-            AxisValueLabel(format: range == 7 ? .dateTime.weekday(.narrow) : .dateTime.day().month(.abbreviated), centered: true)
+        // Marks at midday sit in the middle of each day's bar (Charts drops the last label when asked to centre it).
+        // On the 30-day view the first and last dates line up with their bars' outer edges so neither is cut off.
+        AxisMarks(values: HealthMath.axisDays(today: today, range: range).map { Day.toLocal($0).addingTimeInterval(12 * 3600) }) { value in
+            let anchor: UnitPoint = range <= 7 ? .top : value.index == 0 ? .topLeading : value.index == value.count - 1 ? .topTrailing : .top
+            AxisValueLabel(format: range == 7 ? .dateTime.weekday(.narrow) : .dateTime.day().month(.abbreviated),
+                           centered: false, anchor: anchor)
         }
     }
 

@@ -56,6 +56,12 @@ final class HealthTests: XCTestCase {
         XCTAssertTrue(full.hasAnyData)
     }
 
+    func testAxisIsAnchoredAtToday() {
+        XCTAssertEqual(HealthMath.axisDays(today: "2026-11-21", range: 30), ["2026-10-24", "2026-10-31", "2026-11-07", "2026-11-14", "2026-11-21"])
+        XCTAssertEqual(HealthMath.axisDays(today: "2026-11-21", range: 7).count, 7)
+        XCTAssertEqual(HealthMath.axisDays(today: "2026-11-21", range: 7).last, "2026-11-21")
+    }
+
     func testLinesBreakAtMissingDays() {
         let r = HealthMath.runs([("a", 1), ("b", nil), ("c", 3), ("d", 4), ("e", nil)])
         XCTAssertEqual(r.map { $0.points.map(\.0) }, [["a"], ["c", "d"]])
