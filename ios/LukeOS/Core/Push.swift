@@ -22,11 +22,8 @@ enum Push {
     static func send(deviceToken: Data) async {
         let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
         SharedConfig.defaults.set(hex, forKey: "apnsToken")
-        #if DEBUG
+        // The entitlement is "development", so the token is a sandbox one in every build.
         let environment = "sandbox"
-        #else
-        let environment = "production"
-        #endif
         var req = LukeAPI.shared.request("api/push/apns")
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "content-type")

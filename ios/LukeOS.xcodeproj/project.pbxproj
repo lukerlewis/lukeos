@@ -11,10 +11,13 @@
 		00DF40CB7AE24091088A66F9 /* SmartEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098058FF06B81882280685AE /* SmartEntry.swift */; };
 		0470D2E09326A8059242F706 /* TaskEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3525035D1DF9BE9D5887F0CA /* TaskEditor.swift */; };
 		0805A72D42A60BBFFE2D87E4 /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
+		0941F2AD43169DE87D1EEC41 /* Geist-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2F7A6BD04903E1695F8113DD /* Geist-Italic.ttf */; };
 		09913344B2BFE017C10F4379 /* FocusScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CFD7570694FA1A70725C11E /* FocusScreen.swift */; };
 		0E5B7EBBBA4FE3B1C3BFBD05 /* brown-noise.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 3F44FAC64420145C46F8B100 /* brown-noise.mp3 */; };
+		0E9F7D42A910D404B3D2E95C /* Geist-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */; };
 		108EE03E4D1843B714921C25 /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9306D2188BBAD189C914BE0B /* BoardView.swift */; };
 		112F5DF9970715D0A4B7CA93 /* GeistMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C49E3F806D7DC7EB411FCC4E /* GeistMono-Regular.ttf */; };
+		126EF7CC2620032D2CD7DA72 /* Geist-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */; };
 		1525F3F9F8E187D7AB1A991C /* Chips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C2F1CD486AF3CD3DE9EF4E /* Chips.swift */; };
 		15E29D4E8DAEF33C50665BED /* LukeOSWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		17F485B4711B1F3360E36862 /* Appearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC534031F9B58133C59F899B /* Appearance.swift */; };
@@ -31,6 +34,7 @@
 		35A3D050653345C50ED841BA /* MoreScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */; };
 		3688E35338B11F6B29A7893E /* QuickAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0998E467A272C3FA9FE577E9 /* QuickAdd.swift */; };
 		3B879C20D7609DB6E593C280 /* DocumentsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486301A741FFD0760B961706 /* DocumentsScreen.swift */; };
+		3FD84680298F6B7FC47E3082 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */; };
 		45E615CA688F9311C03454EA /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
 		46455338D24BA377E4833B62 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
 		4CAE7A26BC6AD9DFEA3428BB /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
@@ -40,11 +44,13 @@
 		5BEFAC1F62ED73DE2C943D31 /* LukeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */; };
 		5BF531E05C9FC3DFA72E4180 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
 		5CC51D53B7113A66BE63E140 /* Geist-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2F7A6BD04903E1695F8113DD /* Geist-Italic.ttf */; };
+		6555691EF32AA6BA269D4DE6 /* WriteExercise.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A657BE5A28CE81E9AA3A47 /* WriteExercise.swift */; };
 		7364E735007D69FC462C90F4 /* TaskRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 909E79DA6EF9590C9C1CD9FD /* TaskRow.swift */; };
 		75798F15A850FF3098D04B36 /* Geist-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */; };
 		7E6B1515FF44F4E75EFE29DD /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
 		819A2BCF2F877EB70B99FC8F /* NowPlaying.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5B4EE6AAF2908A4D409CAD4 /* NowPlaying.swift */; };
 		83088034108BCAD9FD3F7E85 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
+		8529ECC9FCA635745F506F14 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = C0C494A94181D94768D93744 /* OFL.txt */; };
 		87A7332863A8A2656168AD23 /* FocusActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */; };
 		8A9BE1E5B9C26A63708AD64C /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
 		8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F6D9064445EA0B033C63DD /* NotesScreen.swift */; };
@@ -72,6 +78,7 @@
 		C9AEB8725C1104EB8FBC3B34 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CFCBA190398A4E3D994D93 /* SignInView.swift */; };
 		CA95ECD27518E4B40C6393E6 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
 		CC1C270197956507A3B8566E /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */; };
+		CE26374481EBEB3880677161 /* GeistMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C49E3F806D7DC7EB411FCC4E /* GeistMono-Regular.ttf */; };
 		CFDF5655DE675284CDC56DEB /* MessagesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A8EC3AA2EB8960E29672F39 /* MessagesScreen.swift */; };
 		D0E23CB0783A41CA8C3F1448 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
 		D3E4035A665C6DAE59035FF8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
@@ -83,6 +90,7 @@
 		E91CFF853868A5365C31764E /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99ADE5FF7FD5F237CA013E70 /* AudioPlayer.swift */; };
 		E99D3E61ED06BD3EBD4EE4CE /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
 		ECAD8123915B37929BA23CC1 /* DashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */; };
+		ECC99BBFE2E5AA4D835CC12E /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 760A8370538F04D01075FB2D /* Intents.swift */; };
 		ED194374EA744BABF0B037A1 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0583F8BFA35C668F3A8206D /* MarkdownView.swift */; };
 		F174C81EEEEEA95C303BB284 /* Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73CADE5D302CDEDEECC713F7 /* Push.swift */; };
 		F98F60E63DFFD314E5C7F302 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
@@ -159,6 +167,7 @@
 		7224A97F06EDA2C071E93974 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		73CADE5D302CDEDEECC713F7 /* Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Push.swift; sourceTree = "<group>"; };
 		744FE808E024262F48C42255 /* Day.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
+		760A8370538F04D01075FB2D /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intents.swift; sourceTree = "<group>"; };
 		76F23E9334AB3A4E13541405 /* NoteScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteScreen.swift; sourceTree = "<group>"; };
 		78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Regular.ttf"; sourceTree = "<group>"; };
 		7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreScreen.swift; sourceTree = "<group>"; };
@@ -191,6 +200,7 @@
 		D4F6D9064445EA0B033C63DD /* NotesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesScreen.swift; sourceTree = "<group>"; };
 		D5809A8B8B13B2188B471B73 /* LukeOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LukeOS.entitlements; sourceTree = "<group>"; };
 		DC534031F9B58133C59F899B /* Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Appearance.swift; sourceTree = "<group>"; };
+		E3A657BE5A28CE81E9AA3A47 /* WriteExercise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WriteExercise.swift; sourceTree = "<group>"; };
 		E4132CBAEC848204B8501F91 /* LukeOSShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5B4EE6AAF2908A4D409CAD4 /* NowPlaying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlaying.swift; sourceTree = "<group>"; };
 		E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-MediumItalic.ttf"; sourceTree = "<group>"; };
@@ -325,9 +335,11 @@
 			isa = PBXGroup;
 			children = (
 				3307F9A29573A3AC37BC9BBC /* AppModel.swift */,
+				760A8370538F04D01075FB2D /* Intents.swift */,
 				9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */,
 				46DD2C51661DA1C32EA29038 /* MainTabs.swift */,
 				36CFCBA190398A4E3D994D93 /* SignInView.swift */,
+				E3A657BE5A28CE81E9AA3A47 /* WriteExercise.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -479,6 +491,7 @@
 			buildConfigurationList = 4C7D9E203412F8966B429761 /* Build configuration list for PBXNativeTarget "LukeOSWidgets" */;
 			buildPhases = (
 				A51EA383897D48C74D1278D9 /* Sources */,
+				353C13C6ADBE886C507C1614 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -579,6 +592,19 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		353C13C6ADBE886C507C1614 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0941F2AD43169DE87D1EEC41 /* Geist-Italic.ttf in Resources */,
+				3FD84680298F6B7FC47E3082 /* Geist-Medium.ttf in Resources */,
+				126EF7CC2620032D2CD7DA72 /* Geist-MediumItalic.ttf in Resources */,
+				0E9F7D42A910D404B3D2E95C /* Geist-Regular.ttf in Resources */,
+				CE26374481EBEB3880677161 /* GeistMono-Regular.ttf in Resources */,
+				8529ECC9FCA635745F506F14 /* OFL.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		716EF83AED1EDA401C625AB2 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -618,6 +644,7 @@
 				97D12FE3EC6DB71CDD221E0C /* FocusTimer.swift in Sources */,
 				29D6690D0165537C3AA425B5 /* Home.swift in Sources */,
 				A34332821F1B1714A9160FFA /* InspirationScreen.swift in Sources */,
+				ECC99BBFE2E5AA4D835CC12E /* Intents.swift in Sources */,
 				4CAE7A26BC6AD9DFEA3428BB /* JSON.swift in Sources */,
 				5BEFAC1F62ED73DE2C943D31 /* LukeAPI.swift in Sources */,
 				A4965AB914917049173B5600 /* LukeOSApp.swift in Sources */,
@@ -649,6 +676,7 @@
 				D3E4035A665C6DAE59035FF8 /* Theme.swift in Sources */,
 				18B190CD6341EC4C49B062F4 /* WebSheet.swift in Sources */,
 				D0E23CB0783A41CA8C3F1448 /* WidgetSnapshot.swift in Sources */,
+				6555691EF32AA6BA269D4DE6 /* WriteExercise.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -937,6 +965,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos.share;
 				PRODUCT_NAME = LukeOSShare;
 				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -990,6 +1020,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos.share;
 				PRODUCT_NAME = LukeOSShare;
 				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;

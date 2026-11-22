@@ -61,6 +61,8 @@ struct ProjectScreen: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                .listSectionSpacing(16)
+                .contentMargins(.top, 4, for: .scrollContent)
             }
         }
         .pageBackground()

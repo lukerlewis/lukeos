@@ -173,6 +173,7 @@ struct MessagesScreen: View {
         .safeAreaInset(edge: .bottom) { composer }
         .navigationTitle("Claude")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .task {
             await model.load()
             let settings = await UNUserNotificationCenter.current().notificationSettings()
