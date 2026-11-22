@@ -6,16 +6,23 @@ import Observation
 actor ResponseCache {
     static let shared = ResponseCache()
 
-    private let dir: URL = {
+    nonisolated private static let dir: URL = {
         let d = SharedConfig.containerURL.appending(path: "Cache", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
         return d
     }()
 
-    private func file(_ key: String) -> URL {
+    private var dir: URL { Self.dir }
+
+    nonisolated private static func file(_ key: String) -> URL {
         let safe = key.replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
         return dir.appending(path: String(safe.prefix(180)) + ".json")
     }
+
+    private func file(_ key: String) -> URL { Self.file(key) }
+
+    /// Reads the saved copy straight away (small files), so a page can draw its first frame from it.
+    nonisolated static func readNow(_ key: String) -> Data? { try? Data(contentsOf: file(key)) }
 
     func read(_ key: String) -> Data? { try? Data(contentsOf: file(key)) }
     func write(_ key: String, _ data: Data) { try? data.write(to: file(key), options: .atomic) }
@@ -112,6 +119,12 @@ enum Repo {
     /// The copy saved from last time, if there is one.
     static func cached<T: Decodable>(_ name: String, _ input: Input = [:], as: T.Type = T.self) async -> T? {
         guard let data = await ResponseCache.shared.read(key(name, input)) else { return nil }
+        return try? LukeAPI.decoder.decode(T.self, from: data)
+    }
+
+    /// The saved copy, read at once (for a page's first frame, e.g. during a zoom).
+    static func cachedNow<T: Decodable>(_ name: String, _ input: Input = [:], as: T.Type = T.self) -> T? {
+        guard let data = ResponseCache.readNow(key(name, input)) else { return nil }
         return try? LukeAPI.decoder.decode(T.self, from: data)
     }
 

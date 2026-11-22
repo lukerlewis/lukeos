@@ -5,10 +5,22 @@ import PhotosUI
 /// (tables, raw HTML, saved pages) opens read-only with "Edit on the web".
 struct NoteScreen: View {
     var noteId: String
+    /// What the list already knows (title), shown at once while the note loads.
+    var preview: String? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var note: Note?
     @State private var title = ""
     @State private var text = ""
+
+    init(noteId: String, preview: String? = nil) {
+        self.noteId = noteId
+        self.preview = preview
+        // Draw the first frame from the saved copy, so a zoom never opens on a blank page.
+        let saved = Repo.cachedNow("get_note", ["id": .string(noteId)], as: Note.self)
+        _note = State(initialValue: saved)
+        _title = State(initialValue: saved?.title ?? "")
+        _text = State(initialValue: saved?.content ?? "")
+    }
     @State private var saved = true
     @State private var failed = false
     @State private var saveTask: Task<Void, Never>?
@@ -65,7 +77,10 @@ struct NoteScreen: View {
                 } else if failed {
                     EmptyNote(text: "Couldn't open this note.", symbol: "exclamationmark.triangle")
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.section * 2)
+                    if let preview, !preview.isEmpty {
+                        Text(preview).textStyle(.title, medium: true, color: .ink)
+                    }
+                    DelayedSpinner()
                 }
             }
             .padding(.horizontal, Space.xxl)

@@ -59,7 +59,9 @@ struct InspirationScreen: View {
         }
         .pageBackground()
         .navigationTitle("Inspiration")
-        .navigationDestination(item: $openItem) { InspirationDetail(itemId: $0).zoomTransition($0, in: zoom) }
+        .navigationDestination(item: $openItem) { id in
+            InspirationDetail(itemId: id, known: items.first { $0.id == id }).zoomTransition(id, in: zoom)
+        }
         .searchable(text: $query, prompt: "Search")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -206,6 +208,13 @@ struct InspirationCard: View {
 struct InspirationDetail: View {
     var itemId: String
     @State private var item: InspirationItem?
+
+    /// `known` is the tile's own item, so the picture is there from the first frame.
+    init(itemId: String, known: InspirationItem? = nil) {
+        self.itemId = itemId
+        _item = State(initialValue: known ?? Repo.cachedNow("get_inspiration", ["id": .string(itemId)], as: InspirationItem.self))
+        _note = State(initialValue: known?.note ?? "")
+    }
     @State private var note = ""
     @Environment(\.dismiss) private var dismiss
 
@@ -239,7 +248,7 @@ struct InspirationDetail: View {
                         .background(Color.card, in: .rect(cornerRadius: Radius.control))
                         .onSubmit { save() }
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.section * 2)
+                    DelayedSpinner()
                 }
             }
             .padding(Space.l)

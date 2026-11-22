@@ -84,7 +84,9 @@ struct DocumentsScreen: View {
         .pageBackground()
         .navigationTitle("Documents")
         .searchable(text: $query, prompt: "Search documents")
-        .navigationDestination(item: $openDoc) { DocumentScreen(documentId: $0).zoomTransition($0, in: zoom) }
+        .navigationDestination(item: $openDoc) { id in
+            DocumentScreen(documentId: id, preview: docs.first { $0.id == id }?.title).zoomTransition(id, in: zoom)
+        }
         .task { await load() }
         .refreshable { await load() }
         .onDisappear {
@@ -125,7 +127,14 @@ struct DocumentRow: View {
 /// A document as a page: rendered Markdown, comments, Share as PDF, Edit on the web.
 struct DocumentScreen: View {
     var documentId: String
+    var preview: String? = nil
     @State private var doc: LukeDocument?
+
+    init(documentId: String, preview: String? = nil) {
+        self.documentId = documentId
+        self.preview = preview
+        _doc = State(initialValue: Repo.cachedNow("get_document", ["id": .string(documentId)], as: LukeDocument.self))
+    }
     @State private var showComments = false
     @State private var showWeb = false
     @State private var pdf: URL?
@@ -152,7 +161,8 @@ struct DocumentScreen: View {
                         if let c = self.doc?.content { Task { await Repo.change("update_document", ["id": .string(documentId), "content": .string(c)]) } }
                     }
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.section * 2)
+                    if let preview { Text(preview).textStyle(.title, medium: true, color: .ink) }
+                    DelayedSpinner()
                 }
             }
             .padding(.horizontal, Space.xxl)

@@ -10,7 +10,6 @@ struct DashboardScreen: View {
     @State private var editing: LukeTask?
     @State private var adding = false
     @AppStorage("dashboardLayout", store: SharedConfig.defaults) private var layout = "list"
-    @Namespace private var zoom
 
     var body: some View {
         @Bindable var app = app
@@ -40,7 +39,6 @@ struct DashboardScreen: View {
             .overlay(alignment: .bottomTrailing) { addButton }
             .sheet(item: $editing) { task in
                 TaskEditor(taskId: task.id, fallback: task)
-                    .zoomTransition(task.id, in: zoom)
             }
             .sheet(isPresented: $adding) {
                 NewTaskSheet(area: app.area)
@@ -108,7 +106,6 @@ struct DashboardScreen: View {
                         tasks: store.sorted(todays.filter { $0.timeOfDay == time }),
                         newTask: ["timeOfDay": .string(time.rawValue), "area": "life", "bucket": "today"],
                         dropChange: { ["timeOfDay": .string(time.rawValue)] },
-                        zoom: zoom,
                         onOpen: { editing = $0 }
                     )
                 }
@@ -119,7 +116,6 @@ struct DashboardScreen: View {
                         tasks: store.sorted(todays.filter { $0.lane == lane }),
                         newTask: ["lane": .string(lane.rawValue), "area": "work", "bucket": "today"],
                         dropChange: { ["lane": .string(lane.rawValue)] },
-                        zoom: zoom,
                         onOpen: { editing = $0 }
                     )
                 }
@@ -166,22 +162,22 @@ struct TaskCardSection: View {
     var tasks: [LukeTask]
     var newTask: Input
     var dropChange: () -> Input
-    var zoom: Namespace.ID? = nil
     var onOpen: (LukeTask) -> Void
     @State private var store = TaskStore.shared
-    /// How many of this card's parts a dragged task is over (rows, the add row, the header).
-    @State private var over = 0
+    /// Which parts of this card a dragged task is over (a row's id, "add", "header").
+    @State private var over: Set<String> = []
 
-    private var targeted: Bool { over > 0 }
+    private var targeted: Bool { !over.isEmpty }
 
     /// Any part of the card takes a dropped task; the whole card lights up while one is over it.
-    private func dropTarget<V: View>(_ v: V) -> some View {
+    private func dropTarget<V: View>(_ v: V, part: String) -> some View {
         v.dropDestination(for: String.self) { ids, _ in
             for id in ids { store.update(id, dropChange()) }
+            over = []
             return true
         } isTargeted: { on in
             let was = targeted
-            over = max(0, over + (on ? 1 : -1))
+            if on { over.insert(part) } else { over.remove(part) }
             if !was && targeted { Haptics.select() }
         }
     }
@@ -191,12 +187,13 @@ struct TaskCardSection: View {
             ForEach(tasks) { task in
                 dropTarget(
                     TaskRow(task: task, onOpen: { onOpen(task) })
-                        .draggable(task.id)
+                        .draggable(task.id),
+                    part: task.id
                 )
                 .taskRowInsets()
                 .taskRowActions(task, onOpen: { onOpen(task) })
             }
-            dropTarget(QuickAddRow(placeholder: "Add to \(title)", base: newTask))
+            dropTarget(QuickAddRow(placeholder: "Add to \(title)", base: newTask), part: "add")
         } header: {
             HStack(spacing: Space.s) {
                 Image(systemName: symbol).font(.icon(.row)).foregroundStyle(Color.icon)
@@ -207,7 +204,7 @@ struct TaskCardSection: View {
             .padding(.leading, -4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
-            .modifier(DropTargetModifier(apply: dropTarget))
+            .modifier(DropTargetModifier(apply: { dropTarget($0, part: "header") }))
         }
         .listRowBackground(targeted ? Color.muted : Color.card)
         .animation(Motion.snappy, value: targeted)

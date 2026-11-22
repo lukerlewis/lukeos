@@ -170,6 +170,22 @@ struct EmptyNote: View {
     }
 }
 
+/// A spinner that only appears if loading takes longer than a moment, so pages that open
+/// from something already on screen never flash one.
+struct DelayedSpinner: View {
+    @State private var show = false
+    var body: some View {
+        ProgressView()
+            .opacity(show ? 1 : 0)
+            .frame(maxWidth: .infinity)
+            .padding(.top, Space.section * 2)
+            .task {
+                try? await Task.sleep(for: .milliseconds(400))
+                withAnimation(.easeIn(duration: 0.2)) { show = true }
+            }
+    }
+}
+
 /// The page background used by every screen.
 struct PageBackground: ViewModifier {
     func body(content: Content) -> some View {

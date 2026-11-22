@@ -176,7 +176,9 @@ struct NotesList: View {
         .task(id: query) { await model.search(query) }
         .refreshable { await model.load() }
         .task { await model.load() }
-        .navigationDestination(item: $openNote) { NoteScreen(noteId: $0).zoomTransition($0, in: zoom) }
+        .navigationDestination(item: $openNote) { id in
+            NoteScreen(noteId: id, preview: model.notes.first { $0.id == id }?.displayTitle).zoomTransition(id, in: zoom)
+        }
         .toolbar {
             if let folder {
                 ToolbarItem(placement: .topBarTrailing) {
