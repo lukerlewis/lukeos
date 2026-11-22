@@ -1,12 +1,14 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { ChevronRight, RefreshCw } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { showToast } from "@/components/shell/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { averageOf, fahrenheitDelta, hoursMinutes, miles, thousands, workoutLabel, type HealthDay } from "@/lib/health";
+import { sectionHref } from "@/lib/health-sections";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { asDate, BarChart, LineChart, longDay, type Bar } from "./health-charts";
@@ -76,6 +78,7 @@ export function HealthScreen({ days, today, timeZone, lastSyncAt, lastError }: {
   const workouts = days.flatMap((d) => d.workouts.map((w) => ({ ...w, date: d.date }))).reverse();
   const time = new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit" });
   const dayName = day.date === today ? "Today" : longDay.format(asDate(day.date));
+  const href = (id: string) => sectionHref(id, day.date, days.length);
 
   return (
     <>
@@ -90,15 +93,16 @@ export function HealthScreen({ days, today, timeZone, lastSyncAt, lastError }: {
       <section className="flex flex-col gap-3">
         <h2 className="px-1 text-meta text-muted-foreground">{dayName}</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Tile label="Sleep" value={day.sleep ? hoursMinutes(day.sleep.minutes) : null} />
-          <Tile label="Steps" value={day.steps === null ? null : thousands(day.steps)} />
-          <Tile label="Resting heart rate" value={day.restingHeartRate === null ? null : `${day.restingHeartRate} bpm`} />
-          <Tile label="Active zone minutes" value={day.activeMinutes === null ? null : String(day.activeMinutes)} />
+          <Tile href={href("sleep")} label="Sleep" value={day.sleep ? hoursMinutes(day.sleep.minutes) : null} />
+          <Tile href={href("steps")} label="Steps" value={day.steps === null ? null : thousands(day.steps)} />
+          <Tile href={href("heart-rate")} label="Resting heart rate" value={day.restingHeartRate === null ? null : `${day.restingHeartRate} bpm`} />
+          <Tile href={href("active-zone-minutes")} label="Active zone minutes" value={day.activeMinutes === null ? null : String(day.activeMinutes)} />
         </div>
       </section>
 
       <ChartCard
         title="Sleep"
+        href={href("sleep")}
         value={day.sleep ? hoursMinutes(day.sleep.minutes) : "—"}
         note={day.sleep ? `${time.format(new Date(day.sleep.start))} to ${time.format(new Date(day.sleep.end))}` : undefined}
         legend={day.sleep && day.sleep.deepMinutes !== null ? [["Deep", day.sleep.deepMinutes], ["REM", day.sleep.remMinutes], ["Light", day.sleep.lightMinutes], ["Awake", day.sleep.awakeMinutes]] : undefined}
@@ -106,28 +110,28 @@ export function HealthScreen({ days, today, timeZone, lastSyncAt, lastError }: {
         <BarChart bars={sleepBars} picked={picked} onPick={setPicked} tick={(v) => `${Math.round(v / 60)}h`} top={Math.max(600, ...sleepBars.map((b) => b.parts.reduce((a, c) => a + c, 0)))} />
       </ChartCard>
 
-      <ChartCard title="Steps" value={day.steps === null ? "—" : thousands(day.steps)} note={day.distanceMeters ? miles(day.distanceMeters) : undefined} average={averageOf(days.map((d) => d.steps))} format={thousands}>
+      <ChartCard title="Steps" href={href("steps")} value={day.steps === null ? "—" : thousands(day.steps)} note={day.distanceMeters ? miles(day.distanceMeters) : undefined} average={averageOf(days.map((d) => d.steps))} format={thousands}>
         <BarChart bars={stepBars} picked={picked} onPick={setPicked} tick={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} goal={10_000} />
       </ChartCard>
 
-      <ChartCard title="Resting heart rate" value={day.restingHeartRate === null ? "—" : `${day.restingHeartRate} bpm`} average={averageOf(days.map((d) => d.restingHeartRate))} format={(v) => `${Math.round(v)} bpm`}>
+      <ChartCard title="Resting heart rate" href={href("heart-rate")} value={day.restingHeartRate === null ? "—" : `${day.restingHeartRate} bpm`} average={averageOf(days.map((d) => d.restingHeartRate))} format={(v) => `${Math.round(v)} bpm`}>
         <LineChart points={days.map((d) => ({ date: d.date, value: d.restingHeartRate }))} picked={picked} onPick={setPicked} format={(v) => String(Math.round(v))} />
       </ChartCard>
 
-      <ChartCard title="Heart rate variability" value={day.hrvMs === null ? "—" : `${Math.round(day.hrvMs)} ms`} average={averageOf(days.map((d) => d.hrvMs))} format={(v) => `${Math.round(v)} ms`}>
+      <ChartCard title="Heart rate variability" href={href("hrv")} value={day.hrvMs === null ? "—" : `${Math.round(day.hrvMs)} ms`} average={averageOf(days.map((d) => d.hrvMs))} format={(v) => `${Math.round(v)} ms`}>
         <LineChart points={days.map((d) => ({ date: d.date, value: d.hrvMs }))} picked={picked} onPick={setPicked} format={(v) => String(Math.round(v))} />
       </ChartCard>
 
-      <ChartCard title="Active zone minutes" value={day.activeMinutes === null ? "—" : String(day.activeMinutes)} note={day.caloriesOut ? `${thousands(day.caloriesOut)} cal burned` : undefined} average={averageOf(days.map((d) => d.activeMinutes))} format={(v) => String(Math.round(v))}>
+      <ChartCard title="Active zone minutes" href={href("active-zone-minutes")} value={day.activeMinutes === null ? "—" : String(day.activeMinutes)} note={day.caloriesOut ? `${thousands(day.caloriesOut)} cal burned` : undefined} average={averageOf(days.map((d) => d.activeMinutes))} format={(v) => String(Math.round(v))}>
         <BarChart bars={azmBars} picked={picked} onPick={setPicked} tick={(v) => String(Math.round(v))} />
       </ChartCard>
 
       <Card>
         <ul className="divide-y divide-border">
-          <Row label="Breathing rate" value={day.breathingRate === null ? null : `${day.breathingRate} /min`} average={averageOf(days.map((d) => d.breathingRate))} format={(v) => `${v.toFixed(1)}`} />
-          <Row label="Blood oxygen" value={day.spo2 === null ? null : `${day.spo2}%`} average={averageOf(days.map((d) => d.spo2))} format={(v) => `${v.toFixed(1)}%`} />
-          <Row label="Skin temperature" value={day.skinTempDeviation === null ? null : fahrenheitDelta(day.skinTempDeviation)} />
-          <Row label="Cardio fitness (VO₂ max)" value={day.vo2Max === null ? null : String(day.vo2Max)} average={averageOf(days.map((d) => d.vo2Max))} format={(v) => v.toFixed(1)} />
+          <Row href={href("breathing-rate")} label="Breathing rate" value={day.breathingRate === null ? null : `${day.breathingRate} /min`} average={averageOf(days.map((d) => d.breathingRate))} format={(v) => `${v.toFixed(1)}`} />
+          <Row href={href("blood-oxygen")} label="Blood oxygen" value={day.spo2 === null ? null : `${day.spo2}%`} average={averageOf(days.map((d) => d.spo2))} format={(v) => `${v.toFixed(1)}%`} />
+          <Row href={href("skin-temperature")} label="Skin temperature" value={day.skinTempDeviation === null ? null : fahrenheitDelta(day.skinTempDeviation)} />
+          <Row href={href("vo2-max")} label="Cardio fitness (VO₂ max)" value={day.vo2Max === null ? null : String(day.vo2Max)} average={averageOf(days.map((d) => d.vo2Max))} format={(v) => v.toFixed(1)} />
         </ul>
       </Card>
 
@@ -157,17 +161,20 @@ export function HealthScreen({ days, today, timeZone, lastSyncAt, lastError }: {
   );
 }
 
-function Tile({ label, value }: { label: string; value: string | null }) {
+function Tile({ href, label, value }: { href: string; label: string; value: string | null }) {
   return (
-    <Card className="flex flex-col gap-1 px-4 py-3">
-      <span className="text-meta text-muted-foreground">{label}</span>
-      <span className={cn("text-heading font-medium tabular-nums", value === null ? "text-muted-foreground" : "text-ink")}>{value ?? "—"}</span>
-    </Card>
+    <Link href={href} className="group rounded-xl">
+      <Card className="flex h-full flex-col gap-1 px-4 py-3 transition-colors group-hover:bg-muted">
+        <span className="text-meta text-muted-foreground">{label}</span>
+        <span className={cn("text-heading font-medium tabular-nums", value === null ? "text-muted-foreground" : "text-ink")}>{value ?? "—"}</span>
+      </Card>
+    </Link>
   );
 }
 
 function ChartCard({
   title,
+  href,
   value,
   note,
   average,
@@ -176,6 +183,7 @@ function ChartCard({
   children,
 }: {
   title: string;
+  href: string;
   value: string;
   note?: string;
   average?: number | null;
@@ -185,16 +193,19 @@ function ChartCard({
 }) {
   return (
     <Card className="flex flex-col gap-4 px-4 pt-4 pb-4">
-      <div className="flex items-start justify-between gap-3">
+      <Link href={href} className="group -m-2 flex items-start justify-between gap-3 rounded-lg p-2 hover:bg-muted">
         <div className="flex flex-col">
-          <span className="text-meta text-muted-foreground">{title}</span>
+          <span className="flex items-center gap-0.5 text-meta text-muted-foreground group-hover:text-foreground">
+            {title}
+            <ChevronRight className="size-3.5" aria-hidden />
+          </span>
           <span className="text-control font-medium text-ink tabular-nums">
             {value}
             {note && <span className="ml-2 font-normal text-muted-foreground">{note}</span>}
           </span>
         </div>
         {average != null && format && <span className="text-meta text-muted-foreground tabular-nums">Avg {format(average)}</span>}
-      </div>
+      </Link>
       {children}
       {legend && (
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-meta text-muted-foreground">
@@ -210,12 +221,15 @@ function ChartCard({
   );
 }
 
-function Row({ label, value, average, format }: { label: string; value: string | null; average?: number | null; format?: (v: number) => string }) {
+function Row({ href, label, value, average, format }: { href: string; label: string; value: string | null; average?: number | null; format?: (v: number) => string }) {
   return (
-    <li className="flex min-h-14 items-center gap-3 px-4 py-3">
+    <li>
+      <Link href={href} className="flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-muted">
       <span className="grow text-control">{label}</span>
       {average != null && format && <span className="text-meta text-muted-foreground tabular-nums">Avg {format(average)}</span>}
       <span className={cn("w-20 text-right text-control font-medium tabular-nums", value === null && "text-muted-foreground")}>{value ?? "—"}</span>
+        <ChevronRight className="-mr-1 size-4 shrink-0 text-muted-foreground" aria-hidden />
+      </Link>
     </li>
   );
 }

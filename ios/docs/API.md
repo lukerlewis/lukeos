@@ -99,7 +99,7 @@ All take the raw file as the request body (not multipart), `content-type` set to
 
 - After Luke allows notifications: `POST /api/push/apns` `{"deviceToken":"<hex>","deviceName":"iPhone 14 Plus","environment":"sandbox"}`. Use `"sandbox"` for a build put on the phone from Xcode and `"production"` for TestFlight. Call it on every launch (the token can change); it's safe to repeat.
 - Turning them off: `DELETE /api/push/apns` `{"deviceToken":"<hex>"}`.
-- `POST /api/push/test` sends a test to every device and returns `{ reached }`.
+- `POST /api/push/test` (or the `send_test_notification` operation) sends a test to every device and returns `{ reached }`.
 - A notification looks like:
 
 ```
@@ -118,10 +118,16 @@ Inputs are written as `{ name: type, optional?: type }`. Descriptions are shorte
 
 ### `get_app_info`
 
-Basic facts about this LukeOS install: today's date and time zone, and how many devices can sign in.
+Basic facts about this LukeOS install: today's date and time zone, how many devices can sign in, and `notifications: { devices, iPhones, iPhoneKeyAdded }`.
 
 - Input: `{  }`
-- Real responses: `Fixtures/get_app_info.json`
+- Real responses: `Fixtures/get_app_info.json` (captured before `notifications` was added)
+
+### `send_test_notification`
+
+Sends a test notification to every device that has them on. Returns `{ reached }`. Same as `POST /api/push/test`.
+
+- Input: `{  }`
 
 ### `set_time_zone`
 

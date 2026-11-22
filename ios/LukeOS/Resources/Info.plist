@@ -24,6 +24,7 @@
 	<key>LSRequiresIPhoneOS</key><true/>
 	<key>NSSupportsLiveActivities</key><true/>
 	<key>NSPhotoLibraryUsageDescription</key><string>Add photos to notes, messages and Inspiration.</string>
+	<key>NSMicrophoneUsageDescription</key><string>Turn what you say into text with the LukeOS keyboard. Nothing leaves the iPhone.</string>
 	<key>NSCameraUsageDescription</key><string>Take photos for notes, messages and Inspiration.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
