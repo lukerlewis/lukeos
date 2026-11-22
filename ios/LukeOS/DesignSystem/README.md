@@ -45,7 +45,11 @@ colours, fonts, sizes or radii of their own. Change a token or component here an
 | `ChipToggle`, `PinnedRow` | Chips.swift | Notes, Documents, Inspiration filters |
 | `FlowRow` | Features/Tasks/TaskRow.swift | Task meta line, smart chips, tags |
 | `MarkdownView` | MarkdownView.swift | Notes (reading), documents, comments |
-| `MarkdownEditor`, `MDStyle`, `EditorProxy` | MarkdownEditor.swift | Note editing |
+| `MarkdownEditor`, `MDStyle`, `MarkdownTyping`, `MarkerFragment`, `EditorProxy`, `FormatBar` | MarkdownEditor.swift | Note editing: formatted while typing (TextKit 2), marks hidden except on the edited line, bullets and tick boxes drawn, the Markdown never rewritten |
+| `NoteSegments` | NoteSegments.swift | Notes with tables: text parts edit, tables stay fixed blocks, joined back byte for byte |
+| `Motion.snappy`, `.zoomSource`, `.zoomTransition`, `.rollingNumber` | Motion.swift | Springs that calm down with Reduce Motion, zoom transitions, rolling counts |
+| `DelayedSpinner` | Components.swift | Loading that only shows after 0.4 s |
+| `.controlRow()` | Components.swift | Switch rows at the top of lists |
 | `RemoteImage`, `ImageStore` | RemoteImage.swift | Photos in notes, messages, inspiration, artwork |
 | `TaskRow`, `TaskMenu`, `.taskRowActions` | Features/Tasks | Dashboard, projects, all tasks |
 | `FocusRing`, `FocusControls` | Features/Focus/FocusScreen.swift | Pomodoro, Timer, Sprint |

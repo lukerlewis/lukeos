@@ -66,6 +66,7 @@
 		9AFCB62D7AFA686DE2C84D4F /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9F429D8FCD80C44BC95E2A /* Components.swift */; };
 		9BAB1809D09B783C8EA64032 /* SmartEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098058FF06B81882280685AE /* SmartEntry.swift */; };
 		9C2495C994D29770A3DDBE2F /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
+		9C7C08F0AA526A380BAF09DB /* NoteSegments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607793720F40DE07F244CEFA /* NoteSegments.swift */; };
 		A34332821F1B1714A9160FFA /* InspirationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E9C0D3FA1B38DF347D0649 /* InspirationScreen.swift */; };
 		A3E986A4836151972D673C9A /* LukeOSShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E4132CBAEC848204B8501F91 /* LukeOSShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A4965AB914917049173B5600 /* LukeOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */; };
@@ -99,6 +100,7 @@
 		ECAD8123915B37929BA23CC1 /* DashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */; };
 		ECC99BBFE2E5AA4D835CC12E /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 760A8370538F04D01075FB2D /* Intents.swift */; };
 		ED194374EA744BABF0B037A1 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0583F8BFA35C668F3A8206D /* MarkdownView.swift */; };
+		ED395E52CAADA9D98ED3CC29 /* MarkdownEditorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9974DEC44C764ADA9D0FFB69 /* MarkdownEditorTests.swift */; };
 		F174C81EEEEEA95C303BB284 /* Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73CADE5D302CDEDEECC713F7 /* Push.swift */; };
 		F98F60E63DFFD314E5C7F302 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
 		FA59E5A4A66A2005FC7C5F02 /* FocusActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */; };
@@ -171,6 +173,7 @@
 		5851D0E22377F21FFE031CD9 /* LukeOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LukeOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5C9F429D8FCD80C44BC95E2A /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardScreen.swift; sourceTree = "<group>"; };
+		607793720F40DE07F244CEFA /* NoteSegments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteSegments.swift; sourceTree = "<group>"; };
 		614355A0BF4CA86EB170F69E /* Comments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Comments.swift; sourceTree = "<group>"; };
 		6A8EC3AA2EB8960E29672F39 /* MessagesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesScreen.swift; sourceTree = "<group>"; };
 		7224A97F06EDA2C071E93974 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
@@ -191,6 +194,7 @@
 		9306D2188BBAD189C914BE0B /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
 		96C3AC3B4AC80884C2BEE92C /* WidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
 		97C2BD9EE1BCF23629CCF015 /* ProjectScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectScreen.swift; sourceTree = "<group>"; };
+		9974DEC44C764ADA9D0FFB69 /* MarkdownEditorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownEditorTests.swift; sourceTree = "<group>"; };
 		99ADE5FF7FD5F237CA013E70 /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		9A6A09186897DD3063034BD7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LukeOSApp.swift; sourceTree = "<group>"; };
@@ -302,6 +306,7 @@
 			isa = PBXGroup;
 			children = (
 				CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */,
+				9974DEC44C764ADA9D0FFB69 /* MarkdownEditorTests.swift */,
 				FE36D3AC0DBA7575855B7E05 /* recorded-writes.jsonl */,
 			);
 			path = Tests;
@@ -316,6 +321,7 @@
 				C90D157E9AF283347F38DDE4 /* MarkdownEditor.swift */,
 				C0583F8BFA35C668F3A8206D /* MarkdownView.swift */,
 				87457A944616272FDBF56D8B /* Motion.swift */,
+				607793720F40DE07F244CEFA /* NoteSegments.swift */,
 				26D624DE18EA302A879144B4 /* README.md */,
 				B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */,
 				C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */,
@@ -683,6 +689,7 @@
 				387977BEC44AA12888468CD9 /* Motion.swift in Sources */,
 				C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */,
 				196376AC30392F010178CB3B /* NoteScreen.swift in Sources */,
+				9C7C08F0AA526A380BAF09DB /* NoteSegments.swift in Sources */,
 				B198BD097D0212901A8C9D14 /* NotesModels.swift in Sources */,
 				8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */,
 				819A2BCF2F877EB70B99FC8F /* NowPlaying.swift in Sources */,
@@ -715,6 +722,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FADA218B56BBB17D0F277F8F /* DecodingTests.swift in Sources */,
+				ED395E52CAADA9D98ED3CC29 /* MarkdownEditorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

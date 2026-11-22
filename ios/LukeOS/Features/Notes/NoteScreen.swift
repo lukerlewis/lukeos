@@ -31,10 +31,15 @@ struct NoteScreen: View {
     @State private var proxy = EditorProxy()
     @State private var store = TaskStore.shared
     @State private var folders: [Folder] = []
-    /// Existing notes open rendered; a tap on the text starts editing.
+    /// The keyboard is up in one of the note's text parts.
     @State private var editing = false
 
-    private var editable: Bool { note.map { !$0.isHTML && Markdown.isEditable($0.content) } ?? false }
+    /// Markdown notes are edited (tables stay fixed blocks); saved HTML pages open on the web.
+    private var editable: Bool { note.map { !$0.isHTML && !NoteSegments.hasRawHTML($0.content) } ?? false }
+    /// The note split into text to edit and tables that stay as they are.
+    private var segments: [NoteSegments.Segment] { NoteSegments.split(text) }
+    /// A change to this note is waiting to be sent (offline).
+    private var unsent: Bool { Outbox.shared.items.contains { $0.name == "update_note" && $0.input["id"]?.stringValue == noteId } }
 
     var body: some View {
         ScrollView {
@@ -47,32 +52,30 @@ struct NoteScreen: View {
                             .foregroundStyle(Color.ink)
                             .onChange(of: title) { _, _ in schedule() }
                         meta(note)
-                        if editing || text.isEmpty {
-                            MarkdownEditor(text: $text, autoFocus: true, onPhoto: { pickingPhoto = true }, proxy: proxy,
-                                           onEndEditing: { withAnimation(Motion.snappy) { editing = false } })
-                        
-                        } else {
-                            MarkdownView(text: text) { line in
-                                text = Markdown.toggleCheck(text, line: line)
-                                schedule()
+                        ForEach(Array(segments.enumerated()), id: \.offset) { i, segment in
+                            switch segment {
+                            case .text(let part):
+                                MarkdownEditor(
+                                    text: Binding(get: { part }, set: { setSegment(i, $0) }),
+                                    autoFocus: note.title.isEmpty && note.content.isEmpty && i == 0,
+                                    onPhoto: { pickingPhoto = true }, proxy: i == 0 ? proxy : nil,
+                                    onBeginEditing: { editing = true }, onEndEditing: { editing = false }
+                                )
+                            case .table(let table):
+                                VStack(alignment: .leading, spacing: Space.s) {
+                                    MarkdownView(text: table)
+                                    Button("Edit table on the web") { showWeb = true }
+                                        .font(.geist(.meta, medium: true))
+                                        .foregroundStyle(Color.mutedText)
+                                }
                             }
-                            .contentShape(.rect)
-                            .onTapGesture { withAnimation(Motion.snappy) { editing = true } }
-                            Color.clear.frame(height: 200).contentShape(.rect)
-                                .onTapGesture { withAnimation(Motion.snappy) { editing = true } }
                         }
                     } else {
                         Text(note.title.isEmpty ? "Untitled" : note.title)
                             .textStyle(.title, medium: true, color: .ink)
                         meta(note)
-                        if note.isHTML {
-                            Button { showWeb = true } label: {
-                                Label("Open page", systemImage: "safari")
-                            }
+                        Button { showWeb = true } label: { Label("Open page", systemImage: "safari") }
                             .buttonStyle(.bordered)
-                        } else {
-                            MarkdownView(text: note.content)
-                        }
                     }
                 } else if failed {
                     EmptyNote(text: "Couldn't open this note.", symbol: "exclamationmark.triangle")
@@ -92,19 +95,18 @@ struct NoteScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                if editable, editing {
-                    Button("Done") { hideKeyboard(); editing = false }
-                        .font(.geist(.control, medium: true))
-                } else if editable {
-                    Text(saved ? "Saved" : "Saving…").textStyle(.meta, color: .mutedText)
-                        .fixedSize()
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
                 Button { showComments = true } label: { Image(systemName: "bubble") }
                     .accessibilityLabel("Comments")
             }
             ToolbarItem(placement: .topBarTrailing) { menu }
+            if editing {
+                // A separate confirm that puts the keyboard away; saving happens on its own.
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .confirm) { hideKeyboard() }
+                        .accessibilityLabel("Done")
+                }
+            }
         }
         .sheet(isPresented: $showComments) {
             NavigationStack {
@@ -123,15 +125,14 @@ struct NoteScreen: View {
     }
 
     private func meta(_ note: Note) -> some View {
-        HStack(spacing: Space.s) {
-            if let p = note.project { ProjectChip(name: p.name, color: p.color) }
-            if let f = note.folder { Tag(f.name, symbol: "folder") }
-            ClaudeMark(madeBy: note.madeBy)
-            if !editable, !note.isHTML {
-                Spacer()
-                Button("Edit on the web") { showWeb = true }
-                    .font(.geist(.meta, medium: true))
-                    .foregroundStyle(Color.subtleText)
+        VStack(alignment: .leading, spacing: Space.s) {
+            HStack(spacing: Space.s) {
+                if let p = note.project { ProjectChip(name: p.name, color: p.color) }
+                if let f = note.folder { Tag(f.name, symbol: "folder") }
+                ClaudeMark(madeBy: note.madeBy)
+            }
+            if unsent {
+                Text("Not saved yet").textStyle(.meta, color: .mutedText)
             }
         }
     }
@@ -187,6 +188,15 @@ struct NoteScreen: View {
             title = n.title
             text = n.content
         }
+    }
+
+    /// One part of the note changed: put the note back together around the tables, byte for byte.
+    private func setSegment(_ i: Int, _ value: String) {
+        var parts = segments
+        guard parts.indices.contains(i) else { return }
+        parts[i] = .text(value)
+        text = NoteSegments.join(parts)
+        schedule()
     }
 
     private func schedule() {
