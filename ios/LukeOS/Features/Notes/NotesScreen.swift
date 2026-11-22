@@ -12,6 +12,7 @@ struct NotesScreen: View {
                 .navigationDestination(for: NoteRoute.self) { route in
                     switch route {
                     case .note(let id): NoteScreen(noteId: id)
+                    case .new(let id): NoteScreen(noteId: id, isNew: true)
                     case .folder(let f): NotesList(folder: f)
                     }
                 }
@@ -19,7 +20,14 @@ struct NotesScreen: View {
         .onChange(of: app.pendingLink, initial: true) { _, _ in
             if let link = app.take("/notes/") {
                 let id = String(link.dropFirst("/notes/".count)).components(separatedBy: "?").first ?? ""
-                if !id.isEmpty { path.append(NoteRoute.note(id)) }
+                if id == "new" {
+                    // The New note widget: a fresh note with the keyboard up (thrown away if left empty).
+                    Task {
+                        let id = await NotesModel(folder: nil).newNote()
+                        path = NavigationPath()
+                        path.append(NoteRoute.new(id))
+                    }
+                } else if !id.isEmpty { path.append(NoteRoute.note(id)) }
             }
         }
     }
@@ -27,6 +35,8 @@ struct NotesScreen: View {
 
 enum NoteRoute: Hashable {
     case note(String)
+    /// Made just now, so it may be thrown away if left empty.
+    case new(String)
     case folder(Folder)
 }
 

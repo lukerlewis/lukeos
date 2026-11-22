@@ -229,12 +229,15 @@ final class TaskStore {
 
     /// What the Today widget shows, kept in the shared container.
     func saveForWidget() {
-        let todays = tasks.filter { $0.bucket == .today && $0.status != .done }
-        let snapshot = WidgetSnapshot(today: today, area: AppModel.shared.area, tasks: todays.prefix(12).map {
-            WidgetSnapshot.Item(id: $0.id, title: $0.title, status: $0.status, area: $0.area, project: $0.project?.name, projectColor: $0.project?.color, dueDate: $0.dueDate)
+        // In the dashboard's order, so each widget lists them as the app does.
+        let todays = sorted(tasks.filter { $0.bucket == .today && $0.status != .done })
+        let snapshot = WidgetSnapshot(today: today, area: AppModel.shared.area, tasks: todays.prefix(40).map {
+            WidgetSnapshot.Item(id: $0.id, title: $0.title, status: $0.status, area: $0.area, project: $0.project?.name,
+                                projectColor: $0.project?.color, dueDate: $0.dueDate, timeOfDay: $0.timeOfDay)
         })
         snapshot.save()
         WidgetCenter.shared.reloadTimelines(ofKind: "TodayTasks")
+        WidgetCenter.shared.reloadTimelines(ofKind: "DayPlan")
     }
 }
 

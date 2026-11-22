@@ -12,9 +12,12 @@ struct TodayEntry: TimelineEntry {
 
 extension WidgetSnapshot {
     static let sample = WidgetSnapshot(today: Day.today(), area: .life, tasks: [
-        .init(id: "1", title: "Run 5k", status: .todo, area: .life),
-        .init(id: "2", title: "Call the dentist", status: .todo, area: .life),
-        .init(id: "3", title: "Order groceries", status: .todo, area: .life),
+        .init(id: "1", title: "Run 5k", status: .todo, area: .life, timeOfDay: .morning),
+        .init(id: "2", title: "Stretch", status: .todo, area: .life, timeOfDay: .morning),
+        .init(id: "3", title: "Call the dentist", status: .todo, area: .life, timeOfDay: .day),
+        .init(id: "4", title: "Order groceries", status: .todo, area: .life, timeOfDay: .day),
+        .init(id: "5", title: "Pick up dry cleaning", status: .todo, area: .life, timeOfDay: .day),
+        .init(id: "6", title: "Read for 20 minutes", status: .todo, area: .life, timeOfDay: .evening),
     ])
 }
 
@@ -94,6 +97,143 @@ struct TodayWidgetView: View {
             }
             Spacer(minLength: 0)
         }
+    }
+}
+
+// MARK: Day plan
+
+/// The large widget: Life's Today list in its Morning, Day and Evening cards, each task tickable.
+struct DayPlanWidgetView: View {
+    var entry: TodayEntry
+    /// Rows that fit under the three headings on a large widget.
+    var rowBudget = 8
+
+    private var tasks: [WidgetSnapshot.Item] {
+        (entry.snapshot?.tasks ?? []).filter { $0.area == .life && $0.status != .done }
+    }
+    private func tasks(_ time: TimeOfDay) -> [WidgetSnapshot.Item] {
+        tasks.filter { ($0.timeOfDay ?? .day) == time }
+    }
+
+    /// How many rows each part gets: turn about, so a long Morning never hides Evening.
+    private var allotment: [TimeOfDay: Int] {
+        var left = rowBudget
+        var n: [TimeOfDay: Int] = [:]
+        let totals = Dictionary(uniqueKeysWithValues: TimeOfDay.allCases.map { ($0, tasks($0).count) })
+        while left > 0 {
+            var gave = false
+            for t in TimeOfDay.allCases where left > 0 && n[t, default: 0] < totals[t]! {
+                n[t, default: 0] += 1; left -= 1; gave = true
+            }
+            if !gave { break }
+        }
+        return n
+    }
+
+    var body: some View {
+        let allot = allotment
+        VStack(alignment: .leading, spacing: Space.m) {
+            HStack {
+                Text("Today").font(.geist(.heading, medium: true)).tracking(-0.68).foregroundStyle(Color.ink)
+                Text("\(tasks.count)").font(.geist(.meta)).foregroundStyle(Color.mutedText).contentTransition(.numericText())
+                Spacer()
+                Link(destination: URL(string: "lukeos://add-task?area=life")!) {
+                    Image(systemName: "plus").font(.icon(.meta)).foregroundStyle(Color.ink)
+                        .frame(width: Size.iconColumn, height: Size.iconColumn).background(Color.muted, in: .circle)
+                }
+            }
+            if tasks.isEmpty {
+                Spacer()
+                Text("All done").font(.geist(.preview)).foregroundStyle(Color.mutedText).frame(maxWidth: .infinity)
+                Spacer()
+            } else {
+                ForEach(TimeOfDay.allCases, id: \.self) { time in
+                    part(time, limit: allot[time] ?? 0)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func part(_ time: TimeOfDay, limit: Int) -> some View {
+        let all = tasks(time)
+        return VStack(alignment: .leading, spacing: 0) {
+            Link(destination: URL(string: "lukeos://add-task?area=life&time=\(time.rawValue)")!) {
+                HStack(spacing: Space.s) {
+                    Image(systemName: time.symbol).font(.icon(.meta)).foregroundStyle(Color.icon)
+                        .frame(width: Size.tick - 4)
+                    Text(time.label).font(.geist(.meta, medium: true)).foregroundStyle(Color.mutedText)
+                    if all.count > limit {
+                        Text("+\(all.count - limit)").font(.geist(.meta)).foregroundStyle(Color.mutedText)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            .padding(.bottom, all.isEmpty ? 0 : Space.xs)
+            ForEach(all.prefix(limit)) { t in
+                HStack(spacing: Space.m) {
+                    Button(intent: TickTaskIntent(taskId: t.id)) {
+                        Circle().strokeBorder(t.status == .doing ? Color.ink : Color.icon, lineWidth: 1.5)
+                            .frame(width: Size.tick - 4, height: Size.tick - 4)
+                    }
+                    .buttonStyle(.plain)
+                    Link(destination: URL(string: "lukeos://open?path=/?task=\(t.id)")!) {
+                        Text(t.title).font(.geist(.preview)).foregroundStyle(Color.text).lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .frame(height: 30)
+                .transition(.opacity)
+            }
+        }
+    }
+}
+
+// MARK: Quick add
+
+/// One tap into a new task or a new note, with the keyboard already up.
+struct QuickAddWidgetView: View {
+    enum Kind { case task, note }
+    var kind: Kind
+    var familyOverride: WidgetFamily?
+    @Environment(\.widgetFamily) private var envFamily
+    private var family: WidgetFamily { familyOverride ?? envFamily }
+
+    private var url: URL { URL(string: kind == .task ? "lukeos://add-task" : "lukeos://new-note")! }
+    private var symbol: String { kind == .task ? "plus" : "square.and.pencil" }
+    private var label: String { kind == .task ? "New task" : "New note" }
+
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                Image(systemName: symbol).font(.icon(.transport, weight: .medium))
+            }
+            .widgetURL(url)
+        case .systemMedium where kind == .task:
+            // Straight into Morning, Day or Evening.
+            HStack(spacing: Space.s) {
+                ForEach(TimeOfDay.allCases, id: \.self) { time in
+                    Link(destination: URL(string: "lukeos://add-task?area=life&time=\(time.rawValue)")!) {
+                        tile(symbol: time.symbol, label: time.label)
+                    }
+                }
+            }
+        default:
+            tile(symbol: symbol, label: label).widgetURL(url)
+        }
+    }
+
+    private func tile(symbol: String, label: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image(systemName: symbol).font(.icon(.bar, weight: .medium)).foregroundStyle(Color.ink)
+                .frame(width: 44, height: 44).background(Color.muted, in: .circle)
+            Spacer(minLength: 0)
+            Text(label).font(.geist(.control, medium: true)).foregroundStyle(Color.ink)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 }
 

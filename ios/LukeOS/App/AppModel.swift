@@ -72,8 +72,12 @@ final class AppModel {
             if let path = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "path" })?.value {
                 open(path)
             } else if url.host() == "add-task" {
+                // lukeos://add-task, optionally ?area=life&time=morning (the widgets).
                 tab = .dashboard
-                pendingLink = "/?new=task"
+                pendingLink = "/?new=task" + (url.query().map { "&\($0)" } ?? "")
+            } else if url.host() == "new-note" {
+                tab = .notes
+                pendingLink = "/notes/new"
             } else if let host = url.host() {
                 // lukeos://task/<id>, lukeos://note/<id>, lukeos://document/<id>, lukeos://messages
                 let id = url.pathComponents.dropFirst().first ?? ""

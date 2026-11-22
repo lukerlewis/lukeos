@@ -271,6 +271,8 @@ struct TaskEditor: View {
 struct NewTaskSheet: View {
     var area: Area
     var base: Input = [:]
+    /// The Morning/Day/Evening (or lane) to start on, e.g. from a widget.
+    var startSlot: String? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
     @State private var ignored: Set<String> = []
@@ -333,7 +335,7 @@ struct NewTaskSheet: View {
         .presentationDetents([.medium, .large])
         .onAppear {
             focused = true
-            slot = area == .life ? "day" : "noise"
+            slot = startSlot ?? (area == .life ? "day" : "noise")
         }
     }
 

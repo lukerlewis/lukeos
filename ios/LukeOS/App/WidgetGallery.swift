@@ -14,6 +14,16 @@ struct WidgetGallery: View {
                     tile(TodayWidgetView(entry: entry, familyOverride: .accessoryRectangular).foregroundStyle(.white), width: 170, height: 76, dark: true)
                 }
                 tile(TodayWidgetView(entry: entry, familyOverride: .systemMedium), width: 364, height: 170)
+                tile(DayPlanWidgetView(entry: entry), width: 364, height: 382)
+                HStack(alignment: .top, spacing: Space.l) {
+                    tile(QuickAddWidgetView(kind: .task, familyOverride: .systemSmall), width: 170, height: 170)
+                    tile(QuickAddWidgetView(kind: .note, familyOverride: .systemSmall), width: 170, height: 170)
+                }
+                tile(QuickAddWidgetView(kind: .task, familyOverride: .systemMedium), width: 364, height: 170)
+                HStack(spacing: Space.l) {
+                    QuickAddWidgetView(kind: .task, familyOverride: .accessoryCircular).foregroundStyle(.white).frame(width: 76, height: 76)
+                    QuickAddWidgetView(kind: .note, familyOverride: .accessoryCircular).foregroundStyle(.white).frame(width: 76, height: 76)
+                }
                 Text("Live Activity").textStyle(.heading, medium: true, color: .ink).padding(.top, Space.s)
                 FocusActivityView(state: .init(label: "Focus", endsAt: .now.addingTimeInterval(1260), startedAt: nil, pausedText: nil, countsUp: false, progressStart: .now.addingTimeInterval(-240)))
                     .padding(Space.l)
