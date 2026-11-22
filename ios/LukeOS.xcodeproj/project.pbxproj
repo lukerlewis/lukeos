@@ -41,6 +41,7 @@
 		7364E735007D69FC462C90F4 /* TaskRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 909E79DA6EF9590C9C1CD9FD /* TaskRow.swift */; };
 		75798F15A850FF3098D04B36 /* Geist-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */; };
 		7E6B1515FF44F4E75EFE29DD /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
+		819A2BCF2F877EB70B99FC8F /* NowPlaying.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5B4EE6AAF2908A4D409CAD4 /* NowPlaying.swift */; };
 		83088034108BCAD9FD3F7E85 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
 		8A9BE1E5B9C26A63708AD64C /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
 		8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F6D9064445EA0B033C63DD /* NotesScreen.swift */; };
@@ -71,6 +72,7 @@
 		DB7091FDC6C0D73AE635ABF4 /* LukeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */; };
 		DE8850984052BA4FBF917843 /* Geist-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */; };
 		E08CE4D2B53807E7DADBA355 /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
+		E91CFF853868A5365C31764E /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99ADE5FF7FD5F237CA013E70 /* AudioPlayer.swift */; };
 		E99D3E61ED06BD3EBD4EE4CE /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
 		ECAD8123915B37929BA23CC1 /* DashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */; };
 		ED194374EA744BABF0B037A1 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0583F8BFA35C668F3A8206D /* MarkdownView.swift */; };
@@ -153,6 +155,7 @@
 		8FFA2030A6359127F50C4901 /* Widgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widgets.swift; sourceTree = "<group>"; };
 		909E79DA6EF9590C9C1CD9FD /* TaskRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRow.swift; sourceTree = "<group>"; };
 		9306D2188BBAD189C914BE0B /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
+		99ADE5FF7FD5F237CA013E70 /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		9A6A09186897DD3063034BD7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LukeOSApp.swift; sourceTree = "<group>"; };
 		AABE02CA05ECDA1E61BCFFA4 /* Repo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repo.swift; sourceTree = "<group>"; };
@@ -173,6 +176,7 @@
 		D5809A8B8B13B2188B471B73 /* LukeOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LukeOS.entitlements; sourceTree = "<group>"; };
 		DC534031F9B58133C59F899B /* Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Appearance.swift; sourceTree = "<group>"; };
 		E4132CBAEC848204B8501F91 /* LukeOSShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E5B4EE6AAF2908A4D409CAD4 /* NowPlaying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlaying.swift; sourceTree = "<group>"; };
 		E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-MediumItalic.ttf"; sourceTree = "<group>"; };
 		ED62D3DC669FCDDBBC443602 /* Home.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Home.swift; sourceTree = "<group>"; };
 		F3A4BBA3095CC6D9FEA3B101 /* LukeOSTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LukeOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -381,7 +385,9 @@
 		C4DB6249A329CDA9BB651D72 /* Music */ = {
 			isa = PBXGroup;
 			children = (
+				99ADE5FF7FD5F237CA013E70 /* AudioPlayer.swift */,
 				FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */,
+				E5B4EE6AAF2908A4D409CAD4 /* NowPlaying.swift */,
 			);
 			path = Music;
 			sourceTree = "<group>";
@@ -567,6 +573,7 @@
 			files = (
 				3362AB0A775BEB2DFE987116 /* AppModel.swift in Sources */,
 				17F485B4711B1F3360E36862 /* Appearance.swift in Sources */,
+				E91CFF853868A5365C31764E /* AudioPlayer.swift in Sources */,
 				108EE03E4D1843B714921C25 /* BoardView.swift in Sources */,
 				1525F3F9F8E187D7AB1A991C /* Chips.swift in Sources */,
 				3255AAE332A0814CD453B793 /* Comments.swift in Sources */,
@@ -587,6 +594,7 @@
 				196376AC30392F010178CB3B /* NoteScreen.swift in Sources */,
 				B198BD097D0212901A8C9D14 /* NotesModels.swift in Sources */,
 				8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */,
+				819A2BCF2F877EB70B99FC8F /* NowPlaying.swift in Sources */,
 				F174C81EEEEEA95C303BB284 /* Push.swift in Sources */,
 				3688E35338B11F6B29A7893E /* QuickAdd.swift in Sources */,
 				CC1C270197956507A3B8566E /* RemoteImage.swift in Sources */,
