@@ -1,0 +1,181 @@
+{
+ "today": "2026-11-21",
+ "timeZone": "America/New_York",
+ "days": [
+  {
+   "date": "2026-11-15",
+   "seconds": 4500
+  },
+  {
+   "date": "2026-11-16",
+   "seconds": 3900
+  },
+  {
+   "date": "2026-11-17",
+   "seconds": 5400
+  },
+  {
+   "date": "2026-11-18",
+   "seconds": 0
+  },
+  {
+   "date": "2026-11-19",
+   "seconds": 6000
+  },
+  {
+   "date": "2026-11-20",
+   "seconds": 4620
+  },
+  {
+   "date": "2026-11-21",
+   "seconds": 5700
+  }
+ ],
+ "totalSeconds": 30120,
+ "sessions": [
+  {
+   "id": "0b39ba7c-c4fa-42fe-b899-dfea2a0fa8ca",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-15T14:35:00.000Z",
+   "endedAt": "2026-11-15T15:00:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-15"
+  },
+  {
+   "id": "ef8b9870-299c-4cc1-8d51-679e5a7bdb68",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-15T15:47:00.000Z",
+   "endedAt": "2026-11-15T16:12:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-15"
+  },
+  {
+   "id": "fd437abb-efc7-44ea-a994-4cfb7285f45e",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-15T16:59:00.000Z",
+   "endedAt": "2026-11-15T17:24:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-15"
+  },
+  {
+   "id": "095793c1-a797-4b3f-9f9e-b5db93f562bc",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-16T14:35:00.000Z",
+   "endedAt": "2026-11-16T15:00:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-16"
+  },
+  {
+   "id": "64ffa22e-6760-4852-95bb-55c02b3d00e6",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-16T15:47:00.000Z",
+   "endedAt": "2026-11-16T16:12:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-16"
+  },
+  {
+   "id": "3d66ae62-11e7-46ea-9b65-3f5329a0a417",
+   "kind": "timer",
+   "label": null,
+   "startedAt": "2026-11-16T17:09:00.000Z",
+   "endedAt": "2026-11-16T17:24:00.000Z",
+   "seconds": 900,
+   "day": "2026-11-16"
+  },
+  {
+   "id": "a89f581d-5f32-481f-8c71-8082060c4bdb",
+   "kind": "sprint",
+   "label": "Finish the Helix case study, Design three thumbnail options",
+   "startedAt": "2026-11-17T13:30:00.000Z",
+   "endedAt": "2026-11-17T15:00:00.000Z",
+   "seconds": 5400,
+   "day": "2026-11-17"
+  },
+  {
+   "id": "410e6984-4706-4e13-9c93-bc194363f594",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-19T14:35:00.000Z",
+   "endedAt": "2026-11-19T15:00:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-19"
+  },
+  {
+   "id": "3364da5c-5b40-4703-9f8e-3d05044780d2",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-19T15:47:00.000Z",
+   "endedAt": "2026-11-19T16:12:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-19"
+  },
+  {
+   "id": "8dafffef-16fa-46bb-b866-5dde1918e80f",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-19T16:59:00.000Z",
+   "endedAt": "2026-11-19T17:24:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-19"
+  },
+  {
+   "id": "6df54acb-f24d-40de-9396-9ee98b7e5b1f",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-19T18:11:00.000Z",
+   "endedAt": "2026-11-19T18:36:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-19"
+  },
+  {
+   "id": "b395124a-4839-40b6-a9d9-c0eef01bd859",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-20T14:35:00.000Z",
+   "endedAt": "2026-11-20T15:00:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-20"
+  },
+  {
+   "id": "940d65e8-c76a-4e02-a750-2d3e3cfd8045",
+   "kind": "timer",
+   "label": "Case study",
+   "startedAt": "2026-11-20T15:20:00.000Z",
+   "endedAt": "2026-11-20T16:12:00.000Z",
+   "seconds": 3120,
+   "day": "2026-11-20"
+  },
+  {
+   "id": "5f8f365a-d456-413d-846a-de5de55c6dbf",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-21T14:35:00.000Z",
+   "endedAt": "2026-11-21T15:00:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-21"
+  },
+  {
+   "id": "8d172c9e-72b0-4f36-b916-b8657092fcf9",
+   "kind": "pomodoro",
+   "label": null,
+   "startedAt": "2026-11-21T15:47:00.000Z",
+   "endedAt": "2026-11-21T16:12:00.000Z",
+   "seconds": 1500,
+   "day": "2026-11-21"
+  },
+  {
+   "id": "37f2268d-7541-4bae-bfa2-91a0bd34f937",
+   "kind": "sprint",
+   "label": "Write the script for the Liquid Glass video",
+   "startedAt": "2026-11-21T16:39:00.000Z",
+   "endedAt": "2026-11-21T17:24:00.000Z",
+   "seconds": 2700,
+   "day": "2026-11-21"
+  }
+ ]
+}

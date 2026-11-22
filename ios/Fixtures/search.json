@@ -1,0 +1,114 @@
+[
+ {
+  "type": "inspiration",
+  "id": "fa3d0929-d7aa-42a6-9660-4ab77e9dec5a",
+  "title": "Glass tab bar",
+  "snippet": null,
+  "status": null,
+  "dueDate": null,
+  "format": "image",
+  "project": null,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "updatedAt": "2026-11-22T02:09:01.841Z"
+ },
+ {
+  "type": "note",
+  "id": "a1f44d5d-8de9-4b1f-8446-cbcd463bf195",
+  "title": "Liquid Glass notes",
+  "snippet": "Glass sits above content, never inside it. Bars, sheets and floating buttons get it. Cards do not. Tab bar shrinking on scroll The mini player above the tab...",
+  "status": null,
+  "dueDate": null,
+  "format": "markdown",
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "hex": "#2563eb"
+  },
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "updatedAt": "2026-11-22T02:08:59.706Z"
+ },
+ {
+  "type": "task",
+  "id": "7ffc6a13-a2cd-4d97-b954-1ad110ff931f",
+  "title": "Write the script for the Liquid Glass video",
+  "snippet": null,
+  "status": "todo",
+  "dueDate": "2026-11-21",
+  "format": null,
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "hex": "#2563eb"
+  },
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "updatedAt": "2026-11-22T02:08:59.501Z"
+ },
+ {
+  "type": "document",
+  "id": "bd4a6a8a-8bab-4d78-8759-b245dac82a2c",
+  "title": "Workshop blurb",
+  "snippet": "Designing with glass A hands-on hour on Apple's Liquid Glass: what it is for, and where to leave it out.",
+  "status": null,
+  "dueDate": null,
+  "format": null,
+  "project": {
+   "id": "6fa76946-91d7-4b3c-8d22-a9221ee14644",
+   "name": "Career",
+   "hex": "#16a34a"
+  },
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "updatedAt": "2026-11-22T02:08:59.969Z"
+ },
+ {
+  "type": "document",
+  "id": "550ad944-228d-4573-a867-a68bd880f39f",
+  "title": "Content ideas: week of 16 November",
+  "snippet": "Content ideas 1. Liquid Glass in a weekend Luke rebuilt his own app with Apple's new look. Show the before and after. 2....",
+  "status": null,
+  "dueDate": null,
+  "format": null,
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "hex": "#2563eb"
+  },
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": "Claude check-in"
+  },
+  "updatedAt": "2026-11-22T02:08:59.951Z"
+ },
+ {
+  "type": "document",
+  "id": "93e1e741-f28f-4cf3-840e-362a0c87314b",
+  "title": "LukeOS iPhone app plan",
+  "snippet": "...n of LukeOS, built in Swift with Liquid Glass. Build order Step What Luke gets 1 Dashboard 2 Notes 3 Music Sign-in Luke...",
+  "status": null,
+  "dueDate": null,
+  "format": null,
+  "project": null,
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": null
+  },
+  "updatedAt": "2026-11-22T02:08:59.936Z"
+ }
+]

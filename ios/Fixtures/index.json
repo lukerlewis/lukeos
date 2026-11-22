@@ -1,0 +1,279 @@
+[
+ {
+  "file": "get_app_info.json",
+  "op": "get_app_info",
+  "input": {}
+ },
+ {
+  "file": "get_today.json",
+  "op": "get_today",
+  "input": {}
+ },
+ {
+  "file": "list_tasks.json",
+  "op": "list_tasks",
+  "input": {}
+ },
+ {
+  "file": "list_tasks.done.json",
+  "op": "list_tasks",
+  "input": {
+   "status": "done",
+   "limit": 200
+  }
+ },
+ {
+  "file": "list_tasks.project.json",
+  "op": "list_tasks",
+  "input": {
+   "projectId": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "includeDone": true
+  }
+ },
+ {
+  "file": "get_task.json",
+  "op": "get_task",
+  "input": {
+   "id": "7ffc6a13-a2cd-4d97-b954-1ad110ff931f"
+  }
+ },
+ {
+  "file": "get_task.life.json",
+  "op": "get_task",
+  "input": {
+   "id": "3f7e3471-6acc-4898-a6e9-a0530a3040b7"
+  }
+ },
+ {
+  "file": "get_board.json",
+  "op": "get_board",
+  "input": {}
+ },
+ {
+  "file": "get_dashboard.json",
+  "op": "get_dashboard",
+  "input": {}
+ },
+ {
+  "file": "list_projects.json",
+  "op": "list_projects",
+  "input": {}
+ },
+ {
+  "file": "get_project.json",
+  "op": "get_project",
+  "input": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a"
+  }
+ },
+ {
+  "file": "list_notes.json",
+  "op": "list_notes",
+  "input": {}
+ },
+ {
+  "file": "list_notes.folder.json",
+  "op": "list_notes",
+  "input": {
+   "folderId": "e4a1f67a-467f-42be-af41-db50ad35c42e"
+  }
+ },
+ {
+  "file": "list_notes.search.json",
+  "op": "list_notes",
+  "input": {
+   "search": "glass"
+  }
+ },
+ {
+  "file": "get_note.json",
+  "op": "get_note",
+  "input": {
+   "id": "a1f44d5d-8de9-4b1f-8446-cbcd463bf195"
+  }
+ },
+ {
+  "file": "get_note.table.json",
+  "op": "get_note",
+  "input": {
+   "id": "0392ec81-44da-4d8c-9d2c-c80be6bf75b0"
+  }
+ },
+ {
+  "file": "get_note.html.json",
+  "op": "get_note",
+  "input": {
+   "id": "1d68c31b-8881-4c8b-a4e6-c29b8d5b4b4f"
+  }
+ },
+ {
+  "file": "get_note.checklist.json",
+  "op": "get_note",
+  "input": {
+   "id": "07873f1c-a1a7-41f3-a77e-f4f8297ba067"
+  }
+ },
+ {
+  "file": "list_folders.json",
+  "op": "list_folders",
+  "input": {}
+ },
+ {
+  "file": "list_documents.json",
+  "op": "list_documents",
+  "input": {}
+ },
+ {
+  "file": "get_document.json",
+  "op": "get_document",
+  "input": {
+   "id": "93e1e741-f28f-4cf3-840e-362a0c87314b"
+  }
+ },
+ {
+  "file": "list_comments.task.json",
+  "op": "list_comments",
+  "input": {
+   "targetType": "task",
+   "targetId": "7ffc6a13-a2cd-4d97-b954-1ad110ff931f"
+  }
+ },
+ {
+  "file": "list_comments.document.json",
+  "op": "list_comments",
+  "input": {
+   "targetType": "document",
+   "targetId": "93e1e741-f28f-4cf3-840e-362a0c87314b"
+  }
+ },
+ {
+  "file": "list_comments.note.json",
+  "op": "list_comments",
+  "input": {
+   "targetType": "note",
+   "targetId": "715ab7af-c108-4828-b05c-74e6013a735c"
+  }
+ },
+ {
+  "file": "list_comments.open.json",
+  "op": "list_comments",
+  "input": {
+   "open": true
+  }
+ },
+ {
+  "file": "list_messages.json",
+  "op": "list_messages",
+  "input": {}
+ },
+ {
+  "file": "get_focus.json",
+  "op": "get_focus",
+  "input": {}
+ },
+ {
+  "file": "get_focus_stats.json",
+  "op": "get_focus_stats",
+  "input": {
+   "days": 7
+  }
+ },
+ {
+  "file": "get_focus_stats.30.json",
+  "op": "get_focus_stats",
+  "input": {
+   "days": 30
+  }
+ },
+ {
+  "file": "list_episodes.json",
+  "op": "list_episodes",
+  "input": {}
+ },
+ {
+  "file": "list_playlists.json",
+  "op": "list_playlists",
+  "input": {}
+ },
+ {
+  "file": "get_playlist.json",
+  "op": "get_playlist",
+  "input": {
+   "id": "86940421-621c-4320-bc8b-f9ed637a1f07"
+  }
+ },
+ {
+  "file": "get_playlist.focus.json",
+  "op": "get_playlist",
+  "input": {
+   "id": "c8aa4fac-7767-4ee2-95eb-c706d4df3c5a"
+  }
+ },
+ {
+  "file": "get_playlist.empty.json",
+  "op": "get_playlist",
+  "input": {
+   "id": "49350c1c-6bbc-4edd-9385-fb09582632dd"
+  }
+ },
+ {
+  "file": "list_inspiration.json",
+  "op": "list_inspiration",
+  "input": {}
+ },
+ {
+  "file": "list_inspiration_tags.json",
+  "op": "list_inspiration_tags",
+  "input": {}
+ },
+ {
+  "file": "get_inspiration.json",
+  "op": "get_inspiration",
+  "input": {
+   "id": "fa3d0929-d7aa-42a6-9660-4ab77e9dec5a"
+  }
+ },
+ {
+  "file": "get_inspiration.quote.json",
+  "op": "get_inspiration",
+  "input": {
+   "id": "3941efdb-82c0-4467-9639-da8b6ee1822f"
+  }
+ },
+ {
+  "file": "list_links.json",
+  "op": "list_links",
+  "input": {
+   "projectId": "12ac250b-2a67-434d-a1c3-73eaca86549a"
+  }
+ },
+ {
+  "file": "search.json",
+  "op": "search",
+  "input": {
+   "query": "glass"
+  }
+ },
+ {
+  "file": "list_trash.json",
+  "op": "list_trash",
+  "input": {}
+ },
+ {
+  "file": "list_from_claude.json",
+  "op": "list_from_claude",
+  "input": {}
+ },
+ {
+  "file": "list_mentions.json",
+  "op": "list_mentions",
+  "input": {}
+ },
+ {
+  "file": "list_activity.json",
+  "op": "list_activity",
+  "input": {
+   "limit": 30
+  }
+ }
+]

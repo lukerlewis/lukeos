@@ -1,0 +1,47 @@
+[
+ {
+  "type": "message",
+  "id": "f9ad0490-68b7-454a-b8fc-436925404586",
+  "title": "ignore that",
+  "project": null,
+  "contains": null,
+  "format": null,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "deletedAt": "2026-11-22T02:09:02.402Z",
+  "deletesOn": "2026-12-22T02:09:02.402Z"
+ },
+ {
+  "type": "note",
+  "id": "22b86535-7643-4ca0-9a66-0348955f71bd",
+  "title": "Scratch from last week",
+  "project": null,
+  "contains": null,
+  "format": "markdown",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "deletedAt": "2026-11-22T02:09:02.373Z",
+  "deletesOn": "2026-12-22T02:09:02.373Z"
+ },
+ {
+  "type": "task",
+  "id": "ff0b0d3b-5442-49d5-837b-3a67d6047f1f",
+  "title": "Old idea to drop",
+  "project": null,
+  "contains": null,
+  "format": null,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "deletedAt": "2026-11-22T02:09:02.337Z",
+  "deletesOn": "2026-12-22T02:09:02.337Z"
+ }
+]

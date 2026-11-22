@@ -1,0 +1,118 @@
+[
+ {
+  "id": "7ffc6a13-a2cd-4d97-b954-1ad110ff931f",
+  "title": "Write the script for the Liquid Glass video",
+  "status": "todo",
+  "bucket": "today",
+  "dueDate": "2026-11-21",
+  "priority": "high",
+  "effort": "deep",
+  "area": "work",
+  "timeOfDay": "day",
+  "lane": "signal",
+  "notes": "Hooks to try:\n\n1. Apple just changed how every app looks\n2. I rebuilt my app in Liquid Glass in a weekend\n3. The one setting that makes glass readable\n\n- [ ] Cold open\n- [ ] Demo section\n- [ ] Close",
+  "repeat": null,
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "color": "blue",
+   "hex": "#2563eb"
+  },
+  "cardId": null,
+  "completedAt": null,
+  "createdAt": "2026-11-22T02:08:59.013Z",
+  "updatedAt": "2026-11-22T02:08:59.501Z",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  }
+ },
+ {
+  "id": "715a0efa-82ab-49b2-91c4-172b4ee6c692",
+  "title": "Design three thumbnail options",
+  "status": "todo",
+  "bucket": "today",
+  "dueDate": null,
+  "priority": "medium",
+  "effort": "focus",
+  "area": "work",
+  "timeOfDay": "day",
+  "lane": "signal",
+  "notes": null,
+  "repeat": null,
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "color": "blue",
+   "hex": "#2563eb"
+  },
+  "cardId": null,
+  "completedAt": null,
+  "createdAt": "2026-11-22T02:08:59.056Z",
+  "updatedAt": "2026-11-22T02:08:59.056Z",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  }
+ },
+ {
+  "id": "c3cdd50e-f2c1-4810-acd3-81c56bf82c8a",
+  "title": "Cut the 30 second version for Reels",
+  "status": "todo",
+  "bucket": "tomorrow",
+  "dueDate": null,
+  "priority": "medium",
+  "effort": "focus",
+  "area": "work",
+  "timeOfDay": "day",
+  "lane": "noise",
+  "notes": null,
+  "repeat": null,
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "color": "blue",
+   "hex": "#2563eb"
+  },
+  "cardId": null,
+  "completedAt": null,
+  "createdAt": "2026-11-22T02:08:59.172Z",
+  "updatedAt": "2026-11-22T02:08:59.172Z",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  }
+ },
+ {
+  "id": "3f851ef7-91eb-496f-871f-a3a8433ea38c",
+  "title": "Approve three new content ideas",
+  "status": "todo",
+  "bucket": "today",
+  "dueDate": null,
+  "priority": null,
+  "effort": null,
+  "area": "work",
+  "timeOfDay": "day",
+  "lane": "noise",
+  "notes": null,
+  "repeat": null,
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "color": "blue",
+   "hex": "#2563eb"
+  },
+  "cardId": null,
+  "completedAt": null,
+  "createdAt": "2026-11-22T02:08:59.314Z",
+  "updatedAt": "2026-11-22T02:08:59.314Z",
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": "Claude check-in"
+  }
+ }
+]

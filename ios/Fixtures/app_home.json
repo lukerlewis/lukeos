@@ -1,0 +1,34 @@
+{
+    "today": "2026-11-21",
+    "timeZone": "America/New_York",
+    "unreadMessages": 4,
+    "newFromClaude": 2,
+    "scratchPad": {
+        "id": "29da446d-0885-45f8-98c1-ef17237dc954",
+        "content": "Ask Dana about parking\n\n- [ ] Back up the laptop\n- [x] Cancel the old domain\n",
+        "updatedAt": "2026-11-22T02:10:41.703Z"
+    },
+    "dashboardView": {
+        "layout": "list",
+        "show": [
+            "todo",
+            "doing"
+        ],
+        "sort": [
+            {
+                "by": "priority",
+                "dir": "desc"
+            }
+        ]
+    },
+    "focus": {
+        "settings": {
+            "focusMinutes": 25,
+            "shortBreakMinutes": 5,
+            "longBreakMinutes": 15,
+            "roundsBeforeLongBreak": 4
+        },
+        "scratchPad": "Look up the Geist licence\nEmail Dana after this sprint"
+    },
+    "nextCheckIn": "2026-11-23T10:00:00.000Z"
+}

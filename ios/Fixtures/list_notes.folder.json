@@ -1,0 +1,47 @@
+[
+ {
+  "id": "a1f44d5d-8de9-4b1f-8446-cbcd463bf195",
+  "title": "Liquid Glass notes",
+  "format": "markdown",
+  "excerpt": "Glass sits above content, never inside it. Bars, sheets and floating buttons get it. Cards do not. Tab bar shrinking on scroll The mini player above the tab...",
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "color": "blue",
+   "hex": "#2563eb"
+  },
+  "folder": {
+   "id": "e4a1f67a-467f-42be-af41-db50ad35c42e",
+   "name": "Video research"
+  },
+  "pinned": true,
+  "pinnedAt": "2026-11-22T02:08:59.865Z",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:59.706Z",
+  "updatedAt": "2026-11-22T02:08:59.706Z"
+ },
+ {
+  "id": "d2d7a29a-85e3-4d7f-8acd-6233a7d30c95",
+  "title": "Hooks that worked this month",
+  "format": "markdown",
+  "excerpt": "Questions that name the viewer's problem A bold claim with a number Showing the end result first",
+  "project": null,
+  "folder": {
+   "id": "e4a1f67a-467f-42be-af41-db50ad35c42e",
+   "name": "Video research"
+  },
+  "pinned": false,
+  "pinnedAt": null,
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:59.839Z",
+  "updatedAt": "2026-11-22T02:08:59.839Z"
+ }
+]

@@ -1,0 +1,54 @@
+[
+ {
+  "id": "1b949c36-d270-4fe2-9597-f2bc2dbcbaa2",
+  "version": null,
+  "quote": null,
+  "pin": null,
+  "body": "@claude can you pull the three best hooks from the packaging doc into the notes here?",
+  "resolved": false,
+  "resolvedAt": null,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:59.348Z",
+  "target": {
+   "type": "task",
+   "id": "7ffc6a13-a2cd-4d97-b954-1ad110ff931f",
+   "title": "Write the script for the Liquid Glass video"
+  },
+  "replies": [
+   {
+    "id": "4c07702b-8bf6-4c58-957a-ca94b081a743",
+    "version": null,
+    "quote": null,
+    "pin": null,
+    "body": "Done. The three hooks are in the task's notes now. The BRENS one opens strongest, so it's first.",
+    "resolved": false,
+    "resolvedAt": null,
+    "madeBy": {
+     "kind": "agent",
+     "name": "Claude",
+     "routine": null
+    },
+    "createdAt": "2026-11-22T02:08:59.398Z"
+   },
+   {
+    "id": "67b306b0-b428-4892-8c1b-f426ba54e622",
+    "version": null,
+    "quote": null,
+    "pin": null,
+    "body": "Perfect, thanks.",
+    "resolved": false,
+    "resolvedAt": null,
+    "madeBy": {
+     "kind": "user",
+     "name": null,
+     "routine": null
+    },
+    "createdAt": "2026-11-22T02:08:59.467Z"
+   }
+  ]
+ }
+]

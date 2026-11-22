@@ -1,0 +1,18 @@
+{
+ "id": "93e1e741-f28f-4cf3-840e-362a0c87314b",
+ "title": "LukeOS iPhone app plan",
+ "excerpt": "A native iPhone version of LukeOS, built in Swift with Liquid Glass. Step What Luke gets 1 Dashboard 2 Notes 3 Music Luke types a code from Settings > Device...",
+ "content": "# LukeOS iPhone app plan\n\nA native iPhone version of LukeOS, built in Swift with Liquid Glass.\n\n## Build order\n\n| Step | What Luke gets |\n|---|---|\n| 1 | Dashboard |\n| 2 | Notes |\n| 3 | Music |\n\n## Sign-in\n\nLuke types a code from **Settings > Devices** once.\n\n- [ ] Approve the plan\n- [x] Check Xcode\n",
+ "project": null,
+ "madeBy": {
+  "kind": "agent",
+  "name": "Claude",
+  "routine": null
+ },
+ "createdAt": "2026-11-22T02:08:59.936Z",
+ "updatedAt": "2026-11-22T02:08:59.936Z",
+ "isNew": true,
+ "openComments": 1,
+ "pinned": true,
+ "pinnedAt": "2026-11-22T02:09:00.000Z"
+}

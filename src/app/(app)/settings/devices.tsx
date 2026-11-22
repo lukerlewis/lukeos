@@ -69,7 +69,7 @@ export function NewDeviceLink() {
       <div className="flex w-full flex-col gap-2">
         <CopyAddress address={link} label="Copy link" />
         <p className="text-meta text-muted-foreground">
-          Open on the new device, or type <span className="font-medium text-foreground">{code}</span> in the Mac app. Works
+          Open on the new device, or type <span className="font-medium text-foreground">{code}</span> in the Mac or iPhone app. Works
           once, for 10 minutes.
         </p>
       </div>

@@ -1,0 +1,24 @@
+{
+ "id": "0392ec81-44da-4d8c-9d2c-c80be6bf75b0",
+ "title": "Call with Dana",
+ "format": "markdown",
+ "excerpt": "Workshop is 12 December. She needs a title and a short blurb by Friday. What When Blurb Fri Slides 8 Dec",
+ "content": "Workshop is **12 December**. She needs a title and a short blurb by Friday.\n\n| What | When |\n|---|---|\n| Blurb | Fri |\n| Slides | 8 Dec |\n",
+ "scratchPad": false,
+ "project": {
+  "id": "6fa76946-91d7-4b3c-8d22-a9221ee14644",
+  "name": "Career",
+  "color": "green",
+  "hex": "#16a34a"
+ },
+ "folder": null,
+ "pinned": false,
+ "pinnedAt": null,
+ "madeBy": {
+  "kind": "user",
+  "name": null,
+  "routine": null
+ },
+ "createdAt": "2026-11-22T02:08:59.808Z",
+ "updatedAt": "2026-11-22T02:08:59.808Z"
+}

@@ -1,0 +1,50 @@
+[
+ {
+  "id": "a820614c-5d84-4da4-a4d4-62b35ca7c917",
+  "title": "Morning pages",
+  "status": "done",
+  "bucket": "today",
+  "dueDate": null,
+  "priority": null,
+  "effort": null,
+  "area": "life",
+  "timeOfDay": "morning",
+  "lane": "noise",
+  "notes": null,
+  "repeat": "daily",
+  "project": null,
+  "cardId": null,
+  "completedAt": "2026-11-22T02:08:58.829Z",
+  "createdAt": "2026-11-22T02:08:58.830Z",
+  "updatedAt": "2026-11-22T02:08:58.830Z",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  }
+ },
+ {
+  "id": "4418dde5-11f0-44da-9ef6-a940230203ac",
+  "title": "Post the weekly update",
+  "status": "done",
+  "bucket": "today",
+  "dueDate": null,
+  "priority": null,
+  "effort": "shallow",
+  "area": "work",
+  "timeOfDay": "day",
+  "lane": "noise",
+  "notes": null,
+  "repeat": "weekly",
+  "project": null,
+  "cardId": null,
+  "completedAt": "2026-11-22T02:08:59.148Z",
+  "createdAt": "2026-11-22T02:08:59.148Z",
+  "updatedAt": "2026-11-22T02:08:59.148Z",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  }
+ }
+]

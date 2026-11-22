@@ -1,0 +1,134 @@
+[
+ {
+  "id": "db7b96d4-ef83-4388-841d-e8123323c453",
+  "at": "2026-11-22T02:09:00.971Z",
+  "name": "Claude",
+  "routine": "Claude check-in",
+  "tool": "send_message",
+  "summary": "Sent you a message: “The weekly content ideas are ready: 5 new cards in the Cont…”",
+  "item": null
+ },
+ {
+  "id": "21717290-a6b8-4b0d-95dd-81d5ae90a7f9",
+  "at": "2026-11-22T02:09:00.890Z",
+  "name": "Claude",
+  "routine": null,
+  "tool": "send_message",
+  "summary": "Sent you a message: “Strong shape. The text is small for a phone though. Try thr…”",
+  "item": null
+ },
+ {
+  "id": "d33188fc-10de-41ca-9779-e5d0e3c176b3",
+  "at": "2026-11-22T02:09:00.183Z",
+  "name": "Claude",
+  "routine": null,
+  "tool": "send_message",
+  "summary": "Sent you a message: “Three things: the results section, two screenshots, and the…”",
+  "item": null
+ },
+ {
+  "id": "922bbf00-ef56-4085-8e92-98b259fe1376",
+  "at": "2026-11-22T02:09:00.136Z",
+  "name": "Claude",
+  "routine": null,
+  "tool": "send_message",
+  "summary": "Sent you a message: “Done. The blurb is in Documents, two sentences as Dana aske…”",
+  "item": null
+ },
+ {
+  "id": "bb16baaa-feac-4099-b822-3a47363b2a77",
+  "at": "2026-11-22T02:09:00.072Z",
+  "name": "Claude",
+  "routine": null,
+  "tool": "reply_to_comment",
+  "summary": "Replied to a comment on document “LukeOS iPhone app plan”",
+  "item": {
+   "type": "document",
+   "id": "93e1e741-f28f-4cf3-840e-362a0c87314b"
+  }
+ },
+ {
+  "id": "74efebb4-d066-46d1-8568-94c5b653cd11",
+  "at": "2026-11-22T02:08:59.955Z",
+  "name": "Claude",
+  "routine": "Claude check-in",
+  "tool": "create_document",
+  "summary": "Wrote document “Content ideas: week of 16 November” in Content",
+  "item": {
+   "type": "document",
+   "id": "550ad944-228d-4573-a867-a68bd880f39f"
+  }
+ },
+ {
+  "id": "9290782f-e0fe-4bfd-a115-81f2bc9bb653",
+  "at": "2026-11-22T02:08:59.941Z",
+  "name": "Claude",
+  "routine": null,
+  "tool": "create_document",
+  "summary": "Wrote document “LukeOS iPhone app plan”",
+  "item": {
+   "type": "document",
+   "id": "93e1e741-f28f-4cf3-840e-362a0c87314b"
+  }
+ },
+ {
+  "id": "9002a7e3-7f0b-490f-b24c-fb9a27e6c4fe",
+  "at": "2026-11-22T02:08:59.846Z",
+  "name": "Claude",
+  "routine": null,
+  "tool": "create_note",
+  "summary": "Wrote note “Hooks that worked this month”",
+  "item": {
+   "type": "note",
+   "id": "d2d7a29a-85e3-4d7f-8acd-6233a7d30c95"
+  }
+ },
+ {
+  "id": "602df58b-9b3a-4be6-9dd2-cf6f8343f6a7",
+  "at": "2026-11-22T02:08:59.553Z",
+  "name": "Claude",
+  "routine": null,
+  "tool": "add_comment",
+  "summary": "Commented on task “Send the November invoice”",
+  "item": {
+   "type": "task",
+   "id": "40ecf001-a073-4b23-9bff-2a3c4e17259d"
+  }
+ },
+ {
+  "id": "41fee149-c3da-4156-a341-aa32f8fc8bc2",
+  "at": "2026-11-22T02:08:59.438Z",
+  "name": "Claude",
+  "routine": null,
+  "tool": "reply_to_comment",
+  "summary": "Replied to a comment on task “Write the script for the Liquid Glass video”",
+  "item": {
+   "type": "task",
+   "id": "7ffc6a13-a2cd-4d97-b954-1ad110ff931f"
+  }
+ },
+ {
+  "id": "6290e68e-d789-4374-8614-3ea1c1eb0d98",
+  "at": "2026-11-22T02:08:59.324Z",
+  "name": "Claude",
+  "routine": "Claude check-in",
+  "tool": "create_task",
+  "summary": "Added task “Approve three new content ideas” in Content",
+  "item": {
+   "type": "task",
+   "id": "3f851ef7-91eb-496f-871f-a3a8433ea38c"
+  }
+ },
+ {
+  "id": "86b5a4c4-d27d-4f49-8983-9a90f80a0847",
+  "at": "2026-11-22T02:08:59.297Z",
+  "name": "Claude",
+  "routine": null,
+  "tool": "create_task",
+  "summary": "Added task “Review the LukeOS iPhone app plan”",
+  "item": {
+   "type": "task",
+   "id": "3e0404c5-3318-46cf-b62b-dd9137acc94a"
+  }
+ }
+]

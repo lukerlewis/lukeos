@@ -1,0 +1,80 @@
+[
+ {
+  "type": "document",
+  "id": "550ad944-228d-4573-a867-a68bd880f39f",
+  "title": "Content ideas: week of 16 November",
+  "excerpt": "Luke rebuilt his own app with Apple's new look. Show the before and after. Why Luke built LukeOS instead of paying for five apps.",
+  "format": "markdown",
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "hex": "#2563eb"
+  },
+  "name": "Claude",
+  "routine": "Claude check-in",
+  "createdAt": "2026-11-22T02:08:59.951Z",
+  "isNew": true,
+  "version": null,
+  "openComments": 0
+ },
+ {
+  "type": "document",
+  "id": "93e1e741-f28f-4cf3-840e-362a0c87314b",
+  "title": "LukeOS iPhone app plan",
+  "excerpt": "A native iPhone version of LukeOS, built in Swift with Liquid Glass. Step What Luke gets 1 Dashboard 2 Notes 3 Music Luke types a code from Settings > Device...",
+  "format": "markdown",
+  "project": null,
+  "name": "Claude",
+  "routine": null,
+  "createdAt": "2026-11-22T02:08:59.936Z",
+  "isNew": true,
+  "version": null,
+  "openComments": 1
+ },
+ {
+  "type": "task",
+  "id": "3f851ef7-91eb-496f-871f-a3a8433ea38c",
+  "title": "Approve three new content ideas",
+  "excerpt": null,
+  "format": null,
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "hex": "#2563eb"
+  },
+  "name": "Claude",
+  "routine": "Claude check-in",
+  "createdAt": "2026-11-22T02:08:59.314Z",
+  "isNew": true,
+  "version": null,
+  "openComments": 0
+ },
+ {
+  "type": "task",
+  "id": "3e0404c5-3318-46cf-b62b-dd9137acc94a",
+  "title": "Review the LukeOS iPhone app plan",
+  "excerpt": null,
+  "format": null,
+  "project": null,
+  "name": "Claude",
+  "routine": null,
+  "createdAt": "2026-11-22T02:08:59.246Z",
+  "isNew": true,
+  "version": null,
+  "openComments": 0
+ },
+ {
+  "type": "project",
+  "id": "b85d9177-fbdd-45f3-9a0f-225cbe1db5ad",
+  "title": "Content",
+  "excerpt": null,
+  "format": null,
+  "project": null,
+  "name": "Claude",
+  "routine": null,
+  "createdAt": "2026-11-22T02:00:35.131Z",
+  "isNew": true,
+  "version": null,
+  "openComments": 0
+ }
+]

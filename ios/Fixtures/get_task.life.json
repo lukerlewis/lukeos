@@ -1,0 +1,24 @@
+{
+ "id": "3f7e3471-6acc-4898-a6e9-a0530a3040b7",
+ "title": "Order groceries",
+ "status": "todo",
+ "bucket": "today",
+ "dueDate": null,
+ "priority": null,
+ "effort": null,
+ "area": "life",
+ "timeOfDay": "day",
+ "lane": "noise",
+ "notes": "- [ ] Oat milk\n- [ ] Coffee beans\n- [x] Eggs\n\nUse the saved list first.",
+ "repeat": null,
+ "project": null,
+ "cardId": null,
+ "completedAt": null,
+ "createdAt": "2026-11-22T02:08:58.849Z",
+ "updatedAt": "2026-11-22T02:08:58.849Z",
+ "madeBy": {
+  "kind": "user",
+  "name": null,
+  "routine": null
+ }
+}

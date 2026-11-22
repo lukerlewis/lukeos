@@ -1,0 +1,49 @@
+{
+ "playlists": [
+  {
+   "id": "c8aa4fac-7767-4ee2-95eb-c706d4df3c5a",
+   "title": "Deep focus",
+   "icon": "🎧",
+   "updatedAt": "2026-11-22T02:09:24.631Z",
+   "count": 2,
+   "seconds": 50,
+   "artworkUrl": null,
+   "excludedFromShuffle": true,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   }
+  },
+  {
+   "id": "86940421-621c-4320-bc8b-f9ed637a1f07",
+   "title": "Design podcasts",
+   "icon": null,
+   "updatedAt": "2026-11-22T02:09:24.659Z",
+   "count": 3,
+   "seconds": 7740,
+   "artworkUrl": "https://example.com/art/design-details.jpg",
+   "excludedFromShuffle": false,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   }
+  },
+  {
+   "id": "49350c1c-6bbc-4edd-9385-fb09582632dd",
+   "title": "Running",
+   "icon": "🏃",
+   "updatedAt": "2026-11-22T02:09:24.679Z",
+   "count": 0,
+   "seconds": 0,
+   "artworkUrl": null,
+   "excludedFromShuffle": false,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   }
+  }
+ ]
+}

@@ -1,0 +1,72 @@
+[
+ {
+  "id": "b85d9177-fbdd-45f3-9a0f-225cbe1db5ad",
+  "name": "Content",
+  "color": "pink",
+  "area": "work",
+  "openTasks": 0,
+  "doneTasks": 0,
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:00:35.131Z"
+ },
+ {
+  "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+  "name": "Content",
+  "color": "blue",
+  "area": "work",
+  "openTasks": 4,
+  "doneTasks": 0,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:58.704Z"
+ },
+ {
+  "id": "da7a68cf-5076-4891-8ff0-77dcc28fdf61",
+  "name": "Portfolio",
+  "color": "violet",
+  "area": "work",
+  "openTasks": 2,
+  "doneTasks": 0,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:58.723Z"
+ },
+ {
+  "id": "6fa76946-91d7-4b3c-8d22-a9221ee14644",
+  "name": "Career",
+  "color": "green",
+  "area": "work",
+  "openTasks": 2,
+  "doneTasks": 0,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:58.744Z"
+ },
+ {
+  "id": "aba07726-0254-4ca5-849f-fc2f9ce34bb1",
+  "name": "Admin",
+  "color": "slate",
+  "area": "work",
+  "openTasks": 2,
+  "doneTasks": 0,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:58.762Z"
+ }
+]

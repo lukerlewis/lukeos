@@ -1,0 +1,39 @@
+[
+ {
+  "id": "4e161788-79b4-4c33-a717-29b621dabfc1",
+  "version": null,
+  "quote": "Build order",
+  "pin": null,
+  "body": "Can the widgets come earlier?",
+  "resolved": false,
+  "resolvedAt": null,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:09:00.021Z",
+  "target": {
+   "type": "document",
+   "id": "93e1e741-f28f-4cf3-840e-362a0c87314b",
+   "title": "LukeOS iPhone app plan"
+  },
+  "replies": [
+   {
+    "id": "95d7d493-2d57-4939-acc8-f37e02b93eef",
+    "version": null,
+    "quote": null,
+    "pin": null,
+    "body": "Yes. They only need the Dashboard step, so they can follow it directly. Shall I move them to step 2?",
+    "resolved": false,
+    "resolvedAt": null,
+    "madeBy": {
+     "kind": "agent",
+     "name": "Claude",
+     "routine": null
+    },
+    "createdAt": "2026-11-22T02:09:00.045Z"
+   }
+  ]
+ }
+]
