@@ -91,12 +91,19 @@ struct SmartChips: View {
 
 /// Which statuses the dashboard shows, and how it's sorted. Shared with every device.
 struct FiltersMenu: View {
+    /// Today or Board.
+    @Binding var layout: String
     @State private var store = TaskStore.shared
 
     private let sortKeys: [(String, String)] = [("priority", "Priority"), ("effort", "Focus type"), ("project", "Project"), ("name", "Name"), ("created", "Date added")]
 
     var body: some View {
         Menu {
+            Picker("View", selection: $layout.animation(.snappy)) {
+                Label("Today", systemImage: "list.bullet").tag("list")
+                Label("Board", systemImage: "rectangle.split.3x1").tag("board")
+            }
+            .pickerStyle(.inline)
             Section("Show") {
                 ForEach(TaskStatus.allCases, id: \.self) { s in
                     Toggle(s.label, isOn: Binding(

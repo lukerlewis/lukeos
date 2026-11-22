@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The home screen: the date and a greeting, Work | Life and Today | Board,
-/// then Today's cards (Life: Morning, Day, Evening; Work: Signal, Noise) or the board.
+/// The home screen, titled Today with the date under it. Work | Life sits in the top bar and
+/// Today | Board in the filter menu, so the first screen is the tasks themselves.
+/// Today's cards: Life has Morning, Day, Evening; Work has Signal, Noise.
 struct DashboardScreen: View {
     @Environment(AppModel.self) private var app
     @State private var store = TaskStore.shared
@@ -16,8 +17,9 @@ struct DashboardScreen: View {
             Group {
                 if layout == "board" {
                     ScrollView {
-                        header(inList: false)
+                        dateLine.padding(.horizontal, Space.page)
                         BoardView(tasks: areaTasks, onOpen: { editing = $0 })
+                            .padding(.top, Space.s)
                     }
                 } else {
                     todayList
@@ -25,10 +27,14 @@ struct DashboardScreen: View {
             }
             .pageBackground()
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { FiltersMenu() }
+                ToolbarItem(placement: .principal) { areaPicker.frame(width: Size.areaSwitch) }
+                ToolbarItem(placement: .topBarTrailing) { FiltersMenu(layout: $layout) }
             }
-            .navigationTitle(greeting)
+            .navigationTitle(layout == "board" ? "Board" : "Today")
             .toolbarTitleDisplayMode(.large)
+            .onChange(of: layout) { _, new in
+                Task { await Repo.change("set_dashboard_view", ["layout": .string(new)]) }
+            }
             .refreshable { await reload() }
             .overlay(alignment: .bottomTrailing) { addButton }
             .sheet(item: $editing) { task in
@@ -65,11 +71,6 @@ struct DashboardScreen: View {
 
     // MARK: Header
 
-    private var greeting: String {
-        let h = Calendar.current.component(.hour, from: .now)
-        return h < 12 ? "Good morning, Luke" : h < 18 ? "Good afternoon, Luke" : "Good evening, Luke"
-    }
-
     private var areaPicker: some View {
         @Bindable var app = app
         return Picker("Area", selection: $app.area.animation(.snappy)) {
@@ -78,49 +79,18 @@ struct DashboardScreen: View {
         .pickerStyle(.segmented)
     }
 
-    private var layoutPicker: some View {
-        Picker("Layout", selection: $layout.animation(.snappy)) {
-            Text("Today").tag("list")
-            Text("Board").tag("board")
-        }
-        .pickerStyle(.segmented)
-    }
-
-    /// In the list, rows already sit inside the list's margin; on the board they don't.
-    private func header(inList: Bool) -> some View {
-        @Bindable var app = app
-        return VStack(alignment: .leading, spacing: Space.l) {
-            Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                .textStyle(.preview, color: .mutedText)
-            // Side by side; stacked when the text is set very large.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: Space.m) {
-                    areaPicker.frame(width: Size.areaSwitch)
-                    layoutPicker
-                }
-                VStack(spacing: Space.s) {
-                    areaPicker
-                    layoutPicker
-                }
-            }
-            .onChange(of: layout) { _, new in
-                Task { await Repo.change("set_dashboard_view", ["layout": .string(new)]) }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, inList ? Space.xs : Space.page)
-        .padding(.top, Space.xs)
-        .padding(.bottom, Space.xs)
+    /// The date, quietly, under the large title.
+    private var dateLine: some View {
+        Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
+            .textStyle(.control, color: .mutedText)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Today
 
     private var todayList: some View {
         List {
-            Section {
-                header(inList: true).controlRow()
-            }
-
+            Section { dateLine.padding(.horizontal, Space.xs).controlRow() }
             if !store.loaded && store.tasks.isEmpty {
                 ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear)
             } else if let error = store.error, store.tasks.isEmpty {
