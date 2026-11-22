@@ -83,10 +83,10 @@ enum HealthMath {
         return nil
     }
 
-    /// The days labelled under a chart: every day for a week, otherwise today and every 7th day
-    /// before it, so the newest week is always labelled. Oldest first.
+    /// The days labelled under a chart: every day for a week, every 7th day for a month, every 21st
+    /// for 90 days, counting back from today so the newest is always labelled. Oldest first.
     static func axisDays(today: String, range: Int) -> [String] {
-        let step = range <= 7 ? 1 : 7
+        let step = range <= 7 ? 1 : range <= 31 ? 7 : 21
         return stride(from: 0, to: range, by: step).map { Day.add(today, days: -$0) }.reversed()
     }
 
@@ -177,6 +177,7 @@ struct HealthScreen: View {
     @State private var syncing = false
     @State private var confirmDisconnect = false
     @State private var offline = false
+    @State private var openTile: HealthSection?
 
     private var allDays: [HealthDay] { data?.days ?? [] }
     private var today: String { data?.today ?? AppModel.shared.today }
@@ -226,6 +227,7 @@ struct HealthScreen: View {
                 }
             }
         }
+        .navigationDestination(item: $openTile) { HealthSectionScreen(section: $0) }
         .refreshable { await load() }
         .task { await load() }
         .confirmationDialog("Disconnect Fitbit?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
@@ -240,7 +242,9 @@ struct HealthScreen: View {
     @ViewBuilder
     private var content: some View {
         let night = HealthMath.lastNight(allDays, today: today)
-        Section { sleepCard(night?.sleep).cardRow() } header: {
+        Section {
+            NavigationLink(value: MoreRoute.healthSection(HealthSection.sleep.rawValue, date: night?.date)) { sleepCard(night?.sleep) }.cardRow()
+        } header: {
             SectionTitle(text: night == nil || night?.date == today ? "Last night" : "Sleep · Yesterday")
         }
         Section {
@@ -257,6 +261,7 @@ struct HealthScreen: View {
         if !bodyRows.isEmpty {
             Section {
                 ForEach(bodyRows, id: \.title) { row in
+                    NavigationLink(value: MoreRoute.healthSection(row.section.rawValue)) {
                     HStack(spacing: Space.m) {
                         Image(systemName: row.symbol).font(.icon(.row)).foregroundStyle(Color.icon).frame(width: Size.iconColumn)
                         Text(row.title).textStyle(.control, color: .text)
@@ -266,28 +271,34 @@ struct HealthScreen: View {
                             if let a = row.average { Text("avg \(a)").textStyle(.tag, color: .mutedText).monospacedDigit() }
                         }
                     }
+                    }
                     .cardRow()
                     .accessibilityElement(children: .combine)
                 }
             } header: { SectionTitle(text: "Body") }
         }
         Section {
-            barChart("Sleep", values: days.map { ($0.date, $0.sleep?.minutes.map { $0 / 60 }) }) { String(format: "%.1fh", $0) }.cardRow()
+            link(.sleep) { barChart("Sleep", values: days.map { ($0.date, $0.sleep?.minutes.map { $0 / 60 }) }) { String(format: "%.1fh", $0) } }
         } header: { SectionTitle(text: "Sleep") }
         Section {
-            barChart("Steps", values: days.map { ($0.date, $0.steps) }) { $0.formatted(.number.notation(.compactName)) }.cardRow()
+            link(.steps) { barChart("Steps", values: days.map { ($0.date, $0.steps) }) { $0.formatted(.number.notation(.compactName)) } }
         } header: { SectionTitle(text: "Steps") }
         if days.contains(where: { $0.restingHeartRate != nil }) {
-            Section { heartChart.cardRow() } header: { SectionTitle(text: "Resting heart rate") }
+            Section { link(.heartRate) { heartChart } } header: { SectionTitle(text: "Resting heart rate") }
         }
         let workouts = Array(allDays.reversed().flatMap { d in (d.workouts ?? []).map { (d.date, $0) } }.prefix(8))
         if !workouts.isEmpty {
             Section {
-                ForEach(Array(workouts.enumerated()), id: \.offset) { _, item in workoutRow(item.0, item.1).cardRow() }
+                ForEach(Array(workouts.enumerated()), id: \.offset) { _, item in
+                    NavigationLink(value: MoreRoute.workout(HealthWorkoutRef(date: item.0, workout: item.1, today: today, timeZone: data?.timeZone))) {
+                        workoutRow(item.0, item.1)
+                    }
+                    .cardRow()
+                }
             } header: { SectionTitle(text: "Workouts") }
         }
-        if let sync = data?.lastSyncAt {
-            Text("From Fitbit · updated \(Stamp.relative(sync))")
+        if let updated = HealthDetailMath.updated(data?.lastSyncAt, today: data?.today, timeZone: data?.timeZone.flatMap(TimeZone.init(identifier:)) ?? .current) {
+            Text("From Fitbit · \(updated)")
                 .textStyle(.meta, color: .mutedText)
                 .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)
@@ -401,34 +412,51 @@ struct HealthScreen: View {
         let week = lastWeek
         return Grid(horizontalSpacing: Space.m, verticalSpacing: Space.m) {
             GridRow {
-                StatTile(title: "Steps", symbol: "figure.walk", value: d?.steps.map { Int($0).formatted() },
-                         detail: HealthMath.average(week.map(\.steps)).map { "7-day avg \(Int($0).formatted())" })
-                StatTile(title: "Resting heart", symbol: "heart", value: d?.restingHeartRate.map { "\(Int($0)) bpm" },
-                         detail: HealthMath.average(week.map(\.restingHeartRate)).map { "7-day avg \(Int($0.rounded()))" })
+                tileLink(.steps, StatTile(title: "Steps", symbol: "figure.walk", value: d?.steps.map { Int($0).formatted() },
+                         detail: HealthMath.average(week.map(\.steps)).map { "7-day avg \(Int($0).formatted())" }))
+                tileLink(.heartRate, StatTile(title: "Resting heart", symbol: "heart", value: d?.restingHeartRate.map { "\(Int($0)) bpm" },
+                         detail: HealthMath.average(week.map(\.restingHeartRate)).map { "7-day avg \(Int($0.rounded()))" }))
             }
             GridRow {
-                StatTile(title: "Active zone", symbol: "flame", value: d?.activeMinutes.map { "\(Int($0)) min" },
-                         detail: HealthMath.average(week.map(\.activeMinutes)).map { "7-day avg \(Int($0.rounded()))" })
-                StatTile(title: "Distance", symbol: "map", value: d?.distanceMeters.map(HealthMath.miles),
-                         detail: HealthMath.average(week.map(\.distanceMeters)).map { "7-day avg \(HealthMath.miles($0))" })
+                tileLink(.activeZoneMinutes, StatTile(title: "Active zone", symbol: "flame", value: d?.activeMinutes.map { "\(Int($0)) min" },
+                         detail: HealthMath.average(week.map(\.activeMinutes)).map { "7-day avg \(Int($0.rounded()))" }))
+                // Distance has no page of its own; it's walked, so it opens Steps.
+                tileLink(.steps, StatTile(title: "Distance", symbol: "map", value: d?.distanceMeters.map(HealthMath.miles),
+                         detail: HealthMath.average(week.map(\.distanceMeters)).map { "7-day avg \(HealthMath.miles($0))" }))
             }
         }
     }
 
     /// Extra daily numbers, only those with data in the range.
-    private var bodyRows: [(title: String, symbol: String, latest: String, average: String?)] {
-        func row(_ title: String, _ symbol: String, _ key: KeyPath<HealthDay, Double?>, _ format: (Double) -> String) -> (String, String, String, String?)? {
-            let values = days.map { $0[keyPath: key] }
-            guard let latest = days.last(where: { $0[keyPath: key] != nil })?[keyPath: key] else { return nil }
-            return (title, symbol, format(latest), HealthMath.average(values).map(format))
+    private var bodyRows: [(title: String, symbol: String, latest: String, average: String?, section: HealthSection)] {
+        func row(_ title: String, _ section: HealthSection, _ format: (Double) -> String) -> (String, String, String, String?, HealthSection)? {
+            let values = days.map(section.value)
+            guard let latest = days.last(where: { section.value($0) != nil }).flatMap(section.value) else { return nil }
+            return (title, section.symbol, format(latest), HealthMath.average(values).map(format), section)
         }
         return [
-            row("Breathing rate", "lungs", \.breathingRate) { String(format: "%.1f /min", $0) },
-            row("Blood oxygen", "drop", \.spo2) { String(format: "%.1f%%", $0) },
-            row("HRV", "waveform.path.ecg", \.hrvMs) { "\(Int($0.rounded())) ms" },
-            row("Skin temperature", "thermometer.medium", \.skinTempDeviation, HealthMath.skinTemp),
-            row("VO2 max", "figure.run", \.vo2Max) { String(format: "%.0f", $0) },
-        ].compactMap { $0.map { (title: $0.0, symbol: $0.1, latest: $0.2, average: $0.3) } }
+            row("Breathing rate", .breathingRate) { String(format: "%.1f /min", $0) },
+            row("Blood oxygen", .bloodOxygen) { String(format: "%.1f%%", $0) },
+            row("HRV", .hrv) { "\(Int($0.rounded())) ms" },
+            row("Skin temperature", .skinTemperature, HealthMath.skinTemp),
+            row("VO2 max", .vo2Max) { String(format: "%.0f", $0) },
+        ].compactMap { $0.map { (title: $0.0, symbol: $0.1, latest: $0.2, average: $0.3, section: $0.4) } }
+    }
+
+    /// A chart card that opens its section.
+    private func link(_ section: HealthSection, @ViewBuilder _ content: () -> some View) -> some View {
+        NavigationLink(value: MoreRoute.healthSection(section.rawValue)) { content() }
+            .cardRow()
+            .accessibilityHint("Opens \(section.title)")
+    }
+
+    /// A Today tile that opens its section. A plain button rather than a link, so the list doesn't add a
+    /// chevron beside each tile in the grid.
+    private func tileLink(_ section: HealthSection, _ tile: StatTile) -> some View {
+        Button { openTile = section } label: { tile }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint("Opens \(section.title)")
     }
 
 

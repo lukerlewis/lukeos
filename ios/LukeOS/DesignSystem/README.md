@@ -33,7 +33,7 @@ colours, fonts, sizes or radii of their own. Change a token or component here an
 | Component | File | Used in |
 | --- | --- | --- |
 | `CardBox`, `CardHeader` | Components.swift | Focus sprint, scratch pad cards |
-| `StatTile` (title, big value, detail line; dash when missing) | StatTile.swift | Health Today tiles |
+| `StatTile` (title, big value, detail line; dash when missing) | StatTile.swift | Health Today tiles, Health section stats |
 | `StatusCircle` (empty / half / ticked) | Components.swift | Task rows, sprint, search, widget |
 | `Tag` | Components.swift | Note folder, inspiration tags |
 | `ClaudeMark` (faded sparkle) | Components.swift | Anything Claude made |
