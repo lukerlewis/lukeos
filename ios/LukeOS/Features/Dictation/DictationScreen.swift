@@ -3,6 +3,7 @@ import SwiftUI
 /// More › Dictation: turn the mic on, try it, pick the model, add the keyboard.
 struct DictationScreen: View {
     @State private var dictation = Dictation.shared
+    @State private var history = DictationHistory.shared
 
     var body: some View {
         @Bindable var dictation = dictation
@@ -44,6 +45,16 @@ struct DictationScreen: View {
                 }
                 if let error = dictation.lastError {
                     Text(error).textStyle(.meta, color: .mutedText)
+                }
+            }
+
+            if !history.entries.isEmpty {
+                Section {
+                    NavigationLink {
+                        DictationHistoryScreen()
+                    } label: {
+                        LabeledContent("History", value: "\(history.entries.count)")
+                    }
                 }
             }
 
@@ -106,5 +117,80 @@ struct DictationScreen: View {
 
     private func openSettings() {
         if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+    }
+}
+
+/// More › Dictation › History: everything dictated in the last week. Tap to copy.
+struct DictationHistoryScreen: View {
+    @State private var history = DictationHistory.shared
+    @State private var retrying: String?
+    @State private var confirmClear = false
+
+    var body: some View {
+        List {
+            ForEach(history.entries) { entry in
+                row(entry)
+                    .cardRow()
+                    .swipeActions {
+                        Button("Delete", role: .destructive) { history.remove(entry.id) }
+                    }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .pageBackground()
+        .navigationTitle("History")
+        .toolbar {
+            if !history.entries.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Clear") { confirmClear = true }
+                }
+            }
+        }
+        .confirmationDialog("Delete all saved dictation?", isPresented: $confirmClear, titleVisibility: .visible) {
+            Button("Delete all", role: .destructive) { history.clear() }
+        }
+        .overlay {
+            if history.entries.isEmpty { EmptyNote(text: "Nothing in the last 7 days", symbol: "mic") }
+        }
+        .onAppear { history.prune() }
+    }
+
+    @ViewBuilder
+    private func row(_ entry: DictationEntry) -> some View {
+        if entry.failed {
+            VStack(alignment: .leading, spacing: Space.line) {
+                Text("Couldn't be written").textStyle(.control, color: .text)
+                Text(when(entry)).textStyle(.meta, color: .mutedText)
+                Button(retrying == entry.id ? "Writing…" : "Try again") {
+                    retrying = entry.id
+                    Task {
+                        await Dictation.shared.retry(entry)
+                        retrying = nil
+                    }
+                }
+                .buttonStyle(.borderless)
+                .font(.geist(.control, medium: true))
+                .foregroundStyle(Color.ink)
+                .disabled(retrying != nil)
+                .frame(minHeight: Size.tap)
+            }
+        } else {
+            Button {
+                UIPasteboard.general.string = entry.text
+                Toasts.shared.show("Copied")
+            } label: {
+                VStack(alignment: .leading, spacing: Space.line) {
+                    Text(entry.text).textStyle(.body, color: .text).multilineTextAlignment(.leading)
+                    Text(when(entry)).textStyle(.meta, color: .mutedText)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func when(_ entry: DictationEntry) -> String {
+        entry.date.formatted(.dateTime.weekday(.abbreviated).hour().minute())
     }
 }
