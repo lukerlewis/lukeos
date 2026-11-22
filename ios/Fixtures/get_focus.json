@@ -1,0 +1,9 @@
+{
+ "settings": {
+  "focusMinutes": 25,
+  "shortBreakMinutes": 5,
+  "longBreakMinutes": 15,
+  "roundsBeforeLongBreak": 4
+ },
+ "scratchPad": "Look up the Geist licence\nEmail Dana after this sprint"
+}

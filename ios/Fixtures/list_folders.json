@@ -1,0 +1,25 @@
+[
+ {
+  "id": "20accd31-659b-4da7-98aa-1a6b7d538695",
+  "name": "Journal",
+  "project": null,
+  "noteCount": 1
+ },
+ {
+  "id": "315abab3-35ca-45b4-94bd-a4e6319a4e51",
+  "name": "Thoughts and ideas",
+  "project": null,
+  "noteCount": 1
+ },
+ {
+  "id": "e4a1f67a-467f-42be-af41-db50ad35c42e",
+  "name": "Video research",
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "color": "blue",
+   "hex": "#2563eb"
+  },
+  "noteCount": 2
+ }
+]

@@ -1,0 +1,23 @@
+[
+ {
+  "id": "c74022d3-8a3e-4bd0-a5a7-81811b766b87",
+  "version": null,
+  "quote": "Next week",
+  "pin": null,
+  "body": "@claude turn next week's list into tasks",
+  "resolved": false,
+  "resolvedAt": null,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:59.919Z",
+  "target": {
+   "type": "note",
+   "id": "715ab7af-c108-4828-b05c-74e6013a735c",
+   "title": "Weekly review"
+  },
+  "replies": []
+ }
+]

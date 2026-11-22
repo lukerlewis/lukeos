@@ -1,0 +1,46 @@
+{
+ "requests": [
+  {
+   "id": "0c2ce744-55e9-4fc9-b5e4-e1d199cf7212",
+   "text": "@claude turn next week's list into tasks",
+   "where": {
+    "type": "comment",
+    "id": "c74022d3-8a3e-4bd0-a5a7-81811b766b87",
+    "title": "@claude turn next week's list into tasks",
+    "on": {
+     "type": "note",
+     "id": "715ab7af-c108-4828-b05c-74e6013a735c",
+     "title": "Weekly review"
+    },
+    "scratchPad": false
+   },
+   "createdAt": "2026-11-22T02:08:59.922Z",
+   "status": "open",
+   "resolvedAt": null,
+   "resolvedBy": null,
+   "reply": null,
+   "removed": false
+  },
+  {
+   "id": "d0c917a2-99cf-4842-b3c9-4922e84af65e",
+   "text": "@claude can you pull the three best hooks from the packaging doc into the notes here?",
+   "where": {
+    "type": "comment",
+    "id": "1b949c36-d270-4fe2-9597-f2bc2dbcbaa2",
+    "title": "@claude can you pull the three best hooks from the packaging doc into the notes ",
+    "on": {
+     "type": "task",
+     "id": "7ffc6a13-a2cd-4d97-b954-1ad110ff931f",
+     "title": "Write the script for the Liquid Glass video"
+    },
+    "scratchPad": false
+   },
+   "createdAt": "2026-11-22T02:08:59.354Z",
+   "status": "done",
+   "resolvedAt": "2026-11-22T02:08:59.402Z",
+   "resolvedBy": "Claude",
+   "reply": "Done. The three hooks are in the task's notes now. The BRENS one opens strongest, so it's first.",
+   "removed": false
+  }
+ ]
+}

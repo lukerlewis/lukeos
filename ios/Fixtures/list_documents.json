@@ -1,0 +1,63 @@
+[
+ {
+  "id": "93e1e741-f28f-4cf3-840e-362a0c87314b",
+  "title": "LukeOS iPhone app plan",
+  "excerpt": "A native iPhone version of LukeOS, built in Swift with Liquid Glass. Step What Luke gets 1 Dashboard 2 Notes 3 Music Luke types a code from Settings > Device...",
+  "project": null,
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:59.936Z",
+  "updatedAt": "2026-11-22T02:08:59.936Z",
+  "isNew": true,
+  "openComments": 1,
+  "pinned": true,
+  "pinnedAt": "2026-11-22T02:09:00.000Z"
+ },
+ {
+  "id": "bd4a6a8a-8bab-4d78-8759-b245dac82a2c",
+  "title": "Workshop blurb",
+  "excerpt": "A hands-on hour on Apple's Liquid Glass: what it is for, and where to leave it out.",
+  "project": {
+   "id": "6fa76946-91d7-4b3c-8d22-a9221ee14644",
+   "name": "Career",
+   "color": "green",
+   "hex": "#16a34a"
+  },
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:08:59.969Z",
+  "updatedAt": "2026-11-22T02:08:59.969Z",
+  "isNew": false,
+  "openComments": 0,
+  "pinned": false,
+  "pinnedAt": null
+ },
+ {
+  "id": "550ad944-228d-4573-a867-a68bd880f39f",
+  "title": "Content ideas: week of 16 November",
+  "excerpt": "Luke rebuilt his own app with Apple's new look. Show the before and after. Why Luke built LukeOS instead of paying for five apps.",
+  "project": {
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "name": "Content",
+   "color": "blue",
+   "hex": "#2563eb"
+  },
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": "Claude check-in"
+  },
+  "createdAt": "2026-11-22T02:08:59.951Z",
+  "updatedAt": "2026-11-22T02:08:59.951Z",
+  "isNew": true,
+  "openComments": 0,
+  "pinned": false,
+  "pinnedAt": null
+ }
+]

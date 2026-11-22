@@ -702,6 +702,20 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
 });
 
 /**
+ * An iPhone with the LukeOS app that said yes to notifications. Apple gives each
+ * install a token to send to; "sandbox" is an app put on the phone from Xcode,
+ * "production" one that came through TestFlight.
+ */
+export const apnsDevices = pgTable("apns_devices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  token: text("token").notNull().unique(),
+  deviceName: text("device_name").notNull(),
+  environment: text("environment").notNull().default("sandbox"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
+});
+
+/**
  * Time Luke spent focusing: a finished pomodoro, or the regular timer when he
  * stops it. The timers themselves run on his device; only the results are kept.
  */

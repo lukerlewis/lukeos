@@ -1,0 +1,34 @@
+[
+ {
+  "id": "39ca761e-f81e-4452-bf4d-e61db2b9df69",
+  "projectId": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+  "url": "https://developer.apple.com/design/human-interface-guidelines",
+  "title": "Human Interface Guidelines",
+  "note": null,
+  "site": "developer.apple.com",
+  "pinned": true,
+  "pinnedAt": "2026-11-22T02:09:02.269Z",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:09:02.269Z"
+ },
+ {
+  "id": "3eb7d375-a887-4c91-b7b9-b0d1167e06e5",
+  "projectId": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+  "url": "https://www.youtube.com/@lukelewis",
+  "title": "YouTube channel",
+  "note": "Upload schedule is Tuesdays",
+  "site": "youtube.com",
+  "pinned": false,
+  "pinnedAt": null,
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "createdAt": "2026-11-22T02:09:02.290Z"
+ }
+]

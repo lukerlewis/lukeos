@@ -1,0 +1,136 @@
+{
+ "episodes": [
+  {
+   "id": "76af267b-d65b-4bdc-9018-1ae95674de5f",
+   "kind": "podcast",
+   "title": "Building a personal operating system",
+   "show": "Indie Builders",
+   "src": "https://example.com/audio/indie-77.mp3",
+   "artworkUrl": "https://example.com/art/indie.jpg",
+   "description": "Why one designer replaced five apps with his own.",
+   "publishedAt": "2026-11-19T02:09:24.580Z",
+   "durationSeconds": 2640,
+   "positionSeconds": 300,
+   "lastPlayedAt": "2026-11-22T00:09:24.580Z",
+   "finishedAt": null,
+   "kept": false,
+   "bytes": null,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   },
+   "createdAt": "2026-11-22T02:09:24.580Z"
+  },
+  {
+   "id": "b1946ed8-9884-418d-95a2-1f60252300fc",
+   "kind": "podcast",
+   "title": "Deep work without burnout",
+   "show": "Cal Newport",
+   "src": "https://example.com/audio/deep-questions-301.mp3",
+   "artworkUrl": null,
+   "description": "Slow productivity in practice.",
+   "publishedAt": "2026-11-19T02:09:24.541Z",
+   "durationSeconds": 4260,
+   "positionSeconds": 4260,
+   "lastPlayedAt": "2026-11-22T00:09:24.541Z",
+   "finishedAt": "2026-11-22T02:09:24.541Z",
+   "kept": false,
+   "bytes": null,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   },
+   "createdAt": "2026-11-22T02:09:24.541Z"
+  },
+  {
+   "id": "d1b47a44-f0bf-4695-982d-535027c0bfde",
+   "kind": "podcast",
+   "title": "How to tell a five minute story",
+   "show": "Storyworthy Podcast",
+   "src": "https://example.com/audio/storyworthy-88.mp3",
+   "artworkUrl": "https://example.com/art/storyworthy.jpg",
+   "description": "Matthew Dicks breaks down one story from first line to last.",
+   "publishedAt": "2026-11-19T02:09:24.485Z",
+   "durationSeconds": 1980,
+   "positionSeconds": 0,
+   "lastPlayedAt": null,
+   "finishedAt": null,
+   "kept": false,
+   "bytes": null,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   },
+   "createdAt": "2026-11-22T02:09:24.485Z"
+  },
+  {
+   "id": "23069177-3f87-41d3-ae87-23fe5a6d9b7f",
+   "kind": "podcast",
+   "title": "The Liquid Glass episode",
+   "show": "Design Details",
+   "src": "https://example.com/audio/design-details-412.mp3",
+   "artworkUrl": "https://example.com/art/design-details.jpg",
+   "description": "A long look at Apple's new material: what it is for, where it fails, and how teams are adopting it.",
+   "publishedAt": "2026-11-19T02:09:24.435Z",
+   "durationSeconds": 3120,
+   "positionSeconds": 1260,
+   "lastPlayedAt": "2026-11-22T00:09:24.435Z",
+   "finishedAt": null,
+   "kept": false,
+   "bytes": null,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   },
+   "createdAt": "2026-11-22T02:09:24.435Z"
+  },
+  {
+   "id": "b55e9cb8-3f32-486e-81ff-bc39cf2e7915",
+   "kind": "upload",
+   "title": "An Ending (Ascent)",
+   "show": "Brian Eno",
+   "src": "/api/stored/9c32261d-e067-45b8-b0bb-0fecbac2415b",
+   "artworkUrl": null,
+   "description": "",
+   "publishedAt": null,
+   "durationSeconds": 30,
+   "positionSeconds": 0,
+   "lastPlayedAt": null,
+   "finishedAt": null,
+   "kept": false,
+   "bytes": 240579,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   },
+   "createdAt": "2026-11-22T02:09:24.379Z"
+  },
+  {
+   "id": "ab041f00-7dd5-40c1-b23a-b20d67a74395",
+   "kind": "upload",
+   "title": "Weightless",
+   "show": "Marconi Union",
+   "src": "/api/stored/812ec0b2-00c9-48d6-8be8-555363ddf40a",
+   "artworkUrl": null,
+   "description": "",
+   "publishedAt": null,
+   "durationSeconds": 20,
+   "positionSeconds": 0,
+   "lastPlayedAt": null,
+   "finishedAt": null,
+   "kept": false,
+   "bytes": 160540,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   },
+   "createdAt": "2026-11-22T02:09:24.359Z"
+  }
+ ]
+}

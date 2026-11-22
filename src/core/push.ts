@@ -2,11 +2,13 @@ import "server-only";
 import { eq, inArray } from "drizzle-orm";
 import webpush from "web-push";
 import { db, schema } from "@/db";
+import { apnsDeviceCount, sendApns } from "./apns";
 
 /**
  * Phone and computer notifications (Web Push). Each device that says yes to
  * notifications is saved; sending goes through Apple's, Google's or
- * Mozilla's own free push service for that device.
+ * Mozilla's own free push service for that device. The iPhone app gets the
+ * same notifications through Apple's service for apps (see apns.ts).
  *
  * The signing keys (VAPID) are made the first time they're needed and kept in
  * app settings, so there's nothing to set up on the host.
@@ -52,7 +54,7 @@ export async function removePushSubscription(endpoint: string) {
 }
 
 export async function pushDeviceCount() {
-  return (await db.select({ id: pushSubscriptions.id }).from(pushSubscriptions)).length;
+  return (await db.select({ id: pushSubscriptions.id }).from(pushSubscriptions)).length + (await apnsDeviceCount());
 }
 
 export type PushMessage = {
@@ -68,6 +70,11 @@ export type PushMessage = {
 
 /** Sends a notification to every device that has said yes. Never throws. Returns how many it reached. */
 export async function sendPush(message: PushMessage) {
+  const [web, app] = await Promise.all([sendWebPush(message), sendApns(message)]);
+  return web + app;
+}
+
+async function sendWebPush(message: PushMessage) {
   try {
     const subs = await db.select().from(pushSubscriptions);
     if (subs.length === 0) return 0;

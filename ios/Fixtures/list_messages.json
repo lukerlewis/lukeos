@@ -1,0 +1,215 @@
+[
+ {
+  "id": "2511ee41-f4c4-481a-b8d0-91cda9866fb8",
+  "text": "Can you draft the workshop blurb and put it in Documents?",
+  "attachments": [],
+  "from": "luke",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "link": null,
+  "createdAt": "2026-11-22T02:09:00.098Z",
+  "read": true,
+  "answered": true,
+  "answeredAt": "2026-11-22T02:09:00.118Z",
+  "editedAt": null,
+  "unsent": false,
+  "replyTo": null
+ },
+ {
+  "id": "3f79c423-f8b4-495b-9482-239e9fb731cc",
+  "text": "Done. The blurb is in Documents, two sentences as Dana asked.",
+  "attachments": [],
+  "from": "claude",
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": null
+  },
+  "link": {
+   "type": "document",
+   "id": "bd4a6a8a-8bab-4d78-8759-b245dac82a2c",
+   "title": "Workshop blurb"
+  },
+  "createdAt": "2026-11-22T02:09:00.117Z",
+  "read": false,
+  "answered": false,
+  "answeredAt": null,
+  "editedAt": null,
+  "unsent": false,
+  "replyTo": null
+ },
+ {
+  "id": "df9da7c4-fa26-4122-9386-673c252bea59",
+  "text": "Nice. Also what's left on the Helix case study?",
+  "attachments": [],
+  "from": "luke",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "link": null,
+  "createdAt": "2026-11-22T02:09:00.153Z",
+  "read": true,
+  "answered": true,
+  "answeredAt": "2026-11-22T02:09:00.168Z",
+  "editedAt": null,
+  "unsent": false,
+  "replyTo": null
+ },
+ {
+  "id": "4718b8a4-dd29-43cf-bee0-cace94b1cc94",
+  "text": "Three things: the results section, two screenshots, and the closing quote. The results numbers are in your Work archive already.",
+  "attachments": [],
+  "from": "claude",
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": null
+  },
+  "link": null,
+  "createdAt": "2026-11-22T02:09:00.167Z",
+  "read": false,
+  "answered": false,
+  "answeredAt": null,
+  "editedAt": null,
+  "unsent": false,
+  "replyTo": {
+   "id": "df9da7c4-fa26-4122-9386-673c252bea59",
+   "from": "luke",
+   "snippet": "Nice. Also what's left on the Helix case study?",
+   "unavailable": false
+  }
+ },
+ {
+  "id": "e5b74b4c-b547-4416-b33d-9c8d4a0b34a6",
+  "text": "Rough thumbnail idea. Thoughts?",
+  "attachments": [
+   {
+    "id": "7c15cd7b-5aa8-4931-874b-06ccf3afd1e6",
+    "kind": "image",
+    "name": "Thumbnail sketch.webp",
+    "mimeType": "image/webp",
+    "bytes": 16658,
+    "url": "/api/stored/7c15cd7b-5aa8-4931-874b-06ccf3afd1e6",
+    "thumb": "/api/stored/96491bdf-9222-48e5-950d-f55211b6d04a",
+    "width": 1200,
+    "height": 900
+   }
+  ],
+  "from": "luke",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "link": null,
+  "createdAt": "2026-11-22T02:09:00.866Z",
+  "read": true,
+  "answered": true,
+  "answeredAt": "2026-11-22T02:09:00.878Z",
+  "editedAt": null,
+  "unsent": false,
+  "replyTo": null
+ },
+ {
+  "id": "c43161e1-a411-4fcc-9f15-fbce0befd10a",
+  "text": "Strong shape. The text is small for a phone though. Try three words at most, and move the cup to the right third.",
+  "attachments": [],
+  "from": "claude",
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": null
+  },
+  "link": null,
+  "createdAt": "2026-11-22T02:09:00.877Z",
+  "read": false,
+  "answered": false,
+  "answeredAt": null,
+  "editedAt": null,
+  "unsent": false,
+  "replyTo": {
+   "id": "e5b74b4c-b547-4416-b33d-9c8d4a0b34a6",
+   "from": "luke",
+   "snippet": "Rough thumbnail idea. Thoughts?",
+   "unavailable": false
+  }
+ },
+ {
+  "id": "2f11cdc1-1c78-4960-834a-846d4a2dea29",
+  "text": "Here's last month's invoice for reference",
+  "attachments": [
+   {
+    "id": "a10755ad-6c61-4819-b716-b74b0bee548f",
+    "kind": "file",
+    "name": "Invoice 0041.pdf",
+    "mimeType": "application/pdf",
+    "bytes": 44,
+    "url": "/api/stored/a10755ad-6c61-4819-b716-b74b0bee548f",
+    "thumb": null,
+    "width": null,
+    "height": null
+   }
+  ],
+  "from": "luke",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "link": null,
+  "createdAt": "2026-11-22T02:09:00.914Z",
+  "read": true,
+  "answered": false,
+  "answeredAt": null,
+  "editedAt": null,
+  "unsent": false,
+  "replyTo": null
+ },
+ {
+  "id": "e67aae0f-e477-4541-b243-cefced9ea683",
+  "text": "Remind me tomorrow morning to send the new one",
+  "attachments": [],
+  "from": "luke",
+  "madeBy": {
+   "kind": "user",
+   "name": null,
+   "routine": null
+  },
+  "link": null,
+  "createdAt": "2026-11-22T02:09:00.928Z",
+  "read": true,
+  "answered": false,
+  "answeredAt": null,
+  "editedAt": "2026-11-22T02:09:00.948Z",
+  "unsent": false,
+  "replyTo": null
+ },
+ {
+  "id": "0a28baf6-d7c6-4e2b-8270-116b247e0936",
+  "text": "The weekly content ideas are ready: 5 new cards in the Content inbox.",
+  "attachments": [],
+  "from": "claude",
+  "madeBy": {
+   "kind": "agent",
+   "name": "Claude",
+   "routine": "Claude check-in"
+  },
+  "link": {
+   "type": "project",
+   "id": "12ac250b-2a67-434d-a1c3-73eaca86549a",
+   "title": "Content"
+  },
+  "createdAt": "2026-11-22T02:09:00.960Z",
+  "read": false,
+  "answered": false,
+  "answeredAt": null,
+  "editedAt": null,
+  "unsent": false,
+  "replyTo": null
+ }
+]

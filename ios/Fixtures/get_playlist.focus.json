@@ -1,0 +1,57 @@
+{
+ "id": "c8aa4fac-7767-4ee2-95eb-c706d4df3c5a",
+ "title": "Deep focus",
+ "icon": "🎧",
+ "excludedFromShuffle": true,
+ "madeBy": {
+  "kind": "user",
+  "name": null,
+  "routine": null
+ },
+ "episodes": [
+  {
+   "id": "ab041f00-7dd5-40c1-b23a-b20d67a74395",
+   "kind": "upload",
+   "title": "Weightless",
+   "show": "Marconi Union",
+   "src": "/api/stored/812ec0b2-00c9-48d6-8be8-555363ddf40a",
+   "artworkUrl": null,
+   "description": "",
+   "publishedAt": null,
+   "durationSeconds": 20,
+   "positionSeconds": 0,
+   "lastPlayedAt": null,
+   "finishedAt": null,
+   "kept": false,
+   "bytes": 160540,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   },
+   "createdAt": "2026-11-22T02:09:24.359Z"
+  },
+  {
+   "id": "b55e9cb8-3f32-486e-81ff-bc39cf2e7915",
+   "kind": "upload",
+   "title": "An Ending (Ascent)",
+   "show": "Brian Eno",
+   "src": "/api/stored/9c32261d-e067-45b8-b0bb-0fecbac2415b",
+   "artworkUrl": null,
+   "description": "",
+   "publishedAt": null,
+   "durationSeconds": 30,
+   "positionSeconds": 0,
+   "lastPlayedAt": null,
+   "finishedAt": null,
+   "kept": false,
+   "bytes": 240579,
+   "madeBy": {
+    "kind": "user",
+    "name": null,
+    "routine": null
+   },
+   "createdAt": "2026-11-22T02:09:24.379Z"
+  }
+ ]
+}
