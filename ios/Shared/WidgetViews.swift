@@ -132,7 +132,7 @@ struct DayPlanWidgetView: View {
 
     var body: some View {
         let allot = allotment
-        VStack(alignment: .leading, spacing: Space.s) {
+        VStack(alignment: .leading, spacing: Space.m) {
             HStack {
                 Text("Today").font(.geist(.heading, medium: true)).tracking(-0.68).foregroundStyle(Color.ink)
                 Text("\(tasks.count)").font(.geist(.meta)).foregroundStyle(Color.mutedText).contentTransition(.numericText())
@@ -147,8 +147,10 @@ struct DayPlanWidgetView: View {
                 Text("All done").font(.geist(.preview)).foregroundStyle(Color.mutedText).frame(maxWidth: .infinity)
                 Spacer()
             } else {
-                ForEach(TimeOfDay.allCases, id: \.self) { time in
-                    part(time, limit: allot[time] ?? 0)
+                VStack(alignment: .leading, spacing: Space.xl) {
+                    ForEach(TimeOfDay.allCases, id: \.self) { time in
+                        part(time, limit: allot[time] ?? 0)
+                    }
                 }
                 Spacer(minLength: 0)
             }
