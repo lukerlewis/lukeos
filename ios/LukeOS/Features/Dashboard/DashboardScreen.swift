@@ -115,7 +115,11 @@ struct DashboardScreen: View {
                         tasks: store.sorted(todays.filter { $0.timeOfDay == time }),
                         newTask: ["timeOfDay": .string(time.rawValue), "area": "life", "bucket": "today"],
                         dropChange: { ["timeOfDay": .string(time.rawValue)] },
-                        onOpen: { editing = $0 }
+                        onOpen: { editing = $0 },
+                        onAdd: {
+                            addSlot = time.rawValue
+                            adding = true
+                        }
                     )
                 }
             } else {
@@ -166,6 +170,7 @@ struct DashboardScreen: View {
 }
 
 /// One Today card as a list section: its icon, name and count, its tasks, and an "Add to …" row.
+/// With `onAdd` (Life's Morning, Day, Evening) the row is replaced by a + on the header that opens a new task there.
 struct TaskCardSection: View {
     var title: String
     var symbol: String
@@ -173,6 +178,7 @@ struct TaskCardSection: View {
     var newTask: Input
     var dropChange: () -> Input
     var onOpen: (LukeTask) -> Void
+    var onAdd: (() -> Void)? = nil
     @State private var store = TaskStore.shared
     /// Which parts of this card a dragged task is over (a row's id, "add", "header").
     @State private var over: Set<String> = []
@@ -203,12 +209,31 @@ struct TaskCardSection: View {
                 .taskRowInsets()
                 .taskRowActions(task, onOpen: { onOpen(task) })
             }
-            dropTarget(QuickAddRow(placeholder: "Add to \(title)", base: newTask), part: "add")
+            if onAdd == nil {
+                dropTarget(QuickAddRow(placeholder: "Add to \(title)", base: newTask), part: "add")
+            }
         } header: {
             HStack(spacing: Space.s) {
                 Image(systemName: symbol).font(.icon(.row)).foregroundStyle(Color.icon)
                 Text(title).textStyle(.heading, medium: true, color: .ink)
                 Text("\(tasks.count)").textStyle(.preview, color: .mutedText).rollingNumber(tasks.count)
+                if let onAdd {
+                    Spacer(minLength: 0)
+                    Button {
+                        Haptics.tap()
+                        onAdd()
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.icon(.row))
+                            .foregroundStyle(Color.icon)
+                            .frame(width: Size.tap, height: Size.tap)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.vertical, -Space.m)
+                    .padding(.trailing, -Space.m)
+                    .accessibilityLabel("Add to \(title)")
+                }
             }
             .textCase(nil)
             .padding(.leading, -4)
