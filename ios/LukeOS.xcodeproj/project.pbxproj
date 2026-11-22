@@ -37,18 +37,23 @@
 		3688E35338B11F6B29A7893E /* QuickAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0998E467A272C3FA9FE577E9 /* QuickAdd.swift */; };
 		387977BEC44AA12888468CD9 /* Motion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87457A944616272FDBF56D8B /* Motion.swift */; };
 		3B879C20D7609DB6E593C280 /* DocumentsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486301A741FFD0760B961706 /* DocumentsScreen.swift */; };
+		3C552CF834935C8EFD851723 /* Monitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 381AFC2320F296D63CBB3C61 /* Monitor.swift */; };
 		3FD84680298F6B7FC47E3082 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */; };
 		45E615CA688F9311C03454EA /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
 		46455338D24BA377E4833B62 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
 		4CAE7A26BC6AD9DFEA3428BB /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
 		4E000B6642E7021EDC1948B0 /* SmartEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098058FF06B81882280685AE /* SmartEntry.swift */; };
 		517971470AED03FBE61CAFAF /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
+		523631E48F85BE5CAF251E16 /* LukeOSScreenTimeShield.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5B2D19D6177B34C0AFD1E7DA /* LukeOSScreenTimeShield.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		583C47968956A636C60BA507 /* Shield.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2754B3418DB8FB0F046EDBD /* Shield.swift */; };
 		59C86346048A86319E64F09B /* LukeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */; };
 		5BEFAC1F62ED73DE2C943D31 /* LukeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */; };
 		5BF531E05C9FC3DFA72E4180 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
 		5CC51D53B7113A66BE63E140 /* Geist-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2F7A6BD04903E1695F8113DD /* Geist-Italic.ttf */; };
+		6109F68687DFF18E79731B8A /* ScreenBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7AD74C7A5669337F9F1B1A /* ScreenBlock.swift */; };
 		6555691EF32AA6BA269D4DE6 /* WriteExercise.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A657BE5A28CE81E9AA3A47 /* WriteExercise.swift */; };
 		686EDF989F8BAC4A4B3E4193 /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C3AC3B4AC80884C2BEE92C /* WidgetViews.swift */; };
+		6CE1D337F7CFBA5A00A34A20 /* ScreenBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7AD74C7A5669337F9F1B1A /* ScreenBlock.swift */; };
 		7364E735007D69FC462C90F4 /* TaskRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 909E79DA6EF9590C9C1CD9FD /* TaskRow.swift */; };
 		75798F15A850FF3098D04B36 /* Geist-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */; };
 		7E6B1515FF44F4E75EFE29DD /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
@@ -58,6 +63,8 @@
 		87A7332863A8A2656168AD23 /* FocusActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */; };
 		8A9BE1E5B9C26A63708AD64C /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
 		8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F6D9064445EA0B033C63DD /* NotesScreen.swift */; };
+		8D712C1117F6B7D1E19E7F15 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
+		8DBC8AD54FF570A04DB4F831 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
 		8E36B38B0ABB5360264EC227 /* TaskChips.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */; };
 		8E74F962D89035D7EB00094E /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = C0C494A94181D94768D93744 /* OFL.txt */; };
 		8FE6667FFD431CFC9B22FB92 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
@@ -71,13 +78,17 @@
 		A3E986A4836151972D673C9A /* LukeOSShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E4132CBAEC848204B8501F91 /* LukeOSShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A4965AB914917049173B5600 /* LukeOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */; };
 		A565AD31B8B2638946247E8E /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A20B11686A184AEF6AF3D9E /* TaskStore.swift */; };
+		A59AAEE20F5CEC005527C243 /* ScreenBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7AD74C7A5669337F9F1B1A /* ScreenBlock.swift */; };
 		AA971DEEDEC6896831479D1D /* Widgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFA2030A6359127F50C4901 /* Widgets.swift */; };
 		ABE582FC2026C5822F34402D /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7224A97F06EDA2C071E93974 /* ShareViewController.swift */; };
 		AFBB4CCE785BD60E7CBF0689 /* FocusActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */; };
 		B1356AE7D41BB4361DB7B663 /* recorded-writes.jsonl in Resources */ = {isa = PBXBuildFile; fileRef = FE36D3AC0DBA7575855B7E05 /* recorded-writes.jsonl */; };
 		B198BD097D0212901A8C9D14 /* NotesModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73FA9D0A65B898B6C40A645 /* NotesModels.swift */; };
+		B26D89F629F1D6E9A7BE2814 /* LukeOSScreenTimeMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 17631518D13385C6462187F5 /* LukeOSScreenTimeMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B41914D993C850AFEFE590FF /* ScreenTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E41D8760FC28ECE00D343FE /* ScreenTime.swift */; };
 		B6C3F3C1096B4DCF504C1185 /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C3AC3B4AC80884C2BEE92C /* WidgetViews.swift */; };
 		B80A014D581F2ABDFAAA45B8 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */; };
+		BA8ABD4FD98542210A7B3872 /* ScreenTimeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE448B8390A999D773262B8 /* ScreenTimeScreen.swift */; };
 		C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
 		C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */; };
 		C3A32E9422EF835236D5419C /* ProjectScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C2BD9EE1BCF23629CCF015 /* ProjectScreen.swift */; };
@@ -122,6 +133,20 @@
 			remoteGlobalIDString = A3943B4AB0228C13DA363325;
 			remoteInfo = LukeOSShare;
 		};
+		7111A3B60233AA374AFDBA98 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1060A2BF7B6C058A8D181181 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 055CF9587976FB1F5F10EDA0;
+			remoteInfo = LukeOSScreenTimeMonitor;
+		};
+		ABC697136FFF4D31DF02523C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1060A2BF7B6C058A8D181181 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 24E46995D742348A7AC59A46;
+			remoteInfo = LukeOSScreenTimeShield;
+		};
 		DCB968224E436606C045FD5D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1060A2BF7B6C058A8D181181 /* Project object */;
@@ -140,6 +165,8 @@
 			files = (
 				15E29D4E8DAEF33C50665BED /* LukeOSWidgets.appex in Embed Foundation Extensions */,
 				A3E986A4836151972D673C9A /* LukeOSShare.appex in Embed Foundation Extensions */,
+				B26D89F629F1D6E9A7BE2814 /* LukeOSScreenTimeMonitor.appex in Embed Foundation Extensions */,
+				523631E48F85BE5CAF251E16 /* LukeOSScreenTimeShield.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -152,27 +179,33 @@
 		0CFD7570694FA1A70725C11E /* FocusScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusScreen.swift; sourceTree = "<group>"; };
 		14E9C0D3FA1B38DF347D0649 /* InspirationScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspirationScreen.swift; sourceTree = "<group>"; };
 		156DD34C1C76B0818023D0D8 /* WidgetGallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetGallery.swift; sourceTree = "<group>"; };
+		17631518D13385C6462187F5 /* LukeOSScreenTimeMonitor.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSScreenTimeMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Medium.ttf"; sourceTree = "<group>"; };
 		1ED780373C71F795D1499F59 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1F65869C3314162FEC36A3D5 /* SearchTrashSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTrashSettings.swift; sourceTree = "<group>"; };
 		20DF58E356A09ABE4B9F3681 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		26D624DE18EA302A879144B4 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		27C2F1CD486AF3CD3DE9EF4E /* Chips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chips.swift; sourceTree = "<group>"; };
+		2B0EAB89A6F216A3BF21FDB1 /* Monitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Monitor.entitlements; sourceTree = "<group>"; };
 		2C0FA8D266700812C1D276B3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LukeAPI.swift; sourceTree = "<group>"; };
 		2F7A6BD04903E1695F8113DD /* Geist-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Italic.ttf"; sourceTree = "<group>"; };
 		3307F9A29573A3AC37BC9BBC /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		3525035D1DF9BE9D5887F0CA /* TaskEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskEditor.swift; sourceTree = "<group>"; };
 		36CFCBA190398A4E3D994D93 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		381AFC2320F296D63CBB3C61 /* Monitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Monitor.swift; sourceTree = "<group>"; };
 		3D2EBA304ABD1F8DF09B81A2 /* FocusTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusTimer.swift; sourceTree = "<group>"; };
 		3D3ADA9E4A56803A6F4A42C8 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fixtures; sourceTree = SOURCE_ROOT; };
 		3F44FAC64420145C46F8B100 /* brown-noise.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "brown-noise.mp3"; sourceTree = "<group>"; };
 		46DD2C51661DA1C32EA29038 /* MainTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabs.swift; sourceTree = "<group>"; };
 		486301A741FFD0760B961706 /* DocumentsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsScreen.swift; sourceTree = "<group>"; };
+		4F7AD74C7A5669337F9F1B1A /* ScreenBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenBlock.swift; sourceTree = "<group>"; };
 		51E606137670B14EB4A31BF2 /* SharedConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedConfig.swift; sourceTree = "<group>"; };
 		5851D0E22377F21FFE031CD9 /* LukeOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LukeOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5B2D19D6177B34C0AFD1E7DA /* LukeOSScreenTimeShield.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSScreenTimeShield.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		5C9F429D8FCD80C44BC95E2A /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardScreen.swift; sourceTree = "<group>"; };
+		5E41D8760FC28ECE00D343FE /* ScreenTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTime.swift; sourceTree = "<group>"; };
 		607793720F40DE07F244CEFA /* NoteSegments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteSegments.swift; sourceTree = "<group>"; };
 		614355A0BF4CA86EB170F69E /* Comments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Comments.swift; sourceTree = "<group>"; };
 		6A8EC3AA2EB8960E29672F39 /* MessagesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesScreen.swift; sourceTree = "<group>"; };
@@ -182,6 +215,7 @@
 		760A8370538F04D01075FB2D /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intents.swift; sourceTree = "<group>"; };
 		76F23E9334AB3A4E13541405 /* NoteScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteScreen.swift; sourceTree = "<group>"; };
 		78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Regular.ttf"; sourceTree = "<group>"; };
+		7CF1FA53E7C7BFC13771B86E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreScreen.swift; sourceTree = "<group>"; };
 		80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		87457A944616272FDBF56D8B /* Motion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Motion.swift; sourceTree = "<group>"; };
@@ -206,12 +240,14 @@
 		C0C494A94181D94768D93744 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskChips.swift; sourceTree = "<group>"; };
 		C1E0575AC231ABBAAF1CF076 /* WebSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSheet.swift; sourceTree = "<group>"; };
+		C21BAED1289CB17CFAC3B6BE /* Shield.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Shield.entitlements; sourceTree = "<group>"; };
 		C49E3F806D7DC7EB411FCC4E /* GeistMono-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GeistMono-Regular.ttf"; sourceTree = "<group>"; };
 		C90D157E9AF283347F38DDE4 /* MarkdownEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownEditor.swift; sourceTree = "<group>"; };
 		CBF34330E3F762A7E0822166 /* TaskModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskModels.swift; sourceTree = "<group>"; };
 		CC3C898E975252A9D2C39553 /* ScratchPadEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScratchPadEditor.swift; sourceTree = "<group>"; };
 		CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecodingTests.swift; sourceTree = "<group>"; };
 		D1C8581D97D4E60FBBAB7FFF /* Widgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Widgets.entitlements; sourceTree = "<group>"; };
+		D2754B3418DB8FB0F046EDBD /* Shield.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shield.swift; sourceTree = "<group>"; };
 		D4F6D9064445EA0B033C63DD /* NotesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesScreen.swift; sourceTree = "<group>"; };
 		D5809A8B8B13B2188B471B73 /* LukeOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LukeOS.entitlements; sourceTree = "<group>"; };
 		DC534031F9B58133C59F899B /* Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Appearance.swift; sourceTree = "<group>"; };
@@ -220,14 +256,36 @@
 		E5B4EE6AAF2908A4D409CAD4 /* NowPlaying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlaying.swift; sourceTree = "<group>"; };
 		E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-MediumItalic.ttf"; sourceTree = "<group>"; };
 		ED62D3DC669FCDDBBC443602 /* Home.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Home.swift; sourceTree = "<group>"; };
+		EF34C5CB9E44DC730A191E88 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F3A4BBA3095CC6D9FEA3B101 /* LukeOSTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LukeOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F9E126DF4D92FDE499CC37C7 /* Share.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Share.entitlements; sourceTree = "<group>"; };
+		FAE448B8390A999D773262B8 /* ScreenTimeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTimeScreen.swift; sourceTree = "<group>"; };
 		FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicScreen.swift; sourceTree = "<group>"; };
 		FE36D3AC0DBA7575855B7E05 /* recorded-writes.jsonl */ = {isa = PBXFileReference; path = "recorded-writes.jsonl"; sourceTree = "<group>"; };
 		FE4D6D1373220413F091AB9B /* DemoServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoServer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		060B8BA8374A1F1D02EC6526 /* Monitor */ = {
+			isa = PBXGroup;
+			children = (
+				EF34C5CB9E44DC730A191E88 /* Info.plist */,
+				2B0EAB89A6F216A3BF21FDB1 /* Monitor.entitlements */,
+				381AFC2320F296D63CBB3C61 /* Monitor.swift */,
+			);
+			path = Monitor;
+			sourceTree = "<group>";
+		};
+		0C163CB064A219B85107503C /* Shield */ = {
+			isa = PBXGroup;
+			children = (
+				7CF1FA53E7C7BFC13771B86E /* Info.plist */,
+				C21BAED1289CB17CFAC3B6BE /* Shield.entitlements */,
+				D2754B3418DB8FB0F046EDBD /* Shield.swift */,
+			);
+			path = Shield;
+			sourceTree = "<group>";
+		};
 		1987D289E04B5E431A27F4D0 /* Tasks */ = {
 			isa = PBXGroup;
 			children = (
@@ -244,12 +302,23 @@
 			children = (
 				3D3ADA9E4A56803A6F4A42C8 /* Fixtures */,
 				69F7B012C6F4869EEFEFD9B3 /* LukeOS */,
+				2840F7B8AFC05B856035734F /* ScreenTime */,
 				DD06F2700539341EEE982E31 /* Share */,
 				8A0F5768FF79717DFC90C7AD /* Shared */,
 				53C753680A5CD231BB4FAF70 /* Tests */,
 				E7920085BD2788AFEC85B2EE /* Widgets */,
 				6FBC0B07B8451A6D3896A2DB /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		2840F7B8AFC05B856035734F /* ScreenTime */ = {
+			isa = PBXGroup;
+			children = (
+				060B8BA8374A1F1D02EC6526 /* Monitor */,
+				39AF674238C66AF98E027A5C /* Shared */,
+				0C163CB064A219B85107503C /* Shield */,
+			);
+			path = ScreenTime;
 			sourceTree = "<group>";
 		};
 		2BB72A74A0E7D9CBD309F718 /* Resources */ = {
@@ -275,6 +344,14 @@
 				C0C494A94181D94768D93744 /* OFL.txt */,
 			);
 			path = Fonts;
+			sourceTree = "<group>";
+		};
+		39AF674238C66AF98E027A5C /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				4F7AD74C7A5669337F9F1B1A /* ScreenBlock.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		46BD6778096EDDF4526C6D7B /* Comments */ = {
@@ -345,6 +422,8 @@
 			isa = PBXGroup;
 			children = (
 				5851D0E22377F21FFE031CD9 /* LukeOS.app */,
+				17631518D13385C6462187F5 /* LukeOSScreenTimeMonitor.appex */,
+				5B2D19D6177B34C0AFD1E7DA /* LukeOSScreenTimeShield.appex */,
 				E4132CBAEC848204B8501F91 /* LukeOSShare.appex */,
 				F3A4BBA3095CC6D9FEA3B101 /* LukeOSTests.xctest */,
 				80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */,
@@ -425,6 +504,15 @@
 			path = Core;
 			sourceTree = "<group>";
 		};
+		A3DDEBDA1B5254E3B9C2CE23 /* ScreenTime */ = {
+			isa = PBXGroup;
+			children = (
+				5E41D8760FC28ECE00D343FE /* ScreenTime.swift */,
+				FAE448B8390A999D773262B8 /* ScreenTimeScreen.swift */,
+			);
+			path = ScreenTime;
+			sourceTree = "<group>";
+		};
 		BD9275AF0A986F17A3BADE91 /* Features */ = {
 			isa = PBXGroup;
 			children = (
@@ -435,6 +523,7 @@
 				84D2F8811D8063C2F91F32B4 /* More */,
 				C4DB6249A329CDA9BB651D72 /* Music */,
 				FA136FDAEB8D60B978496C5E /* Notes */,
+				A3DDEBDA1B5254E3B9C2CE23 /* ScreenTime */,
 				1987D289E04B5E431A27F4D0 /* Tasks */,
 			);
 			path = Features;
@@ -491,6 +580,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		055CF9587976FB1F5F10EDA0 /* LukeOSScreenTimeMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E7ACCFA5292929D6784CD652 /* Build configuration list for PBXNativeTarget "LukeOSScreenTimeMonitor" */;
+			buildPhases = (
+				2CD9EF9F4285704FD892BB03 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LukeOSScreenTimeMonitor;
+			packageProductDependencies = (
+			);
+			productName = LukeOSScreenTimeMonitor;
+			productReference = 17631518D13385C6462187F5 /* LukeOSScreenTimeMonitor.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		1DB052793EE96C4447EB0FE3 /* LukeOSTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 379FF56633DB563DA610F067 /* Build configuration list for PBXNativeTarget "LukeOSTests" */;
@@ -509,6 +615,23 @@
 			productName = LukeOSTests;
 			productReference = F3A4BBA3095CC6D9FEA3B101 /* LukeOSTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		24E46995D742348A7AC59A46 /* LukeOSScreenTimeShield */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7D8C2FB028642176283023DD /* Build configuration list for PBXNativeTarget "LukeOSScreenTimeShield" */;
+			buildPhases = (
+				652E2B211944FDF2502A894A /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LukeOSScreenTimeShield;
+			packageProductDependencies = (
+			);
+			productName = LukeOSScreenTimeShield;
+			productReference = 5B2D19D6177B34C0AFD1E7DA /* LukeOSScreenTimeShield.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		33DA494BD4BA78DBFEF48288 /* LukeOSWidgets */ = {
 			isa = PBXNativeTarget;
@@ -541,6 +664,8 @@
 			dependencies = (
 				DC3EA67C88A3F32095752202 /* PBXTargetDependency */,
 				1E0D020F2589364603740662 /* PBXTargetDependency */,
+				00890185FF9EA7A17A749FCE /* PBXTargetDependency */,
+				11D65850E6B20F456A418B86 /* PBXTargetDependency */,
 			);
 			name = LukeOS;
 			packageProductDependencies = (
@@ -575,7 +700,15 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					055CF9587976FB1F5F10EDA0 = {
+						DevelopmentTeam = 563YN34NMT;
+						ProvisioningStyle = Automatic;
+					};
 					1DB052793EE96C4447EB0FE3 = {
+						DevelopmentTeam = 563YN34NMT;
+						ProvisioningStyle = Automatic;
+					};
+					24E46995D742348A7AC59A46 = {
 						DevelopmentTeam = 563YN34NMT;
 						ProvisioningStyle = Automatic;
 					};
@@ -608,6 +741,8 @@
 			projectRoot = "";
 			targets = (
 				8A5378F491A0C1D8C91EE340 /* LukeOS */,
+				055CF9587976FB1F5F10EDA0 /* LukeOSScreenTimeMonitor */,
+				24E46995D742348A7AC59A46 /* LukeOSScreenTimeShield */,
 				A3943B4AB0228C13DA363325 /* LukeOSShare */,
 				1DB052793EE96C4447EB0FE3 /* LukeOSTests */,
 				33DA494BD4BA78DBFEF48288 /* LukeOSWidgets */,
@@ -699,6 +834,9 @@
 				CC1C270197956507A3B8566E /* RemoteImage.swift in Sources */,
 				96B9F6CBE1BEB87879C1067B /* Repo.swift in Sources */,
 				316AF9BAC5E14D61596FF29D /* ScratchPadEditor.swift in Sources */,
+				A59AAEE20F5CEC005527C243 /* ScreenBlock.swift in Sources */,
+				B41914D993C850AFEFE590FF /* ScreenTime.swift in Sources */,
+				BA8ABD4FD98542210A7B3872 /* ScreenTimeScreen.swift in Sources */,
 				354C7F3CB290CEA782C8C782 /* SearchTrashSettings.swift in Sources */,
 				C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */,
 				C9AEB8725C1104EB8FBC3B34 /* SignInView.swift in Sources */,
@@ -714,6 +852,26 @@
 				D0E23CB0783A41CA8C3F1448 /* WidgetSnapshot.swift in Sources */,
 				B6C3F3C1096B4DCF504C1185 /* WidgetViews.swift in Sources */,
 				6555691EF32AA6BA269D4DE6 /* WriteExercise.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2CD9EF9F4285704FD892BB03 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3C552CF834935C8EFD851723 /* Monitor.swift in Sources */,
+				6109F68687DFF18E79731B8A /* ScreenBlock.swift in Sources */,
+				8D712C1117F6B7D1E19E7F15 /* SharedConfig.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		652E2B211944FDF2502A894A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6CE1D337F7CFBA5A00A34A20 /* ScreenBlock.swift in Sources */,
+				8DBC8AD54FF570A04DB4F831 /* SharedConfig.swift in Sources */,
+				583C47968956A636C60BA507 /* Shield.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -767,6 +925,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		00890185FF9EA7A17A749FCE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 055CF9587976FB1F5F10EDA0 /* LukeOSScreenTimeMonitor */;
+			targetProxy = 7111A3B60233AA374AFDBA98 /* PBXContainerItemProxy */;
+		};
+		11D65850E6B20F456A418B86 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 24E46995D742348A7AC59A46 /* LukeOSScreenTimeShield */;
+			targetProxy = ABC697136FFF4D31DF02523C /* PBXContainerItemProxy */;
+		};
 		1E0D020F2589364603740662 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A3943B4AB0228C13DA363325 /* LukeOSShare */;
@@ -893,6 +1061,44 @@
 			};
 			name = Debug;
 		};
+		71ADBF0CCC51F77ED14D9E31 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ScreenTime/Shield/Shield.entitlements;
+				INFOPLIST_FILE = ScreenTime/Shield/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lewisdesign.lukeos.screentime-shield";
+				PRODUCT_NAME = LukeOSScreenTimeShield;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		8D85B74FB04C7047371F80BE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ScreenTime/Monitor/Monitor.entitlements;
+				INFOPLIST_FILE = ScreenTime/Monitor/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lewisdesign.lukeos.screentime-monitor";
+				PRODUCT_NAME = LukeOSScreenTimeMonitor;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		8EADF67B187F7C94AA0889E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -956,6 +1162,25 @@
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
+		};
+		9EFA6CA04EAE1E694D89C848 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ScreenTime/Shield/Shield.entitlements;
+				INFOPLIST_FILE = ScreenTime/Shield/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lewisdesign.lukeos.screentime-shield";
+				PRODUCT_NAME = LukeOSScreenTimeShield;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
 		};
 		A9B98743763377171D79BAB1 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -1066,6 +1291,25 @@
 			};
 			name = Release;
 		};
+		FDD8BDAA20944310FC36F3FB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ScreenTime/Monitor/Monitor.entitlements;
+				INFOPLIST_FILE = ScreenTime/Monitor/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lewisdesign.lukeos.screentime-monitor";
+				PRODUCT_NAME = LukeOSScreenTimeMonitor;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1096,11 +1340,29 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		7D8C2FB028642176283023DD /* Build configuration list for PBXNativeTarget "LukeOSScreenTimeShield" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9EFA6CA04EAE1E694D89C848 /* Debug */,
+				71ADBF0CCC51F77ED14D9E31 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		8812522E183E7DC78A10D4BC /* Build configuration list for PBXNativeTarget "LukeOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F9A962092EC5F3D80D149937 /* Debug */,
 				11CA4BE95F11A9A6912BF66D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E7ACCFA5292929D6784CD652 /* Build configuration list for PBXNativeTarget "LukeOSScreenTimeMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FDD8BDAA20944310FC36F3FB /* Debug */,
+				8D85B74FB04C7047371F80BE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

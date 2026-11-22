@@ -306,7 +306,11 @@ final class FocusTimer {
             "endedAt": .string(ISO8601DateFormatter.withFractional.string(from: endedAt)),
         ]
         if let label { input["label"] = .string(label) }
-        Task { await Repo.change("log_focus_session", input) }
+        Task {
+            await Repo.change("log_focus_session", input)
+            // Enough focus time may unlock the apps Luke blocked.
+            await ScreenTime.shared.refresh()
+        }
     }
 
     private func schedule(at date: Date, body: String) {

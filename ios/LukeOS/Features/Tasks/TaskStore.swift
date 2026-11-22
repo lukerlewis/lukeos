@@ -122,6 +122,7 @@ final class TaskStore {
         withAnimation(Motion.snappy) { tasks[index] = after }
         let wasDone = before.status != .done && after.status == .done
         if wasDone { Haptics.success() }
+        ScreenTime.shared.noted(after)
         Task {
             if let data = await Repo.change("update_task", changes.merging(["id": .string(id)]) { $1 }),
                let fresh = try? LukeAPI.decoder.decode(LukeTask.self, from: data),
