@@ -1,0 +1,972 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0093C104660DCAA58C219C79 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
+		00DF40CB7AE24091088A66F9 /* SmartEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098058FF06B81882280685AE /* SmartEntry.swift */; };
+		0470D2E09326A8059242F706 /* TaskEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3525035D1DF9BE9D5887F0CA /* TaskEditor.swift */; };
+		0805A72D42A60BBFFE2D87E4 /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
+		09913344B2BFE017C10F4379 /* FocusScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CFD7570694FA1A70725C11E /* FocusScreen.swift */; };
+		0E5B7EBBBA4FE3B1C3BFBD05 /* brown-noise.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 3F44FAC64420145C46F8B100 /* brown-noise.mp3 */; };
+		108EE03E4D1843B714921C25 /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9306D2188BBAD189C914BE0B /* BoardView.swift */; };
+		112F5DF9970715D0A4B7CA93 /* GeistMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C49E3F806D7DC7EB411FCC4E /* GeistMono-Regular.ttf */; };
+		15E29D4E8DAEF33C50665BED /* LukeOSWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		17F485B4711B1F3360E36862 /* Appearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC534031F9B58133C59F899B /* Appearance.swift */; };
+		1EA1B27D82AD2C8DC2A6FD93 /* MainTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46DD2C51661DA1C32EA29038 /* MainTabs.swift */; };
+		210E60E9514C828693991990 /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
+		22D543FD3689BF05D2EE8827 /* Fixtures in Resources */ = {isa = PBXBuildFile; fileRef = 3D3ADA9E4A56803A6F4A42C8 /* Fixtures */; };
+		29D6690D0165537C3AA425B5 /* Home.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED62D3DC669FCDDBBC443602 /* Home.swift */; };
+		316AF9BAC5E14D61596FF29D /* ScratchPadEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3C898E975252A9D2C39553 /* ScratchPadEditor.swift */; };
+		3255AAE332A0814CD453B793 /* Comments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 614355A0BF4CA86EB170F69E /* Comments.swift */; };
+		3362AB0A775BEB2DFE987116 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3307F9A29573A3AC37BC9BBC /* AppModel.swift */; };
+		35A3D050653345C50ED841BA /* MoreScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */; };
+		3688E35338B11F6B29A7893E /* QuickAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0998E467A272C3FA9FE577E9 /* QuickAdd.swift */; };
+		45E615CA688F9311C03454EA /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
+		46455338D24BA377E4833B62 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
+		4CAE7A26BC6AD9DFEA3428BB /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
+		4E000B6642E7021EDC1948B0 /* SmartEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098058FF06B81882280685AE /* SmartEntry.swift */; };
+		517971470AED03FBE61CAFAF /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
+		59C86346048A86319E64F09B /* LukeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */; };
+		5BEFAC1F62ED73DE2C943D31 /* LukeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */; };
+		5BF531E05C9FC3DFA72E4180 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
+		5CC51D53B7113A66BE63E140 /* Geist-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2F7A6BD04903E1695F8113DD /* Geist-Italic.ttf */; };
+		7364E735007D69FC462C90F4 /* TaskRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 909E79DA6EF9590C9C1CD9FD /* TaskRow.swift */; };
+		75798F15A850FF3098D04B36 /* Geist-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */; };
+		7E6B1515FF44F4E75EFE29DD /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
+		83088034108BCAD9FD3F7E85 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
+		8A9BE1E5B9C26A63708AD64C /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
+		8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F6D9064445EA0B033C63DD /* NotesScreen.swift */; };
+		8E36B38B0ABB5360264EC227 /* TaskChips.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */; };
+		8E74F962D89035D7EB00094E /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = C0C494A94181D94768D93744 /* OFL.txt */; };
+		8FE6667FFD431CFC9B22FB92 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
+		96B9F6CBE1BEB87879C1067B /* Repo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABE02CA05ECDA1E61BCFFA4 /* Repo.swift */; };
+		9AFCB62D7AFA686DE2C84D4F /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9F429D8FCD80C44BC95E2A /* Components.swift */; };
+		9BAB1809D09B783C8EA64032 /* SmartEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098058FF06B81882280685AE /* SmartEntry.swift */; };
+		9C2495C994D29770A3DDBE2F /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
+		A3E986A4836151972D673C9A /* LukeOSShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E4132CBAEC848204B8501F91 /* LukeOSShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A4965AB914917049173B5600 /* LukeOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */; };
+		A565AD31B8B2638946247E8E /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A20B11686A184AEF6AF3D9E /* TaskStore.swift */; };
+		AA971DEEDEC6896831479D1D /* Widgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFA2030A6359127F50C4901 /* Widgets.swift */; };
+		ABE582FC2026C5822F34402D /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7224A97F06EDA2C071E93974 /* ShareViewController.swift */; };
+		B80A014D581F2ABDFAAA45B8 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */; };
+		C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
+		C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */; };
+		C3F30431D8DE808B8E179635 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1ED780373C71F795D1499F59 /* Assets.xcassets */; };
+		C9AEB8725C1104EB8FBC3B34 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CFCBA190398A4E3D994D93 /* SignInView.swift */; };
+		CA95ECD27518E4B40C6393E6 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
+		D0E23CB0783A41CA8C3F1448 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
+		D3E4035A665C6DAE59035FF8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
+		D3F0BD333A4E0A8869A01994 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
+		DB7091FDC6C0D73AE635ABF4 /* LukeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */; };
+		DE8850984052BA4FBF917843 /* Geist-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */; };
+		E08CE4D2B53807E7DADBA355 /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
+		E99D3E61ED06BD3EBD4EE4CE /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
+		ECAD8123915B37929BA23CC1 /* DashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */; };
+		F174C81EEEEEA95C303BB284 /* Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73CADE5D302CDEDEECC713F7 /* Push.swift */; };
+		F98F60E63DFFD314E5C7F302 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
+		FADA218B56BBB17D0F277F8F /* DecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4846A7EA4BF77CA4DD0DDB05 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1060A2BF7B6C058A8D181181 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A5378F491A0C1D8C91EE340;
+			remoteInfo = LukeOS;
+		};
+		6D4E186DA672D97065035A7C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1060A2BF7B6C058A8D181181 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A3943B4AB0228C13DA363325;
+			remoteInfo = LukeOSShare;
+		};
+		DCB968224E436606C045FD5D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1060A2BF7B6C058A8D181181 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 33DA494BD4BA78DBFEF48288;
+			remoteInfo = LukeOSWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0A613AED12437AD653579C11 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				15E29D4E8DAEF33C50665BED /* LukeOSWidgets.appex in Embed Foundation Extensions */,
+				A3E986A4836151972D673C9A /* LukeOSShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		098058FF06B81882280685AE /* SmartEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartEntry.swift; sourceTree = "<group>"; };
+		0998E467A272C3FA9FE577E9 /* QuickAdd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAdd.swift; sourceTree = "<group>"; };
+		0CFD7570694FA1A70725C11E /* FocusScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusScreen.swift; sourceTree = "<group>"; };
+		192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Medium.ttf"; sourceTree = "<group>"; };
+		1ED780373C71F795D1499F59 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		20DF58E356A09ABE4B9F3681 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2C0FA8D266700812C1D276B3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LukeAPI.swift; sourceTree = "<group>"; };
+		2F7A6BD04903E1695F8113DD /* Geist-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Italic.ttf"; sourceTree = "<group>"; };
+		3307F9A29573A3AC37BC9BBC /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		3525035D1DF9BE9D5887F0CA /* TaskEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskEditor.swift; sourceTree = "<group>"; };
+		36CFCBA190398A4E3D994D93 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		3D3ADA9E4A56803A6F4A42C8 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fixtures; sourceTree = SOURCE_ROOT; };
+		3F44FAC64420145C46F8B100 /* brown-noise.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "brown-noise.mp3"; sourceTree = "<group>"; };
+		46DD2C51661DA1C32EA29038 /* MainTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabs.swift; sourceTree = "<group>"; };
+		51E606137670B14EB4A31BF2 /* SharedConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedConfig.swift; sourceTree = "<group>"; };
+		5851D0E22377F21FFE031CD9 /* LukeOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LukeOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5C9F429D8FCD80C44BC95E2A /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardScreen.swift; sourceTree = "<group>"; };
+		614355A0BF4CA86EB170F69E /* Comments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Comments.swift; sourceTree = "<group>"; };
+		7224A97F06EDA2C071E93974 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		73CADE5D302CDEDEECC713F7 /* Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Push.swift; sourceTree = "<group>"; };
+		744FE808E024262F48C42255 /* Day.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
+		78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Regular.ttf"; sourceTree = "<group>"; };
+		7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreScreen.swift; sourceTree = "<group>"; };
+		80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8A20B11686A184AEF6AF3D9E /* TaskStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStore.swift; sourceTree = "<group>"; };
+		8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
+		8F7789F731BF7BE97BD41BE4 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		8FFA2030A6359127F50C4901 /* Widgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widgets.swift; sourceTree = "<group>"; };
+		909E79DA6EF9590C9C1CD9FD /* TaskRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRow.swift; sourceTree = "<group>"; };
+		9306D2188BBAD189C914BE0B /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
+		9A6A09186897DD3063034BD7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LukeOSApp.swift; sourceTree = "<group>"; };
+		AABE02CA05ECDA1E61BCFFA4 /* Repo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repo.swift; sourceTree = "<group>"; };
+		C0271259A5BD4781955040F4 /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
+		C0C494A94181D94768D93744 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
+		C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskChips.swift; sourceTree = "<group>"; };
+		C49E3F806D7DC7EB411FCC4E /* GeistMono-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GeistMono-Regular.ttf"; sourceTree = "<group>"; };
+		CBF34330E3F762A7E0822166 /* TaskModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskModels.swift; sourceTree = "<group>"; };
+		CC3C898E975252A9D2C39553 /* ScratchPadEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScratchPadEditor.swift; sourceTree = "<group>"; };
+		CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecodingTests.swift; sourceTree = "<group>"; };
+		D1C8581D97D4E60FBBAB7FFF /* Widgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Widgets.entitlements; sourceTree = "<group>"; };
+		D4F6D9064445EA0B033C63DD /* NotesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesScreen.swift; sourceTree = "<group>"; };
+		D5809A8B8B13B2188B471B73 /* LukeOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LukeOS.entitlements; sourceTree = "<group>"; };
+		DC534031F9B58133C59F899B /* Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Appearance.swift; sourceTree = "<group>"; };
+		E4132CBAEC848204B8501F91 /* LukeOSShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-MediumItalic.ttf"; sourceTree = "<group>"; };
+		ED62D3DC669FCDDBBC443602 /* Home.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Home.swift; sourceTree = "<group>"; };
+		F3A4BBA3095CC6D9FEA3B101 /* LukeOSTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LukeOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F9E126DF4D92FDE499CC37C7 /* Share.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Share.entitlements; sourceTree = "<group>"; };
+		FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicScreen.swift; sourceTree = "<group>"; };
+		FE4D6D1373220413F091AB9B /* DemoServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoServer.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1987D289E04B5E431A27F4D0 /* Tasks */ = {
+			isa = PBXGroup;
+			children = (
+				0998E467A272C3FA9FE577E9 /* QuickAdd.swift */,
+				3525035D1DF9BE9D5887F0CA /* TaskEditor.swift */,
+				909E79DA6EF9590C9C1CD9FD /* TaskRow.swift */,
+				8A20B11686A184AEF6AF3D9E /* TaskStore.swift */,
+			);
+			path = Tasks;
+			sourceTree = "<group>";
+		};
+		1D573C088672F92351CAE630 = {
+			isa = PBXGroup;
+			children = (
+				3D3ADA9E4A56803A6F4A42C8 /* Fixtures */,
+				69F7B012C6F4869EEFEFD9B3 /* LukeOS */,
+				DD06F2700539341EEE982E31 /* Share */,
+				8A0F5768FF79717DFC90C7AD /* Shared */,
+				53C753680A5CD231BB4FAF70 /* Tests */,
+				E7920085BD2788AFEC85B2EE /* Widgets */,
+				6FBC0B07B8451A6D3896A2DB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2BB72A74A0E7D9CBD309F718 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				1ED780373C71F795D1499F59 /* Assets.xcassets */,
+				9A6A09186897DD3063034BD7 /* Info.plist */,
+				D5809A8B8B13B2188B471B73 /* LukeOS.entitlements */,
+				30DBF3BF3FE35777C6B15E63 /* Fonts */,
+				94512CFF902465BD0E2892A5 /* Sounds */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		30DBF3BF3FE35777C6B15E63 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				2F7A6BD04903E1695F8113DD /* Geist-Italic.ttf */,
+				192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */,
+				E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */,
+				78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */,
+				C49E3F806D7DC7EB411FCC4E /* GeistMono-Regular.ttf */,
+				C0C494A94181D94768D93744 /* OFL.txt */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		46BD6778096EDDF4526C6D7B /* Comments */ = {
+			isa = PBXGroup;
+			children = (
+				614355A0BF4CA86EB170F69E /* Comments.swift */,
+			);
+			path = Comments;
+			sourceTree = "<group>";
+		};
+		49C7E2381D3D41295E04E5E3 /* Focus */ = {
+			isa = PBXGroup;
+			children = (
+				0CFD7570694FA1A70725C11E /* FocusScreen.swift */,
+			);
+			path = Focus;
+			sourceTree = "<group>";
+		};
+		52DF20A27174C32D457D36BD /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				CBF34330E3F762A7E0822166 /* TaskModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		53C753680A5CD231BB4FAF70 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		6861ED217222DE523800CB72 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				DC534031F9B58133C59F899B /* Appearance.swift */,
+				5C9F429D8FCD80C44BC95E2A /* Components.swift */,
+				C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		69F7B012C6F4869EEFEFD9B3 /* LukeOS */ = {
+			isa = PBXGroup;
+			children = (
+				80548E63659ED0CC044874D1 /* App */,
+				A17A8F492DE288193AC2A68A /* Core */,
+				6861ED217222DE523800CB72 /* DesignSystem */,
+				BD9275AF0A986F17A3BADE91 /* Features */,
+				2BB72A74A0E7D9CBD309F718 /* Resources */,
+			);
+			path = LukeOS;
+			sourceTree = "<group>";
+		};
+		6FBC0B07B8451A6D3896A2DB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5851D0E22377F21FFE031CD9 /* LukeOS.app */,
+				E4132CBAEC848204B8501F91 /* LukeOSShare.appex */,
+				F3A4BBA3095CC6D9FEA3B101 /* LukeOSTests.xctest */,
+				80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		80548E63659ED0CC044874D1 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				3307F9A29573A3AC37BC9BBC /* AppModel.swift */,
+				9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */,
+				46DD2C51661DA1C32EA29038 /* MainTabs.swift */,
+				36CFCBA190398A4E3D994D93 /* SignInView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		84D2F8811D8063C2F91F32B4 /* More */ = {
+			isa = PBXGroup;
+			children = (
+				7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */,
+			);
+			path = More;
+			sourceTree = "<group>";
+		};
+		8A0F5768FF79717DFC90C7AD /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				744FE808E024262F48C42255 /* Day.swift */,
+				FE4D6D1373220413F091AB9B /* DemoServer.swift */,
+				C0271259A5BD4781955040F4 /* JSON.swift */,
+				2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */,
+				51E606137670B14EB4A31BF2 /* SharedConfig.swift */,
+				098058FF06B81882280685AE /* SmartEntry.swift */,
+				8F7789F731BF7BE97BD41BE4 /* Theme.swift */,
+				8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */,
+				52DF20A27174C32D457D36BD /* Models */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		94512CFF902465BD0E2892A5 /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				3F44FAC64420145C46F8B100 /* brown-noise.mp3 */,
+			);
+			path = Sounds;
+			sourceTree = "<group>";
+		};
+		9800E98078E891B2E31944F9 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				9306D2188BBAD189C914BE0B /* BoardView.swift */,
+				5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */,
+				CC3C898E975252A9D2C39553 /* ScratchPadEditor.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		A17A8F492DE288193AC2A68A /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				ED62D3DC669FCDDBBC443602 /* Home.swift */,
+				73CADE5D302CDEDEECC713F7 /* Push.swift */,
+				AABE02CA05ECDA1E61BCFFA4 /* Repo.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		BD9275AF0A986F17A3BADE91 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				46BD6778096EDDF4526C6D7B /* Comments */,
+				9800E98078E891B2E31944F9 /* Dashboard */,
+				49C7E2381D3D41295E04E5E3 /* Focus */,
+				84D2F8811D8063C2F91F32B4 /* More */,
+				C4DB6249A329CDA9BB651D72 /* Music */,
+				FA136FDAEB8D60B978496C5E /* Notes */,
+				1987D289E04B5E431A27F4D0 /* Tasks */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		C4DB6249A329CDA9BB651D72 /* Music */ = {
+			isa = PBXGroup;
+			children = (
+				FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */,
+			);
+			path = Music;
+			sourceTree = "<group>";
+		};
+		DD06F2700539341EEE982E31 /* Share */ = {
+			isa = PBXGroup;
+			children = (
+				20DF58E356A09ABE4B9F3681 /* Info.plist */,
+				F9E126DF4D92FDE499CC37C7 /* Share.entitlements */,
+				7224A97F06EDA2C071E93974 /* ShareViewController.swift */,
+			);
+			path = Share;
+			sourceTree = "<group>";
+		};
+		E7920085BD2788AFEC85B2EE /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				2C0FA8D266700812C1D276B3 /* Info.plist */,
+				D1C8581D97D4E60FBBAB7FFF /* Widgets.entitlements */,
+				8FFA2030A6359127F50C4901 /* Widgets.swift */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
+		FA136FDAEB8D60B978496C5E /* Notes */ = {
+			isa = PBXGroup;
+			children = (
+				D4F6D9064445EA0B033C63DD /* NotesScreen.swift */,
+			);
+			path = Notes;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1DB052793EE96C4447EB0FE3 /* LukeOSTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 379FF56633DB563DA610F067 /* Build configuration list for PBXNativeTarget "LukeOSTests" */;
+			buildPhases = (
+				A1C5CA2E12E6F15D7725846E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B4D92522E02AF8CD8076EAC4 /* PBXTargetDependency */,
+			);
+			name = LukeOSTests;
+			packageProductDependencies = (
+			);
+			productName = LukeOSTests;
+			productReference = F3A4BBA3095CC6D9FEA3B101 /* LukeOSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		33DA494BD4BA78DBFEF48288 /* LukeOSWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C7D9E203412F8966B429761 /* Build configuration list for PBXNativeTarget "LukeOSWidgets" */;
+			buildPhases = (
+				A51EA383897D48C74D1278D9 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LukeOSWidgets;
+			packageProductDependencies = (
+			);
+			productName = LukeOSWidgets;
+			productReference = 80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		8A5378F491A0C1D8C91EE340 /* LukeOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8812522E183E7DC78A10D4BC /* Build configuration list for PBXNativeTarget "LukeOS" */;
+			buildPhases = (
+				2A7CA2BB8F05ADDF4E5055BB /* Sources */,
+				716EF83AED1EDA401C625AB2 /* Resources */,
+				0A613AED12437AD653579C11 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DC3EA67C88A3F32095752202 /* PBXTargetDependency */,
+				1E0D020F2589364603740662 /* PBXTargetDependency */,
+			);
+			name = LukeOS;
+			packageProductDependencies = (
+			);
+			productName = LukeOS;
+			productReference = 5851D0E22377F21FFE031CD9 /* LukeOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A3943B4AB0228C13DA363325 /* LukeOSShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F15FF55551E7ABA07E15CB1D /* Build configuration list for PBXNativeTarget "LukeOSShare" */;
+			buildPhases = (
+				E0B8F484180D48A570BB6BAF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LukeOSShare;
+			packageProductDependencies = (
+			);
+			productName = LukeOSShare;
+			productReference = E4132CBAEC848204B8501F91 /* LukeOSShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1060A2BF7B6C058A8D181181 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					1DB052793EE96C4447EB0FE3 = {
+						DevelopmentTeam = 563YN34NMT;
+						ProvisioningStyle = Automatic;
+					};
+					33DA494BD4BA78DBFEF48288 = {
+						DevelopmentTeam = 563YN34NMT;
+						ProvisioningStyle = Automatic;
+					};
+					8A5378F491A0C1D8C91EE340 = {
+						DevelopmentTeam = 563YN34NMT;
+						ProvisioningStyle = Automatic;
+					};
+					A3943B4AB0228C13DA363325 = {
+						DevelopmentTeam = 563YN34NMT;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 0A0976EF684BE3472B505834 /* Build configuration list for PBXProject "LukeOS" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1D573C088672F92351CAE630;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 6FBC0B07B8451A6D3896A2DB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8A5378F491A0C1D8C91EE340 /* LukeOS */,
+				A3943B4AB0228C13DA363325 /* LukeOSShare */,
+				1DB052793EE96C4447EB0FE3 /* LukeOSTests */,
+				33DA494BD4BA78DBFEF48288 /* LukeOSWidgets */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		716EF83AED1EDA401C625AB2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C3F30431D8DE808B8E179635 /* Assets.xcassets in Resources */,
+				22D543FD3689BF05D2EE8827 /* Fixtures in Resources */,
+				5CC51D53B7113A66BE63E140 /* Geist-Italic.ttf in Resources */,
+				B80A014D581F2ABDFAAA45B8 /* Geist-Medium.ttf in Resources */,
+				DE8850984052BA4FBF917843 /* Geist-MediumItalic.ttf in Resources */,
+				75798F15A850FF3098D04B36 /* Geist-Regular.ttf in Resources */,
+				112F5DF9970715D0A4B7CA93 /* GeistMono-Regular.ttf in Resources */,
+				8E74F962D89035D7EB00094E /* OFL.txt in Resources */,
+				0E5B7EBBBA4FE3B1C3BFBD05 /* brown-noise.mp3 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2A7CA2BB8F05ADDF4E5055BB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3362AB0A775BEB2DFE987116 /* AppModel.swift in Sources */,
+				17F485B4711B1F3360E36862 /* Appearance.swift in Sources */,
+				108EE03E4D1843B714921C25 /* BoardView.swift in Sources */,
+				3255AAE332A0814CD453B793 /* Comments.swift in Sources */,
+				9AFCB62D7AFA686DE2C84D4F /* Components.swift in Sources */,
+				ECAD8123915B37929BA23CC1 /* DashboardScreen.swift in Sources */,
+				F98F60E63DFFD314E5C7F302 /* Day.swift in Sources */,
+				8A9BE1E5B9C26A63708AD64C /* DemoServer.swift in Sources */,
+				09913344B2BFE017C10F4379 /* FocusScreen.swift in Sources */,
+				29D6690D0165537C3AA425B5 /* Home.swift in Sources */,
+				4CAE7A26BC6AD9DFEA3428BB /* JSON.swift in Sources */,
+				5BEFAC1F62ED73DE2C943D31 /* LukeAPI.swift in Sources */,
+				A4965AB914917049173B5600 /* LukeOSApp.swift in Sources */,
+				1EA1B27D82AD2C8DC2A6FD93 /* MainTabs.swift in Sources */,
+				35A3D050653345C50ED841BA /* MoreScreen.swift in Sources */,
+				C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */,
+				8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */,
+				F174C81EEEEEA95C303BB284 /* Push.swift in Sources */,
+				3688E35338B11F6B29A7893E /* QuickAdd.swift in Sources */,
+				96B9F6CBE1BEB87879C1067B /* Repo.swift in Sources */,
+				316AF9BAC5E14D61596FF29D /* ScratchPadEditor.swift in Sources */,
+				C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */,
+				C9AEB8725C1104EB8FBC3B34 /* SignInView.swift in Sources */,
+				00DF40CB7AE24091088A66F9 /* SmartEntry.swift in Sources */,
+				8E36B38B0ABB5360264EC227 /* TaskChips.swift in Sources */,
+				0470D2E09326A8059242F706 /* TaskEditor.swift in Sources */,
+				E08CE4D2B53807E7DADBA355 /* TaskModels.swift in Sources */,
+				7364E735007D69FC462C90F4 /* TaskRow.swift in Sources */,
+				A565AD31B8B2638946247E8E /* TaskStore.swift in Sources */,
+				D3E4035A665C6DAE59035FF8 /* Theme.swift in Sources */,
+				D0E23CB0783A41CA8C3F1448 /* WidgetSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1C5CA2E12E6F15D7725846E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FADA218B56BBB17D0F277F8F /* DecodingTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A51EA383897D48C74D1278D9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E99D3E61ED06BD3EBD4EE4CE /* Day.swift in Sources */,
+				7E6B1515FF44F4E75EFE29DD /* DemoServer.swift in Sources */,
+				5BF531E05C9FC3DFA72E4180 /* JSON.swift in Sources */,
+				DB7091FDC6C0D73AE635ABF4 /* LukeAPI.swift in Sources */,
+				83088034108BCAD9FD3F7E85 /* SharedConfig.swift in Sources */,
+				9BAB1809D09B783C8EA64032 /* SmartEntry.swift in Sources */,
+				45E615CA688F9311C03454EA /* TaskModels.swift in Sources */,
+				0093C104660DCAA58C219C79 /* Theme.swift in Sources */,
+				517971470AED03FBE61CAFAF /* WidgetSnapshot.swift in Sources */,
+				AA971DEEDEC6896831479D1D /* Widgets.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E0B8F484180D48A570BB6BAF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9C2495C994D29770A3DDBE2F /* Day.swift in Sources */,
+				0805A72D42A60BBFFE2D87E4 /* DemoServer.swift in Sources */,
+				8FE6667FFD431CFC9B22FB92 /* JSON.swift in Sources */,
+				59C86346048A86319E64F09B /* LukeAPI.swift in Sources */,
+				ABE582FC2026C5822F34402D /* ShareViewController.swift in Sources */,
+				CA95ECD27518E4B40C6393E6 /* SharedConfig.swift in Sources */,
+				4E000B6642E7021EDC1948B0 /* SmartEntry.swift in Sources */,
+				210E60E9514C828693991990 /* TaskModels.swift in Sources */,
+				D3F0BD333A4E0A8869A01994 /* Theme.swift in Sources */,
+				46455338D24BA377E4833B62 /* WidgetSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1E0D020F2589364603740662 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A3943B4AB0228C13DA363325 /* LukeOSShare */;
+			targetProxy = 6D4E186DA672D97065035A7C /* PBXContainerItemProxy */;
+		};
+		B4D92522E02AF8CD8076EAC4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A5378F491A0C1D8C91EE340 /* LukeOS */;
+			targetProxy = 4846A7EA4BF77CA4DD0DDB05 /* PBXContainerItemProxy */;
+		};
+		DC3EA67C88A3F32095752202 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 33DA494BD4BA78DBFEF48288 /* LukeOSWidgets */;
+			targetProxy = DCB968224E436606C045FD5D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0390B0689DA63AC0E54AB245 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 563YN34NMT;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LUKEOS_BASE_URL = "https://lukeos-kappa.vercel.app";
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		11CA4BE95F11A9A6912BF66D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LukeOS/Resources/LukeOS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = LukeOS/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos;
+				PRODUCT_NAME = LukeOS;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		427B57B853EB155A255BAF0E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Widgets/Widgets.entitlements;
+				INFOPLIST_FILE = Widgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos.widgets;
+				PRODUCT_NAME = LukeOSWidgets;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8EADF67B187F7C94AA0889E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 563YN34NMT;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LUKEOS_BASE_URL = "https://lukeos-kappa.vercel.app";
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		A9B98743763377171D79BAB1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LukeOS.app/LukeOS";
+			};
+			name = Release;
+		};
+		BA5A26E7DF8FED1C29B9768E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Widgets/Widgets.entitlements;
+				INFOPLIST_FILE = Widgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos.widgets;
+				PRODUCT_NAME = LukeOSWidgets;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C535DA1DF95EB0222E562C92 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Share/Share.entitlements;
+				INFOPLIST_FILE = Share/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos.share;
+				PRODUCT_NAME = LukeOSShare;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E6EF1C7322597ABA86B1BD8C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LukeOS.app/LukeOS";
+			};
+			name = Debug;
+		};
+		F9A962092EC5F3D80D149937 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LukeOS/Resources/LukeOS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = LukeOS/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos;
+				PRODUCT_NAME = LukeOS;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FB6D1FBB012C86ED99F3AD2C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Share/Share.entitlements;
+				INFOPLIST_FILE = Share/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lewisdesign.lukeos.share;
+				PRODUCT_NAME = LukeOSShare;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0A0976EF684BE3472B505834 /* Build configuration list for PBXProject "LukeOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0390B0689DA63AC0E54AB245 /* Debug */,
+				8EADF67B187F7C94AA0889E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		379FF56633DB563DA610F067 /* Build configuration list for PBXNativeTarget "LukeOSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E6EF1C7322597ABA86B1BD8C /* Debug */,
+				A9B98743763377171D79BAB1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4C7D9E203412F8966B429761 /* Build configuration list for PBXNativeTarget "LukeOSWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				427B57B853EB155A255BAF0E /* Debug */,
+				BA5A26E7DF8FED1C29B9768E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8812522E183E7DC78A10D4BC /* Build configuration list for PBXNativeTarget "LukeOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F9A962092EC5F3D80D149937 /* Debug */,
+				11CA4BE95F11A9A6912BF66D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F15FF55551E7ABA07E15CB1D /* Build configuration list for PBXNativeTarget "LukeOSShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C535DA1DF95EB0222E562C92 /* Debug */,
+				FB6D1FBB012C86ED99F3AD2C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1060A2BF7B6C058A8D181181 /* Project object */;
+}
