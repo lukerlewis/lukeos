@@ -690,3 +690,41 @@ Permanently delete something that's already in Trash.
 Permanently delete everything in Trash.
 
 - Input: `{  }`
+
+## Health
+
+Data from Luke's Fitbit (Fitbit Air) through the Google Health API, synced on the server (`src/core/health.ts`, `src/core/health-google.ts`). Every number may be null; the app reads numbers as decimals and ignores fields it doesn't know.
+
+### `get_health`
+
+Daily health numbers for the last `days` days (1 to 90, default 30), oldest first, today last, with whether Fitbit is connected.
+
+- Input: `{ days?: integer }`
+- Output: `{ configured: boolean, connected: boolean, lastSyncAt: string | null, today: "YYYY-MM-DD", timeZone: string, days: [{ date, steps, distanceMeters, activeMinutes, caloriesOut, restingHeartRate, hrvMs, breathingRate, spo2, skinTempDeviation, vo2Max, sleep: { minutes, start, end, deepMinutes, lightMinutes, remMinutes, awakeMinutes } | null, workouts: [{ type, name, minutes, startedAt, calories, distanceMeters }] }] }`
+- The status also has `connectedAt`, `lastError`, `failedTypes`, `liveUpdates` and `liveUpdatesError`, which the app doesn't use.
+- When connected, every day in the range is present, all null with `workouts: []` on days with nothing.
+- A night's sleep counts towards the day Luke woke up.
+- `today` and `timeZone` are Luke's.
+- `skinTempDeviation` is in °C against his baseline.
+- `workouts[].type` is Google's enum (RUNNING, STRENGTH_TRAINING, OUTDOOR_BIKE, HIIT…). `name` is the custom name from the Fitbit app, or null.
+- Demo responses: `Fixtures/get_health.json` (input `{"days": 30}`), `Fixtures/get_health.notconfigured.json` (demo input `{"demoState": "notconfigured"}`), `Fixtures/get_health.gaps.json` (demo input `{"demoState": "gaps"}`)
+
+### `sync_health`
+
+Pull the latest from Fitbit now. Slow, because the server talks to Google, so the app gives it 120 s and never queues it offline.
+
+- Input: `{ days?: integer }` (default 3). The app sends no input.
+- Output: `{ synced: boolean, lastSyncAt: string | null, days, failedTypes }`
+- Demo response: `Fixtures/sync_health.json`
+
+### `get_health_raw`
+
+Google's own saved data points for one day. The app doesn't use it.
+
+### `disconnect_health`
+
+Forget the Fitbit connection and stop syncing. Sent directly, never queued.
+
+- Input: `{  }`
+
+Connecting happens on the computer (Health on the website). The phone has no Connect button, because Google blocks its sign-in inside embedded web views.

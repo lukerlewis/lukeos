@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum MoreRoute: Hashable {
-    case messages, search, tasks, documents, inspiration, screenTime, trash, settings
+    case messages, search, tasks, documents, inspiration, health, screenTime, trash, settings
     case project(String)
     case document(String)
     case note(String)
@@ -28,6 +28,7 @@ struct MoreScreen: View {
                     row("All tasks", "checklist", .tasks)
                     row("Documents", "doc.text", .documents, count: home.newFromClaude)
                     row("Inspiration", "lightbulb", .inspiration)
+                    row("Health", "heart.text.square", .health)
                     row("Screen Time", "hourglass", .screenTime)
                     row("Trash", "trash", .trash)
                     row("Settings", "gearshape", .settings)
@@ -87,6 +88,7 @@ struct MoreScreen: View {
         case .tasks: AllTasksScreen()
         case .documents: DocumentsScreen()
         case .inspiration: InspirationScreen()
+        case .health: HealthScreen()
         case .screenTime: ScreenTimeScreen()
         case .trash: TrashScreen()
         case .settings: SettingsScreen()
@@ -124,6 +126,7 @@ struct MoreScreen: View {
         case "projects": path.append(id.map(MoreRoute.project) ?? .tasks)
         case "inspiration": path.append(id.map(MoreRoute.inspirationItem) ?? .inspiration)
         case "search": path.append(MoreRoute.search)
+        case "health": path.append(MoreRoute.health)
         case "settings": path.append(MoreRoute.settings)
         case "screen-time": path.append(MoreRoute.screenTime)
         case "trash": path.append(MoreRoute.trash)
