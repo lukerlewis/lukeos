@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { showToast } from "@/components/shell/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { averageOf, hoursMinutes, km, thousands, workoutLabel, type HealthDay } from "@/lib/health";
+import { averageOf, fahrenheitDelta, hoursMinutes, miles, thousands, workoutLabel, type HealthDay } from "@/lib/health";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
 import { asDate, BarChart, LineChart, longDay, type Bar } from "./health-charts";
@@ -106,7 +106,7 @@ export function HealthScreen({ days, today, timeZone, lastSyncAt, lastError }: {
         <BarChart bars={sleepBars} picked={picked} onPick={setPicked} tick={(v) => `${Math.round(v / 60)}h`} top={Math.max(600, ...sleepBars.map((b) => b.parts.reduce((a, c) => a + c, 0)))} />
       </ChartCard>
 
-      <ChartCard title="Steps" value={day.steps === null ? "—" : thousands(day.steps)} note={day.distanceMeters ? km(day.distanceMeters) : undefined} average={averageOf(days.map((d) => d.steps))} format={thousands}>
+      <ChartCard title="Steps" value={day.steps === null ? "—" : thousands(day.steps)} note={day.distanceMeters ? miles(day.distanceMeters) : undefined} average={averageOf(days.map((d) => d.steps))} format={thousands}>
         <BarChart bars={stepBars} picked={picked} onPick={setPicked} tick={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} goal={10_000} />
       </ChartCard>
 
@@ -126,7 +126,7 @@ export function HealthScreen({ days, today, timeZone, lastSyncAt, lastError }: {
         <ul className="divide-y divide-border">
           <Row label="Breathing rate" value={day.breathingRate === null ? null : `${day.breathingRate} /min`} average={averageOf(days.map((d) => d.breathingRate))} format={(v) => `${v.toFixed(1)}`} />
           <Row label="Blood oxygen" value={day.spo2 === null ? null : `${day.spo2}%`} average={averageOf(days.map((d) => d.spo2))} format={(v) => `${v.toFixed(1)}%`} />
-          <Row label="Skin temperature" value={day.skinTempDeviation === null ? null : `${day.skinTempDeviation > 0 ? "+" : ""}${day.skinTempDeviation.toFixed(1)}°C`} />
+          <Row label="Skin temperature" value={day.skinTempDeviation === null ? null : fahrenheitDelta(day.skinTempDeviation)} />
           <Row label="Cardio fitness (VO₂ max)" value={day.vo2Max === null ? null : String(day.vo2Max)} average={averageOf(days.map((d) => d.vo2Max))} format={(v) => v.toFixed(1)} />
         </ul>
       </Card>
@@ -145,7 +145,7 @@ export function HealthScreen({ days, today, timeZone, lastSyncAt, lastError }: {
                     </span>
                   </span>
                   <span className="shrink-0 text-right text-meta whitespace-nowrap text-muted-foreground tabular-nums">
-                    {[`${w.minutes} min`, w.distanceMeters ? km(w.distanceMeters) : null, w.calories ? `${w.calories} cal` : null].filter(Boolean).join(" · ")}
+                    {[`${w.minutes} min`, w.distanceMeters ? miles(w.distanceMeters) : null, w.calories ? `${w.calories} cal` : null].filter(Boolean).join(" · ")}
                   </span>
                 </li>
               ))}
