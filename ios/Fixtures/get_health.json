@@ -120,11 +120,12 @@
    },
    "workouts": [
     {
-     "type": "Walk",
+     "type": "WALKING",
      "minutes": 23,
      "startedAt": "2026-10-27T19:30:00.000Z",
      "calories": 207,
-     "distanceMeters": 8307
+     "distanceMeters": 8307,
+     "name": null
     }
    ]
   },
@@ -151,11 +152,12 @@
    },
    "workouts": [
     {
-     "type": "Run",
+     "type": "RUNNING",
      "minutes": 20,
      "startedAt": "2026-10-28T17:45:00.000Z",
      "calories": 180,
-     "distanceMeters": 6488
+     "distanceMeters": 6488,
+     "name": null
     }
    ]
   },
@@ -182,11 +184,12 @@
    },
    "workouts": [
     {
-     "type": "Yoga",
+     "type": "YOGA",
      "minutes": 39,
      "startedAt": "2026-10-29T21:16:00.000Z",
      "calories": 234,
-     "distanceMeters": null
+     "distanceMeters": null,
+     "name": null
     }
    ]
   },
@@ -213,11 +216,12 @@
    },
    "workouts": [
     {
-     "type": "Walk",
+     "type": "WALKING",
      "minutes": 20,
      "startedAt": "2026-10-30T20:03:00.000Z",
      "calories": 160,
-     "distanceMeters": 5544
+     "distanceMeters": 5544,
+     "name": null
     }
    ]
   },
@@ -244,11 +248,12 @@
    },
    "workouts": [
     {
-     "type": "Bike",
+     "type": "OUTDOOR_BIKE",
      "minutes": 50,
      "startedAt": "2026-10-31T20:04:00.000Z",
      "calories": 300,
-     "distanceMeters": 5952
+     "distanceMeters": 5952,
+     "name": null
     }
    ]
   },
@@ -275,11 +280,12 @@
    },
    "workouts": [
     {
-     "type": "Bike",
+     "type": "OUTDOOR_BIKE",
      "minutes": 55,
      "startedAt": "2026-11-01T20:17:00.000Z",
      "calories": 550,
-     "distanceMeters": 7532
+     "distanceMeters": 7532,
+     "name": null
     }
    ]
   },
@@ -352,11 +358,12 @@
    },
    "workouts": [
     {
-     "type": "Strength",
+     "type": "STRENGTH_TRAINING",
      "minutes": 42,
      "startedAt": "2026-11-04T17:51:00.000Z",
      "calories": 462,
-     "distanceMeters": null
+     "distanceMeters": null,
+     "name": null
     }
    ]
   },
@@ -383,11 +390,12 @@
    },
    "workouts": [
     {
-     "type": "Strength",
+     "type": "STRENGTH_TRAINING",
      "minutes": 46,
      "startedAt": "2026-11-05T20:36:00.000Z",
      "calories": 368,
-     "distanceMeters": null
+     "distanceMeters": null,
+     "name": null
     }
    ]
   },
@@ -414,11 +422,12 @@
    },
    "workouts": [
     {
-     "type": "Yoga",
+     "type": "YOGA",
      "minutes": 51,
      "startedAt": "2026-11-06T18:35:00.000Z",
      "calories": 306,
-     "distanceMeters": null
+     "distanceMeters": null,
+     "name": null
     }
    ]
   },
@@ -445,11 +454,12 @@
    },
    "workouts": [
     {
-     "type": "Bike",
+     "type": "OUTDOOR_BIKE",
      "minutes": 32,
      "startedAt": "2026-11-07T21:15:00.000Z",
      "calories": 224,
-     "distanceMeters": 5649
+     "distanceMeters": 5649,
+     "name": null
     }
    ]
   },
@@ -499,11 +509,12 @@
    },
    "workouts": [
     {
-     "type": "Strength",
+     "type": "STRENGTH_TRAINING",
      "minutes": 56,
      "startedAt": "2026-11-09T19:00:00.000Z",
      "calories": 448,
-     "distanceMeters": null
+     "distanceMeters": null,
+     "name": null
     }
    ]
   },
@@ -530,11 +541,12 @@
    },
    "workouts": [
     {
-     "type": "Yoga",
+     "type": "ELLIPTICAL",
      "minutes": 60,
      "startedAt": "2026-11-10T20:56:00.000Z",
      "calories": 480,
-     "distanceMeters": null
+     "distanceMeters": null,
+     "name": null
     }
    ]
   },
@@ -614,11 +626,12 @@
    },
    "workouts": [
     {
-     "type": "Yoga",
+     "type": "HIIT",
      "minutes": 52,
      "startedAt": "2026-11-14T20:53:00.000Z",
      "calories": 416,
-     "distanceMeters": null
+     "distanceMeters": null,
+     "name": null
     }
    ]
   },
@@ -668,11 +681,12 @@
    },
    "workouts": [
     {
-     "type": "Strength",
+     "type": "STRENGTH_TRAINING",
      "minutes": 28,
      "startedAt": "2026-11-16T19:30:00.000Z",
      "calories": 196,
-     "distanceMeters": null
+     "distanceMeters": null,
+     "name": "Leg day"
     }
    ]
   },
@@ -722,11 +736,12 @@
    },
    "workouts": [
     {
-     "type": "Run",
+     "type": "RUNNING",
      "minutes": 58,
      "startedAt": "2026-11-18T19:06:00.000Z",
      "calories": 348,
-     "distanceMeters": 6909
+     "distanceMeters": 6909,
+     "name": "Lunch run"
     }
    ]
   },
@@ -753,11 +768,12 @@
    },
    "workouts": [
     {
-     "type": "Bike",
+     "type": "OUTDOOR_BIKE",
      "minutes": 51,
      "startedAt": "2026-11-19T18:02:00.000Z",
      "calories": 408,
-     "distanceMeters": 6052
+     "distanceMeters": 6052,
+     "name": null
     }
    ]
   },
@@ -784,11 +800,12 @@
    },
    "workouts": [
     {
-     "type": "Strength",
+     "type": "STRENGTH_TRAINING",
      "minutes": 35,
      "startedAt": "2026-11-20T20:08:00.000Z",
      "calories": 315,
-     "distanceMeters": null
+     "distanceMeters": null,
+     "name": null
     }
    ]
   },

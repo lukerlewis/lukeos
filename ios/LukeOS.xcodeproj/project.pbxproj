@@ -94,6 +94,7 @@
 		C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */; };
 		C3A32E9422EF835236D5419C /* ProjectScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C2BD9EE1BCF23629CCF015 /* ProjectScreen.swift */; };
 		C3F30431D8DE808B8E179635 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1ED780373C71F795D1499F59 /* Assets.xcassets */; };
+		C864B5F755D46A06DB518744 /* StatTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB488E700B1027B2748A7C2 /* StatTile.swift */; };
 		C9AEB8725C1104EB8FBC3B34 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CFCBA190398A4E3D994D93 /* SignInView.swift */; };
 		CA95ECD27518E4B40C6393E6 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
 		CC1C270197956507A3B8566E /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */; };
@@ -237,6 +238,7 @@
 		AABE02CA05ECDA1E61BCFFA4 /* Repo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repo.swift; sourceTree = "<group>"; };
 		B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImage.swift; sourceTree = "<group>"; };
 		B73FA9D0A65B898B6C40A645 /* NotesModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesModels.swift; sourceTree = "<group>"; };
+		BAB488E700B1027B2748A7C2 /* StatTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatTile.swift; sourceTree = "<group>"; };
 		C0271259A5BD4781955040F4 /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
 		C0583F8BFA35C668F3A8206D /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
 		C0C494A94181D94768D93744 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
@@ -406,6 +408,7 @@
 				607793720F40DE07F244CEFA /* NoteSegments.swift */,
 				26D624DE18EA302A879144B4 /* README.md */,
 				B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */,
+				BAB488E700B1027B2748A7C2 /* StatTile.swift */,
 				C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */,
 			);
 			path = DesignSystem;
@@ -848,6 +851,7 @@
 				C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */,
 				C9AEB8725C1104EB8FBC3B34 /* SignInView.swift in Sources */,
 				00DF40CB7AE24091088A66F9 /* SmartEntry.swift in Sources */,
+				C864B5F755D46A06DB518744 /* StatTile.swift in Sources */,
 				8E36B38B0ABB5360264EC227 /* TaskChips.swift in Sources */,
 				0470D2E09326A8059242F706 /* TaskEditor.swift in Sources */,
 				E08CE4D2B53807E7DADBA355 /* TaskModels.swift in Sources */,

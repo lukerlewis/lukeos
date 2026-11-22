@@ -289,6 +289,13 @@
   }
  },
  {
+  "file": "get_health.gaps.json",
+  "op": "get_health",
+  "input": {
+   "demoState": "gaps"
+  }
+ },
+ {
   "file": "sync_health.json",
   "op": "sync_health",
   "input": {}

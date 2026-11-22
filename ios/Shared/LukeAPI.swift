@@ -32,21 +32,26 @@ final class LukeAPI: Sendable {
 
     static let decoder = JSONDecoder()
 
+    /// For requests that take a while on the server: uploads, a Fitbit sync.
+    static let longTimeout: TimeInterval = 120
+
     // MARK: Operations
 
     /// Runs an operation and returns the raw JSON answer.
-    func opData(_ name: String, _ input: Input = [:]) async throws -> Data {
+    /// `timeout`: seconds, for operations where the server waits on someone else (sync_health talks to Google).
+    func opData(_ name: String, _ input: Input = [:], timeout: TimeInterval? = nil) async throws -> Data {
         WriteRecorder.record(name, input)
         if SharedConfig.isDemo { return try await DemoServer.shared.run(name, input) }
         var req = request("api/ops/\(name)")
         req.httpMethod = "POST"
+        if let timeout { req.timeoutInterval = timeout }
         req.setValue("application/json", forHTTPHeaderField: "content-type")
         req.httpBody = try JSONEncoder().encode(JSON.object(input))
         return try await send(req)
     }
 
-    func op<T: Decodable>(_ name: String, _ input: Input = [:], as type: T.Type = T.self) async throws -> T {
-        let data = try await opData(name, input)
+    func op<T: Decodable>(_ name: String, _ input: Input = [:], as type: T.Type = T.self, timeout: TimeInterval? = nil) async throws -> T {
+        let data = try await opData(name, input, timeout: timeout)
         do {
             return try Self.decoder.decode(T.self, from: data)
         } catch {
@@ -98,7 +103,7 @@ final class LukeAPI: Sendable {
         req.httpMethod = "POST"
         req.setValue(contentType, forHTTPHeaderField: "content-type")
         req.httpBody = body
-        req.timeoutInterval = 120
+        req.timeoutInterval = Self.longTimeout
         return try await send(req)
     }
 

@@ -1,4 +1,6 @@
 {
  "synced": true,
- "lastSyncAt": "2026-11-22T02:06:00.000Z"
+ "lastSyncAt": "2026-11-22T02:06:00.000Z",
+ "days": 30,
+ "failedTypes": []
 }

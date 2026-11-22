@@ -14,7 +14,10 @@ struct HealthDay: Codable, Hashable, Sendable, Identifiable {
         var awakeMinutes: Double?
     }
     struct Workout: Codable, Hashable, Sendable {
+        /// Google's exercise type: RUNNING, STRENGTH_TRAINING, OUTDOOR_BIKE…
         var type: String?
+        /// The custom name from the Fitbit app, if Luke gave one.
+        var name: String?
         var minutes: Double?
         var startedAt: String?
         var calories: Double?
@@ -50,6 +53,17 @@ struct HealthAnswer: Codable, Sendable {
     var days: [HealthDay]?
 
     var isConnected: Bool { configured != false && connected == true }
+
+    /// Connected, but not a single number in the range (the server sends every day, all null, until data arrives).
+    var hasAnyData: Bool { (days ?? []).contains(where: \.hasData) }
+}
+
+extension HealthDay {
+    /// Anything at all was recorded this day.
+    var hasData: Bool {
+        let numbers = [steps, distanceMeters, activeMinutes, caloriesOut, restingHeartRate, hrvMs, breathingRate, spo2, skinTempDeviation, vo2Max]
+        return numbers.contains { $0 != nil } || (sleep?.minutes ?? 0) > 0 || !(workouts ?? []).isEmpty
+    }
 }
 
 /// Small pure helpers, tested.
@@ -60,11 +74,71 @@ enum HealthMath {
         return v.isEmpty ? nil : v.reduce(0, +) / Double(v.count)
     }
 
-    /// Last night's sleep: the sleep filed under the server's today, else under yesterday. Older sleep isn't "last night".
-    static func lastNight(_ days: [HealthDay], today: String) -> HealthDay.Sleep? {
-        if let s = days.first(where: { $0.date == today })?.sleep, (s.minutes ?? 0) > 0 { return s }
-        if let s = days.first(where: { $0.date == Day.add(today, days: -1) })?.sleep, (s.minutes ?? 0) > 0 { return s }
+    /// The most recent night: sleep is filed under the day Luke woke up, so today's entry is last night.
+    /// If today hasn't come in, yesterday's (the night before last); older isn't shown. `date` says which day it used.
+    static func lastNight(_ days: [HealthDay], today: String) -> (sleep: HealthDay.Sleep, date: String)? {
+        for date in [today, Day.add(today, days: -1)] {
+            if let s = days.first(where: { $0.date == date })?.sleep, (s.minutes ?? 0) > 0 { return (s, date) }
+        }
         return nil
+    }
+
+    /// Splits a day-by-day series into unbroken stretches (a day without a value ends one).
+    static func runs(_ values: [(String, Double?)]) -> [(id: Int, points: [(String, Double)])] {
+        var out: [(id: Int, points: [(String, Double)])] = []
+        var current: [(String, Double)] = []
+        for (date, value) in values {
+            if let value { current.append((date, value)) } else if !current.isEmpty { out.append((out.count, current)); current = [] }
+        }
+        if !current.isEmpty { out.append((out.count, current)) }
+        return out
+    }
+
+    /// A workout's title: the name Luke gave it, else Google's type made readable
+    /// ("STRENGTH_TRAINING" → "Strength training", "HIIT" stays, "run" → "Run").
+    static func workoutTitle(_ w: HealthDay.Workout) -> String {
+        if let n = w.name?.trimmingCharacters(in: .whitespaces), !n.isEmpty { return n }
+        return tidy(w.type ?? "")
+    }
+
+    private static let acronyms: Set<String> = ["HIIT", "SUP", "VO2"]
+
+    static func tidy(_ raw: String) -> String {
+        let words = raw.replacingOccurrences(of: "_", with: " ").replacingOccurrences(of: "-", with: " ")
+            .split(separator: " ").map(String.init)
+        guard !words.isEmpty else { return "Workout" }
+        let joined = words.joined(separator: " ")
+        // Mixed case was written by a person: keep it.
+        guard joined == joined.uppercased() || joined == joined.lowercased() else { return joined }
+        return words.enumerated().map { i, w in
+            if acronyms.contains(w.uppercased()) { return w.uppercased() }
+            let lower = w.lowercased()
+            return i == 0 ? lower.prefix(1).uppercased() + lower.dropFirst() : lower
+        }.joined(separator: " ")
+    }
+
+    /// An SF Symbol for a workout type (matched on the lowercased raw type).
+    static func workoutSymbol(_ type: String?) -> String {
+        let t = (type ?? "").lowercased()
+        let table: [(keys: [String], symbol: String)] = [
+            (["hiit", "interval"], "figure.highintensity.intervaltraining"),
+            (["elliptical"], "figure.elliptical"),
+            (["hik"], "figure.hiking"),
+            (["run", "jog"], "figure.run"),
+            (["walk"], "figure.walk"),
+            (["bike", "bik", "cycl", "spin"], "figure.outdoor.cycle"),
+            (["swim"], "figure.pool.swim"),
+            (["row"], "figure.rower"),
+            (["strength", "weight"], "dumbbell"),
+            (["yoga"], "figure.yoga"),
+            (["pilates"], "figure.pilates"),
+            (["tennis"], "figure.tennis"),
+            (["soccer", "football"], "figure.soccer"),
+            (["basketball"], "figure.basketball"),
+            (["golf"], "figure.golf"),
+            (["dance"], "figure.dance"),
+        ]
+        return table.first { $0.keys.contains { t.contains($0) } }?.symbol ?? "figure.mixed.cardio"
     }
 
     static func miles(_ meters: Double) -> String {
@@ -80,8 +154,9 @@ enum HealthMath {
 
     /// Skin temperature against baseline in °F, signed: "+0.5°F".
     static func skinTemp(_ celsius: Double) -> String {
-        let f = celsius * 1.8
-        return String(format: "%@%.1f°F", f >= 0 ? "+" : "−", abs(f))
+        let f = (celsius * 1.8 * 10).rounded() / 10
+        if f == 0 { return "0.0°F" }
+        return String(format: "%@%.1f°F", f > 0 ? "+" : "−", abs(f))
     }
 }
 
@@ -92,7 +167,6 @@ enum HealthMath {
 struct HealthScreen: View {
     @State private var data: HealthAnswer?
     @State private var range = 7
-    @State private var connecting = false
     @State private var syncing = false
     @State private var confirmDisconnect = false
     @State private var offline = false
@@ -101,8 +175,10 @@ struct HealthScreen: View {
     private var today: String { data?.today ?? AppModel.shared.today }
     private var days: [HealthDay] { Array(allDays.suffix(range)) }
     private var todayData: HealthDay? { allDays.first { $0.date == today } }
+    /// The Today tiles always compare with the last week, whatever the range below says.
+    private var lastWeek: [HealthDay] { Array(allDays.suffix(7)) }
 
-    /// Demo screenshots can open the not-connected state with `-healthState notconfigured`.
+    /// Demo screenshots can open other states: `-healthState notconfigured` or `-healthState gaps`.
     private var input: Input {
         var i: Input = ["days": 30]
         let args = ProcessInfo.processInfo.arguments
@@ -113,9 +189,10 @@ struct HealthScreen: View {
     var body: some View {
         List {
             if let data, !data.isConnected {
-                connectRow
+                // Google won't sign in inside an app's web view, so connecting is done once on the computer.
+                EmptyNote(text: "Connect Fitbit on your computer.", symbol: "heart.text.square").listRowBackground(Color.clear)
             } else if let data {
-                if (data.days ?? []).isEmpty {
+                if !data.hasAnyData {
                     EmptyNote(text: "No data yet.", symbol: "heart.text.square").listRowBackground(Color.clear)
                 } else {
                     content
@@ -144,22 +221,21 @@ struct HealthScreen: View {
         }
         .refreshable { await load() }
         .task { await load() }
-        .sheet(isPresented: $connecting, onDismiss: { Task { await load() } }) {
-            WebSheet(path: "/health/connect", title: "Connect Fitbit", closeOn: "/health/connected")
-        }
         .confirmationDialog("Disconnect Fitbit?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
             Button("Disconnect", role: .destructive) {
-                Task {
-                    await Repo.change("disconnect_health", [:])
-                    await load()
-                }
+                Task { await disconnect() }
             }
+        } message: {
+            Text("You'll need your computer to connect again.")
         }
     }
 
     @ViewBuilder
     private var content: some View {
-        Section { sleepCard.cardRow() } header: { SectionTitle(text: "Last night") }
+        let night = HealthMath.lastNight(allDays, today: today)
+        Section { sleepCard(night?.sleep).cardRow() } header: {
+            SectionTitle(text: night == nil || night?.date == today ? "Last night" : "Sleep · Yesterday")
+        }
         Section {
             todayGrid.listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
         } header: { SectionTitle(text: "Today") }
@@ -224,32 +300,38 @@ struct HealthScreen: View {
         }
     }
 
+    struct SyncAnswer: Decodable { var synced: Bool?; var lastSyncAt: String? }
+
+    /// Sent now or not at all: a queued sync is pointless and a queued disconnect could fire later by itself.
     private func sync() async {
         syncing = true
         defer { syncing = false }
-        await Repo.change("sync_health", [:])
-        await load()
+        do {
+            _ = try await Repo.api.op("sync_health", [:], as: SyncAnswer.self, timeout: LukeAPI.longTimeout)
+            await load()
+        } catch { failed(error) }
+    }
+
+    private func disconnect() async {
+        do {
+            _ = try await Repo.api.opData("disconnect_health")
+            await load()
+        } catch { failed(error) }
+    }
+
+    private func failed(_ error: Error) {
+        switch error {
+        case APIError.offline: Toasts.shared.show("You're offline.")
+        case APIError.signedOut: NotificationCenter.default.post(name: .lukeOSSignedOut, object: nil)
+        default: Toasts.shared.show(error.localizedDescription)
+        }
     }
 
     // MARK: Pieces
 
-    private var connectRow: some View {
-        Button { connecting = true } label: {
-            HStack(spacing: Space.m) {
-                Image(systemName: "heart.text.square").font(.icon(.row)).foregroundStyle(Color.icon).frame(width: Size.iconColumn)
-                Text("Connect Fitbit").textStyle(.control, color: .text)
-                Spacer()
-                Image(systemName: "chevron.right").font(.icon(.meta)).foregroundStyle(Color.icon)
-            }
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .cardRow()
-    }
-
-    private var sleepCard: some View {
+    private func sleepCard(_ sleep: HealthDay.Sleep?) -> some View {
         VStack(alignment: .leading, spacing: Space.m) {
-            if let s = HealthMath.lastNight(allDays, today: today), let minutes = s.minutes {
+            if let s = sleep, let minutes = s.minutes {
                 HStack(alignment: .firstTextBaseline) {
                     Text(HealthMath.hm(minutes)).textStyle(.title, medium: true, color: .ink).rollingNumber(Int(minutes))
                     Spacer()
@@ -309,37 +391,21 @@ struct HealthScreen: View {
 
     private var todayGrid: some View {
         let d = todayData
+        let week = lastWeek
         return Grid(horizontalSpacing: Space.m, verticalSpacing: Space.m) {
             GridRow {
-                tile("Steps", d?.steps.map { Int($0).formatted() }, "figure.walk",
-                     average: HealthMath.average(days.map(\.steps)).map { "avg \(Int($0).formatted())" })
-                tile("Resting heart", d?.restingHeartRate.map { "\(Int($0)) bpm" }, "heart",
-                     average: HealthMath.average(days.map(\.restingHeartRate)).map { "avg \(Int($0.rounded()))" })
+                StatTile(title: "Steps", symbol: "figure.walk", value: d?.steps.map { Int($0).formatted() },
+                         detail: HealthMath.average(week.map(\.steps)).map { "7-day avg \(Int($0).formatted())" })
+                StatTile(title: "Resting heart", symbol: "heart", value: d?.restingHeartRate.map { "\(Int($0)) bpm" },
+                         detail: HealthMath.average(week.map(\.restingHeartRate)).map { "7-day avg \(Int($0.rounded()))" })
             }
             GridRow {
-                tile("Active zone", d?.activeMinutes.map { "\(Int($0)) min" }, "flame",
-                     average: HealthMath.average(days.map(\.activeMinutes)).map { "avg \(Int($0.rounded()))" })
-                tile("Distance", d?.distanceMeters.map(HealthMath.miles), "map",
-                     average: HealthMath.average(days.map(\.distanceMeters)).map { "avg \(HealthMath.miles($0))" })
+                StatTile(title: "Active zone", symbol: "flame", value: d?.activeMinutes.map { "\(Int($0)) min" },
+                         detail: HealthMath.average(week.map(\.activeMinutes)).map { "7-day avg \(Int($0.rounded()))" })
+                StatTile(title: "Distance", symbol: "map", value: d?.distanceMeters.map(HealthMath.miles),
+                         detail: HealthMath.average(week.map(\.distanceMeters)).map { "7-day avg \(HealthMath.miles($0))" })
             }
         }
-    }
-
-    private func tile(_ title: String, _ value: String?, _ symbol: String, average: String?) -> some View {
-        VStack(alignment: .leading, spacing: Space.s) {
-            HStack(spacing: Space.xs) {
-                Image(systemName: symbol).font(.icon(.meta)).foregroundStyle(Color.icon)
-                Text(title).textStyle(.meta, color: .mutedText)
-            }
-            Text(value ?? "–").textStyle(.section, medium: true, color: .ink).monospacedDigit()
-            Text(average ?? " ").textStyle(.tag, color: .mutedText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Space.l)
-        .background(Color.card, in: .rect(cornerRadius: Radius.card))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(Color.hairline, lineWidth: 1))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(title), \(value ?? "no data")\(average.map { ", \($0)" } ?? "")")
     }
 
     /// Extra daily numbers, only those with data in the range.
@@ -405,14 +471,16 @@ struct HealthScreen: View {
     }
 
     private var heartChart: some View {
-        let points = days.compactMap { d in d.restingHeartRate.map { (d.date, $0) } }
-        let low = (points.map(\.1).min() ?? 50) - 3
-        let high = (points.map(\.1).max() ?? 70) + 3
-        return Chart(points, id: \.0) { p in
-            LineMark(x: .value("Day", Day.toLocal(p.0), unit: .day), y: .value("bpm", p.1))
+        let runs = HealthMath.runs(days.map { ($0.date, $0.restingHeartRate) })
+        let points = runs.flatMap { r in r.points.map { (date: $0.0, value: $0.1, run: r.id) } }
+        let low = (points.map(\.value).min() ?? 50) - 3
+        let high = (points.map(\.value).max() ?? 70) + 3
+        return Chart(points, id: \.date) { p in
+            // One line per unbroken stretch, so days without data are gaps, as in the bar charts.
+            LineMark(x: .value("Day", Day.toLocal(p.date), unit: .day), y: .value("bpm", p.value), series: .value("Stretch", p.run))
                 .foregroundStyle(Color.ink)
                 .interpolationMethod(.monotone)
-            PointMark(x: .value("Day", Day.toLocal(p.0), unit: .day), y: .value("bpm", p.1))
+            PointMark(x: .value("Day", Day.toLocal(p.date), unit: .day), y: .value("bpm", p.value))
                 .foregroundStyle(Color.ink)
                 .symbolSize(range == 7 ? 24 : 8)
         }
@@ -423,31 +491,20 @@ struct HealthScreen: View {
         .frame(height: Size.chartHeight)
         .padding(.vertical, Space.s)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Resting heart rate, last \(range) days\(HealthMath.average(points.map { Optional($0.1) }).map { ", average \(Int($0.rounded())) beats per minute" } ?? "")")
+        .accessibilityLabel("Resting heart rate, last \(range) days\(HealthMath.average(points.map { Optional($0.value) }).map { ", average \(Int($0.rounded())) beats per minute" } ?? "")")
     }
 
     private func workoutRow(_ date: String, _ w: HealthDay.Workout) -> some View {
         let detail = [w.distanceMeters.map(HealthMath.miles), w.calories.map { "\(Int($0)) cal" }].compactMap { $0 }
         return HStack(spacing: Space.m) {
-            Image(systemName: symbol(w.type ?? "")).font(.icon(.row)).foregroundStyle(Color.icon).frame(width: Size.iconColumn)
+            Image(systemName: HealthMath.workoutSymbol(w.type)).font(.icon(.row)).foregroundStyle(Color.icon).frame(width: Size.iconColumn)
             VStack(alignment: .leading, spacing: Space.xs) {
-                Text(w.type ?? "Workout").textStyle(.control, color: .text)
+                Text(HealthMath.workoutTitle(w)).textStyle(.control, color: .text)
                 Text(([Day.friendly(date, today: today)] + detail).joined(separator: " · ")).textStyle(.meta, color: .mutedText)
             }
             Spacer()
             if let m = w.minutes { Text("\(Int(m)) min").textStyle(.preview, color: .subtleText).monospacedDigit() }
         }
         .accessibilityElement(children: .combine)
-    }
-
-    private func symbol(_ type: String) -> String {
-        let t = type.lowercased()
-        if t.contains("run") { return "figure.run" }
-        if t.contains("walk") || t.contains("hike") { return "figure.walk" }
-        if t.contains("bike") || t.contains("cycl") { return "figure.outdoor.cycle" }
-        if t.contains("swim") { return "figure.pool.swim" }
-        if t.contains("strength") || t.contains("weight") { return "dumbbell" }
-        if t.contains("yoga") { return "figure.yoga" }
-        return "figure.mixed.cardio"
     }
 }
