@@ -31,7 +31,7 @@ A build made this way lasts a year. Run the command again to renew it or to upda
 | `LukeOS/Features` | One folder per section: Dashboard, Tasks, Notes, Focus, Music, Messages, More, Comments |
 | `Shared` | Code shared with the widget and the share extension: tokens, models, API, smart dates |
 | `Widgets` | The Today widget and the focus Live Activity |
-| `ScreenTime` | Blocking apps until focus time or tasks are done: the shared rule, the daily re-lock extension and the block screen (see `docs/SCREEN_TIME.md`) |
+| `ScreenTime` | Blocking apps until focus time or tasks are done: saved protocols, the extension that re-locks each day and times cooldowns, the block screen and its buttons (see `docs/SCREEN_TIME.md`) |
 | `Share` | "Save to LukeOS" in the share sheet |
 | `Fixtures` | Real server answers, used by demo mode and the tests |
 | `docs` | The API guide and screen notes |
@@ -44,4 +44,4 @@ A build made this way lasts a year. Run the command again to renew it or to upda
 - **Server:** `LUKEOS_BASE_URL` in `project.yml` (default `https://lukeos-kappa.vercel.app`). Pass `-baseURL http://localhost:3000` at launch to use a local server.
 - **Tests:** every fixture decodes, plus checks for smart dates and Markdown (`xcodebuild test -scheme LukeOS -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'`).
 - **Offline:** every answer is kept on the phone, so screens open at once. Changes made offline wait in a queue and are sent when the phone is back online. The last write wins.
-- **Signing:** team 563YN34NMT (Lewis Design, LLC), automatic. The app, its extensions (widget, share, Screen Time monitor and shield) share the App Group `group.com.lewisdesign.lukeos` and a keychain group for the sign-in token.
+- **Signing:** team 563YN34NMT (Lewis Design, LLC), automatic. The app, its extensions (widget, share, and Screen Time's monitor, shield and shield action) share the App Group `group.com.lewisdesign.lukeos` and a keychain group for the sign-in token.

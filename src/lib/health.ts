@@ -74,8 +74,14 @@ export function hoursMinutes(minutes: number) {
 
 export const thousands = (n: number) => Math.round(n).toLocaleString("en-US");
 
-/** Kilometres with one decimal. */
-export const km = (meters: number) => `${(meters / 1000).toFixed(1)} km`;
+/** Miles with one decimal (Luke's in the US). */
+export const miles = (meters: number) => `${(meters / 1609.344).toFixed(1)} mi`;
+
+/** A °C difference as a signed °F difference, e.g. +0.4°F. */
+export const fahrenheitDelta = (c: number) => {
+  const f = c * 1.8;
+  return `${f > 0 ? "+" : f < 0 ? "−" : ""}${Math.abs(f).toFixed(1)}°F`;
+};
 
 /** RUNNING → Running, STRENGTH_TRAINING → Strength training. */
 export function workoutLabel(w: Pick<HealthWorkout, "type" | "name">) {
