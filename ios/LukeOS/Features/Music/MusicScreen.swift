@@ -76,13 +76,14 @@ struct MusicScreen: View {
     var body: some View {
         NavigationStack {
             List {
-                Picker("", selection: $tab) {
-                    Text("Library").tag("library")
-                    Text("Playlists").tag("playlists")
+                Section {
+                    Picker("", selection: $tab) {
+                        Text("Library").tag("library")
+                        Text("Playlists").tag("playlists")
+                    }
+                    .pickerStyle(.segmented)
+                    .controlRow()
                 }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
 
                 if tab == "library" { library } else { playlistsList }
             }
@@ -131,9 +132,9 @@ struct MusicScreen: View {
                         Task { let list = await model.shuffleable(); player.play(list.shuffled()) }
                     } label: { Image(systemName: "shuffle") }
                         .accessibilityLabel("Shuffle")
-                        .padding(.leading, 14)
+                        .padding(.leading, Space.row)
                 }
-                .font(.system(size: 15))
+                .font(.icon(.meta))
                 .foregroundStyle(Color.ink)
             }
         }
@@ -152,9 +153,9 @@ struct MusicScreen: View {
             if model.loaded && model.playlists.isEmpty { EmptyNote(text: "No playlists yet.").listRowBackground(Color.clear) }
             ForEach(model.playlists) { p in
                 NavigationLink(value: p) {
-                    HStack(spacing: 12) {
-                        PlaylistArt(playlist: p, size: 48)
-                        VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: Space.row) {
+                        PlaylistArt(playlist: p, size: Size.artworkRow)
+                        VStack(alignment: .leading, spacing: Space.xs) {
                             Text(p.title).textStyle(.control, medium: true, color: .ink)
                             Text(Self.summary(p.count ?? 0, p.seconds ?? 0))
                                 .textStyle(.meta, color: .mutedText)
@@ -221,11 +222,11 @@ struct EpisodeRow: View {
     @State private var downloads = Downloads.shared
 
     var body: some View {
-        HStack(spacing: 12) {
-            Artwork(path: episode.artworkUrl, size: 48)
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: Space.row) {
+            Artwork(path: episode.artworkUrl, size: Size.artworkRow)
+            VStack(alignment: .leading, spacing: Space.xs) {
                 Text(episode.title).textStyle(.control, medium: true, color: playing ? .ink : .text).lineLimit(1)
-                HStack(spacing: 5) {
+                HStack(spacing: Space.xs) {
                     if let show = episode.show { Text(show).lineLimit(1) }
                     if !episode.lengthLabel.isEmpty {
                         if episode.show != nil { Text("·") }
@@ -238,14 +239,14 @@ struct EpisodeRow: View {
             if downloads.inProgress.contains(episode.id) {
                 ProgressView().controlSize(.mini)
             } else if downloads.saved.contains(episode.id) {
-                Image(systemName: "arrow.down.circle.fill").font(.system(size: 13)).foregroundStyle(Color.icon)
+                Image(systemName: "arrow.down.circle.fill").font(.icon(.meta)).foregroundStyle(Color.icon)
             }
             if playing {
                 Image(systemName: "waveform").symbolEffect(.variableColor.iterative, isActive: AudioPlayer.shared.isPlaying)
-                    .foregroundStyle(Color.ink).font(.system(size: 14))
+                    .foregroundStyle(Color.ink).font(.icon(.meta))
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, Space.xs)
         .opacity(episode.isFinished && episode.isPodcast ? 0.55 : 1)
     }
 }
@@ -294,12 +295,12 @@ struct PlaylistScreen: View {
 
     var body: some View {
         List {
-            VStack(spacing: 10) {
-                PlaylistArt(playlist: playlist, size: 160)
+            VStack(spacing: Space.m) {
+                PlaylistArt(playlist: playlist, size: Size.playlistHero)
                 Text(playlist.title).textStyle(.section, medium: true, color: .ink)
                 Text(MusicScreen.summary(episodes.count, episodes.reduce(0) { $0 + ($1.durationSeconds ?? 0) }))
                     .textStyle(.meta, color: .mutedText)
-                HStack(spacing: 12) {
+                HStack(spacing: Space.m) {
                     Button { player.play(episodes) } label: { Label("Play", systemImage: "play.fill").frame(maxWidth: .infinity) }
                     Button { player.play(episodes.shuffled()) } label: { Label("Shuffle", systemImage: "shuffle").frame(maxWidth: .infinity) }
                 }
@@ -308,7 +309,7 @@ struct PlaylistScreen: View {
                 .font(.geist(.control, medium: true))
                 .tint(.ink)
                 .disabled(episodes.isEmpty)
-                .padding(.top, 6)
+                .padding(.top, Space.line)
             }
             .frame(maxWidth: .infinity)
             .listRowBackground(Color.clear)
@@ -376,11 +377,11 @@ struct FinishedSheet: View {
     var episode: Episode
     @Environment(\.dismiss) private var dismiss
     var body: some View {
-        VStack(spacing: 14) {
-            Artwork(path: episode.artworkUrl, size: 72)
+        VStack(spacing: Space.row) {
+            Artwork(path: episode.artworkUrl, size: Size.finishedArt)
             Text("Finished").textStyle(.meta, color: .mutedText)
             Text(episode.title).textStyle(.heading, medium: true, color: .ink).multilineTextAlignment(.center)
-            HStack(spacing: 12) {
+            HStack(spacing: Space.m) {
                 Button("Keep") { MusicModel.shared.keep(episode); dismiss() }
                     .buttonStyle(.bordered).controlSize(.large).tint(.ink)
                 Button("Delete") { MusicModel.shared.delete(episode); dismiss() }
@@ -388,7 +389,7 @@ struct FinishedSheet: View {
             }
             .font(.geist(.control, medium: true))
         }
-        .padding(24)
+        .padding(Space.xxl)
         .presentationDetents([.height(300)])
     }
 }

@@ -14,6 +14,43 @@ He also asked that "things are still attached to components so things can easily
 - Screens are built from a small set of shared components (task row, tick circle, card, section header, project dot, badge, chip, buttons, empty state, sheet header). Changing a component changes it everywhere.
 - The component folder has a short README listing each component and where it is used.
 
+## Sizing and spacing (Luke, 22 Nov 2026)
+
+After using the first build Luke said: "things are sized a bit weird in places; some too big and some too small. mostly on the too small side. and make sure theres enough padding and white space between elements; should be enough to breathe. make base font 16pt". These rules replace the web sizes above for the iPhone app. They live in `Shared/Theme.swift` as tokens; screens never set a number of their own.
+
+**Type (pt, all scale with Dynamic Type)**
+
+| Token | Size | Used for |
+| --- | --- | --- |
+| `tag` | 13 | Chips, badges, counts. Nothing in the app is smaller than this except the system tab bar labels and chart axis labels (12). |
+| `meta` | 14 | Second lines: dates, times, lengths, "Edited", section labels |
+| `preview` | 15 | Note and document previews, placeholders in quiet rows |
+| `control` | 16 | **Base.** Row titles (tasks, notes, songs, settings), buttons, fields, segmented controls, message bubbles |
+| `body` | 16 | Reading text in notes and documents, line spacing 1.45 |
+| `heading` | 18 | Card and section headers, sheet titles |
+| `section` | 22 | Headings inside notes and documents, big numbers in cards |
+| `title` | 28 | Note and document titles |
+| `display` | 40 | Only the focus timer and widget count |
+
+Icons beside text match the text: 14 to 16 pt beside meta text, 18 to 20 pt as row icons, 20 to 22 pt in bars. No 10 to 12 pt icons.
+
+**Spacing (pt): one scale, `Space`**
+
+`xs` 4, `s` 8, `m` 12, `l` 16, `xl` 20, `xxl` 24, `section` 32.
+
+- Page side margin: `xl` (20). Card inner padding: `l` (16) sides, `m` to `l` top and bottom.
+- Rows: at least 52 tall with one line, about 72 with a second line; 14 above and below the text; `m` (12) between an icon or tick and the text; 6 to 8 between a title and its second line.
+- Between cards or sections: `xxl` to `section` (24 to 32). Between a section label and its card: `s` to `m`.
+- Between a large title and the first control: `l`. Between a control row (switches, chips) and the content: `xl`.
+- Chips: 26 tall, 8 side padding, `s` between chips. Tick circle 24 with a 44 tap area.
+- Nothing touches: at least `s` between any two elements, `m` between unrelated ones.
+
+**Things that were too big**
+
+- Round transport buttons: main 76, side 52 (Focus and the player were about 120 and 85).
+- The player artwork leaves room so the title is not pushed to the bottom; the task editor's title is `heading`-sized, not a headline.
+- Large navigation titles stay the system size (that is the iPhone norm), but nothing else on a screen competes with them.
+
 ## Design system on iPhone
 
 - **Colours** (from `src/app/globals.css`, `--grey-0` to `--grey-950`, with a dark set under `.dark`): port the grey steps as a colour set that follows the system appearance. Named roles: background (0), sidebar/group fill (50), card (light 0, dark 50), muted (100), selected (200), border/dividers (200), stroke for cards and outline buttons (300), icons (600), secondary text (700), body text (800), foreground (900), titles "ink" (950). Red only for count badges, blue only for the 8 pt unread dot, project colours only for the project dot or chip.

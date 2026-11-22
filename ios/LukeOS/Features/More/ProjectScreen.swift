@@ -48,12 +48,12 @@ struct ProjectScreen: View {
         Group {
             if tab == "board" {
                 ScrollView {
-                    picker.padding(.horizontal, 20)
+                    picker.padding(.horizontal, Space.xl)
                     BoardView(tasks: tasks.filter { $0.status != .done || showDone }, onOpen: { editing = $0 })
                 }
             } else {
                 List {
-                    picker.listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+                    Section { picker.controlRow() }
                     switch tab {
                     case "notes": notesSection
                     case "links": linksSection
@@ -150,7 +150,7 @@ struct ProjectScreen: View {
             if project != nil && open.isEmpty { EmptyNote(text: "Nothing to do.").listRowBackground(Color.clear) }
             ForEach(open) { t in
                 TaskRow(task: t, showProject: false, onOpen: { editing = t })
-                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+                    .taskRowInsets()
                     .taskRowActions(t, onOpen: { editing = t })
                     .cardRow()
             }
@@ -188,9 +188,9 @@ struct ProjectScreen: View {
             if links.isEmpty { EmptyNote(text: "No links yet.").listRowBackground(Color.clear) }
             ForEach(links) { l in
                 Link(destination: URL(string: l.url) ?? URL(string: "https://lukeos-kappa.vercel.app")!) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: Space.m) {
                         Image(systemName: l.pinned == true ? "pin.fill" : "link").foregroundStyle(Color.icon).frame(width: 22)
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: Space.xs) {
                             Text(l.title ?? l.url).textStyle(.control, medium: true, color: .ink).lineLimit(1)
                             Text(l.site ?? URL(string: l.url)?.host() ?? "").textStyle(.meta, color: .mutedText)
                             if let note = l.note, !note.isEmpty { Text(note).textStyle(.preview, color: .subtleText).lineLimit(2) }
@@ -238,7 +238,7 @@ struct AllTasksScreen: View {
                 if tasks.isEmpty { ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear) }
                 ForEach(shown) { t in
                     TaskRow(task: t, onOpen: { editing = t })
-                        .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+                        .taskRowInsets()
                         .taskRowActions(t, onOpen: { editing = t })
                         .cardRow()
                 }

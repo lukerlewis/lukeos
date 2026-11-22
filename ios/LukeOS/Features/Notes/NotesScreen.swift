@@ -146,8 +146,8 @@ struct NotesList: View {
                     Section {
                         ForEach(model.folders) { f in
                             NavigationLink(value: NoteRoute.folder(f)) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "folder").foregroundStyle(Color.icon).frame(width: 24)
+                                HStack(spacing: Space.row) {
+                                    Image(systemName: "folder").font(.icon(.row)).foregroundStyle(Color.icon).frame(width: 26)
                                     Text(f.name).textStyle(.control, color: .text)
                                     if let p = f.project { ProjectDot(color: p.color) }
                                     Spacer()
@@ -226,7 +226,7 @@ struct NotesList: View {
 
     private var projectChips: some View {
         ScrollView(.horizontal) {
-            HStack(spacing: 8) {
+            HStack(spacing: Space.s) {
                 ChipToggle(label: "All", on: projectFilter.isEmpty) { projectFilter = [] }
                 ForEach(store.projects) { p in
                     let count = model.notes.filter { $0.project?.id == p.id }.count
@@ -237,8 +237,8 @@ struct NotesList: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 2)
+            .padding(.horizontal, Space.xl)
+            .padding(.vertical, Space.xs)
         }
         .scrollIndicators(.hidden)
     }
@@ -275,20 +275,20 @@ struct NotesList: View {
 struct NoteRow: View {
     var note: NoteSummary
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: Space.line) {
+            HStack(spacing: Space.line) {
                 Text(note.displayTitle).textStyle(.control, medium: true, color: .ink).lineLimit(1)
                 ClaudeMark(madeBy: note.madeBy)
                 Spacer(minLength: 4)
                 Text(Stamp.relative(note.updatedAt)).textStyle(.meta, color: .mutedText)
             }
-            HStack(alignment: .top, spacing: 6) {
-                if let p = note.project { ProjectDot(color: p.color).padding(.top, 6) }
+            HStack(alignment: .top, spacing: Space.line) {
+                if let p = note.project { ProjectDot(color: p.color).padding(.top, Space.line) }
                 Text(note.excerpt?.isEmpty == false ? note.excerpt! : "No text")
                     .textStyle(.preview, color: .mutedText)
                     .lineLimit(2)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, Space.xs)
     }
 }

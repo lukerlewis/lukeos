@@ -23,17 +23,17 @@ struct CommentThreads: View {
     private var input: Input { ["targetType": .string(targetType), "targetId": .string(targetId)] }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: Space.row) {
             ForEach(threads) { thread in
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: Space.m) {
                     if let quote = thread.quote, !quote.isEmpty {
                         Text(quote).textStyle(.meta, color: .mutedText).lineLimit(2)
-                            .padding(.leading, 10)
+                            .padding(.leading, Space.m)
                             .overlay(alignment: .leading) { Rectangle().fill(Color.stroke).frame(width: 2) }
                     }
                     CommentBubble(comment: thread)
-                    ForEach(thread.replies ?? []) { reply in CommentBubble(comment: reply).padding(.leading, 18) }
-                    HStack(spacing: 16) {
+                    ForEach(thread.replies ?? []) { reply in CommentBubble(comment: reply).padding(.leading, Space.l) }
+                    HStack(spacing: Space.l) {
                         Button("Reply") { replyingTo = thread; focused = true }
                         Button(thread.resolved == true ? "Reopen" : "Resolve") { resolve(thread) }
                         Spacer()
@@ -49,7 +49,7 @@ struct CommentThreads: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Space.line) {
                 if let r = replyingTo {
                     HStack {
                         Text("Replying to \(r.madeBy.isClaude ? "Claude" : "your comment")").textStyle(.meta, color: .mutedText)
@@ -57,19 +57,19 @@ struct CommentThreads: View {
                             .foregroundStyle(Color.icon).buttonStyle(.plain)
                     }
                 }
-                HStack(alignment: .bottom, spacing: 8) {
+                HStack(alignment: .bottom, spacing: Space.s) {
                     TextField("Add a comment", text: $draft, axis: .vertical)
                         .font(.geist(.control))
                         .lineLimit(1...6)
                         .focused($focused)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color.raised, in: .rect(cornerRadius: 18))
+                        .padding(.horizontal, Space.m)
+                        .padding(.vertical, Space.m)
+                        .background(Color.raised, in: .rect(cornerRadius: Radius.field))
                     Button(action: send) {
                         Image(systemName: "arrow.up")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.icon(.meta, weight: .medium))
                             .foregroundStyle(Color.onSolid)
-                            .frame(width: 36, height: 36)
+                            .frame(width: Size.smallButton, height: Size.smallButton)
                             .background(draft.trimmingCharacters(in: .whitespaces).isEmpty ? Color.disabled : Color.ink, in: .circle)
                     }
                     .buttonStyle(.plain)
@@ -124,8 +124,8 @@ struct CommentThreads: View {
 struct CommentBubble: View {
     var comment: Comment
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 5) {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            HStack(spacing: Space.xs) {
                 Text(comment.madeBy.isClaude ? (comment.madeBy.name ?? "Claude") : "Luke")
                     .textStyle(.meta, medium: true, color: .text)
                 ClaudeMark(madeBy: comment.madeBy)

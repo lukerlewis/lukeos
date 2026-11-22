@@ -38,14 +38,15 @@ struct DocumentsScreen: View {
 
     var body: some View {
         List {
-            Picker("", selection: $filter) {
-                Text("All").tag("all")
-                Text("Made by me").tag("luke")
-                Text("Made by Claude").tag("claude")
+            Section {
+                Picker("", selection: $filter) {
+                    Text("All").tag("all")
+                    Text("Made by me").tag("luke")
+                    Text("Made by Claude").tag("claude")
+                }
+                .pickerStyle(.segmented)
+                .controlRow()
             }
-            .pickerStyle(.segmented)
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Color.clear)
 
             let pinned = shown.filter { $0.pinned == true }
             if !pinned.isEmpty, query.isEmpty {
@@ -101,8 +102,8 @@ struct DocumentsScreen: View {
 struct DocumentRow: View {
     var doc: DocumentSummary
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            HStack(spacing: Space.line) {
                 if doc.isNew == true { UnreadDot() }
                 Text(doc.title).textStyle(.control, medium: true, color: .ink).lineLimit(1)
                 ClaudeMark(madeBy: doc.madeBy)
@@ -116,7 +117,7 @@ struct DocumentRow: View {
                 Text(ex).textStyle(.preview, color: .mutedText).lineLimit(2)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, Space.xs)
     }
 }
 
@@ -131,9 +132,9 @@ struct DocumentScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: Space.row) {
                 if let doc {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Space.s) {
                         if let p = doc.project { ProjectChip(name: p.name, color: p.color) }
                         if doc.madeBy?.isClaude == true {
                             Label("By \(doc.madeBy?.name ?? "Claude")", systemImage: "sparkle").textStyle(.meta, color: .mutedText)
@@ -150,15 +151,15 @@ struct DocumentScreen: View {
                         if let c = self.doc?.content { Task { await Repo.change("update_document", ["id": .string(documentId), "content": .string(c)]) } }
                     }
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.section * 2)
                 }
             }
-            .padding(.horizontal, 22)
-            .padding(.vertical, 18)
+            .padding(.horizontal, Space.xxl)
+            .padding(.vertical, Space.l)
             .background(Color.card, in: .rect(cornerRadius: Radius.card))
             .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(Color.hairline, lineWidth: 1))
-            .padding(.horizontal, 12)
-            .padding(.bottom, 100)
+            .padding(.horizontal, Space.m)
+            .padding(.bottom, Size.bottomClearance)
         }
         .pageBackground()
         .navigationBarTitleDisplayMode(.inline)
@@ -180,7 +181,7 @@ struct DocumentScreen: View {
         }
         .sheet(isPresented: $showComments) {
             NavigationStack {
-                ScrollView { CommentThreads(targetType: "document", targetId: documentId).padding(20) }
+                ScrollView { CommentThreads(targetType: "document", targetId: documentId).padding(Space.xl) }
                     .background(Color.page)
                     .navigationTitle("Comments")
                     .navigationBarTitleDisplayMode(.inline)

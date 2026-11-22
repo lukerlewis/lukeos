@@ -15,14 +15,14 @@ struct PriorityChip: View {
     }
 
     var body: some View {
-        HStack(spacing: 1) {
+        HStack(spacing: Space.xs) {
             ForEach(0..<priority.flames, id: \.self) { _ in
-                Image(systemName: "flame").font(.system(size: 10.5, weight: .medium))
+                Image(systemName: "flame").font(.icon(.meta, weight: .medium))
             }
         }
         .foregroundStyle(colors.fg)
-        .padding(.horizontal, 5)
-        .frame(height: 22)
+        .padding(.horizontal, Space.s)
+        .frame(minHeight: Space.chip)
         .background(colors.bg, in: .rect(cornerRadius: Radius.tag))
         .accessibilityLabel("\(priority.label) priority")
     }
@@ -40,8 +40,8 @@ struct ProjectChip: View {
             .font(.geist(.tag, medium: true))
             .lineLimit(1)
             .foregroundStyle(scheme == .dark ? c.mix(with: .white, by: 0.45) : c.mix(with: .black, by: 0.25))
-            .padding(.horizontal, 6)
-            .frame(height: 22)
+            .padding(.horizontal, Space.s)
+            .frame(minHeight: Space.chip)
             .background(c.opacity(scheme == .dark ? 0.24 : 0.14), in: .rect(cornerRadius: Radius.tag))
     }
 }
@@ -50,14 +50,14 @@ struct ProjectChip: View {
 struct FocusChip: View {
     var effort: Effort
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: Self.symbol(effort)).font(.system(size: 10.5))
+        HStack(spacing: Space.xs) {
+            Image(systemName: Self.symbol(effort)).font(.icon(.meta))
             Text(effort.label)
         }
         .font(.geist(.tag, medium: true))
         .foregroundStyle(Color.subtleText)
-        .padding(.horizontal, 7)
-        .frame(height: 22)
+        .padding(.horizontal, Space.s)
+        .frame(minHeight: Space.chip)
         .background(Color.raised, in: .rect(cornerRadius: Radius.tag))
     }
 
@@ -76,8 +76,8 @@ struct DueLabel: View {
     var today: String
     var body: some View {
         let late = due < today
-        HStack(spacing: 3) {
-            Image(systemName: "calendar").font(.system(size: 10.5))
+        HStack(spacing: Space.xs) {
+            Image(systemName: "calendar").font(.icon(.meta))
             Text(Day.friendly(due, today: today))
         }
         .font(.geist(.meta, medium: late))

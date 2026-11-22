@@ -128,7 +128,7 @@ struct MarkdownView: View {
     var onToggle: ((Int) -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Space.m) {
             ForEach(Array(Markdown.blocks(text).enumerated()), id: \.offset) { _, block in
                 blockView(block)
             }
@@ -158,7 +158,7 @@ struct MarkdownView: View {
                     onToggle?(line)
                 } label: {
                     Image(systemName: on ? "checkmark.square.fill" : "square")
-                        .font(.system(size: 18))
+                        .font(.icon(.row))
                         .foregroundStyle(on ? Color.ink : Color.icon)
                 }
                 .buttonStyle(.plain)
@@ -168,15 +168,15 @@ struct MarkdownView: View {
             }
         case .quote(let s):
             Text(Markdown.inline(s)).textStyle(.body, color: .mutedText).italic()
-                .padding(.leading, 14)
+                .padding(.leading, Space.row)
                 .overlay(alignment: .leading) { Rectangle().fill(Color.stroke).frame(width: 3) }
         case .code(let s):
             ScrollView(.horizontal) {
-                Text(s).font(.geistMono(size: 14)).foregroundStyle(Color.text).padding(12)
+                Text(s).font(.geistMono(.preview)).foregroundStyle(Color.text).padding(Space.m)
             }
             .background(Color.raised, in: .rect(cornerRadius: Radius.control))
         case .divider:
-            Rectangle().fill(Color.hairline).frame(height: 1).padding(.vertical, 6)
+            Rectangle().fill(Color.hairline).frame(height: 1).padding(.vertical, Space.line)
         case .image(let alt, let src, let width):
             RemoteImage(path: src)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -191,7 +191,7 @@ struct MarkdownView: View {
                             ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
                                 Text(Markdown.inline(cell))
                                     .textStyle(.preview, medium: r == 0, color: r == 0 ? .ink : .subtleText)
-                                    .padding(.horizontal, 12).padding(.vertical, 9)
+                                    .padding(.horizontal, Space.m).padding(.vertical, Space.s)
                                     .frame(minWidth: 80, maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                                     .background(r == 0 ? Color.muted : Color.clear)
                                     .overlay { Rectangle().strokeBorder(Color.hairline, lineWidth: 0.5) }
@@ -207,7 +207,7 @@ struct MarkdownView: View {
     }
 
     private func row<M: View, C: View>(indent: Int, @ViewBuilder marker: () -> M, @ViewBuilder content: () -> C) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
+        HStack(alignment: .firstTextBaseline, spacing: Space.m) {
             marker().frame(minWidth: 18, alignment: .leading)
             content().textStyle(.body, color: .subtleText).fixedSize(horizontal: false, vertical: true)
         }

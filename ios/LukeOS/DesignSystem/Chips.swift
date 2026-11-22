@@ -13,15 +13,15 @@ struct ChipToggle: View {
             Haptics.select()
             action()
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: Space.line) {
                 if let color { ProjectDot(color: color) }
                 Text(label)
                 if let count { Text("\(count)").foregroundStyle(Color.mutedText).monospacedDigit() }
             }
             .font(.geist(.preview, medium: true))
             .foregroundStyle(on ? Color.ink : Color.subtleText)
-            .padding(.horizontal, 12)
-            .frame(height: 34)
+            .padding(.horizontal, Space.row)
+            .frame(minHeight: Size.filterChip)
             .background(on ? Color.selected : Color.card, in: .capsule)
             .overlay(Capsule().strokeBorder(on ? Color.strokeStrong : Color.hairline, lineWidth: 1))
         }
@@ -45,11 +45,11 @@ struct PinnedRow: View {
 
     var body: some View {
         ScrollView(.horizontal) {
-            HStack(spacing: 10) {
+            HStack(spacing: Space.m) {
                 ForEach(items) { item in
                     Button { onOpen(item.id) } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 5) {
+                        VStack(alignment: .leading, spacing: Space.s) {
+                            HStack(spacing: Space.xs) {
                                 if item.unread { UnreadDot() }
                                 Text(item.title).textStyle(.preview, medium: true, color: .ink).lineLimit(2)
                                     .multilineTextAlignment(.leading)
@@ -60,21 +60,21 @@ struct PinnedRow: View {
                             }
                             Spacer(minLength: 0)
                             if let p = item.project {
-                                HStack(spacing: 5) {
-                                    ProjectDot(color: p.color, size: 6)
+                                HStack(spacing: Space.xs) {
+                                    ProjectDot(color: p.color, size: Size.dotSmall)
                                     Text(p.name).textStyle(.tag, color: .mutedText).lineLimit(1)
                                 }
                             }
                         }
-                        .padding(14)
-                        .frame(width: 168, height: 128, alignment: .topLeading)
+                        .padding(Space.l)
+                        .frame(width: Size.pinnedCard.width, height: Size.pinnedCard.height, alignment: .topLeading)
                         .background(Color.card, in: .rect(cornerRadius: Radius.container + 4))
                         .overlay(RoundedRectangle(cornerRadius: Radius.container + 4).strokeBorder(Color.hairline, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Space.xl)
         }
         .scrollIndicators(.hidden)
     }

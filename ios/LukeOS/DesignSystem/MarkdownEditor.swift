@@ -230,9 +230,9 @@ struct FormatBar: View {
     var act: (Action) -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.s) {
             ScrollView(.horizontal) {
-                HStack(spacing: 2) {
+                HStack(spacing: Space.xs / 2) {
                     Menu {
                         Button("Heading 1") { act(.h1) }
                         Button("Heading 2") { act(.h2) }
@@ -253,7 +253,7 @@ struct FormatBar: View {
                     button("link", "Link", .link)
                     if hasPhoto { button("photo", "Photo", .photo) }
                 }
-                .padding(.horizontal, 6)
+                .padding(.horizontal, Space.line)
             }
             .scrollIndicators(.hidden)
             .glassEffect(.regular, in: .capsule)
@@ -262,12 +262,12 @@ struct FormatBar: View {
                 .accessibilityLabel("Hide keyboard")
         }
         .foregroundStyle(Color.ink)
-        .padding(.horizontal, 10)
-        .padding(.bottom, 6)
+        .padding(.horizontal, Space.m)
+        .padding(.bottom, Space.line)
     }
 
     private func icon(_ symbol: String) -> some View {
-        Image(systemName: symbol).font(.system(size: 16)).frame(width: 40, height: 44)
+        Image(systemName: symbol).font(.icon(.row)).frame(width: Size.composerButton, height: Size.tap)
     }
 
     private func button(_ symbol: String, _ label: String, _ a: Action) -> some View {

@@ -11,7 +11,7 @@ struct FocusScreen: View {
         @Bindable var timer = timer
         NavigationStack {
             ScrollView {
-                VStack(spacing: 26) {
+                VStack(spacing: Space.xxl) {
                     Picker("Mode", selection: $timer.state.mode) {
                         ForEach(FocusMode.allCases, id: \.self) { Text($0.label).tag($0) }
                     }
@@ -24,8 +24,8 @@ struct FocusScreen: View {
                     case .sprint: SprintView()
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 110)
+                .padding(.horizontal, Space.xl)
+                .padding(.bottom, Size.bottomClearance)
             }
             .pageBackground()
             .navigationTitle("Focus")
@@ -66,24 +66,24 @@ struct FocusRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(Color.muted, lineWidth: 10)
+            Circle().stroke(Color.muted, lineWidth: Size.focusRingStroke)
             Circle()
                 .trim(from: 0, to: max(0.0001, progress))
-                .stroke(Color.ink, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .stroke(Color.ink, style: StrokeStyle(lineWidth: Size.focusRingStroke, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 1), value: progress)
-            VStack(spacing: 6) {
+            VStack(spacing: Space.line) {
                 Text(time)
-                    .font(.geist(size: 64, medium: false))
+                    .font(.geist(size: Size.focusTime))
                     .monospacedDigit()
-                    .tracking(-2.5)
+                    .tracking(-0.04 * Size.focusTime)
                     .foregroundStyle(Color.ink)
                     .contentTransition(.numericText(countsDown: true))
                 Text(caption).textStyle(.control, color: .mutedText)
             }
         }
-        .frame(width: 280, height: 280)
-        .padding(.top, 10)
+        .frame(width: Size.focusRing, height: Size.focusRing)
+        .padding(.top, Space.m)
         .accessibilityElement(children: .combine)
     }
 }
@@ -97,26 +97,26 @@ struct FocusControls: View {
     var skipSymbol = "forward.end.fill"
 
     var body: some View {
-        HStack(spacing: 34) {
-            Button { onReset?() } label: { Image(systemName: "arrow.counterclockwise").frame(width: 54, height: 54) }
+        HStack(spacing: Space.section) {
+            Button { onReset?() } label: { Image(systemName: "arrow.counterclockwise").frame(width: Size.transportSide, height: Size.transportSide) }
                 .buttonStyle(.glass).buttonBorderShape(.circle)
-                .opacity(onReset == nil ? 0 : 1).disabled(onReset == nil)
+                .opacity(onReset == nil ? 0.35 : 1).disabled(onReset == nil)
                 .accessibilityLabel("Reset")
             Button(action: onToggle) {
                 Image(systemName: running ? "pause.fill" : "play.fill")
-                    .font(.system(size: 30))
+                    .font(.icon(.transport))
                     .foregroundStyle(Color.onSolid)
                     .contentTransition(.symbolEffect(.replace))
-                    .frame(width: 84, height: 84)
+                    .frame(width: Size.transportMain, height: Size.transportMain)
             }
             .buttonStyle(.glassProminent).buttonBorderShape(.circle).tint(.ink)
             .accessibilityLabel(running ? "Pause" : "Start")
-            Button { onSkip?() } label: { Image(systemName: skipSymbol).frame(width: 54, height: 54) }
+            Button { onSkip?() } label: { Image(systemName: skipSymbol).frame(width: Size.transportSide, height: Size.transportSide) }
                 .buttonStyle(.glass).buttonBorderShape(.circle)
-                .opacity(onSkip == nil ? 0 : 1).disabled(onSkip == nil)
+                .opacity(onSkip == nil ? 0.35 : 1).disabled(onSkip == nil)
                 .accessibilityLabel("Skip")
         }
-        .font(.system(size: 19))
+        .font(.icon(.row))
         .foregroundStyle(Color.ink)
         .sensoryFeedback(.impact(weight: .light), trigger: running)
     }
@@ -128,14 +128,14 @@ struct PomodoroView: View {
     var body: some View {
         let running = timer.state.pomodoro.endsAt != nil
         let started = running || timer.state.pomodoro.leftSeconds != nil
-        VStack(spacing: 22) {
+        VStack(spacing: Space.xxl) {
             FocusRing(progress: timer.pomodoroLeft / max(1, timer.pomodoroLength),
                       time: FocusTimer.clock(timer.pomodoroLeft), caption: timer.state.phase.label, running: running)
-            HStack(spacing: 8) {
+            HStack(spacing: Space.s) {
                 ForEach(0..<timer.settings.roundsBeforeLongBreak, id: \.self) { i in
                     Circle()
                         .fill(i < timer.state.round % max(1, timer.settings.roundsBeforeLongBreak) || (timer.state.phase == .long && i < timer.settings.roundsBeforeLongBreak) ? Color.ink : Color.stroke)
-                        .frame(width: 8, height: 8)
+                        .frame(width: Size.unreadDot, height: Size.unreadDot)
                 }
             }
             .accessibilityLabel("Round \(timer.state.round % max(1, timer.settings.roundsBeforeLongBreak) + 1) of \(timer.settings.roundsBeforeLongBreak)")
@@ -155,12 +155,12 @@ struct StopwatchView: View {
     var body: some View {
         let running = timer.state.timerRunningSince != nil
         let started = timer.state.timerStartedAt != nil
-        VStack(spacing: 22) {
+        VStack(spacing: Space.xxl) {
             FocusRing(progress: (timer.timerElapsed.truncatingRemainder(dividingBy: 3600)) / 3600,
                       time: FocusTimer.clock(timer.timerElapsed), caption: "Timer", running: running)
             FocusControls(
                 running: running,
-                onReset: nil,
+                onReset: started && !running ? { timer.stopTimer() } : nil,
                 onToggle: { running ? timer.pauseTimer() : timer.startTimer() },
                 onSkip: started ? { timer.stopTimer() } : nil,
                 skipSymbol: "stop.fill"
@@ -181,7 +181,7 @@ struct SprintView: View {
     var body: some View {
         let running = timer.state.sprint.endsAt != nil
         let started = running || timer.state.sprint.leftSeconds != nil
-        VStack(spacing: 22) {
+        VStack(spacing: Space.xxl) {
             if timer.state.sprintFinished {
                 finished
             } else {
@@ -193,9 +193,10 @@ struct SprintView: View {
                 }
                 FocusControls(
                     running: running,
-                    onReset: started ? { timer.finishSprint() } : nil,
+                    onReset: started ? { timer.newSprint() } : nil,
                     onToggle: { running ? timer.pauseSprint() : timer.startSprint() },
-                    onSkip: nil
+                    onSkip: started ? { timer.finishSprint() } : nil,
+                    skipSymbol: "stop.fill"
                 )
                 tasks
                 if started { scratchPad }
@@ -214,29 +215,29 @@ struct SprintView: View {
                 }
             }
             ForEach(timer.state.sprintTasks) { t in
-                HStack(spacing: 12) {
+                HStack(spacing: Space.m) {
                     Button { timer.toggleSprintTask(t) } label: { StatusCircle(status: t.done ? .done : .todo) }
                         .buttonStyle(.plain)
                     Text(t.title).textStyle(.control, color: t.done ? .mutedText : .text).strikethrough(t.done)
                     Spacer()
                     if timer.state.sprint.endsAt == nil {
                         Button { timer.state.sprintTasks.removeAll { $0.id == t.id } } label: { Image(systemName: "xmark") }
-                            .font(.system(size: 12)).foregroundStyle(Color.icon)
+                            .font(.icon(.meta)).foregroundStyle(Color.icon)
                             .accessibilityLabel("Take out of the sprint")
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.horizontal, Space.l)
+                .padding(.vertical, Space.m)
             }
             if timer.state.sprint.endsAt == nil {
-                HStack(spacing: 12) {
-                    Image(systemName: "plus").foregroundStyle(Color.icon).frame(width: 22)
+                HStack(spacing: Space.m) {
+                    Image(systemName: "plus").foregroundStyle(Color.icon).frame(width: Size.tick)
                     TextField("Add a task", text: $typed)
                         .font(.geist(.control))
                         .onSubmit(addTyped)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, Space.l)
+                .padding(.vertical, Space.m)
             }
         }
     }
@@ -247,8 +248,8 @@ struct SprintView: View {
             TextField("Anything on your mind", text: $pad, axis: .vertical)
                 .font(.geist(.body))
                 .lineLimit(3...)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 14)
+                .padding(.horizontal, Space.l)
+                .padding(.bottom, Space.row)
                 .onChange(of: pad) { _, new in
                     guard padLoaded else { return }
                     padSave?.cancel()
@@ -267,27 +268,27 @@ struct SprintView: View {
     }
 
     private var finished: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "checkmark.circle.fill").font(.system(size: 54)).foregroundStyle(Color.ink)
+        VStack(spacing: Space.row) {
+            Image(systemName: "checkmark.circle.fill").font(.icon(.hero)).foregroundStyle(Color.ink)
             Text("Sprint done").textStyle(.section, medium: true, color: .ink)
             let done = timer.state.sprintTasks.filter(\.done)
             Text(done.isEmpty ? "Nothing ticked off." : "\(done.count) of \(timer.state.sprintTasks.count) done")
                 .textStyle(.control, color: .mutedText)
             CardBox {
                 ForEach(timer.state.sprintTasks) { t in
-                    HStack(spacing: 12) {
+                    HStack(spacing: Space.m) {
                         StatusCircle(status: t.done ? .done : .todo)
                         Text(t.title).textStyle(.control, color: t.done ? .text : .mutedText)
                         Spacer()
                     }
-                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .padding(.horizontal, Space.l).padding(.vertical, Space.m)
                 }
             }
             Button("New sprint") { timer.newSprint() }
                 .buttonStyle(.solid)
-                .padding(.top, 8)
+                .padding(.top, Space.s)
         }
-        .padding(.top, 20)
+        .padding(.top, Space.xl)
     }
 
     private func addTyped() {
@@ -316,7 +317,7 @@ struct SprintPicker: View {
     var body: some View {
         NavigationStack {
             List(open, selection: $picked) { t in
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: Space.xs) {
                     Text(t.title).textStyle(.control, color: .text)
                     if let p = t.project { ProjectChip(name: p.name, color: p.color) }
                 }
@@ -410,17 +411,18 @@ struct FocusStatsSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Picker("", selection: $days) {
-                    Text("7 days").tag(7)
-                    Text("30 days").tag(30)
+                Section {
+                    Picker("", selection: $days) {
+                        Text("7 days").tag(7)
+                        Text("30 days").tag(30)
+                    }
+                    .pickerStyle(.segmented)
+                    .controlRow()
                 }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
 
                 if let stats {
                     Section {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: Space.xs) {
                             Text(Self.hours(stats.totalSeconds)).textStyle(.title, medium: true, color: .ink)
                             Text("Focused in the last \(days) days").textStyle(.meta, color: .mutedText)
                             Chart(stats.days, id: \.date) { d in
@@ -439,16 +441,16 @@ struct FocusStatsSheet: View {
                                     AxisValueLabel { if let h = v.as(Double.self) { Text(h == 0 ? "0" : "\(h.formatted(.number.precision(.fractionLength(0...1))))h") } }
                                 }
                             }
-                            .frame(height: 170)
-                            .padding(.top, 12)
+                            .frame(height: Size.chartHeight)
+                            .padding(.top, Space.m)
                         }
-                        .padding(.vertical, 8)
+                        .padding(.vertical, Space.s)
                         .cardRow()
                     }
                     Section {
                         ForEach(stats.sessions.reversed()) { s in
                             HStack {
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: Space.xs) {
                                     Text(s.label ?? s.kind.capitalized).textStyle(.control, color: .text).lineLimit(1)
                                     Text(Day.friendly(s.day, today: stats.today) + (Stamp.date(s.endedAt).map { " · " + $0.formatted(date: .omitted, time: .shortened) } ?? ""))
                                         .textStyle(.meta, color: .mutedText)

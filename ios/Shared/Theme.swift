@@ -89,14 +89,14 @@ enum LukeType {
 
     var size: CGFloat {
         switch self {
-        case .tag: 12
-        case .meta: 13
-        case .preview: 14
-        case .control: 15
+        case .tag: 13
+        case .meta: 14
+        case .preview: 15
+        case .control: 16
         case .body: 16
-        case .heading: 17
+        case .heading: 18
         case .section: 22
-        case .title: 26
+        case .title: 28
         case .display: 40
         }
     }
@@ -130,6 +130,9 @@ extension Font {
     }
 
     static func geistMono(size: CGFloat) -> Font { .custom("GeistMono-Regular", size: size) }
+
+    /// Geist Mono at a step of the type scale (codes, times, code blocks).
+    static func geistMono(_ style: LukeType) -> Font { .custom("GeistMono-Regular", size: style.size, relativeTo: style.relativeTo) }
 }
 
 extension View {
@@ -143,11 +146,97 @@ extension View {
 
 // MARK: Shape
 
+/// Space between things, so screens can breathe (Luke, 22 Nov 2026). Screens use these, never numbers.
+enum Space {
+    static let xs: CGFloat = 4
+    static let s: CGFloat = 8
+    static let m: CGFloat = 12
+    static let l: CGFloat = 16
+    static let xl: CGFloat = 20
+    static let xxl: CGFloat = 24
+    static let section: CGFloat = 32
+    /// Between a title and its second line.
+    static let line: CGFloat = 6
+    /// Above and below the text in a row.
+    static let row: CGFloat = 14
+    /// Card inner padding at the sides.
+    static let inset: CGFloat = 16
+    /// Page side margins outside lists.
+    static let page: CGFloat = 20
+    /// Height of a chip or tag.
+    static let chip: CGFloat = Size.chip
+}
+
+/// Fixed sizes of components.
+enum Size {
+    static let tick: CGFloat = 24
+    static let tap: CGFloat = 44
+    static let chip: CGFloat = 26
+    static let rowMin: CGFloat = 52
+    static let artworkRow: CGFloat = 54
+    static let artworkMini: CGFloat = 32
+    static let artworkPlayer: CGFloat = 260
+    static let transportMain: CGFloat = 76
+    static let transportSide: CGFloat = 52
+    static let fab: CGFloat = 60
+    static let focusRing: CGFloat = 260
+    static let focusRingStroke: CGFloat = 10
+    /// The time inside the focus ring: bigger than `display`, so it holds the ring.
+    static let focusTime: CGFloat = 60
+    static let field: CGFloat = 52
+    static let unreadDot: CGFloat = 8
+    static let projectDot: CGFloat = 9
+    /// Room at the bottom of a scrolling screen so the last thing clears the tab bar and mini player.
+    static let bottomClearance: CGFloat = 110
+    /// Width of the icon column at the start of a row (so titles line up).
+    static let iconColumn: CGFloat = 28
+    /// The tick's column in a task row.
+    static let tickColumn: CGFloat = 30
+    /// Small round buttons in bars and sheets.
+    static let smallButton: CGFloat = 36
+    /// The composer's + and the send arrow.
+    static let composerButton: CGFloat = 40
+    static let sendButton: CGFloat = 32
+    static let attachmentThumb: CGFloat = 64
+    static let imageBubble: CGFloat = 220
+    static let pinnedCard = CGSize(width: 184, height: 144)
+    static let filterChip: CGFloat = 38
+    static let playlistHero: CGFloat = 160
+    static let finishedArt: CGFloat = 72
+    static let areaSwitch: CGFloat = 150
+    static let chartHeight: CGFloat = 180
+    static let logo: CGFloat = 88
+    static let dotSmall: CGFloat = 6
+    /// Width kept free beside a message bubble.
+    static let bubbleGutter: CGFloat = 56
+}
+
+/// SF Symbol sizes: beside second-line text, as row icons, in bars, and big transport icons.
+enum IconSize: CGFloat {
+    case meta = 15
+    case row = 19
+    case bar = 21
+    case transport = 24
+    case hero = 32
+}
+
+extension Font {
+    static func icon(_ size: IconSize, weight: Font.Weight = .regular) -> Font {
+        .system(size: size.rawValue, weight: weight)
+    }
+}
+
 enum Radius {
-    static let tag: CGFloat = 6
+    static let tag: CGFloat = 7
     static let tile: CGFloat = 8
     static let control: CGFloat = 10
     static let container: CGFloat = 14
     /// Bigger containers on the phone, to sit with iOS 26's rounder bars and sheets.
     static let card: CGFloat = 22
+    /// Fields and small cards (link and file cards).
+    static let field: CGFloat = 16
+    /// Message bubbles.
+    static let bubble: CGFloat = 20
+    /// The app icon on the sign-in screen.
+    static let logo: CGFloat = 20
 }

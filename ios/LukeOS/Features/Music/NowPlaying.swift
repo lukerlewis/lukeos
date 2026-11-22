@@ -8,30 +8,30 @@ struct MiniPlayer: View {
 
     var body: some View {
         if let ep = player.current {
-            HStack(spacing: 10) {
-                Artwork(path: ep.artworkUrl, size: 30)
-                    .clipShape(.rect(cornerRadius: 7))
+            HStack(spacing: Space.m) {
+                Artwork(path: ep.artworkUrl, size: Size.artworkMini)
+                    .clipShape(.rect(cornerRadius: Radius.tile))
                 Text(ep.title).textStyle(.preview, medium: true, color: .ink).lineLimit(1)
                 Spacer(minLength: 6)
                 Button { player.toggle() } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 17))
+                        .font(.icon(.row))
                         .contentTransition(.symbolEffect(.replace))
-                        .frame(width: 36, height: 36)
+                        .frame(width: Size.smallButton, height: Size.smallButton)
                 }
                 .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
                 if placement != .inline {
                     Button { ep.isPodcast ? player.skip(30) : player.next() } label: {
                         Image(systemName: ep.isPodcast ? "goforward.30" : "forward.fill")
-                            .font(.system(size: 15))
-                            .frame(width: 32, height: 36)
+                            .font(.icon(.meta))
+                            .frame(width: Size.smallButton, height: Size.smallButton)
                     }
                     .accessibilityLabel(ep.isPodcast ? "Forward 30 seconds" : "Next")
                 }
             }
             .foregroundStyle(Color.ink)
-            .padding(.leading, 10)
-            .padding(.trailing, 6)
+            .padding(.leading, Space.m)
+            .padding(.trailing, Space.line)
             .contentShape(.rect)
             .onTapGesture(perform: onOpen)
         }
@@ -50,17 +50,17 @@ struct NowPlayingSheet: View {
         VStack(spacing: 0) {
             if let ep = player.current {
                 Spacer(minLength: 20)
-                Artwork(path: ep.artworkUrl, size: 280)
+                Artwork(path: ep.artworkUrl, size: Size.artworkPlayer)
                     .scaleEffect(player.isPlaying ? 1 : 0.9)
                     .animation(.spring(duration: 0.4, bounce: 0.25), value: player.isPlaying)
                 Spacer(minLength: 24)
-                VStack(spacing: 4) {
+                VStack(spacing: Space.xs) {
                     Text(ep.title).textStyle(.section, medium: true, color: .ink).lineLimit(2).multilineTextAlignment(.center)
                     if let show = ep.show { Text(show).textStyle(.control, color: .mutedText) }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, Space.xxl)
 
-                VStack(spacing: 6) {
+                VStack(spacing: Space.line) {
                     Slider(value: Binding(get: { scrubbing ?? player.position }, set: { scrubbing = $0 }),
                            in: 0...max(player.duration, 1)) { editing in
                         if !editing, let s = scrubbing { player.seek(to: s); scrubbing = nil }
@@ -71,35 +71,35 @@ struct NowPlayingSheet: View {
                         Spacer()
                         Text("-" + Episode.time(max(0, player.duration - (scrubbing ?? player.position))))
                     }
-                    .font(.geistMono(size: 12))
+                    .font(.geistMono(.meta))
                     .foregroundStyle(Color.mutedText)
                 }
-                .padding(.horizontal, 28)
-                .padding(.top, 26)
+                .padding(.horizontal, Space.section)
+                .padding(.top, Space.xxl)
 
                 HStack {
-                    control("backward.end.fill", "Previous", size: 22) { player.previous() }
+                    control("backward.end.fill", "Previous", size: .bar) { player.previous() }
                     Spacer()
-                    control("gobackward.15", "Back 15 seconds", size: 26) { player.skip(-15) }
+                    control("gobackward.15", "Back 15 seconds", size: .transport) { player.skip(-15) }
                     Spacer()
                     Button { player.toggle() } label: {
                         Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 30))
+                            .font(.icon(.transport))
                             .foregroundStyle(Color.onSolid)
                             .contentTransition(.symbolEffect(.replace))
-                            .frame(width: 76, height: 76)
+                            .frame(width: Size.transportMain, height: Size.transportMain)
                     }
                     .buttonStyle(.glassProminent)
                     .buttonBorderShape(.circle)
                     .tint(.ink)
                     .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
                     Spacer()
-                    control("goforward.30", "Forward 30 seconds", size: 26) { player.skip(30) }
+                    control("goforward.30", "Forward 30 seconds", size: .transport) { player.skip(30) }
                     Spacer()
-                    control("forward.end.fill", "Next", size: 22) { player.next() }
+                    control("forward.end.fill", "Next", size: .bar) { player.next() }
                 }
-                .padding(.horizontal, 28)
-                .padding(.top, 22)
+                .padding(.horizontal, Space.section)
+                .padding(.top, Space.xxl)
 
                 HStack {
                     Menu {
@@ -109,7 +109,7 @@ struct NowPlayingSheet: View {
                     } label: {
                         Text(speedLabel(player.speed))
                             .font(.geist(.preview, medium: true))
-                            .frame(minWidth: 52, minHeight: 36)
+                            .frame(minWidth: Size.transportSide, minHeight: Size.smallButton)
                     }
                     .buttonStyle(.glass)
                     Spacer()
@@ -121,16 +121,16 @@ struct NowPlayingSheet: View {
                         player.stop()
                         dismiss()
                     } label: {
-                        Image(systemName: "xmark").frame(width: 36, height: 36)
+                        Image(systemName: "xmark").frame(width: Size.smallButton, height: Size.smallButton)
                     }
                     .buttonStyle(.glass)
                     .buttonBorderShape(.circle)
                     .accessibilityLabel("Close player")
                 }
                 .foregroundStyle(Color.ink)
-                .padding(.horizontal, 24)
-                .padding(.top, 26)
-                .padding(.bottom, 12)
+                .padding(.horizontal, Space.xxl)
+                .padding(.top, Space.xxl)
+                .padding(.bottom, Space.m)
             }
         }
         .presentationDragIndicator(.visible)
@@ -141,9 +141,9 @@ struct NowPlayingSheet: View {
         s == 1 ? "1×" : String(format: "%g×", s)
     }
 
-    private func control(_ symbol: String, _ label: String, size: CGFloat, action: @escaping () -> Void) -> some View {
+    private func control(_ symbol: String, _ label: String, size: IconSize, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: size)).frame(width: 48, height: 48)
+            Image(systemName: symbol).font(.icon(size)).frame(width: Size.transportSide, height: Size.transportSide)
         }
         .foregroundStyle(Color.ink)
         .accessibilityLabel(label)

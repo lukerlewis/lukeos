@@ -29,12 +29,12 @@ struct CardHeader<Trailing: View>: View {
     }
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.s) {
             if let symbol {
                 Image(systemName: symbol)
-                    .font(.system(size: 14, weight: .regular))
+                    .font(.icon(.row, weight: .regular))
                     .foregroundStyle(Color.icon)
-                    .frame(width: 18)
+                    .frame(width: Size.iconColumn)
             }
             Text(title).textStyle(.heading, medium: true, color: .ink)
             if let count, count > 0 {
@@ -43,9 +43,9 @@ struct CardHeader<Trailing: View>: View {
             Spacer(minLength: 0)
             trailing
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 14)
-        .padding(.bottom, 8)
+        .padding(.horizontal, Space.inset)
+        .padding(.top, Space.l)
+        .padding(.bottom, Space.m)
     }
 }
 
@@ -99,15 +99,15 @@ struct Tag: View {
     }
 
     var body: some View {
-        HStack(spacing: 4) {
-            if let dot { Circle().fill(dot).frame(width: 7, height: 7) }
-            if let symbol { Image(systemName: symbol).font(.system(size: 10)) }
+        HStack(spacing: Space.xs) {
+            if let dot { Circle().fill(dot).frame(width: Size.dotSmall + 1, height: Size.dotSmall + 1) }
+            if let symbol { Image(systemName: symbol).font(.icon(.meta)) }
             Text(text).lineLimit(1)
         }
         .font(.geist(.tag, medium: true))
         .foregroundStyle(Color.subtleText)
-        .padding(.horizontal, 6)
-        .frame(height: 22)
+        .padding(.horizontal, Space.s)
+        .frame(minHeight: Space.chip)
         .background(Color.raised, in: .rect(cornerRadius: Radius.tag))
         .overlay(RoundedRectangle(cornerRadius: Radius.tag).strokeBorder(Color.stroke, lineWidth: 1))
     }
@@ -119,7 +119,7 @@ struct ClaudeMark: View {
     var body: some View {
         if madeBy?.isClaude == true {
             Image(systemName: "sparkle")
-                .font(.system(size: 10))
+                .font(.icon(.meta))
                 .foregroundStyle(Color.mutedText.opacity(0.75))
                 .accessibilityLabel("Made by \(madeBy?.name ?? "Claude")")
         }
@@ -128,7 +128,7 @@ struct ClaudeMark: View {
 
 /// Blue 8pt dot for something unread.
 struct UnreadDot: View {
-    var body: some View { Circle().fill(Color.unread).frame(width: 8, height: 8) }
+    var body: some View { Circle().fill(Color.unread).frame(width: Size.unreadDot, height: Size.unreadDot) }
 }
 
 /// Red count badge.
@@ -137,11 +137,11 @@ struct CountBadge: View {
     var body: some View {
         if count > 0 {
             Text(count > 99 ? "99+" : "\(count)")
-                .font(.geist(size: 11, medium: true))
+                .font(.geist(.tag, medium: true))
                 .monospacedDigit()
                 .foregroundStyle(.white)
-                .padding(.horizontal, 5)
-                .frame(minWidth: 18, minHeight: 18)
+                .padding(.horizontal, Space.xs)
+                .frame(minWidth: Space.xl, minHeight: Space.xl)
                 .background(Color.notification, in: .capsule)
         }
     }
@@ -159,14 +159,14 @@ struct EmptyNote: View {
     var text: String
     var symbol: String?
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: Space.m) {
             if let symbol {
-                Image(systemName: symbol).font(.system(size: 26, weight: .light)).foregroundStyle(Color.disabled)
+                Image(systemName: symbol).font(.icon(.transport, weight: .light)).foregroundStyle(Color.disabled)
             }
-            Text(text).textStyle(.preview, color: .mutedText)
+            Text(text).textStyle(.control, color: .mutedText)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 36)
+        .padding(.vertical, Space.section + Space.m)
     }
 }
 
@@ -175,6 +175,8 @@ struct PageBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
             .scrollContentBackground(.hidden)
+            .listSectionSpacing(Space.section)
+            .environment(\.defaultMinListRowHeight, 52)
             .background(Color.page.ignoresSafeArea())
     }
 }
@@ -182,10 +184,25 @@ struct PageBackground: ViewModifier {
 extension View {
     func pageBackground() -> some View { modifier(PageBackground()) }
 
-    /// A row inside a native List styled as a card row.
+    /// A row inside a native List styled as a card row, with room to breathe.
     func cardRow() -> some View {
         self.listRowBackground(Color.card)
             .listRowSeparatorTint(Color.hairline)
+            .listRowInsets(EdgeInsets(top: 12, leading: Space.inset, bottom: 12, trailing: Space.inset))
+    }
+
+    /// A row of switches at the top of a list (Library | Playlists, 7 days | 30 days): no card, edge to edge,
+    /// and the same gap below it on every screen. Wrap it in its own `Section`.
+    func controlRow() -> some View {
+        self.listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listSectionSpacing(Space.xl)
+    }
+
+    /// The insets for a task row in a list.
+    func taskRowInsets() -> some View {
+        listRowInsets(EdgeInsets(top: Space.row, leading: Space.inset, bottom: Space.row, trailing: Space.inset))
     }
 }
 
@@ -196,7 +213,7 @@ struct SolidButtonStyle: ButtonStyle {
         configuration.label
             .font(.geist(.control, medium: true))
             .foregroundStyle(enabled ? Color.onSolid : Color.disabled)
-            .frame(maxWidth: .infinity, minHeight: 50)
+            .frame(maxWidth: .infinity, minHeight: 54)
             .background(enabled ? Color.ink : Color.muted, in: .capsule)
             .opacity(configuration.isPressed ? 0.85 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
@@ -212,7 +229,8 @@ struct SectionTitle: View {
     var text: String
     var body: some View {
         Text(text)
-            .textStyle(.meta, medium: true, color: .mutedText)
+            .textStyle(.preview, medium: true, color: .mutedText)
             .textCase(nil)
+            .padding(.bottom, Space.xs)
     }
 }
