@@ -325,6 +325,27 @@ type Source = {
 };
 
 const field = (p: Point, key: string) => (p[key] ?? {}) as Record<string, unknown>;
+/** A session's local date and hour at its start or end. Google leaves out the civil times for Fitbit sessions, so this uses the UTC offset. */
+const localAt = (interval: Record<string, unknown>, which: "start" | "end") => {
+  const civil = interval[which === "start" ? "civilStartTime" : "civilEndTime"] as CivilDateTime | undefined;
+  if (civil?.date) return { date: ymd(civil.date)!, hour: Number(civil.time?.hours ?? 0) };
+  const at = Date.parse(String(interval[`${which}Time`] ?? ""));
+  if (!Number.isFinite(at)) return null;
+  const offset = String(interval[`${which}UtcOffset`] ?? "");
+  const local = new Date(at + (/^-?[\d.]+s$/.test(offset) ? Number(offset.slice(0, -1)) : 0) * 1000);
+  return { date: local.toISOString().slice(0, 10), hour: local.getUTCHours() };
+};
+/**
+ * The sessions that make up the night ending on a day: everything that ended before 2 PM (Fitbit often splits a night in two,
+ * calling the second part a nap). An afternoon nap only counts when there was no night at all.
+ */
+function nightOf(sleeps: Record<string, unknown>[]) {
+  const overnight = sleeps.filter((x) => (localAt(field(x, "interval"), "end")?.hour ?? 0) < 14);
+  if (overnight.length) return overnight.sort((a, b) => String(field(a, "interval").startTime).localeCompare(String(field(b, "interval").startTime)));
+  const asleep = (x: Record<string, unknown>) => num(field(x, "summary").minutesAsleep) ?? 0;
+  const longest = [...sleeps].sort((a, b) => asleep(b) - asleep(a))[0];
+  return longest ? [longest] : [];
+}
 const rollupDay = (p: Point) => ymd((p.civilStartTime as CivilDateTime | undefined)?.date);
 const sumOf = (points: Point[], pick: (p: Point) => number | null) => {
   const values = points.map(pick).filter((v): v is number => v !== null);
@@ -407,34 +428,35 @@ const sources: Source[] = [
       // Filtered asks came back empty for Luke's account; the newest nights unfiltered (newest first) as a fallback.
       return found.length ? found : listPoints("sleep", "", 25, 4);
     },
-    dayOf: (p) => ymd((field(p, "sleep").interval as { civilEndTime?: CivilDateTime } | undefined)?.civilEndTime?.date),
+    dayOf: (p) => localAt(field(field(p, "sleep"), "interval"), "end")?.date ?? null,
     apply: (s, points) => {
-      const sleeps = points.map((p) => field(p, "sleep"));
-      const asleep = (x: Record<string, unknown>) => num(field(x, "summary").minutesAsleep) ?? 0;
-      const main =
-        sleeps.find((x) => field(x, "metadata").mainSleep === true) ??
-        sleeps.filter((x) => field(x, "metadata").nap !== true).sort((a, b) => asleep(b) - asleep(a))[0] ??
-        sleeps.sort((a, b) => asleep(b) - asleep(a))[0];
-      if (!main) return void (s.sleep = null);
-      const summary = field(main, "summary");
-      const interval = field(main, "interval");
-      const stages = new Map(((summary.stagesSummary ?? []) as { type?: string; minutes?: string }[]).map((st) => [st.type, num(st.minutes)]));
-      const staged = main.type === "STAGES";
+      const night = nightOf(points.map((p) => field(p, "sleep")));
+      if (!night.length) return void (s.sleep = null);
+      const stages = new Map<string, number>();
+      let minutes = 0;
+      let awake = 0;
+      for (const x of night) {
+        const summary = field(x, "summary");
+        minutes += num(summary.minutesAsleep) ?? 0;
+        for (const st of (summary.stagesSummary ?? []) as { type?: string; minutes?: string }[]) if (st.type) stages.set(st.type, (stages.get(st.type) ?? 0) + (num(st.minutes) ?? 0));
+        awake += num(summary.minutesAwake) ?? 0;
+      }
+      const staged = night.every((x) => x.type === "STAGES");
       s.sleep = {
-        minutes: num(summary.minutesAsleep) ?? 0,
-        start: String(interval.startTime ?? ""),
-        end: String(interval.endTime ?? ""),
+        minutes,
+        start: String(field(night[0], "interval").startTime ?? ""),
+        end: String(field(night.at(-1)!, "interval").endTime ?? ""),
         deepMinutes: staged ? (stages.get("DEEP") ?? 0) : null,
         lightMinutes: staged ? (stages.get("LIGHT") ?? 0) : null,
         remMinutes: staged ? (stages.get("REM") ?? 0) : null,
-        awakeMinutes: num(summary.minutesAwake) ?? stages.get("AWAKE") ?? null,
+        awakeMinutes: awake || (stages.get("AWAKE") ?? null),
       };
     },
   },
   {
     type: "exercise",
     fetch: (first, end) => listPoints("exercise", `exercise.interval.civil_start_time >= "${first}" AND exercise.interval.civil_start_time < "${end}"`, 25),
-    dayOf: (p) => ymd((field(p, "exercise").interval as { civilStartTime?: CivilDateTime } | undefined)?.civilStartTime?.date),
+    dayOf: (p) => localAt(field(field(p, "exercise"), "interval"), "start")?.date ?? null,
     apply: (s, points) => {
       s.workouts = points
         .map((p): HealthWorkout => {
@@ -664,11 +686,10 @@ export async function healthDayDetail(date: string): Promise<HealthDayDetail> {
     .filter((x): x is HealthDayDetail["heartRate"][number] => x !== null)
     .sort((a, b) => a.time.localeCompare(b.time));
 
-  // The same night LukeOS shows for this day: main sleep first, else the longest.
-  const sleeps = ((raw as Record<string, Point[]> | null)?.sleep ?? []).map((p) => field(p, "sleep"));
-  const asleep = (x: Record<string, unknown>) => num(field(x, "summary").minutesAsleep) ?? 0;
-  const main = sleeps.find((x) => field(x, "metadata").mainSleep === true) ?? [...sleeps].sort((a, b) => asleep(b) - asleep(a))[0];
-  const sleepStages = ((main?.stages ?? []) as { type?: string; startTime?: string; endTime?: string }[])
+  // The same night LukeOS shows for this day (every part of it).
+  const night = nightOf(((raw as Record<string, Point[]> | null)?.sleep ?? []).map((p) => field(p, "sleep")));
+  const sleepStages = night
+    .flatMap((x) => (x.stages ?? []) as { type?: string; startTime?: string; endTime?: string }[])
     .filter((s) => s.type && s.startTime && s.endTime)
     .map((s) => ({ stage: String(s.type), start: String(s.startTime), end: String(s.endTime) }))
     .sort((a, b) => a.start.localeCompare(b.start));
