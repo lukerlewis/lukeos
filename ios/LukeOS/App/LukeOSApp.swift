@@ -41,7 +41,12 @@ struct RootView: View {
         .animation(.smooth, value: app.signedIn)
         .overlay(alignment: .bottom) { ToastView() }
         .onChange(of: phase) { _, now in
-            if now == .active { Task { await Outbox.shared.flush() } }
+            if now == .active {
+                Task {
+                    await Outbox.shared.flush()
+                    await ScreenTime.shared.refresh()
+                }
+            }
         }
     }
 }
@@ -81,6 +86,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             AudioPlayer.shared.configureSession()
             Dictation.shared.listen()
             if AppModel.shared.signedIn, !SharedConfig.isDemo { await Push.registerIfAllowed() }
+            await ScreenTime.shared.refresh()
         }
         return true
     }

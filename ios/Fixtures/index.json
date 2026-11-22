@@ -275,5 +275,29 @@
   "input": {
    "limit": 30
   }
+ },
+ {
+  "file": "get_health.json",
+  "op": "get_health",
+  "input": {}
+ },
+ {
+  "file": "get_health.notconfigured.json",
+  "op": "get_health",
+  "input": {
+   "demoState": "notconfigured"
+  }
+ },
+ {
+  "file": "get_health.gaps.json",
+  "op": "get_health",
+  "input": {
+   "demoState": "gaps"
+  }
+ },
+ {
+  "file": "sync_health.json",
+  "op": "sync_health",
+  "input": {}
  }
 ]

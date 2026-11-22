@@ -1,0 +1,794 @@
+{
+ "configured": true,
+ "connected": true,
+ "lastSyncAt": "2026-11-22T02:05:00.000Z",
+ "today": "2026-11-21",
+ "timeZone": "America/New_York",
+ "days": [
+  {
+   "date": "2026-10-23",
+   "steps": 13423,
+   "distanceMeters": 4355,
+   "activeMinutes": 33,
+   "caloriesOut": 2723,
+   "restingHeartRate": 63,
+   "hrvMs": 47,
+   "breathingRate": 15.2,
+   "spo2": 97.7,
+   "skinTempDeviation": -0.5,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 445,
+    "start": "2026-10-23T03:01:00.000Z",
+    "end": "2026-10-23T11:00:00.000Z",
+    "deepMinutes": 84,
+    "lightMinutes": 255,
+    "remMinutes": 106,
+    "awakeMinutes": 34
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-10-24",
+   "steps": 10290,
+   "distanceMeters": 6510,
+   "activeMinutes": 30,
+   "caloriesOut": 2538,
+   "restingHeartRate": 55,
+   "hrvMs": 58,
+   "breathingRate": 14.9,
+   "spo2": 94.7,
+   "skinTempDeviation": -0.4,
+   "vo2Max": 44.0,
+   "sleep": {
+    "minutes": 407,
+    "start": "2026-10-24T02:32:00.000Z",
+    "end": "2026-10-24T09:57:00.000Z",
+    "deepMinutes": 56,
+    "lightMinutes": 263,
+    "remMinutes": 88,
+    "awakeMinutes": 38
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-10-25",
+   "steps": 7000,
+   "distanceMeters": 7052,
+   "activeMinutes": 39,
+   "caloriesOut": 2555,
+   "restingHeartRate": 59,
+   "hrvMs": 47,
+   "breathingRate": 13.4,
+   "spo2": 94.8,
+   "skinTempDeviation": 0.2,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 391,
+    "start": "2026-10-25T03:04:00.000Z",
+    "end": "2026-10-25T09:55:00.000Z",
+    "deepMinutes": 67,
+    "lightMinutes": 233,
+    "remMinutes": 91,
+    "awakeMinutes": 20
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-10-26",
+   "steps": 8965,
+   "distanceMeters": 9009,
+   "activeMinutes": 39,
+   "caloriesOut": 2425,
+   "restingHeartRate": 59,
+   "hrvMs": 32,
+   "breathingRate": 13.6,
+   "spo2": 97.6,
+   "skinTempDeviation": -0.1,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 434,
+    "start": "2026-10-26T03:50:00.000Z",
+    "end": "2026-10-26T11:40:00.000Z",
+    "deepMinutes": 86,
+    "lightMinutes": 240,
+    "remMinutes": 108,
+    "awakeMinutes": 36
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-10-27",
+   "steps": 10311,
+   "distanceMeters": 6238,
+   "activeMinutes": 19,
+   "caloriesOut": 2479,
+   "restingHeartRate": 58,
+   "hrvMs": 56,
+   "breathingRate": 15.3,
+   "spo2": 95.8,
+   "skinTempDeviation": -0.2,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 404,
+    "start": "2026-10-27T02:33:00.000Z",
+    "end": "2026-10-27T09:54:00.000Z",
+    "deepMinutes": 63,
+    "lightMinutes": 242,
+    "remMinutes": 99,
+    "awakeMinutes": 37
+   },
+   "workouts": [
+    {
+     "type": "WALKING",
+     "minutes": 23,
+     "startedAt": "2026-10-27T19:30:00.000Z",
+     "calories": 207,
+     "distanceMeters": 8307,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-10-28",
+   "steps": 6711,
+   "distanceMeters": 8387,
+   "activeMinutes": 34,
+   "caloriesOut": 2358,
+   "restingHeartRate": 63,
+   "hrvMs": 38,
+   "breathingRate": 16.2,
+   "spo2": 97.6,
+   "skinTempDeviation": -0.1,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 333,
+    "start": "2026-10-28T03:43:00.000Z",
+    "end": "2026-10-28T09:29:00.000Z",
+    "deepMinutes": 65,
+    "lightMinutes": 191,
+    "remMinutes": 77,
+    "awakeMinutes": 13
+   },
+   "workouts": [
+    {
+     "type": "RUNNING",
+     "minutes": 20,
+     "startedAt": "2026-10-28T17:45:00.000Z",
+     "calories": 180,
+     "distanceMeters": 6488,
+     "name": "Lunch run"
+    }
+   ]
+  },
+  {
+   "date": "2026-10-29",
+   "steps": 7252,
+   "distanceMeters": 4334,
+   "activeMinutes": 60,
+   "caloriesOut": 2774,
+   "restingHeartRate": 56,
+   "hrvMs": 33,
+   "breathingRate": 16.2,
+   "spo2": 95.4,
+   "skinTempDeviation": -0.3,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 428,
+    "start": "2026-10-29T04:00:00.000Z",
+    "end": "2026-10-29T11:24:00.000Z",
+    "deepMinutes": 59,
+    "lightMinutes": 280,
+    "remMinutes": 89,
+    "awakeMinutes": 16
+   },
+   "workouts": [
+    {
+     "type": "YOGA",
+     "minutes": 39,
+     "startedAt": "2026-10-29T21:16:00.000Z",
+     "calories": 234,
+     "distanceMeters": null,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-10-30",
+   "steps": 11225,
+   "distanceMeters": 3842,
+   "activeMinutes": 71,
+   "caloriesOut": 2752,
+   "restingHeartRate": 57,
+   "hrvMs": 44,
+   "breathingRate": 13.9,
+   "spo2": 95.1,
+   "skinTempDeviation": 0.5,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 414,
+    "start": "2026-10-30T03:49:00.000Z",
+    "end": "2026-10-30T10:55:00.000Z",
+    "deepMinutes": 77,
+    "lightMinutes": 252,
+    "remMinutes": 85,
+    "awakeMinutes": 12
+   },
+   "workouts": [
+    {
+     "type": "WALKING",
+     "minutes": 20,
+     "startedAt": "2026-10-30T20:03:00.000Z",
+     "calories": 160,
+     "distanceMeters": 5544,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-10-31",
+   "steps": 4576,
+   "distanceMeters": 3650,
+   "activeMinutes": 23,
+   "caloriesOut": 1939,
+   "restingHeartRate": 63,
+   "hrvMs": 40,
+   "breathingRate": 14.1,
+   "spo2": 97.3,
+   "skinTempDeviation": -0.3,
+   "vo2Max": 44.0,
+   "sleep": {
+    "minutes": 393,
+    "start": "2026-10-31T02:50:00.000Z",
+    "end": "2026-10-31T09:53:00.000Z",
+    "deepMinutes": 71,
+    "lightMinutes": 247,
+    "remMinutes": 75,
+    "awakeMinutes": 30
+   },
+   "workouts": [
+    {
+     "type": "OUTDOOR_BIKE",
+     "minutes": 50,
+     "startedAt": "2026-10-31T20:04:00.000Z",
+     "calories": 300,
+     "distanceMeters": 5952,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-01",
+   "steps": 5014,
+   "distanceMeters": 5095,
+   "activeMinutes": 37,
+   "caloriesOut": 2839,
+   "restingHeartRate": 58,
+   "hrvMs": 55,
+   "breathingRate": 13.4,
+   "spo2": 95.6,
+   "skinTempDeviation": -0.1,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 455,
+    "start": "2026-11-01T03:52:00.000Z",
+    "end": "2026-11-01T12:00:00.000Z",
+    "deepMinutes": 68,
+    "lightMinutes": 300,
+    "remMinutes": 87,
+    "awakeMinutes": 33
+   },
+   "workouts": [
+    {
+     "type": "OUTDOOR_BIKE",
+     "minutes": 55,
+     "startedAt": "2026-11-01T20:17:00.000Z",
+     "calories": 550,
+     "distanceMeters": 7532,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-02",
+   "steps": 5310,
+   "distanceMeters": 5766,
+   "activeMinutes": 27,
+   "caloriesOut": 2812,
+   "restingHeartRate": 62,
+   "hrvMs": 42,
+   "breathingRate": 15.2,
+   "spo2": 97.3,
+   "skinTempDeviation": 0.1,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 345,
+    "start": "2026-11-02T02:47:00.000Z",
+    "end": "2026-11-02T08:58:00.000Z",
+    "deepMinutes": 45,
+    "lightMinutes": 232,
+    "remMinutes": 68,
+    "awakeMinutes": 26
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-11-03",
+   "steps": 4349,
+   "distanceMeters": 2974,
+   "activeMinutes": 19,
+   "caloriesOut": 2393,
+   "restingHeartRate": 56,
+   "hrvMs": 55,
+   "breathingRate": 14.3,
+   "spo2": 95.0,
+   "skinTempDeviation": -0.5,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 365,
+    "start": "2026-11-03T03:15:00.000Z",
+    "end": "2026-11-03T09:45:00.000Z",
+    "deepMinutes": 62,
+    "lightMinutes": 214,
+    "remMinutes": 89,
+    "awakeMinutes": 25
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-11-04",
+   "steps": 11554,
+   "distanceMeters": 3436,
+   "activeMinutes": 63,
+   "caloriesOut": 2866,
+   "restingHeartRate": 55,
+   "hrvMs": 47,
+   "breathingRate": 15.0,
+   "spo2": 97.0,
+   "skinTempDeviation": -0.1,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 445,
+    "start": "2026-11-04T02:30:00.000Z",
+    "end": "2026-11-04T10:33:00.000Z",
+    "deepMinutes": 74,
+    "lightMinutes": 268,
+    "remMinutes": 103,
+    "awakeMinutes": 38
+   },
+   "workouts": [
+    {
+     "type": "STRENGTH_TRAINING",
+     "minutes": 42,
+     "startedAt": "2026-11-04T17:51:00.000Z",
+     "calories": 462,
+     "distanceMeters": null,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-05",
+   "steps": 10164,
+   "distanceMeters": 8821,
+   "activeMinutes": 68,
+   "caloriesOut": 2351,
+   "restingHeartRate": 62,
+   "hrvMs": 58,
+   "breathingRate": 14.9,
+   "spo2": 96.6,
+   "skinTempDeviation": 0.0,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 479,
+    "start": "2026-11-05T02:39:00.000Z",
+    "end": "2026-11-05T10:50:00.000Z",
+    "deepMinutes": 62,
+    "lightMinutes": 329,
+    "remMinutes": 88,
+    "awakeMinutes": 12
+   },
+   "workouts": [
+    {
+     "type": "STRENGTH_TRAINING",
+     "minutes": 46,
+     "startedAt": "2026-11-05T20:36:00.000Z",
+     "calories": 368,
+     "distanceMeters": null,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-06",
+   "steps": 9828,
+   "distanceMeters": 5266,
+   "activeMinutes": 28,
+   "caloriesOut": 2594,
+   "restingHeartRate": 58,
+   "hrvMs": 48,
+   "breathingRate": 13.9,
+   "spo2": 98.1,
+   "skinTempDeviation": 0.2,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 409,
+    "start": "2026-11-06T02:31:00.000Z",
+    "end": "2026-11-06T09:37:00.000Z",
+    "deepMinutes": 70,
+    "lightMinutes": 252,
+    "remMinutes": 87,
+    "awakeMinutes": 17
+   },
+   "workouts": [
+    {
+     "type": "YOGA",
+     "minutes": 51,
+     "startedAt": "2026-11-06T18:35:00.000Z",
+     "calories": 306,
+     "distanceMeters": null,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-07",
+   "steps": 7397,
+   "distanceMeters": 7576,
+   "activeMinutes": 50,
+   "caloriesOut": 2114,
+   "restingHeartRate": 57,
+   "hrvMs": 36,
+   "breathingRate": 14.8,
+   "spo2": 97.8,
+   "skinTempDeviation": 0.4,
+   "vo2Max": 44.0,
+   "sleep": {
+    "minutes": 443,
+    "start": "2026-11-07T02:35:00.000Z",
+    "end": "2026-11-07T10:20:00.000Z",
+    "deepMinutes": 73,
+    "lightMinutes": 283,
+    "remMinutes": 87,
+    "awakeMinutes": 22
+   },
+   "workouts": [
+    {
+     "type": "OUTDOOR_BIKE",
+     "minutes": 32,
+     "startedAt": "2026-11-07T21:15:00.000Z",
+     "calories": 224,
+     "distanceMeters": 5649,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-08",
+   "steps": 8308,
+   "distanceMeters": 4553,
+   "activeMinutes": 62,
+   "caloriesOut": 2291,
+   "restingHeartRate": 63,
+   "hrvMs": 47,
+   "breathingRate": 15.3,
+   "spo2": 97.4,
+   "skinTempDeviation": 0.4,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 346,
+    "start": "2026-11-08T03:46:00.000Z",
+    "end": "2026-11-08T09:47:00.000Z",
+    "deepMinutes": 67,
+    "lightMinutes": 211,
+    "remMinutes": 68,
+    "awakeMinutes": 15
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-11-09",
+   "steps": 13041,
+   "distanceMeters": 2956,
+   "activeMinutes": 27,
+   "caloriesOut": 2314,
+   "restingHeartRate": 62,
+   "hrvMs": 38,
+   "breathingRate": 13.5,
+   "spo2": 97.8,
+   "skinTempDeviation": -0.3,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 445,
+    "start": "2026-11-09T02:43:00.000Z",
+    "end": "2026-11-09T10:26:00.000Z",
+    "deepMinutes": 67,
+    "lightMinutes": 273,
+    "remMinutes": 105,
+    "awakeMinutes": 18
+   },
+   "workouts": [
+    {
+     "type": "STRENGTH_TRAINING",
+     "minutes": 56,
+     "startedAt": "2026-11-09T19:00:00.000Z",
+     "calories": 448,
+     "distanceMeters": null,
+     "name": "Leg day"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-10",
+   "steps": 5077,
+   "distanceMeters": 8407,
+   "activeMinutes": 35,
+   "caloriesOut": 2104,
+   "restingHeartRate": 62,
+   "hrvMs": 40,
+   "breathingRate": 13.9,
+   "spo2": 94.5,
+   "skinTempDeviation": -0.0,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 366,
+    "start": "2026-11-10T03:03:00.000Z",
+    "end": "2026-11-10T09:22:00.000Z",
+    "deepMinutes": 67,
+    "lightMinutes": 208,
+    "remMinutes": 91,
+    "awakeMinutes": 13
+   },
+   "workouts": [
+    {
+     "type": "ELLIPTICAL",
+     "minutes": 60,
+     "startedAt": "2026-11-10T20:56:00.000Z",
+     "calories": 480,
+     "distanceMeters": null,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-11",
+   "steps": null,
+   "distanceMeters": null,
+   "activeMinutes": null,
+   "caloriesOut": null,
+   "restingHeartRate": null,
+   "hrvMs": null,
+   "breathingRate": null,
+   "spo2": null,
+   "skinTempDeviation": null,
+   "vo2Max": null,
+   "sleep": null,
+   "workouts": []
+  },
+  {
+   "date": "2026-11-12",
+   "steps": null,
+   "distanceMeters": null,
+   "activeMinutes": null,
+   "caloriesOut": null,
+   "restingHeartRate": null,
+   "hrvMs": null,
+   "breathingRate": null,
+   "spo2": null,
+   "skinTempDeviation": null,
+   "vo2Max": null,
+   "sleep": null,
+   "workouts": []
+  },
+  {
+   "date": "2026-11-13",
+   "steps": 12326,
+   "distanceMeters": 6899,
+   "activeMinutes": 30,
+   "caloriesOut": 2302,
+   "restingHeartRate": 58,
+   "hrvMs": 34,
+   "breathingRate": 14.5,
+   "spo2": 98.1,
+   "skinTempDeviation": -0.1,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 339,
+    "start": "2026-11-13T02:51:00.000Z",
+    "end": "2026-11-13T08:51:00.000Z",
+    "deepMinutes": 48,
+    "lightMinutes": 224,
+    "remMinutes": 67,
+    "awakeMinutes": 21
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-11-14",
+   "steps": 11397,
+   "distanceMeters": 5474,
+   "activeMinutes": 36,
+   "caloriesOut": 2001,
+   "restingHeartRate": 56,
+   "hrvMs": 38,
+   "breathingRate": 14.1,
+   "spo2": 96.1,
+   "skinTempDeviation": -0.5,
+   "vo2Max": 44.0,
+   "sleep": {
+    "minutes": 445,
+    "start": "2026-11-14T04:00:00.000Z",
+    "end": "2026-11-14T12:04:00.000Z",
+    "deepMinutes": 71,
+    "lightMinutes": 275,
+    "remMinutes": 99,
+    "awakeMinutes": 39
+   },
+   "workouts": [
+    {
+     "type": "HIIT",
+     "minutes": 52,
+     "startedAt": "2026-11-14T20:53:00.000Z",
+     "calories": 416,
+     "distanceMeters": null,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-15",
+   "steps": 4056,
+   "distanceMeters": 5654,
+   "activeMinutes": 74,
+   "caloriesOut": 1984,
+   "restingHeartRate": 55,
+   "hrvMs": 46,
+   "breathingRate": 14.4,
+   "spo2": 96.2,
+   "skinTempDeviation": -0.3,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 409,
+    "start": "2026-11-15T03:27:00.000Z",
+    "end": "2026-11-15T10:36:00.000Z",
+    "deepMinutes": 68,
+    "lightMinutes": 245,
+    "remMinutes": 96,
+    "awakeMinutes": 20
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-11-16",
+   "steps": null,
+   "distanceMeters": null,
+   "activeMinutes": null,
+   "caloriesOut": null,
+   "restingHeartRate": null,
+   "hrvMs": null,
+   "breathingRate": null,
+   "spo2": null,
+   "skinTempDeviation": null,
+   "vo2Max": null,
+   "sleep": null,
+   "workouts": []
+  },
+  {
+   "date": "2026-11-17",
+   "steps": 12365,
+   "distanceMeters": 7012,
+   "activeMinutes": 42,
+   "caloriesOut": 2219,
+   "restingHeartRate": 61,
+   "hrvMs": 51,
+   "breathingRate": 14.0,
+   "spo2": 97.9,
+   "skinTempDeviation": 0.6,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 442,
+    "start": "2026-11-17T02:49:00.000Z",
+    "end": "2026-11-17T10:44:00.000Z",
+    "deepMinutes": 73,
+    "lightMinutes": 281,
+    "remMinutes": 88,
+    "awakeMinutes": 33
+   },
+   "workouts": []
+  },
+  {
+   "date": "2026-11-18",
+   "steps": null,
+   "distanceMeters": null,
+   "activeMinutes": null,
+   "caloriesOut": null,
+   "restingHeartRate": null,
+   "hrvMs": null,
+   "breathingRate": null,
+   "spo2": null,
+   "skinTempDeviation": null,
+   "vo2Max": null,
+   "sleep": null,
+   "workouts": []
+  },
+  {
+   "date": "2026-11-19",
+   "steps": 11607,
+   "distanceMeters": 7100,
+   "activeMinutes": 50,
+   "caloriesOut": 2011,
+   "restingHeartRate": 58,
+   "hrvMs": 45,
+   "breathingRate": 15.1,
+   "spo2": 98.2,
+   "skinTempDeviation": -0.4,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 447,
+    "start": "2026-11-19T03:09:00.000Z",
+    "end": "2026-11-19T11:15:00.000Z",
+    "deepMinutes": 71,
+    "lightMinutes": 266,
+    "remMinutes": 110,
+    "awakeMinutes": 39
+   },
+   "workouts": [
+    {
+     "type": "OUTDOOR_BIKE",
+     "minutes": 51,
+     "startedAt": "2026-11-19T18:02:00.000Z",
+     "calories": 408,
+     "distanceMeters": 6052,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-20",
+   "steps": 5518,
+   "distanceMeters": 6893,
+   "activeMinutes": 25,
+   "caloriesOut": 2772,
+   "restingHeartRate": 63,
+   "hrvMs": 51,
+   "breathingRate": 14.1,
+   "spo2": 95.3,
+   "skinTempDeviation": 0.0,
+   "vo2Max": null,
+   "sleep": {
+    "minutes": 335,
+    "start": "2026-11-20T02:33:00.000Z",
+    "end": "2026-11-20T08:18:00.000Z",
+    "deepMinutes": 44,
+    "lightMinutes": 228,
+    "remMinutes": 63,
+    "awakeMinutes": 10
+   },
+   "workouts": [
+    {
+     "type": "STRENGTH_TRAINING",
+     "minutes": 35,
+     "startedAt": "2026-11-20T20:08:00.000Z",
+     "calories": 315,
+     "distanceMeters": null,
+     "name": null
+    }
+   ]
+  },
+  {
+   "date": "2026-11-21",
+   "steps": 6340,
+   "distanceMeters": 4473,
+   "activeMinutes": null,
+   "caloriesOut": 2553,
+   "restingHeartRate": null,
+   "hrvMs": null,
+   "breathingRate": 14.0,
+   "spo2": 96.7,
+   "skinTempDeviation": 0.1,
+   "vo2Max": 44.0,
+   "sleep": null,
+   "workouts": []
+  }
+ ]
+}

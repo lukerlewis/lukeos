@@ -145,7 +145,7 @@ Reference: `messages-chain.png`, `messages-hold-menu.png`, `messages-replying.pn
 
 Reference: `more-tab.png` (older; the list is longer now).
 
-Native rows: Messages (with unread badge), Search, All tasks, Documents (with a New count), Inspiration, Trash, Settings. Then Projects (colour dot, name, open task count) and New project. Then "On the web": Whiteboard, Work archive, Portfolio, Agents: each opens the site's page in an in-app web view signed in with the token cookie.
+Native rows: Messages (with unread badge), Search, All tasks, Documents (with a New count), Inspiration, Health, Screen Time, Trash, Settings. Then Projects (colour dot, name, open task count) and New project. Then "On the web": Whiteboard, Work archive, Portfolio, Agents: each opens the site's page in an in-app web view signed in with the token cookie.
 
 - **Search** (`src/core/search.ts`): one field, results grouped by kind (tasks, notes, documents, projects, inspiration), tapping opens the thing.
 - **All tasks** (`src/app/(app)/tasks/page.tsx`): every task with filters for area, project, status and list.
@@ -154,6 +154,23 @@ Native rows: Messages (with unread badge), Search, All tasks, Documents (with a 
 - **Inspiration** (`src/components/inspiration/*`, `inspiration.png`): a two-column masonry of pictures, links, quotes and files, tag and project filters, search. Opening one shows it large with title, note, tags, source link. Add from the photo library, a pasted link or typed text.
 - **Trash** (`src/core/trash.ts`): everything deleted in the last 30 days by kind, Restore, Delete forever, Empty Trash.
 - **Settings**: notifications on/off and Send a test, Face ID lock, downloads and storage used, time zone, appearance follows the system, Open settings on the web (devices, Claude connector), Sign out, app version.
+
+## Health (iPhone only; data from Luke's Fitbit through Google Health)
+
+Screenshots: `ios/screenshots/health/` (light and dark pairs). Code: `ios/LukeOS/Features/More/HealthScreen.swift`, tiles from `DesignSystem/StatTile.swift`. Opens from the Health row in More, or the link `/health`.
+
+- **Not connected** (`configured` or `connected` false): the empty state "Connect Fitbit on your computer." There is no Connect button on the phone, because Google won't sign in inside an app's web view; connecting is done once on the Mac. Pull to refresh reloads, so the page fills in once Fitbit is connected.
+- **Connected, no data yet** (every day in the range has nothing): "No data yet.", with the … menu still there.
+- **Sleep**: total sleep, bed and wake times in Luke's time zone (the server's `timeZone`), a stages bar, and Deep / REM / Light / Awake minutes. Sleep is filed under the day Luke woke up. The section is titled "Last night" when it's the server's `today`. If today hasn't come in, it shows yesterday's entry titled "Sleep · Yesterday". Anything older shows "No sleep recorded."
+- **Today**: four `StatTile`s (steps, resting heart rate, active zone minutes, distance in miles). Each has its 7-day average, whatever the range picker says. A missing value shows a dash, never 0.
+- **7 days / 30 days**: a segmented control for everything below it (Body, charts).
+- **Body**: breathing rate, blood oxygen, HRV, skin temperature against baseline (°F, signed, rounded to 0.1, "0.0°F" for no change) and VO2 max. Each row shows the latest value and the range average. Rows with no data in the range are hidden, as is the whole group if none have data.
+- **Charts**: sleep hours and steps as bars (today in ink, a dashed average line), resting heart rate as a line. Days without data are gaps, not zeros, and the line breaks across them. The day labels count back from today (every day on 7 days, every 7th on 30), so today is always labelled. Each chart has one VoiceOver label with its average.
+- **Workouts**: the last eight, newest first. The title is the name Luke gave the workout in the Fitbit app if there is one, otherwise Google's type made readable ("STRENGTH_TRAINING" → "Strength training", "HIIT" stays). Each row also shows an icon for the type, the day, distance in miles and calories when there, and minutes.
+- **Footer**: "From Fitbit · updated <when>" from `lastSyncAt`.
+- **Menu (…)**: Update now and Disconnect Fitbit. Disconnect asks first ("You'll need your computer to connect again."). Both are sent straight away and never queued. Offline shows the toast "You're offline."; a server error shows its message as a toast. Update now waits up to 120 s, since the server talks to Google, then reloads. Pull to refresh reloads `get_health` without syncing.
+- **Offline**: the saved copy shows; with no saved copy, "You're offline."
+- **Demo states**: `-healthState notconfigured` (not connected) and `-healthState gaps` (no sleep today, two unworn days, dashes in tiles).
 
 ## iPhone extras
 
