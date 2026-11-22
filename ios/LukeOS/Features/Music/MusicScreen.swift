@@ -76,13 +76,14 @@ struct MusicScreen: View {
     var body: some View {
         NavigationStack {
             List {
-                Picker("", selection: $tab) {
-                    Text("Library").tag("library")
-                    Text("Playlists").tag("playlists")
+                Section {
+                    Picker("", selection: $tab) {
+                        Text("Library").tag("library")
+                        Text("Playlists").tag("playlists")
+                    }
+                    .pickerStyle(.segmented)
+                    .controlRow()
                 }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
 
                 if tab == "library" { library } else { playlistsList }
             }

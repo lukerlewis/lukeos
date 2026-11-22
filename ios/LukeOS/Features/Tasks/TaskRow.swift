@@ -22,11 +22,15 @@ struct TaskRow: View {
             .accessibilityLabel(task.status == .done ? "Mark not done" : "Mark done")
 
             VStack(alignment: .leading, spacing: Space.line) {
-                Text(task.title)
-                    .textStyle(.control, color: task.status == .done ? .mutedText : .text)
-                    .strikethrough(task.status == .done, color: .mutedText)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline, spacing: Space.s) {
+                    Text(task.title)
+                        .textStyle(.control, color: task.status == .done ? .mutedText : .text)
+                        .strikethrough(task.status == .done, color: .mutedText)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if hasIndicators { indicators }
+                }
                 if hasMeta { meta }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -36,9 +40,26 @@ struct TaskRow: View {
         .onTapGesture(perform: onOpen)
     }
 
+    /// Chips and the due date: the second line, only when there's something to show.
     private var hasMeta: Bool {
-        (showProject && task.project != nil) || task.priority != nil || (task.area == .work && task.effort != nil)
-            || task.dueDate != nil || task.repeat != nil || (task.notes?.isEmpty == false) || task.madeBy.isClaude
+        (showProject && task.project != nil) || task.priority != nil || (task.area == .work && task.effort != nil) || task.dueDate != nil
+    }
+
+    /// Small markers (repeats, has notes, made by Claude) sit at the end of the title line.
+    private var hasIndicators: Bool { task.repeat != nil || task.notes?.isEmpty == false || task.madeBy.isClaude }
+
+    private var indicators: some View {
+        HStack(spacing: Space.s) {
+            if let r = task.repeat {
+                Image(systemName: "repeat").accessibilityLabel(Repeats.name(r))
+            }
+            if task.notes?.isEmpty == false {
+                Image(systemName: "text.alignleft").accessibilityLabel("Has notes")
+            }
+            ClaudeMark(madeBy: task.madeBy)
+        }
+        .font(.icon(.meta))
+        .foregroundStyle(Color.mutedText)
     }
 
     private var meta: some View {
@@ -47,14 +68,6 @@ struct TaskRow: View {
             if let p = task.priority { PriorityChip(priority: p) }
             if task.area == .work, let e = task.effort { FocusChip(effort: e) }
             if let due = task.dueDate { DueLabel(due: due, today: today).frame(minHeight: Space.chip) }
-            if let r = task.repeat {
-                Image(systemName: "repeat").font(.icon(.meta)).foregroundStyle(Color.mutedText)
-                    .frame(minHeight: Space.chip).accessibilityLabel(Repeats.name(r))
-            }
-            if task.notes?.isEmpty == false {
-                Image(systemName: "text.alignleft").font(.icon(.meta)).foregroundStyle(Color.mutedText).frame(minHeight: Space.chip)
-            }
-            ClaudeMark(madeBy: task.madeBy).frame(minHeight: Space.chip)
         }
     }
 }

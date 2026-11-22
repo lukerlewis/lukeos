@@ -38,14 +38,15 @@ struct DocumentsScreen: View {
 
     var body: some View {
         List {
-            Picker("", selection: $filter) {
-                Text("All").tag("all")
-                Text("Made by me").tag("luke")
-                Text("Made by Claude").tag("claude")
+            Section {
+                Picker("", selection: $filter) {
+                    Text("All").tag("all")
+                    Text("Made by me").tag("luke")
+                    Text("Made by Claude").tag("claude")
+                }
+                .pickerStyle(.segmented)
+                .controlRow()
             }
-            .pickerStyle(.segmented)
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Color.clear)
 
             let pinned = shown.filter { $0.pinned == true }
             if !pinned.isEmpty, query.isEmpty {

@@ -100,7 +100,7 @@ struct FocusControls: View {
         HStack(spacing: Space.section) {
             Button { onReset?() } label: { Image(systemName: "arrow.counterclockwise").frame(width: Size.transportSide, height: Size.transportSide) }
                 .buttonStyle(.glass).buttonBorderShape(.circle)
-                .opacity(onReset == nil ? 0 : 1).disabled(onReset == nil)
+                .opacity(onReset == nil ? 0.35 : 1).disabled(onReset == nil)
                 .accessibilityLabel("Reset")
             Button(action: onToggle) {
                 Image(systemName: running ? "pause.fill" : "play.fill")
@@ -113,7 +113,7 @@ struct FocusControls: View {
             .accessibilityLabel(running ? "Pause" : "Start")
             Button { onSkip?() } label: { Image(systemName: skipSymbol).frame(width: Size.transportSide, height: Size.transportSide) }
                 .buttonStyle(.glass).buttonBorderShape(.circle)
-                .opacity(onSkip == nil ? 0 : 1).disabled(onSkip == nil)
+                .opacity(onSkip == nil ? 0.35 : 1).disabled(onSkip == nil)
                 .accessibilityLabel("Skip")
         }
         .font(.icon(.row))
@@ -160,7 +160,7 @@ struct StopwatchView: View {
                       time: FocusTimer.clock(timer.timerElapsed), caption: "Timer", running: running)
             FocusControls(
                 running: running,
-                onReset: nil,
+                onReset: started && !running ? { timer.stopTimer() } : nil,
                 onToggle: { running ? timer.pauseTimer() : timer.startTimer() },
                 onSkip: started ? { timer.stopTimer() } : nil,
                 skipSymbol: "stop.fill"
@@ -193,9 +193,10 @@ struct SprintView: View {
                 }
                 FocusControls(
                     running: running,
-                    onReset: started ? { timer.finishSprint() } : nil,
+                    onReset: started ? { timer.newSprint() } : nil,
                     onToggle: { running ? timer.pauseSprint() : timer.startSprint() },
-                    onSkip: nil
+                    onSkip: started ? { timer.finishSprint() } : nil,
+                    skipSymbol: "stop.fill"
                 )
                 tasks
                 if started { scratchPad }
@@ -410,13 +411,14 @@ struct FocusStatsSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Picker("", selection: $days) {
-                    Text("7 days").tag(7)
-                    Text("30 days").tag(30)
+                Section {
+                    Picker("", selection: $days) {
+                        Text("7 days").tag(7)
+                        Text("30 days").tag(30)
+                    }
+                    .pickerStyle(.segmented)
+                    .controlRow()
                 }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
 
                 if let stats {
                     Section {

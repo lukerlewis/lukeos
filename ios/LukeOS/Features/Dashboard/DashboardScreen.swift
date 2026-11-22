@@ -117,10 +117,9 @@ struct DashboardScreen: View {
 
     private var todayList: some View {
         List {
-            header(inList: true)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
+            Section {
+                header(inList: true).controlRow()
+            }
 
             if !store.loaded && store.tasks.isEmpty {
                 ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear)

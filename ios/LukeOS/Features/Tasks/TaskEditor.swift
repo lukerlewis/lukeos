@@ -64,7 +64,7 @@ struct TaskEditor: View {
                         menuRow("Signal or noise", "dot.radiowaves.left.and.right", Binding(get: { task.lane.rawValue }, set: { set(["lane": .string($0)]) })) {
                             ForEach(Lane.allCases, id: \.self) { Text($0.label).tag($0.rawValue) }
                         }
-                        menuRow("Project", "circle.grid.2x1", Binding(get: { task.project?.id ?? "" }, set: { set(["projectId": $0.isEmpty ? .null : .string($0)]) })) {
+                        menuRow("Project", "folder", dot: task.project.map { $0.color ?? "slate" }, Binding(get: { task.project?.id ?? "" }, set: { set(["projectId": $0.isEmpty ? .null : .string($0)]) })) {
                             Text("None").tag("")
                             ForEach(store.projects(in: .work)) { p in Text(p.name).tag(p.id) }
                         }
@@ -134,14 +134,18 @@ struct TaskEditor: View {
     static let gaps = ["every_2_days", "every_3_days", "every_2_weeks", "every_3_weeks", "every_3_months", "every_6_months"]
 
     /// A settings-style row: icon, name, and the choice on the right as a menu.
-    private func menuRow<C: View>(_ title: String, _ symbol: String, _ selection: Binding<String>, @ViewBuilder options: () -> C) -> some View {
+    private func menuRow<C: View>(_ title: String, _ symbol: String, dot: String? = nil, _ selection: Binding<String>, @ViewBuilder options: () -> C) -> some View {
         Picker(selection: Binding(get: { selection.wrappedValue }, set: { Haptics.select(); selection.wrappedValue = $0 })) {
             options()
         } label: {
             Label {
                 Text(title).textStyle(.control, color: .text)
             } icon: {
-                Image(systemName: symbol).font(.icon(.row)).foregroundStyle(Color.icon)
+                if let dot {
+                    ProjectDot(color: dot, size: Size.projectDot + 3)
+                } else {
+                    Image(systemName: symbol).font(.icon(.row)).foregroundStyle(Color.icon)
+                }
             }
         }
         .pickerStyle(.menu)

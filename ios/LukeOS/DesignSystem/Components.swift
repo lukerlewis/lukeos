@@ -191,6 +191,15 @@ extension View {
             .listRowInsets(EdgeInsets(top: 12, leading: Space.inset, bottom: 12, trailing: Space.inset))
     }
 
+    /// A row of switches at the top of a list (Library | Playlists, 7 days | 30 days): no card, edge to edge,
+    /// and the same gap below it on every screen. Wrap it in its own `Section`.
+    func controlRow() -> some View {
+        self.listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listSectionSpacing(Space.xl)
+    }
+
     /// The insets for a task row in a list.
     func taskRowInsets() -> some View {
         listRowInsets(EdgeInsets(top: Space.row, leading: Space.inset, bottom: Space.row, trailing: Space.inset))

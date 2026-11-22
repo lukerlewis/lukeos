@@ -53,7 +53,7 @@ struct ProjectScreen: View {
                 }
             } else {
                 List {
-                    picker.listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+                    Section { picker.controlRow() }
                     switch tab {
                     case "notes": notesSection
                     case "links": linksSection
