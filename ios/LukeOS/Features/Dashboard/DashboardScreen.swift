@@ -90,7 +90,11 @@ struct DashboardScreen: View {
 
     private var todayList: some View {
         List {
-            Section { dateLine.padding(.horizontal, Space.xs).controlRow() }
+            // The date as the first section's header: close under the title, one section gap above the first card.
+            Section {} header: {
+                dateLine.textCase(nil).padding(.leading, -Space.xl).padding(.top, -Space.l)
+            }
+            .listSectionSpacing(Space.l)
             if !store.loaded && store.tasks.isEmpty {
                 ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear)
             } else if let error = store.error, store.tasks.isEmpty {
