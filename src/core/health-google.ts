@@ -2,7 +2,7 @@ import "server-only";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { addDays, todayIn } from "@/lib/dates";
+import { addDays, momentIn, timeIn, todayIn } from "@/lib/dates";
 import { emptySummary, type HealthSummary, type HealthWorkout } from "@/lib/health";
 import { getTimeZone } from "./settings";
 
@@ -605,4 +605,80 @@ export async function healthDays(first: string, last: string) {
 export async function healthRaw(date: string) {
   const [row] = await db.select().from(schema.healthDays).where(eq(schema.healthDays.date, date)).limit(1);
   return row?.raw ?? null;
+}
+
+/* ---------- One day in detail (fetched live, not saved) ---------- */
+
+export type HealthDayDetail = {
+  /** Steps in each hour of the day, midnight first (24 numbers; null where nothing was recorded). */
+  stepsByHour: (number | null)[];
+  /** Heart rate in 5-minute buckets (start time ISO), only buckets with readings. */
+  heartRate: { time: string; bpm: number; min: number; max: number }[];
+  /** The night's sleep stages in order (the main sleep that ended this day). */
+  sleepStages: { stage: string; start: string; end: string }[];
+};
+
+async function rollUp(dataType: string, start: Date, end: Date, windowSeconds: number) {
+  const points: Record<string, unknown>[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < 10; page++) {
+    const res = await api<{ rollupDataPoints?: Record<string, unknown>[]; nextPageToken?: string }>("POST", `/users/me/dataTypes/${dataType}/dataPoints:rollUp`, {
+      range: { startTime: start.toISOString(), endTime: end.toISOString() },
+      windowSize: `${windowSeconds}s`,
+      pageSize: 1440,
+      ...(pageToken ? { pageToken } : {}),
+    });
+    points.push(...(res.rollupDataPoints ?? []));
+    pageToken = res.nextPageToken;
+    if (!pageToken) break;
+  }
+  return points;
+}
+
+/** Hour-by-hour steps, 5-minute heart rate and the sleep stage timeline for one day in Luke's time zone. */
+export async function healthDayDetail(date: string): Promise<HealthDayDetail> {
+  if (!(await read<Tokens>(TOKENS_KEY))) throw new HealthError("Fitbit isn't connected.");
+  const timeZone = await getTimeZone();
+  const start = momentIn(timeZone, date, "00:00");
+  const end = momentIn(timeZone, addDays(date, 1), "00:00");
+  const [steps, heart, raw] = await Promise.all([
+    rollUp("steps", start, end, 3600).catch(() => []),
+    rollUp("heart-rate", start, end, 300).catch(() => []),
+    healthRaw(date),
+  ]);
+
+  const stepsByHour: (number | null)[] = Array(24).fill(null);
+  for (const p of steps) {
+    const at = Date.parse(String(p.startTime ?? ""));
+    const hour = Number(timeIn(timeZone, new Date(at)).slice(0, 2));
+    const n = num(field(p, "steps").countSum);
+    if (Number.isFinite(hour) && n !== null) stepsByHour[hour] = (stepsByHour[hour] ?? 0) + n;
+  }
+
+  const heartRate = heart
+    .map((p) => {
+      const v = field(p, "heartRate");
+      const bpm = num(v.beatsPerMinuteAvg);
+      return bpm === null ? null : { time: String(p.startTime ?? ""), bpm: Math.round(bpm), min: Math.round(num(v.beatsPerMinuteMin) ?? bpm), max: Math.round(num(v.beatsPerMinuteMax) ?? bpm) };
+    })
+    .filter((x): x is HealthDayDetail["heartRate"][number] => x !== null)
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  // The same night LukeOS shows for this day: main sleep first, else the longest.
+  const sleeps = ((raw as Record<string, Point[]> | null)?.sleep ?? []).map((p) => field(p, "sleep"));
+  const asleep = (x: Record<string, unknown>) => num(field(x, "summary").minutesAsleep) ?? 0;
+  const main = sleeps.find((x) => field(x, "metadata").mainSleep === true) ?? [...sleeps].sort((a, b) => asleep(b) - asleep(a))[0];
+  const sleepStages = ((main?.stages ?? []) as { type?: string; startTime?: string; endTime?: string }[])
+    .filter((s) => s.type && s.startTime && s.endTime)
+    .map((s) => ({ stage: String(s.type), start: String(s.startTime), end: String(s.endTime) }))
+    .sort((a, b) => a.start.localeCompare(b.start));
+
+  return { stepsByHour, heartRate, sleepStages };
+}
+
+/** Google's first page for a data type, untouched (for working out why something doesn't come in). */
+export async function healthProbe(dataType: string, filter: string | undefined) {
+  const q = new URLSearchParams({ pageSize: "5" });
+  if (filter) q.set("filter", filter);
+  return api<unknown>("GET", `/users/me/dataTypes/${dataType}/dataPoints?${q}`);
 }

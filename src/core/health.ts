@@ -3,7 +3,7 @@ import { z } from "zod";
 import { addDays, isoDay, todayIn } from "@/lib/dates";
 import { emptySummary, type HealthDay } from "@/lib/health";
 import { defineOperation, OperationError } from "./define";
-import { disconnect, HealthError, healthDays, healthRaw, healthStatus, syncHealth } from "./health-google";
+import { disconnect, HealthError, healthDayDetail, healthDays, healthProbe, healthRaw, healthStatus, syncHealth } from "./health-google";
 import { getTimeZone } from "./settings";
 
 /**
@@ -49,6 +49,25 @@ export const healthOperations = {
       "Google Health's own data points saved for one day (by data type: steps, sleep with every stage, exercise, daily-resting-heart-rate...). Only needed for details get_health doesn't have, like the exact sleep stage timeline.",
     input: z.object({ date: z.string().regex(isoDay).describe("The day, YYYY-MM-DD.") }),
     run: async ({ date }) => ({ date, raw: (await healthRaw(date)) ?? {} }),
+  }),
+
+  get_health_day: defineOperation({
+    name: "get_health_day",
+    description:
+      "One day of Luke's Fitbit in detail, fetched live from Google Health: the day's summary (as in get_health), stepsByHour (24 numbers from midnight, null = nothing recorded), heartRate in 5-minute buckets ({time, bpm, min, max}) and sleepStages ({stage: AWAKE/LIGHT/DEEP/REM/ASLEEP/RESTLESS, start, end}) for the night that ended that morning. Health data is private: only mention it to Luke himself.",
+    input: z.object({ date: z.string().regex(isoDay).describe("The day, YYYY-MM-DD, in Luke's time zone.") }),
+    run: async ({ date }) =>
+      wrap(async () => {
+        const [rows, detail] = await Promise.all([healthDays(date, date), healthDayDetail(date)]);
+        return { date, ...emptySummary(), ...rows[0]?.summary, ...detail };
+      }),
+  }),
+
+  get_health_probe: defineOperation({
+    name: "get_health_probe",
+    description: "Google Health's first page of raw data points for one data type (e.g. sleep, exercise, heart-rate), with an optional AIP-160 filter. Only for working out why some data doesn't come in.",
+    input: z.object({ dataType: z.string().regex(/^[a-z0-9-]+$/), filter: z.string().optional() }),
+    run: async ({ dataType, filter }) => wrap(() => healthProbe(dataType, filter)),
   }),
 
   sync_health: defineOperation({
