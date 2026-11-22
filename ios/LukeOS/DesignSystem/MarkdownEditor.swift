@@ -455,6 +455,15 @@ enum MDStyle {
             func dim(_ r: NSRange) { out.addAttributes(active ? [.foregroundColor: quiet] : hidden, range: r) }
             func mark(_ r: NSRange) { out.addAttribute(.foregroundColor, value: quiet, range: r) }
             let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if line.isEmpty && !active && !inCode {
+                // A blank line between blocks is a small gap, not a whole line; full height while being typed on.
+                let p = NSMutableParagraphStyle()
+                p.minimumLineHeight = Space.s
+                p.maximumLineHeight = Space.s
+                p.paragraphSpacing = 0
+                out.addAttributes([.paragraphStyle: p, .font: UIFont.systemFont(ofSize: Space.s / 2)], range: enclosing)
+                return
+            }
             if trimmed.hasPrefix("```") {
                 inCode.toggle()
                 out.addAttributes([.font: font("GeistMono-Regular", 14), .foregroundColor: quiet], range: lineRange)
@@ -468,8 +477,9 @@ enum MDStyle {
                 let level = m.1.count
                 let size: CGFloat = level == 1 ? LukeType.section.size + 2 : level == 2 ? LukeType.heading.size + 1 : LukeType.heading.size
                 let p = NSMutableParagraphStyle()
-                p.paragraphSpacingBefore = level == 1 ? Space.m : Space.s
-                p.paragraphSpacing = Space.xs
+                // More room above a heading than below, so it belongs to what follows.
+                p.paragraphSpacingBefore = Space.xl
+                p.paragraphSpacing = Space.s
                 out.addAttributes([.font: font("Geist-Medium", size, .title2), .foregroundColor: ink, .kern: -0.04 * size, .paragraphStyle: p], range: lineRange)
                 dim(NSRange(location: lineRange.location, length: level + 1))
                 inline(out, line: line, at: lineRange.location, active: active)

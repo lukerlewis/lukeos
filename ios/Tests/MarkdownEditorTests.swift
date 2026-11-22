@@ -149,3 +149,25 @@ final class MarkdownEditorTests: XCTestCase {
         XCTAssertEqual(Markdown.toggleCheck(md, line: 1), "- [ ] a\n- [ ] b\n")
     }
 }
+
+/// What leaving a note does: only a note made in this visit may be deleted for being empty,
+/// and a note that never loaded is never saved or deleted.
+final class NoteLeaveTests: XCTestCase {
+    func testDecisions() {
+        func d(_ isNew: Bool, _ loaded: Bool, _ t: String, _ x: String, _ ot: String = "", _ ox: String = "") -> NoteLeave {
+            NoteLeave.decide(isNew: isNew, loaded: loaded, title: t, text: x, originalTitle: ot, originalText: ox)
+        }
+        // Opened offline with no saved copy: nothing happens, whatever the fields say.
+        XCTAssertEqual(d(false, false, "", ""), .keep)
+        XCTAssertEqual(d(false, false, "typed", "", "", ""), .keep)
+        // A real note left empty by Luke is saved empty, never deleted.
+        XCTAssertEqual(d(false, true, "", "", "Title", "Body"), .save)
+        // Unchanged: nothing to send.
+        XCTAssertEqual(d(false, true, "Title", "Body", "Title", "Body"), .keep)
+        // Changed: saved.
+        XCTAssertEqual(d(false, true, "Title", "Body!", "Title", "Body"), .save)
+        // A new note left empty is thrown away; with words in it, it's saved.
+        XCTAssertEqual(d(true, false, "", "  \n"), .delete)
+        XCTAssertEqual(d(true, true, "Idea", ""), .save)
+    }
+}

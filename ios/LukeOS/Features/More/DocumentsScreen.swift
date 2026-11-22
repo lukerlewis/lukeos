@@ -133,7 +133,7 @@ struct DocumentScreen: View {
     init(documentId: String, preview: String? = nil) {
         self.documentId = documentId
         self.preview = preview
-        _doc = State(initialValue: Repo.cachedNow("get_document", ["id": .string(documentId)], as: LukeDocument.self))
+        _doc = State(initialValue: SavedCopy.document(documentId))
     }
     @State private var showComments = false
     @State private var showWeb = false

@@ -3,26 +3,71 @@ import PhotosUI
 
 /// One note. Markdown notes are edited natively; a note the app can't fully show as Markdown
 /// (tables, raw HTML, saved pages) opens read-only with "Edit on the web".
+/// What happens to a note when Luke leaves it.
+enum NoteLeave: Equatable {
+    case keep, delete, save
+
+    /// Only a note made in this visit may be thrown away for being empty, and only a note that
+    /// actually loaded (or is new) may be saved or deleted at all.
+    static func decide(isNew: Bool, loaded: Bool, title: String, text: String, originalTitle: String, originalText: String) -> NoteLeave {
+        guard loaded || isNew else { return .keep }
+        let empty = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if isNew && empty { return .delete }
+        return title != originalTitle || text != originalText ? .save : .keep
+    }
+}
+
+/// Saved copies read once per note id, so re-creating the view doesn't read the disk again.
+@MainActor
+enum SavedCopy {
+    private static var notes: [String: Note?] = [:]
+    private static var documents: [String: LukeDocument?] = [:]
+
+    static func note(_ id: String) -> Note? {
+        if let hit = notes[id] { return hit }
+        let n = Repo.cachedNow("get_note", ["id": .string(id)], as: Note.self)
+        notes[id] = .some(n)
+        return n
+    }
+
+    static func document(_ id: String) -> LukeDocument? {
+        if let hit = documents[id] { return hit }
+        let d = Repo.cachedNow("get_document", ["id": .string(id)], as: LukeDocument.self)
+        documents[id] = .some(d)
+        return d
+    }
+
+    /// Forget a copy once a fresher one has been fetched.
+    static func forget(note id: String) { notes[id] = nil }
+    static func forget(document id: String) { documents[id] = nil }
+}
+
 struct NoteScreen: View {
     var noteId: String
     /// What the list already knows (title), shown at once while the note loads.
     var preview: String? = nil
+    /// Made just now (the + button), so it may start empty and be thrown away if left empty.
+    var isNew = false
     @Environment(\.dismiss) private var dismiss
     @State private var note: Note?
     @State private var title = ""
     @State private var text = ""
 
-    init(noteId: String, preview: String? = nil) {
+    init(noteId: String, preview: String? = nil, isNew: Bool = false) {
         self.noteId = noteId
         self.preview = preview
+        self.isNew = isNew
         // Draw the first frame from the saved copy, so a zoom never opens on a blank page.
-        let saved = Repo.cachedNow("get_note", ["id": .string(noteId)], as: Note.self)
+        let saved = SavedCopy.note(noteId)
         _note = State(initialValue: saved)
+        _loaded = State(initialValue: saved != nil)
         _title = State(initialValue: saved?.title ?? "")
         _text = State(initialValue: saved?.content ?? "")
     }
     @State private var saved = true
     @State private var failed = false
+    /// The note really came from the server or the saved copy (not a stand-in).
+    @State private var loaded = false
     @State private var saveTask: Task<Void, Never>?
     @State private var showComments = false
     @State private var showWeb = false
@@ -171,12 +216,21 @@ struct NoteScreen: View {
     // MARK: Loading and saving
 
     private func load() async {
-        if let cached = await Repo.cached("get_note", ["id": .string(noteId)], as: Note.self) { show(cached) }
+        if let cached = await Repo.cached("get_note", ["id": .string(noteId)], as: Note.self) { show(cached); loaded = true }
         do {
             show(try await Repo.fetch("get_note", ["id": .string(noteId)], as: Note.self))
+            loaded = true
+            SavedCopy.forget(note: noteId)
         } catch {
-            // A note just made offline isn't on the server yet: start it empty.
-            if note == nil { show(Note(id: noteId, title: "", format: "markdown", content: "")) }
+            if note == nil {
+                if isNew {
+                    // Made just now, offline: it isn't on the server yet, so it starts empty.
+                    show(Note(id: noteId, title: "", format: "markdown", content: ""))
+                } else {
+                    // A note that exists but can't be read now: never stand in an empty one.
+                    failed = true
+                }
+            }
         }
         folders = (try? await Repo.fetch("list_folders", as: [Folder].self)) ?? []
     }
@@ -200,7 +254,7 @@ struct NoteScreen: View {
     }
 
     private func schedule() {
-        guard let note, editable, title != note.title || text != note.content else { return }
+        guard let note, editable, loaded || isNew, title != note.title || text != note.content else { return }
         saved = false
         saveTask?.cancel()
         saveTask = Task {
@@ -226,12 +280,11 @@ struct NoteScreen: View {
 
     private func leave() {
         saveTask?.cancel()
-        guard let note else { return }
-        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, editable {
-            // An empty note isn't kept.
-            Task { await Repo.change("delete_note", ["id": .string(noteId)]) }
-        } else if title != note.title || text != note.content {
-            Task { await save() }
+        guard let note, editable else { return }
+        switch NoteLeave.decide(isNew: isNew, loaded: loaded, title: title, text: text, originalTitle: note.title, originalText: note.content) {
+        case .delete: Task { await Repo.change("delete_note", ["id": .string(noteId)]) }
+        case .save: Task { await save() }
+        case .keep: break
         }
     }
 

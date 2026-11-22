@@ -109,6 +109,8 @@ struct NotesList: View {
     @State private var newName = ""
     @State private var creatingFolder = false
     @State private var openNote: String?
+    /// The note just made with the + button, which may be left empty and thrown away.
+    @State private var newNoteId: String?
     @Namespace private var zoom
     @Environment(\.dismiss) private var dismiss
 
@@ -177,7 +179,7 @@ struct NotesList: View {
         .refreshable { await model.load() }
         .task { await model.load() }
         .navigationDestination(item: $openNote) { id in
-            NoteScreen(noteId: id, preview: model.notes.first { $0.id == id }?.displayTitle).zoomTransition(id, in: zoom)
+            NoteScreen(noteId: id, preview: model.notes.first { $0.id == id }?.displayTitle, isNew: id == newNoteId).zoomTransition(id, in: zoom)
         }
         .toolbar {
             if let folder {
@@ -203,7 +205,11 @@ struct NotesList: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    Task { openNote = await model.newNote() }
+                    Task {
+                        let id = await model.newNote()
+                        newNoteId = id
+                        openNote = id
+                    }
                 } label: { Image(systemName: "square.and.pencil") }
                     .accessibilityLabel("New note")
             }
