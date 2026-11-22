@@ -330,7 +330,7 @@ final class Dictation {
     }
 
     /// Whisper's own marks for noise, like [BLANK_AUDIO], are dropped. Words are left as said.
-    static func tidy(_ raw: String) -> String {
+    nonisolated static func tidy(_ raw: String) -> String {
         raw.replacingOccurrences(of: #"\[[A-Za-z_ ]+\]|\((silence|music|blank audio)\)"#, with: "", options: [.regularExpression, .caseInsensitive])
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
