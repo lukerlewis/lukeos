@@ -59,6 +59,8 @@ type Tokens = {
   scope: string;
   connectedAt: string;
   cloud?: { accessToken: string; expiresAt: number };
+  /** Set once `accessToken` has been narrowed to the health scopes (older saved tokens weren't). */
+  healthOnly?: boolean;
 };
 type TokenKind = "health" | "cloud";
 const DATA_SCOPES = HEALTH_SCOPES.filter((s) => s.includes("googlehealth"));
@@ -209,7 +211,7 @@ export async function finishAuthorize(origin: string, code: string, state: strin
 async function accessToken(kind: TokenKind): Promise<string> {
   const tokens = await read<Tokens>(TOKENS_KEY);
   if (!tokens) throw new HealthError("Fitbit isn't connected.");
-  const current = kind === "health" ? tokens : tokens.cloud;
+  const current = kind === "health" ? (tokens.healthOnly ? tokens : null) : tokens.cloud;
   if (current && current.expiresAt - Date.now() > 60_000) return current.accessToken;
   const client = await read<Client>(CLIENT_KEY);
   if (!client) throw new HealthError("The Google client ID is missing.");
@@ -235,7 +237,7 @@ async function accessToken(kind: TokenKind): Promise<string> {
     throw new HealthError(`Couldn't refresh the Google sign-in (${body.error ?? res.status}).`);
   }
   const fresh = { accessToken: body.access_token, expiresAt: Date.now() + (body.expires_in ?? 3600) * 1000 };
-  await write(TOKENS_KEY, kind === "health" ? { ...tokens, ...fresh } : { ...tokens, cloud: fresh });
+  await write(TOKENS_KEY, kind === "health" ? { ...tokens, ...fresh, healthOnly: true } : { ...tokens, cloud: fresh });
   return body.access_token;
 }
 
