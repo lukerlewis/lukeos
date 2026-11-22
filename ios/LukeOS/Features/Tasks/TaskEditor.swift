@@ -20,16 +20,28 @@ struct TaskEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Task name", text: $title, axis: .vertical)
-                        .font(.geist(.heading, medium: true))
-                        .tracking(LukeType.heading.tracking)
-                        .foregroundStyle(Color.ink)
-                        .padding(.vertical, Space.xs)
-                        .onSubmit(saveTitle)
-                        .submitLabel(.done)
-                        .onChange(of: title) { _, new in
-                            if new.contains("\n") { title = new.replacingOccurrences(of: "\n", with: ""); saveTitle() }
+                    // The name, with the close tick beside it, right under the grabber.
+                    HStack(alignment: .firstTextBaseline, spacing: Space.m) {
+                        TextField("Task name", text: $title, axis: .vertical)
+                            .font(.geist(.heading, medium: true))
+                            .tracking(LukeType.heading.tracking)
+                            .foregroundStyle(Color.ink)
+                            .padding(.vertical, Space.xs)
+                            .onSubmit(saveTitle)
+                            .submitLabel(.done)
+                            .onChange(of: title) { _, new in
+                                if new.contains("\n") { title = new.replacingOccurrences(of: "\n", with: ""); saveTitle() }
+                            }
+                        Button { close() } label: {
+                            Image(systemName: "checkmark").font(.icon(.row, weight: .medium))
+                                .foregroundStyle(Color.onSolid)
+                                .frame(width: Size.smallButton, height: Size.smallButton)
                         }
+                        .buttonStyle(.glassProminent)
+                        .buttonBorderShape(.circle)
+                        .tint(.ink)
+                        .accessibilityLabel("Close")
+                    }
                     if task.madeBy.isClaude {
                         Label("Added by \(task.madeBy.name ?? "Claude")\(task.madeBy.routine.map { " (\($0))" } ?? "")", systemImage: "sparkle")
                             .textStyle(.meta, color: .mutedText)
@@ -38,8 +50,10 @@ struct TaskEditor: View {
 
                 // The two things changed most, as switches; everything else as menus in one compact list.
                 Section {
-                    segmented(TaskStatus.allCases, task.status, \.label) { set(["status": .string($0.rawValue)]) }
-                    labeled("List") {
+                    captioned("Status") {
+                        segmented(TaskStatus.allCases, task.status, \.label) { set(["status": .string($0.rawValue)]) }
+                    }
+                    captioned("List") {
                         segmented(Bucket.allCases, task.bucket, \.label) { set(["bucket": .string($0.rawValue)]) }
                     }
                     dueRow
@@ -110,12 +124,8 @@ struct TaskEditor: View {
             .scrollContentBackground(.hidden)
             .background(Color.page)
             .listSectionSpacing(Space.xxl)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(role: .confirm) { close() }
-                }
-            }
+            .contentMargins(.top, Space.s, for: .scrollContent)
+            .toolbar(.hidden, for: .navigationBar)
             .confirmationDialog("Delete this task?", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Move to Trash", role: .destructive) {
                     store.delete(task)
@@ -125,6 +135,8 @@ struct TaskEditor: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        // A solid surface at every height, so the cards read as cards (the glass sheet looks muddy at half height).
+        .presentationBackground(Color.page)
         .onAppear {
             title = task.title
             notes = task.notes ?? ""
@@ -169,15 +181,15 @@ struct TaskEditor: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
-        .listRowInsets(EdgeInsets(top: Space.m, leading: Space.m, bottom: Space.m, trailing: Space.m))
     }
 
-    /// A label beside a control, for rows that need naming ("List").
-    private func labeled<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
-        HStack(spacing: Space.m) {
-            Text(title).textStyle(.control, color: .text).fixedSize()
+    /// A small grey caption above a control, so the control keeps the card's full width.
+    private func captioned<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: Space.s) {
+            Text(title).textStyle(.meta, medium: true, color: .mutedText)
             content()
         }
+        .padding(.vertical, Space.xs)
     }
 
     /// "Due": the date on the right; tap for Today, Tomorrow, This weekend, Next week, a calendar or no date.
