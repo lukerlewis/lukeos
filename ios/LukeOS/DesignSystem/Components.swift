@@ -70,7 +70,7 @@ struct StatusCircle: View {
             }
         }
         .frame(width: size, height: size)
-        .animation(.snappy(duration: 0.22), value: status)
+        .animation(Motion.snappy, value: status)
         .accessibilityLabel(status.label)
     }
 

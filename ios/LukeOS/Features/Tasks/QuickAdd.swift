@@ -31,7 +31,7 @@ struct QuickAddRow: View {
             }
         }
         .frame(minHeight: Size.tap)
-        .animation(.snappy, value: entry.matches.count)
+        .animation(Motion.snappy, value: entry.matches.count)
     }
 
     private func add() {
@@ -99,7 +99,7 @@ struct FiltersMenu: View {
 
     var body: some View {
         Menu {
-            Picker("View", selection: $layout.animation(.snappy)) {
+            Picker("View", selection: $layout.animation(Motion.snappy)) {
                 Label("Today", systemImage: "list.bullet").tag("list")
                 Label("Board", systemImage: "rectangle.split.3x1").tag("board")
             }
@@ -161,7 +161,7 @@ struct FiltersMenu: View {
             if let i = store.view.sort.firstIndex(where: { $0.by == key }) { sort.insert(SortRule(by: key, dir: dir), at: min(i, sort.count)) }
             else { sort.append(SortRule(by: key, dir: dir)) }
         }
-        withAnimation(.snappy) { store.view.sort = sort }
+        withAnimation(Motion.snappy) { store.view.sort = sort }
         Task {
             await Repo.change("set_dashboard_view", ["sort": .array(sort.map { .object(["by": .string($0.by), "dir": .string($0.dir)]) })])
         }

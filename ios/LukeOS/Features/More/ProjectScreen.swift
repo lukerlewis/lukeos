@@ -243,7 +243,7 @@ struct AllTasksScreen: View {
                         .cardRow()
                 }
             } header: {
-                Text("\(shown.count) tasks").textStyle(.meta, color: .mutedText).textCase(nil)
+                Text("\(shown.count) tasks").textStyle(.meta, color: .mutedText).textCase(nil).rollingNumber(shown.count)
             }
         }
         .listStyle(.insetGrouped)

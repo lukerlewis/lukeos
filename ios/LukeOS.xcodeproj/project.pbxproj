@@ -35,6 +35,7 @@
 		354C7F3CB290CEA782C8C782 /* SearchTrashSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F65869C3314162FEC36A3D5 /* SearchTrashSettings.swift */; };
 		35A3D050653345C50ED841BA /* MoreScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */; };
 		3688E35338B11F6B29A7893E /* QuickAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0998E467A272C3FA9FE577E9 /* QuickAdd.swift */; };
+		387977BEC44AA12888468CD9 /* Motion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87457A944616272FDBF56D8B /* Motion.swift */; };
 		3B879C20D7609DB6E593C280 /* DocumentsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486301A741FFD0760B961706 /* DocumentsScreen.swift */; };
 		3FD84680298F6B7FC47E3082 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */; };
 		45E615CA688F9311C03454EA /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
@@ -180,6 +181,7 @@
 		78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Regular.ttf"; sourceTree = "<group>"; };
 		7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreScreen.swift; sourceTree = "<group>"; };
 		80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		87457A944616272FDBF56D8B /* Motion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Motion.swift; sourceTree = "<group>"; };
 		89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusActivity.swift; sourceTree = "<group>"; };
 		8A20B11686A184AEF6AF3D9E /* TaskStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStore.swift; sourceTree = "<group>"; };
 		8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
@@ -313,6 +315,7 @@
 				5C9F429D8FCD80C44BC95E2A /* Components.swift */,
 				C90D157E9AF283347F38DDE4 /* MarkdownEditor.swift */,
 				C0583F8BFA35C668F3A8206D /* MarkdownView.swift */,
+				87457A944616272FDBF56D8B /* Motion.swift */,
 				26D624DE18EA302A879144B4 /* README.md */,
 				B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */,
 				C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */,
@@ -677,6 +680,7 @@
 				ED194374EA744BABF0B037A1 /* MarkdownView.swift in Sources */,
 				CFDF5655DE675284CDC56DEB /* MessagesScreen.swift in Sources */,
 				35A3D050653345C50ED841BA /* MoreScreen.swift in Sources */,
+				387977BEC44AA12888468CD9 /* Motion.swift in Sources */,
 				C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */,
 				196376AC30392F010178CB3B /* NoteScreen.swift in Sources */,
 				B198BD097D0212901A8C9D14 /* NotesModels.swift in Sources */,

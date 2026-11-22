@@ -37,7 +37,7 @@ struct NoteScreen: View {
                         meta(note)
                         if editing || text.isEmpty {
                             MarkdownEditor(text: $text, autoFocus: true, onPhoto: { pickingPhoto = true }, proxy: proxy,
-                                           onEndEditing: { withAnimation(.snappy) { editing = false } })
+                                           onEndEditing: { withAnimation(Motion.snappy) { editing = false } })
                         
                         } else {
                             MarkdownView(text: text) { line in
@@ -45,9 +45,9 @@ struct NoteScreen: View {
                                 schedule()
                             }
                             .contentShape(.rect)
-                            .onTapGesture { withAnimation(.snappy) { editing = true } }
+                            .onTapGesture { withAnimation(Motion.snappy) { editing = true } }
                             Color.clear.frame(height: 200).contentShape(.rect)
-                                .onTapGesture { withAnimation(.snappy) { editing = true } }
+                                .onTapGesture { withAnimation(Motion.snappy) { editing = true } }
                         }
                     } else {
                         Text(note.title.isEmpty ? "Untitled" : note.title)

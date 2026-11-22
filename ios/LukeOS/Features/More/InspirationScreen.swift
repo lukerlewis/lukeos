@@ -28,6 +28,8 @@ struct TagCount: Codable, Hashable, Sendable { var tag: String; var count: Int }
 /// Inspiration: a two-column masonry of pictures, links, quotes and files, with tag filters and search.
 struct InspirationScreen: View {
     @State private var items: [InspirationItem] = []
+    @State private var openItem: String?
+    @Namespace private var zoom
     @State private var tags: [TagCount] = []
     @State private var tag: String?
     @State private var query = ""
@@ -57,6 +59,7 @@ struct InspirationScreen: View {
         }
         .pageBackground()
         .navigationTitle("Inspiration")
+        .navigationDestination(item: $openItem) { InspirationDetail(itemId: $0).zoomTransition($0, in: zoom) }
         .searchable(text: $query, prompt: "Search")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -114,8 +117,9 @@ struct InspirationScreen: View {
     private func column(_ list: [InspirationItem]) -> some View {
         LazyVStack(spacing: Space.m) {
             ForEach(list) { item in
-                NavigationLink(value: MoreRoute.inspirationItem(item.id)) { InspirationCard(item: item) }
+                Button { openItem = item.id } label: { InspirationCard(item: item) }
                     .buttonStyle(.plain)
+                    .zoomSource(item.id, in: zoom)
                     .contextMenu {
                         Button("Delete", systemImage: "trash", role: .destructive) { delete(item) }
                     }

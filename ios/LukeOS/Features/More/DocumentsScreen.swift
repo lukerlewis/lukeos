@@ -28,6 +28,7 @@ struct DocumentsScreen: View {
     @State private var filter = "all"
     @State private var query = ""
     @State private var openDoc: String?
+    @Namespace private var zoom
 
     private var shown: [DocumentSummary] {
         docs.filter {
@@ -51,7 +52,7 @@ struct DocumentsScreen: View {
             let pinned = shown.filter { $0.pinned == true }
             if !pinned.isEmpty, query.isEmpty {
                 Section {
-                    PinnedRow(items: pinned.map { .init(id: $0.id, title: $0.title, excerpt: $0.excerpt, project: $0.project, madeBy: $0.madeBy, unread: $0.isNew == true) }) { openDoc = $0 }
+                    PinnedRow(items: pinned.map { .init(id: $0.id, title: $0.title, excerpt: $0.excerpt, project: $0.project, madeBy: $0.madeBy, unread: $0.isNew == true) }, zoom: zoom) { openDoc = $0 }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                 } header: { SectionTitle(text: "Pinned") }
@@ -83,7 +84,7 @@ struct DocumentsScreen: View {
         .pageBackground()
         .navigationTitle("Documents")
         .searchable(text: $query, prompt: "Search documents")
-        .navigationDestination(item: $openDoc) { DocumentScreen(documentId: $0) }
+        .navigationDestination(item: $openDoc) { DocumentScreen(documentId: $0).zoomTransition($0, in: zoom) }
         .task { await load() }
         .refreshable { await load() }
         .onDisappear {

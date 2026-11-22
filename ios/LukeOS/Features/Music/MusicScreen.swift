@@ -43,7 +43,7 @@ final class MusicModel {
     }
 
     func delete(_ ep: Episode) {
-        withAnimation(.snappy) { episodes.removeAll { $0.id == ep.id } }
+        withAnimation(Motion.snappy) { episodes.removeAll { $0.id == ep.id } }
         Downloads.shared.remove(ep)
         Task { await Repo.change("delete_episode", ["id": .string(ep.id)]) }
     }
@@ -72,6 +72,7 @@ struct MusicScreen: View {
     @State private var naming = false
     @State private var newTitle = ""
     @State private var confirmDelete: Episode?
+    @Namespace private var zoom
 
     var body: some View {
         NavigationStack {
@@ -90,7 +91,7 @@ struct MusicScreen: View {
             .listStyle(.insetGrouped)
             .pageBackground()
             .navigationTitle("Music")
-            .navigationDestination(for: Playlist.self) { PlaylistScreen(playlist: $0) }
+            .navigationDestination(for: Playlist.self) { PlaylistScreen(playlist: $0).zoomTransition($0.id, in: zoom) }
             .toolbar {
                 if tab == "playlists" {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -155,6 +156,7 @@ struct MusicScreen: View {
                 NavigationLink(value: p) {
                     HStack(spacing: Space.row) {
                         PlaylistArt(playlist: p, size: Size.artworkRow)
+                            .zoomSource(p.id, in: zoom)
                         VStack(alignment: .leading, spacing: Space.xs) {
                             Text(p.title).textStyle(.control, medium: true, color: .ink)
                             Text(Self.summary(p.count ?? 0, p.seconds ?? 0))

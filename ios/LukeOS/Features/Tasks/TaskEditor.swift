@@ -46,7 +46,7 @@ struct TaskEditor: View {
                     if pickingDate {
                         DatePicker("", selection: Binding(
                             get: { Day.toLocal(task.dueDate ?? today) },
-                            set: { set(["dueDate": .string(Day.fromLocal($0))]); withAnimation(.snappy) { pickingDate = false } }
+                            set: { set(["dueDate": .string(Day.fromLocal($0))]); withAnimation(Motion.snappy) { pickingDate = false } }
                         ), displayedComponents: .date)
                         .datePickerStyle(.graphical)
                         .tint(.ink)
@@ -188,7 +188,7 @@ struct TaskEditor: View {
             Button("This weekend") { set(["dueDate": .string(Day.endOfWeek(today) == today ? today : Day.add(Day.endOfWeek(today), days: -1))]) }
             Button("Next week") { set(["dueDate": .string(Day.add(Day.endOfWeek(today), days: 1))]) }
             Divider()
-            Button("Pick a date…", systemImage: "calendar") { withAnimation(.snappy) { pickingDate = true } }
+            Button("Pick a date…", systemImage: "calendar") { withAnimation(Motion.snappy) { pickingDate = true } }
             if task.dueDate != nil {
                 Button("No date", systemImage: "xmark", role: .destructive) { set(["dueDate": .null]) }
             }

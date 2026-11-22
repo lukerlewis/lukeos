@@ -7,6 +7,7 @@ struct MainTabs: View {
     @State private var player = AudioPlayer.shared
     @State private var focus = FocusTimer.shared
     @State private var showPlayer = false
+    @Namespace private var zoom
 
     var body: some View {
         @Bindable var app = app
@@ -33,9 +34,11 @@ struct MainTabs: View {
         .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory(isEnabled: player.current != nil) {
             MiniPlayer(onOpen: { showPlayer = true })
+                .zoomSource("player", in: zoom)
         }
         .sheet(isPresented: $showPlayer) {
             NowPlayingSheet()
+                .zoomTransition("player", in: zoom)
         }
         .task {
             await Home.shared.refresh()

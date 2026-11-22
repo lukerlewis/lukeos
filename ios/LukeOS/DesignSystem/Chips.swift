@@ -41,6 +41,8 @@ struct PinnedRow: View {
     }
 
     var items: [Item]
+    /// Pass a namespace to let the opened page zoom out of its card.
+    var zoom: Namespace.ID? = nil
     var onOpen: (String) -> Void
 
     var body: some View {
@@ -72,6 +74,7 @@ struct PinnedRow: View {
                         .overlay(RoundedRectangle(cornerRadius: Radius.container + 4).strokeBorder(Color.hairline, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
+                    .zoomSource(item.id, in: zoom)
                 }
             }
             .padding(.horizontal, Space.xl)

@@ -10,6 +10,7 @@ struct DashboardScreen: View {
     @State private var editing: LukeTask?
     @State private var adding = false
     @AppStorage("dashboardLayout", store: SharedConfig.defaults) private var layout = "list"
+    @Namespace private var zoom
 
     var body: some View {
         @Bindable var app = app
@@ -39,6 +40,7 @@ struct DashboardScreen: View {
             .overlay(alignment: .bottomTrailing) { addButton }
             .sheet(item: $editing) { task in
                 TaskEditor(taskId: task.id, fallback: task)
+                    .zoomTransition(task.id, in: zoom)
             }
             .sheet(isPresented: $adding) {
                 NewTaskSheet(area: app.area)
@@ -73,7 +75,7 @@ struct DashboardScreen: View {
 
     private var areaPicker: some View {
         @Bindable var app = app
-        return Picker("Area", selection: $app.area.animation(.snappy)) {
+        return Picker("Area", selection: $app.area.animation(Motion.snappy)) {
             ForEach(Area.allCases, id: \.self) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
@@ -106,6 +108,7 @@ struct DashboardScreen: View {
                         tasks: store.sorted(todays.filter { $0.timeOfDay == time }),
                         newTask: ["timeOfDay": .string(time.rawValue), "area": "life", "bucket": "today"],
                         dropChange: { ["timeOfDay": .string(time.rawValue)] },
+                        zoom: zoom,
                         onOpen: { editing = $0 }
                     )
                 }
@@ -116,6 +119,7 @@ struct DashboardScreen: View {
                         tasks: store.sorted(todays.filter { $0.lane == lane }),
                         newTask: ["lane": .string(lane.rawValue), "area": "work", "bucket": "today"],
                         dropChange: { ["lane": .string(lane.rawValue)] },
+                        zoom: zoom,
                         onOpen: { editing = $0 }
                     )
                 }
@@ -162,39 +166,59 @@ struct TaskCardSection: View {
     var tasks: [LukeTask]
     var newTask: Input
     var dropChange: () -> Input
+    var zoom: Namespace.ID? = nil
     var onOpen: (LukeTask) -> Void
     @State private var store = TaskStore.shared
+    /// How many of this card's parts a dragged task is over (rows, the add row, the header).
+    @State private var over = 0
+
+    private var targeted: Bool { over > 0 }
+
+    /// Any part of the card takes a dropped task; the whole card lights up while one is over it.
+    private func dropTarget<V: View>(_ v: V) -> some View {
+        v.dropDestination(for: String.self) { ids, _ in
+            for id in ids { store.update(id, dropChange()) }
+            return true
+        } isTargeted: { on in
+            let was = targeted
+            over = max(0, over + (on ? 1 : -1))
+            if !was && targeted { Haptics.select() }
+        }
+    }
 
     var body: some View {
         Section {
             ForEach(tasks) { task in
-                TaskRow(task: task, onOpen: { onOpen(task) })
-                    .taskRowInsets()
-                    .taskRowActions(task, onOpen: { onOpen(task) })
-                    .draggable(task.id)
+                dropTarget(
+                    TaskRow(task: task, onOpen: { onOpen(task) })
+                        .draggable(task.id)
+                )
+                .taskRowInsets()
+                .taskRowActions(task, onOpen: { onOpen(task) })
             }
-            .dropDestination(for: String.self) { ids, _ in
-                for id in ids { store.update(id, dropChange()) }
-            }
-            QuickAddRow(placeholder: "Add to \(title)", base: newTask)
+            dropTarget(QuickAddRow(placeholder: "Add to \(title)", base: newTask))
         } header: {
             HStack(spacing: Space.s) {
                 Image(systemName: symbol).font(.icon(.row)).foregroundStyle(Color.icon)
                 Text(title).textStyle(.heading, medium: true, color: .ink)
-                Text("\(tasks.count)").textStyle(.preview, color: .mutedText).monospacedDigit()
+                Text("\(tasks.count)").textStyle(.preview, color: .mutedText).rollingNumber(tasks.count)
             }
             .textCase(nil)
             .padding(.leading, -4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
-            .dropDestination(for: String.self) { ids, _ in
-                for id in ids { store.update(id, dropChange()) }
-                return true
-            }
+            .modifier(DropTargetModifier(apply: dropTarget))
         }
-        .listRowBackground(Color.card)
+        .listRowBackground(targeted ? Color.muted : Color.card)
+        .animation(Motion.snappy, value: targeted)
         .listRowSeparatorTint(Color.hairline)
     }
+}
+
+/// Lets a header use the same drop handling as the rows.
+private struct DropTargetModifier<Out: View>: ViewModifier {
+    var apply: (AnyView) -> Out
+    func body(content: Content) -> some View { apply(AnyView(content)) }
 }
 
 extension View {
