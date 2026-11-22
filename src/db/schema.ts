@@ -846,3 +846,15 @@ export const listenPlaylistItems = pgTable(
   },
   (t) => [primaryKey({ columns: [t.playlistId, t.episodeId] })],
 );
+
+/**
+ * One day of Luke's Fitbit numbers (from the Google Health API), in his time zone.
+ * `summary` is what the Health page and Claude read; `raw` keeps Google's own data points
+ * for that day, so a new number can be shown later without fetching again.
+ */
+export const healthDays = pgTable("health_days", {
+  date: date("date", { mode: "string" }).primaryKey(),
+  summary: jsonb("summary").$type<import("@/lib/health").HealthSummary>().notNull(),
+  raw: jsonb("raw").$type<Record<string, unknown[]>>().notNull().default({}),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

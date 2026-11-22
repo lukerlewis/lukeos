@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archive, Globe, Bot, MessagesSquare, Search, Lightbulb, Shapes, FileText, CheckSquare, ChevronRight, Trash2 } from "lucide-react";
+import { Archive, Globe, HeartPulse, Bot, MessagesSquare, Search, Lightbulb, Shapes, FileText, CheckSquare, ChevronRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { NewProjectButton } from "@/components/projects/project-dialog";
 import { EmptyState, Page } from "@/components/shell/page";
@@ -15,7 +15,7 @@ export default async function ProjectsPage() {
   const [projects, unread] = await Promise.all([listProjects(), unreadMessageCount()]);
 
   return (
-    // On phones this is the More tab: Messages, Search, All tasks, Documents, Whiteboard, Inspiration, Work archive, Portfolio, Agents and Trash, then the projects.
+    // On phones this is the More tab: Messages, Health, Search, All tasks, Documents, Whiteboard, Inspiration, Work archive, Portfolio, Agents and Trash, then the projects.
     <Page
       title="Projects"
       heading={
@@ -36,6 +36,11 @@ export default async function ProjectsPage() {
               <span className="sr-only"> unread</span>
             </span>
           )}
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
+        <Link href="/health" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
+          <HeartPulse className="size-[18px] text-muted-foreground" aria-hidden />
+          <span className="grow text-control font-medium">Health</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/search" className="press-tint flex min-h-14 items-center gap-3 border-t px-4 py-3">
