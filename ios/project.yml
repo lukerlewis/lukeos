@@ -43,6 +43,7 @@ targets:
       - target: LukeOSShare
       - target: LukeOSScreenTimeMonitor
       - target: LukeOSScreenTimeShield
+      - target: LukeOSScreenTimeAction
   # Screen Time: locks the picked apps again at the start of each day, without the app running.
   LukeOSScreenTimeMonitor:
     type: app-extension
@@ -73,6 +74,22 @@ targets:
         PRODUCT_NAME: LukeOSScreenTimeShield
         INFOPLIST_FILE: ScreenTime/Shield/Info.plist
         CODE_SIGN_ENTITLEMENTS: ScreenTime/Shield/Shield.entitlements
+        SWIFT_VERSION: "5.0"
+        SWIFT_STRICT_CONCURRENCY: minimal
+  # Screen Time: the buttons on the block screen ("Unlock in 10 min").
+  LukeOSScreenTimeAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ScreenTime/Action
+      - path: ScreenTime/Shared
+      - path: Shared/SharedConfig.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lewisdesign.lukeos.screentime-action
+        PRODUCT_NAME: LukeOSScreenTimeAction
+        INFOPLIST_FILE: ScreenTime/Action/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ScreenTime/Action/Action.entitlements
         SWIFT_VERSION: "5.0"
         SWIFT_STRICT_CONCURRENCY: minimal
   LukeOSWidgets:
