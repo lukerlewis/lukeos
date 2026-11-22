@@ -47,6 +47,10 @@ Conventions in results:
 - **Scratch pad** (bottom of the dashboard): it's a note. Its id and text come from `/api/app/home`; save with `update_note {id, content}`.
 - **Unread dot / badges.** `unreadMessages` from `/api/app/home`. Opening Messages calls `mark_messages_read`.
 
+### Choosing ids in the app (offline creates)
+
+`create_task` and `create_note` take an optional `id` (a UUID the app makes up). Always send one: the task or note then has its real id from the first moment, so edits queued while offline still point at it, and sending the same create twice (a retry after a dropped connection) returns the existing one instead of adding a second. `log_focus_session` works the same way and also updates the time when the id exists.
+
 ## App-only reads
 
 These aren't operations (so they don't appear as Claude tools). Same sign-in.
