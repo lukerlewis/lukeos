@@ -246,6 +246,7 @@ export const noteOperations = {
     description:
       "Create a note in Luke's Notes, on its own or inside a project, written in Markdown. Notes are Luke's own writing, so only do this when he explicitly asks for a note. For anything else you write for him (reports, research, plans, drafts), use create_document.",
     input: z.object({
+      id: z.uuid().optional().describe("Leave this out. Luke's own apps use it to choose the new note's id."),
       title: title.optional(),
       content: content.optional(),
       format: z.enum(noteFormats).optional().describe('"markdown" (the default) or "html".'),
@@ -253,11 +254,17 @@ export const noteOperations = {
       folderId: folderId.optional(),
     }),
     run: async (input, { actor }) => {
+      // Sent twice (the app retrying after a dropped connection): the note is already there.
+      if (input.id) {
+        const [existing] = await db.select({ id: notes.id }).from(notes).where(eq(notes.id, input.id)).limit(1);
+        if (existing) return getNote(existing.id);
+      }
       if (input.projectId) await assertProject(input.projectId);
       if (input.folderId) await assertFolder(input.folderId);
       const [row] = await db
         .insert(notes)
         .values({
+          ...(input.id ? { id: input.id } : {}),
           title: input.title ?? "",
           // Luke's @claude tags each get an id, so they stay the same request as he edits.
           content: actor.kind === "user" ? tagMentions(input.content ?? "", () => crypto.randomUUID()) : (input.content ?? ""),

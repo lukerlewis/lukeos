@@ -201,6 +201,13 @@ export async function syncRepeats(ids: string[]) {
 
 // Inputs: every field but the title is optional, and `null` clears a field.
 const id = z.uuid().describe("The task's id.");
+/** Luke's own apps pick the id up front, so a task made offline keeps its id and a retry can't add it twice. */
+const newId = z.uuid().optional().describe("Leave this out. Luke's own apps use it to choose the new task's id.");
+
+async function taskExists(taskId: string) {
+  const [row] = await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.id, taskId)).limit(1);
+  return Boolean(row);
+}
 const dueDate = z
   .string()
   .regex(isoDay, "Use a date like 2026-10-02.")
@@ -290,6 +297,7 @@ export const taskOperations = {
     description:
       "Create a task. Only the title is required; it starts as To do and goes in Life unless area or a project (Work) says otherwise. Leave out bucket and it goes in the list its due date points to (Today if late, today or no date; Tomorrow; This week; Later); pass bucket to choose the list yourself. Set repeat for something that comes back every day, weekday, week, month or year, or every few of them (every_2_days, every_3_weeks).",
     input: z.object({
+      id: newId,
       title: fields.title,
       projectId: fields.projectId.optional(),
       cardId: fields.cardId.optional(),
@@ -305,6 +313,8 @@ export const taskOperations = {
       repeat: fields.repeat.optional(),
     }),
     run: async (input, { actor }) => {
+      // Sent twice (the app retrying after a dropped connection): the task is already there.
+      if (input.id && (await taskExists(input.id))) return getTask(input.id);
       if (input.projectId) await assertProject(input.projectId);
       const inCard = input.cardId ? await cardProject(input.cardId) : null;
       const projectId = input.projectId === undefined ? inCard : input.projectId;
@@ -312,6 +322,7 @@ export const taskOperations = {
       const [row] = await db
         .insert(tasks)
         .values({
+          ...(input.id ? { id: input.id } : {}),
           title: input.title,
           projectId,
           area: (projectId && (await projectArea(projectId))) || input.area || "life",

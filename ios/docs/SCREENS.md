@@ -4,6 +4,16 @@ The pictures in `ios/docs/reference/` are captures of the phone website from the
 
 The goal is not a copy of the website. Keep Luke's content, hierarchy and greys; swap the web's custom controls for the system's (Liquid Glass bars and sheets, native lists, menus, pickers, swipe actions, haptics).
 
+## Native first (Luke, 21 Nov 2026)
+
+Luke asked for "a truly native swift ios app": where the phone website and Apple's Human Interface Guidelines disagree, the guidelines win. The layouts below describe what each screen has to do, not how it must be laid out. Use large-title navigation, system lists and forms, sheets with detents, swipe actions, context menus, pull to refresh, system search, SF Symbols, system haptics and Dynamic Type instead of rebuilding the website's controls.
+
+He also asked that "things are still attached to components so things can easily be changed later". So:
+
+- One theme holds every colour, type style, spacing step and corner radius (`ios/LukeOS/DesignSystem/`). No screen sets a colour, font, size or radius of its own.
+- Screens are built from a small set of shared components (task row, tick circle, card, section header, project dot, badge, chip, buttons, empty state, sheet header). Changing a component changes it everywhere.
+- The component folder has a short README listing each component and where it is used.
+
 ## Design system on iPhone
 
 - **Colours** (from `src/app/globals.css`, `--grey-0` to `--grey-950`, with a dark set under `.dark`): port the grey steps as a colour set that follows the system appearance. Named roles: background (0), sidebar/group fill (50), card (light 0, dark 50), muted (100), selected (200), border/dividers (200), stroke for cards and outline buttons (300), icons (600), secondary text (700), body text (800), foreground (900), titles "ink" (950). Red only for count badges, blue only for the 8 pt unread dot, project colours only for the project dot or chip.
