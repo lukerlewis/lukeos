@@ -94,6 +94,9 @@ final class AudioPlayer {
                 self.ended()
             }
         }
+        NotificationCenter.default.addObserver(forName: AVPlayerItem.failedToPlayToEndTimeNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { AudioPlayer.shared.failed() }
+        }
         NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
             let type = (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt).flatMap(AVAudioSession.InterruptionType.init)
             let resume = ((note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt) ?? 0) & AVAudioSession.InterruptionOptions.shouldResume.rawValue != 0
@@ -109,8 +112,25 @@ final class AudioPlayer {
         setUpRemoteCommands()
     }
 
+    /// Podcasts are speech; songs are music (it changes how other sounds interrupt).
     func configureSession() {
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, policy: .longFormAudio)
+        let mode: AVAudioSession.Mode = current?.isPodcast == false ? .default : .spokenAudio
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: mode, policy: .longFormAudio)
+    }
+
+    private var statusWatch: NSKeyValueObservation?
+
+    /// A file that won't load (a dead podcast link, no signal without a download): say so and move on.
+    private func failed() {
+        loading = false
+        isPlaying = false
+        Toasts.shared.show("Couldn't play that.")
+        if index + 1 < queue.count {
+            index += 1
+            load(queue[index], autoplay: true)
+        } else {
+            updateNowPlaying()
+        }
     }
 
     // MARK: Playing
@@ -141,6 +161,10 @@ final class AudioPlayer {
             options["AVURLAssetHTTPHeaderFieldsKey"] = ["authorization": "Bearer \(token)"]
         }
         let item = AVPlayerItem(asset: AVURLAsset(url: url, options: options))
+        statusWatch = item.observe(\.status) { item, _ in
+            let bad = item.status == .failed
+            Task { @MainActor in if bad { AudioPlayer.shared.failed() } }
+        }
         player.replaceCurrentItem(with: item)
         let total = ep.durationSeconds ?? 0
         let resume = !SharedConfig.isDemo && ep.isPodcast && !(total > 0 && (ep.positionSeconds ?? 0) > total - 10) ? (ep.positionSeconds ?? 0) : 0

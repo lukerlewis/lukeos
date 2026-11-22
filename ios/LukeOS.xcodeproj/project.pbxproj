@@ -43,12 +43,14 @@
 		7E6B1515FF44F4E75EFE29DD /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
 		819A2BCF2F877EB70B99FC8F /* NowPlaying.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5B4EE6AAF2908A4D409CAD4 /* NowPlaying.swift */; };
 		83088034108BCAD9FD3F7E85 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
+		87A7332863A8A2656168AD23 /* FocusActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */; };
 		8A9BE1E5B9C26A63708AD64C /* DemoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4D6D1373220413F091AB9B /* DemoServer.swift */; };
 		8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F6D9064445EA0B033C63DD /* NotesScreen.swift */; };
 		8E36B38B0ABB5360264EC227 /* TaskChips.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */; };
 		8E74F962D89035D7EB00094E /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = C0C494A94181D94768D93744 /* OFL.txt */; };
 		8FE6667FFD431CFC9B22FB92 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
 		96B9F6CBE1BEB87879C1067B /* Repo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABE02CA05ECDA1E61BCFFA4 /* Repo.swift */; };
+		97D12FE3EC6DB71CDD221E0C /* FocusTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D2EBA304ABD1F8DF09B81A2 /* FocusTimer.swift */; };
 		9AFCB62D7AFA686DE2C84D4F /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9F429D8FCD80C44BC95E2A /* Components.swift */; };
 		9BAB1809D09B783C8EA64032 /* SmartEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098058FF06B81882280685AE /* SmartEntry.swift */; };
 		9C2495C994D29770A3DDBE2F /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
@@ -57,6 +59,7 @@
 		A565AD31B8B2638946247E8E /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A20B11686A184AEF6AF3D9E /* TaskStore.swift */; };
 		AA971DEEDEC6896831479D1D /* Widgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFA2030A6359127F50C4901 /* Widgets.swift */; };
 		ABE582FC2026C5822F34402D /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7224A97F06EDA2C071E93974 /* ShareViewController.swift */; };
+		AFBB4CCE785BD60E7CBF0689 /* FocusActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */; };
 		B198BD097D0212901A8C9D14 /* NotesModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73FA9D0A65B898B6C40A645 /* NotesModels.swift */; };
 		B80A014D581F2ABDFAAA45B8 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */; };
 		C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
@@ -78,6 +81,7 @@
 		ED194374EA744BABF0B037A1 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0583F8BFA35C668F3A8206D /* MarkdownView.swift */; };
 		F174C81EEEEEA95C303BB284 /* Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73CADE5D302CDEDEECC713F7 /* Push.swift */; };
 		F98F60E63DFFD314E5C7F302 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
+		FA59E5A4A66A2005FC7C5F02 /* FocusActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */; };
 		FADA218B56BBB17D0F277F8F /* DecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -134,6 +138,7 @@
 		3307F9A29573A3AC37BC9BBC /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		3525035D1DF9BE9D5887F0CA /* TaskEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskEditor.swift; sourceTree = "<group>"; };
 		36CFCBA190398A4E3D994D93 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		3D2EBA304ABD1F8DF09B81A2 /* FocusTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusTimer.swift; sourceTree = "<group>"; };
 		3D3ADA9E4A56803A6F4A42C8 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fixtures; sourceTree = SOURCE_ROOT; };
 		3F44FAC64420145C46F8B100 /* brown-noise.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "brown-noise.mp3"; sourceTree = "<group>"; };
 		46DD2C51661DA1C32EA29038 /* MainTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabs.swift; sourceTree = "<group>"; };
@@ -149,6 +154,7 @@
 		78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Regular.ttf"; sourceTree = "<group>"; };
 		7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreScreen.swift; sourceTree = "<group>"; };
 		80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusActivity.swift; sourceTree = "<group>"; };
 		8A20B11686A184AEF6AF3D9E /* TaskStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStore.swift; sourceTree = "<group>"; };
 		8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		8F7789F731BF7BE97BD41BE4 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -247,6 +253,7 @@
 			isa = PBXGroup;
 			children = (
 				0CFD7570694FA1A70725C11E /* FocusScreen.swift */,
+				3D2EBA304ABD1F8DF09B81A2 /* FocusTimer.swift */,
 			);
 			path = Focus;
 			sourceTree = "<group>";
@@ -328,6 +335,7 @@
 			children = (
 				744FE808E024262F48C42255 /* Day.swift */,
 				FE4D6D1373220413F091AB9B /* DemoServer.swift */,
+				89A3A59BB73D3E52F5761C5A /* FocusActivity.swift */,
 				C0271259A5BD4781955040F4 /* JSON.swift */,
 				2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */,
 				51E606137670B14EB4A31BF2 /* SharedConfig.swift */,
@@ -581,7 +589,9 @@
 				ECAD8123915B37929BA23CC1 /* DashboardScreen.swift in Sources */,
 				F98F60E63DFFD314E5C7F302 /* Day.swift in Sources */,
 				8A9BE1E5B9C26A63708AD64C /* DemoServer.swift in Sources */,
+				FA59E5A4A66A2005FC7C5F02 /* FocusActivity.swift in Sources */,
 				09913344B2BFE017C10F4379 /* FocusScreen.swift in Sources */,
+				97D12FE3EC6DB71CDD221E0C /* FocusTimer.swift in Sources */,
 				29D6690D0165537C3AA425B5 /* Home.swift in Sources */,
 				4CAE7A26BC6AD9DFEA3428BB /* JSON.swift in Sources */,
 				5BEFAC1F62ED73DE2C943D31 /* LukeAPI.swift in Sources */,
@@ -628,6 +638,7 @@
 			files = (
 				E99D3E61ED06BD3EBD4EE4CE /* Day.swift in Sources */,
 				7E6B1515FF44F4E75EFE29DD /* DemoServer.swift in Sources */,
+				AFBB4CCE785BD60E7CBF0689 /* FocusActivity.swift in Sources */,
 				5BF531E05C9FC3DFA72E4180 /* JSON.swift in Sources */,
 				DB7091FDC6C0D73AE635ABF4 /* LukeAPI.swift in Sources */,
 				83088034108BCAD9FD3F7E85 /* SharedConfig.swift in Sources */,
@@ -645,6 +656,7 @@
 			files = (
 				9C2495C994D29770A3DDBE2F /* Day.swift in Sources */,
 				0805A72D42A60BBFFE2D87E4 /* DemoServer.swift in Sources */,
+				87A7332863A8A2656168AD23 /* FocusActivity.swift in Sources */,
 				8FE6667FFD431CFC9B22FB92 /* JSON.swift in Sources */,
 				59C86346048A86319E64F09B /* LukeAPI.swift in Sources */,
 				ABE582FC2026C5822F34402D /* ShareViewController.swift in Sources */,

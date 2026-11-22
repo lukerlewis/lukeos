@@ -55,8 +55,16 @@ final class Outbox {
         monitor.start(queue: .global(qos: .utility))
     }
 
+    /// Queues a change. A newer change to the same thing replaces one still waiting (a podcast's place,
+    /// a note's text), so hours offline don't pile up hundreds of saves.
     func add(_ name: String, _ input: Input) {
-        items.append(Item(name: name, input: input))
+        let coalesce: Set<String> = ["update_episode", "update_note", "update_scratch_pad", "update_document", "log_focus_session"]
+        if coalesce.contains(name), let last = items.indices.last(where: { items[$0].name == name && items[$0].input["id"] == input["id"] }),
+           Set(items[last].input.keys).isSubset(of: Set(input.keys)) {
+            items[last].input = input
+        } else {
+            items.append(Item(name: name, input: input))
+        }
         save()
     }
 
