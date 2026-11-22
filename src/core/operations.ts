@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { passkeyCount } from "@/lib/auth/passkeys";
+import { apnsDeviceCount, apnsKeyInfo } from "./apns";
 import { activityOperations } from "./activity";
 import { archiveOperations } from "./archive";
 import { artifactOperations } from "./artifacts";
@@ -21,6 +22,7 @@ import { mentionOperations } from "./mentions";
 import { messageOperations } from "./messages";
 import { noteOperations } from "./notes";
 import { pipelineOperations } from "./pipeline";
+import { pushDeviceCount, sendPush } from "./push";
 import { portfolioOperations } from "./portfolio";
 import { projectOperations } from "./projects";
 import { routineOperations } from "./routines";
@@ -44,13 +46,32 @@ export type { Actor, Operation } from "./define";
 export const operations = {
   get_app_info: defineOperation({
     name: "get_app_info",
-    description: "Basic facts about this LukeOS install: today's date and time zone, and how many devices can sign in.",
+    description:
+      "Basic facts about this LukeOS install: today's date and time zone, how many devices can sign in, and notifications (how many devices get them, how many of those are iPhones with the LukeOS app, and whether Luke has added the Apple push key the iPhone app needs).",
+    input: z.object({}),
+    run: async () => {
+      const [allDevices, iPhones, key] = await Promise.all([pushDeviceCount(), apnsDeviceCount(), apnsKeyInfo()]);
+      return {
+        app: "LukeOS",
+        today: await today(),
+        timeZone: await getTimeZone(),
+        devices: await passkeyCount(),
+        notifications: { devices: allDevices, iPhones, iPhoneKeyAdded: key !== null },
+      };
+    },
+  }),
+  send_test_notification: defineOperation({
+    name: "send_test_notification",
+    description:
+      "Send a test notification to every device that has notifications on (the website, the Home Screen app and the iPhone app), as the Test button in Settings does. Returns how many devices it reached. Only use it when Luke asks, or to check notifications work after he changes something.",
     input: z.object({}),
     run: async () => ({
-      app: "LukeOS",
-      today: await today(),
-      timeZone: await getTimeZone(),
-      devices: await passkeyCount(),
+      reached: await sendPush({
+        title: "LukeOS",
+        body: "Notifications are working. Claude's messages will show up like this.",
+        url: "/messages",
+        tag: "lukeos-test",
+      }),
     }),
   }),
   ...taskOperations,

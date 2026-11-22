@@ -547,6 +547,12 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: `Deleted the playlist ${quote((r as { title?: string }).title)}` };
     case "set_dashboard_view":
       return { summary: "Changed how your dashboard looks" };
+    case "sync_health":
+      return { summary: "Synced Fitbit health data" };
+    case "disconnect_health":
+      return { summary: "Disconnected Fitbit from Health" };
+    case "send_test_notification":
+      return { summary: "Sent a test notification" };
     case "update_whiteboard_settings":
       return { summary: `Turned whiteboard snapping ${input.snap === false ? "off" : "on"}` };
     default:
