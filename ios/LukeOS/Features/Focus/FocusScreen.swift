@@ -424,7 +424,7 @@ struct FocusStatsSheet: View {
                             Text(Self.hours(stats.totalSeconds)).textStyle(.title, medium: true, color: .ink)
                             Text("Focused in the last \(days) days").textStyle(.meta, color: .mutedText)
                             Chart(stats.days, id: \.date) { d in
-                                BarMark(x: .value("Day", Day.date(d.date), unit: .day), y: .value("Hours", d.seconds / 3600))
+                                BarMark(x: .value("Day", Day.toLocal(d.date), unit: .day), y: .value("Hours", d.seconds / 3600))
                                     .foregroundStyle(d.date == stats.today ? Color.ink : Color.strokeStrong)
                                     .clipShape(.rect(cornerRadius: 3))
                             }
@@ -433,7 +433,12 @@ struct FocusStatsSheet: View {
                                     AxisValueLabel(format: days == 7 ? .dateTime.weekday(.narrow) : .dateTime.day().month(.abbreviated), centered: true)
                                 }
                             }
-                            .chartYAxis { AxisMarks(position: .trailing) { AxisGridLine(); AxisValueLabel() } }
+                            .chartYAxis {
+                                AxisMarks(position: .trailing) { v in
+                                    AxisGridLine()
+                                    AxisValueLabel { if let h = v.as(Double.self) { Text(h == 0 ? "0" : "\(h.formatted(.number.precision(.fractionLength(0...1))))h") } }
+                                }
+                            }
                             .frame(height: 170)
                             .padding(.top, 12)
                         }
@@ -468,6 +473,8 @@ struct FocusStatsSheet: View {
             }
             .listStyle(.insetGrouped)
             .pageBackground()
+            .contentMargins(.top, 0, for: .scrollContent)
+            .listSectionSpacing(16)
             .navigationTitle("Stats")
             .navigationBarTitleDisplayMode(.inline)
             .task(id: days) { await load() }

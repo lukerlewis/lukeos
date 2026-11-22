@@ -65,6 +65,19 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(e.dueDate, "2026-11-27")
     }
 
+    /// Plain days become local midnights for charts and pickers, so the weekday never slips a day.
+    func testPlainDaysKeepTheirWeekday() throws {
+        let stats = try LukeAPI.decoder.decode(FocusStats.self, from: try data("get_focus_stats.json"))
+        let last = try XCTUnwrap(stats.days.last)
+        XCTAssertEqual(last.date, stats.today)
+        let local = Day.toLocal(last.date)
+        XCTAssertEqual(Calendar.current.component(.weekday, from: local) - 1, Day.weekday(stats.today))
+        XCTAssertEqual(Day.fromLocal(local), stats.today)
+        XCTAssertEqual(Day.friendly("2026-11-22", today: "2026-11-21"), "Tomorrow")
+        XCTAssertEqual(Day.friendly("2026-11-20", today: "2026-11-21"), "Yesterday")
+        XCTAssertEqual(Day.friendly("2026-11-27", today: "2026-11-21"), "Fri")
+    }
+
     func testMarkdownRoundTrip() {
         let md = "# A\n\n- [ ] one\n- [x] two"
         XCTAssertEqual(Markdown.toggleCheck(md, line: 2), "# A\n\n- [x] one\n- [x] two")

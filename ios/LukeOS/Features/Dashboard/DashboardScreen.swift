@@ -93,7 +93,7 @@ struct DashboardScreen: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, inList ? 0 : 20)
+        .padding(.horizontal, inList ? 2 : 20)
         .padding(.top, 4)
         .padding(.bottom, 6)
     }

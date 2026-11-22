@@ -28,7 +28,9 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if app.signedIn {
+            if SharedConfig.isDemo, ProcessInfo.processInfo.arguments.contains("-widgetGallery") {
+                WidgetGallery()
+            } else if app.signedIn {
                 MainTabs()
                     .transition(.opacity)
             } else {

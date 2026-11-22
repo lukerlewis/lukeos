@@ -137,45 +137,38 @@ struct MarkdownEditor: UIViewRepresentable {
 
         // MARK: Formatting bar
 
-        func makeToolbar() -> UIToolbar {
-            let bar = UIToolbar(frame: CGRect(x: 0, y: 0, width: 320, height: 44))
-            func item(_ symbol: String, _ label: String, _ action: Selector) -> UIBarButtonItem {
-                let b = UIBarButtonItem(image: UIImage(systemName: symbol), style: .plain, target: self, action: action)
-                b.accessibilityLabel = label
-                return b
+        func makeToolbar() -> UIView {
+            let bar = FormatBar(
+                hasPhoto: parent.onPhoto != nil,
+                act: { [weak self] action in self?.perform(action) }
+            )
+            let host = UIHostingController(rootView: bar)
+            host.view.backgroundColor = .clear
+            host.view.frame = CGRect(x: 0, y: 0, width: 320, height: 54)
+            host.view.autoresizingMask = [.flexibleWidth]
+            host.sizingOptions = []
+            return host.view
+        }
+
+        func perform(_ action: FormatBar.Action) {
+            switch action {
+            case .h1: linePrefix("# ")
+            case .h2: linePrefix("## ")
+            case .h3: linePrefix("### ")
+            case .body: linePrefix("")
+            case .quote: linePrefix("> ")
+            case .code: wrap("`", "`")
+            case .divider: insertBlock("---")
+            case .bold: bold()
+            case .italic: italic()
+            case .strike: strike()
+            case .bullets: bullets()
+            case .numbers: numbers()
+            case .checklist: checklist()
+            case .link: link()
+            case .photo: photo()
+            case .done: done()
             }
-            let heading = UIBarButtonItem(image: UIImage(systemName: "textformat.size"), menu: UIMenu(children: [
-                UIAction(title: "Heading 1") { [weak self] _ in self?.linePrefix("# ") },
-                UIAction(title: "Heading 2") { [weak self] _ in self?.linePrefix("## ") },
-                UIAction(title: "Heading 3") { [weak self] _ in self?.linePrefix("### ") },
-                UIAction(title: "Body") { [weak self] _ in self?.linePrefix("") },
-                UIAction(title: "Quote", image: UIImage(systemName: "text.quote")) { [weak self] _ in self?.linePrefix("> ") },
-                UIAction(title: "Code", image: UIImage(systemName: "chevron.left.forwardslash.chevron.right")) { [weak self] _ in self?.wrap("`", "`") },
-                UIAction(title: "Divider", image: UIImage(systemName: "minus")) { [weak self] _ in self?.insertBlock("---") },
-            ]))
-            heading.accessibilityLabel = "Text style"
-            var items = [
-                heading,
-                item("bold", "Bold", #selector(bold)),
-                item("italic", "Italic", #selector(italic)),
-                item("strikethrough", "Strikethrough", #selector(strike)),
-                item("list.bullet", "Bulleted list", #selector(bullets)),
-                item("list.number", "Numbered list", #selector(numbers)),
-                item("checklist", "Checklist", #selector(checklist)),
-                item("link", "Link", #selector(link)),
-            ]
-            if parent.onPhoto != nil { items.append(item("photo", "Photo", #selector(photo))) }
-            items.append(.flexibleSpace())
-            items.append(item("keyboard.chevron.compact.down", "Done", #selector(done)))
-            var spaced: [UIBarButtonItem] = []
-            for (i, it) in items.enumerated() {
-                spaced.append(it)
-                if i < items.count - 2 { spaced.append(.fixedSpace(2)) }
-            }
-            bar.items = spaced
-            bar.tintColor = UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: 0xE8E8E8) : UIColor(hex: 0x262626) }
-            bar.sizeToFit()
-            return bar
         }
 
         @objc func bold() { wrap("**", "**") }
@@ -227,6 +220,58 @@ struct MarkdownEditor: UIViewRepresentable {
 
         /// Puts a photo's Markdown where the cursor is.
         func insertImage(_ markdown: String) { insertBlock(markdown) }
+    }
+}
+
+/// The formatting bar above the keyboard: scrolls sideways, with Done always in reach.
+struct FormatBar: View {
+    enum Action { case h1, h2, h3, body, quote, code, divider, bold, italic, strike, bullets, numbers, checklist, link, photo, done }
+    var hasPhoto: Bool
+    var act: (Action) -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ScrollView(.horizontal) {
+                HStack(spacing: 2) {
+                    Menu {
+                        Button("Heading 1") { act(.h1) }
+                        Button("Heading 2") { act(.h2) }
+                        Button("Heading 3") { act(.h3) }
+                        Button("Body") { act(.body) }
+                        Divider()
+                        Button("Quote", systemImage: "text.quote") { act(.quote) }
+                        Button("Code", systemImage: "chevron.left.forwardslash.chevron.right") { act(.code) }
+                        Button("Divider", systemImage: "minus") { act(.divider) }
+                    } label: { icon("textformat.size") }
+                        .accessibilityLabel("Text style")
+                    button("bold", "Bold", .bold)
+                    button("italic", "Italic", .italic)
+                    button("strikethrough", "Strikethrough", .strike)
+                    button("list.bullet", "Bulleted list", .bullets)
+                    button("list.number", "Numbered list", .numbers)
+                    button("checklist", "Checklist", .checklist)
+                    button("link", "Link", .link)
+                    if hasPhoto { button("photo", "Photo", .photo) }
+                }
+                .padding(.horizontal, 6)
+            }
+            .scrollIndicators(.hidden)
+            .glassEffect(.regular, in: .capsule)
+            Button { act(.done) } label: { icon("keyboard.chevron.compact.down") }
+                .glassEffect(.regular.interactive(), in: .circle)
+                .accessibilityLabel("Hide keyboard")
+        }
+        .foregroundStyle(Color.ink)
+        .padding(.horizontal, 10)
+        .padding(.bottom, 6)
+    }
+
+    private func icon(_ symbol: String) -> some View {
+        Image(systemName: symbol).font(.system(size: 16)).frame(width: 40, height: 44)
+    }
+
+    private func button(_ symbol: String, _ label: String, _ a: Action) -> some View {
+        Button { act(a) } label: { icon(symbol) }.accessibilityLabel(label)
     }
 }
 

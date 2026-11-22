@@ -27,7 +27,7 @@ struct SignInView: View {
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
                 .keyboardType(.asciiCapable)
-                .submitLabel(.go)
+                .submitLabel(.return)
                 .focused($focused)
                 .onSubmit(submit)
                 .padding(.vertical, 14)
