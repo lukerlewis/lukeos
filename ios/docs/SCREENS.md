@@ -145,7 +145,7 @@ Reference: `messages-chain.png`, `messages-hold-menu.png`, `messages-replying.pn
 
 Reference: `more-tab.png` (older; the list is longer now).
 
-Native rows: Messages (with unread badge), Search, All tasks, Documents (with a New count), Inspiration, Health, Trash, Settings. Then Projects (colour dot, name, open task count) and New project. Then "On the web": Whiteboard, Work archive, Portfolio, Agents: each opens the site's page in an in-app web view signed in with the token cookie.
+Native rows: Messages (with unread badge), Search, All tasks, Documents (with a New count), Inspiration, Health, Screen Time, Trash, Settings. Then Projects (colour dot, name, open task count) and New project. Then "On the web": Whiteboard, Work archive, Portfolio, Agents: each opens the site's page in an in-app web view signed in with the token cookie.
 
 - **Search** (`src/core/search.ts`): one field, results grouped by kind (tasks, notes, documents, projects, inspiration), tapping opens the thing.
 - **All tasks** (`src/app/(app)/tasks/page.tsx`): every task with filters for area, project, status and list.
