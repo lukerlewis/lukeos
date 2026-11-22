@@ -115,6 +115,13 @@ struct TaskMenu: View {
             } label: { Label("Signal or noise", systemImage: "dot.radiowaves.left.and.right") }
                 .pickerStyle(.menu)
         }
+        if task.area == .work {
+            Picker(selection: Binding(get: { task.project?.id ?? "" }, set: { store.update(task.id, ["projectId": $0.isEmpty ? .null : .string($0)]) })) {
+                Text("No project").tag("")
+                ForEach(store.projects(in: .work)) { p in Text(p.name).tag(p.id) }
+            } label: { Label("Project", systemImage: "circle.grid.2x1") }
+                .pickerStyle(.menu)
+        }
         Picker(selection: Binding(get: { task.priority }, set: { store.update(task.id, ["priority": .optional($0?.rawValue)]) })) {
             Text("None").tag(Priority?.none)
             ForEach(Priority.allCases.reversed(), id: \.self) { p in Text(p.label).tag(Priority?.some(p)) }

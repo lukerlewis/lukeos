@@ -68,7 +68,7 @@ final class MusicModel {
 struct MusicScreen: View {
     @State private var model = MusicModel.shared
     @State private var player = AudioPlayer.shared
-    @State private var tab = "library"
+    @AppStorage("musicTab", store: SharedConfig.defaults) private var tab = "library"
     @State private var naming = false
     @State private var newTitle = ""
     @State private var confirmDelete: Episode?
@@ -156,7 +156,7 @@ struct MusicScreen: View {
                         PlaylistArt(playlist: p, size: 48)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(p.title).textStyle(.control, medium: true, color: .ink)
-                            Text("\(p.count ?? 0) · \(Episode.time(p.seconds ?? 0, long: true))")
+                            Text(Self.summary(p.count ?? 0, p.seconds ?? 0))
                                 .textStyle(.meta, color: .mutedText)
                         }
                     }
@@ -164,6 +164,11 @@ struct MusicScreen: View {
                 .cardRow()
             }
         }
+    }
+
+    /// "Empty", "1 item · 3 min", "3 items · 2 hr 9 min".
+    static func summary(_ count: Int, _ seconds: Double) -> String {
+        count == 0 ? "Empty" : "\(count) \(count == 1 ? "item" : "items") · \(Episode.time(seconds, long: true))"
     }
 
     private func episodeRow(_ ep: Episode, play: @escaping () -> Void) -> some View {
@@ -292,7 +297,7 @@ struct PlaylistScreen: View {
             VStack(spacing: 10) {
                 PlaylistArt(playlist: playlist, size: 160)
                 Text(playlist.title).textStyle(.section, medium: true, color: .ink)
-                Text("\(episodes.count) · \(Episode.time(episodes.reduce(0) { $0 + ($1.durationSeconds ?? 0) }, long: true))")
+                Text(MusicScreen.summary(episodes.count, episodes.reduce(0) { $0 + ($1.durationSeconds ?? 0) }))
                     .textStyle(.meta, color: .mutedText)
                 HStack(spacing: 12) {
                     Button { player.play(episodes) } label: { Label("Play", systemImage: "play.fill").frame(maxWidth: .infinity) }

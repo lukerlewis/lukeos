@@ -40,6 +40,8 @@ final class AppModel {
         if let l = value("-layout") { SharedConfig.defaults.set(l, forKey: "dashboardLayout") }
         if let link = value("-link") { open(link) }
         if let t = value("-tab").flatMap(AppTab.init(rawValue:)) { tab = t }
+        if let m = value("-focusMode").flatMap(FocusMode.init(rawValue:)) { FocusTimer.shared.state.mode = m }
+        if let m = value("-musicTab") { SharedConfig.defaults.set(m, forKey: "musicTab") }
     }
 
     func handleSignedOut() {
