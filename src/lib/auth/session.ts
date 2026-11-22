@@ -39,10 +39,12 @@ export async function createSession(opts: { passkeyId: string | null; userAgent:
  * iPhone app (which keeps its token in the Keychain), an Authorization header.
  */
 async function presentedToken(): Promise<{ token: string; fromApp: boolean } | null> {
-  const cookie = (await cookies()).get(SESSION_COOKIE)?.value;
-  if (cookie) return { token: cookie, fromApp: false };
+  // The app's header comes first: the app also carries the cookie (for its web views and files),
+  // and its requests have to count as the app's so it stays signed in.
   const bearer = (await headers()).get("authorization")?.match(/^Bearer\s+([A-Za-z0-9_-]{20,})$/i)?.[1];
-  return bearer ? { token: bearer, fromApp: true } : null;
+  if (bearer) return { token: bearer, fromApp: true };
+  const cookie = (await cookies()).get(SESSION_COOKIE)?.value;
+  return cookie ? { token: cookie, fromApp: false } : null;
 }
 
 /** The current session, or null if this browser isn't signed in. Checked once per page. */
