@@ -12,6 +12,7 @@ import { documentOperations } from "./documents";
 import { defineOperation, OperationError, type Actor, type Operation } from "./define";
 import { focusOperations } from "./focus";
 import { folderOperations } from "./folders";
+import { healthOperations } from "./health";
 import { inspirationOperations } from "./inspiration";
 import { linkOperations } from "./links";
 import { listenOperations } from "./listen";
@@ -71,6 +72,7 @@ export const operations = {
   ...messageOperations,
   ...focusOperations,
   ...listenOperations,
+  ...healthOperations,
   ...bulkOperations,
   ...fromClaudeOperations,
   ...skillOperations,
