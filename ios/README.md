@@ -44,6 +44,7 @@ More › Dictation and the LukeOS keyboard turn speech into text with Whisper, o
 
 - A keyboard can't use the microphone, so the app does the recording. The keyboard's mic button sends "start" and "stop" to the app and types the text that comes back (`Shared/DictationLink.swift`).
 - The first tap in a while opens LukeOS to turn the mic on; swipe back and tap again. The mic then stays on for 15 minutes after it was last used (`Dictation.staysOn`).
+- Every transcript is kept for 7 days in More › Dictation › History (tap to copy), in case typing it into an app went wrong. If Whisper fails, the recording is kept instead with a Try again button. Older entries delete themselves (`DictationHistory.keepsFor`).
 - The model (Fast, Balanced, Most accurate) is downloaded once from More › Dictation and kept in the app's Documents.
 - Set up once: Settings › General › Keyboard › Keyboards › Add New Keyboard › LukeOS, then tap LukeOS in that list and turn on Allow Full Access (needed for the keyboard and the app to share a folder).
 
