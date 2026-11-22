@@ -105,8 +105,8 @@ struct TodayWidgetView: View {
 /// The large widget: Life's Today list in its Morning, Day and Evening cards, each task tickable.
 struct DayPlanWidgetView: View {
     var entry: TodayEntry
-    /// Rows that fit under the three headings on a large widget.
-    var rowBudget = 8
+    /// Rows that fit under the three headings on a large widget (more push the top off the edge).
+    var rowBudget = 7
 
     private var tasks: [WidgetSnapshot.Item] {
         (entry.snapshot?.tasks ?? []).filter { $0.area == .life && $0.status != .done }
@@ -132,7 +132,7 @@ struct DayPlanWidgetView: View {
 
     var body: some View {
         let allot = allotment
-        VStack(alignment: .leading, spacing: Space.m) {
+        VStack(alignment: .leading, spacing: Space.s) {
             HStack {
                 Text("Today").font(.geist(.heading, medium: true)).tracking(-0.68).foregroundStyle(Color.ink)
                 Text("\(tasks.count)").font(.geist(.meta)).foregroundStyle(Color.mutedText).contentTransition(.numericText())
@@ -170,7 +170,7 @@ struct DayPlanWidgetView: View {
                     Spacer(minLength: 0)
                 }
             }
-            .padding(.bottom, all.isEmpty ? 0 : Space.xs)
+            .padding(.bottom, all.isEmpty ? 0 : 2)
             ForEach(all.prefix(limit)) { t in
                 HStack(spacing: Space.m) {
                     Button(intent: TickTaskIntent(taskId: t.id)) {
@@ -183,7 +183,7 @@ struct DayPlanWidgetView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .frame(height: 30)
+                .frame(height: 28)
                 .transition(.opacity)
             }
         }
