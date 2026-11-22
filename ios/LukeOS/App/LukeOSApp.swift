@@ -52,7 +52,7 @@ struct ToastView: View {
 
     var body: some View {
         if let toast = toasts.current {
-            HStack(spacing: 14) {
+            HStack(spacing: Space.row) {
                 Text(toast.text).textStyle(.preview, color: .text).lineLimit(2)
                 if let undo = toast.undo {
                     Button("Undo") {
@@ -63,10 +63,10 @@ struct ToastView: View {
                     .foregroundStyle(Color.ink)
                 }
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
+            .padding(.horizontal, Space.l)
+            .padding(.vertical, Space.m)
             .glassEffect(.regular, in: .capsule)
-            .padding(.bottom, 100)
+            .padding(.bottom, Size.bottomClearance)
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .id(toast.id)
             .animation(.snappy, value: toasts.current)

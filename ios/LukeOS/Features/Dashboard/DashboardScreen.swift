@@ -70,32 +70,47 @@ struct DashboardScreen: View {
         return h < 12 ? "Good morning, Luke" : h < 18 ? "Good afternoon, Luke" : "Good evening, Luke"
     }
 
+    private var areaPicker: some View {
+        @Bindable var app = app
+        return Picker("Area", selection: $app.area.animation(.snappy)) {
+            ForEach(Area.allCases, id: \.self) { Text($0.label).tag($0) }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    private var layoutPicker: some View {
+        Picker("Layout", selection: $layout.animation(.snappy)) {
+            Text("Today").tag("list")
+            Text("Board").tag("board")
+        }
+        .pickerStyle(.segmented)
+    }
+
     /// In the list, rows already sit inside the list's margin; on the board they don't.
     private func header(inList: Bool) -> some View {
         @Bindable var app = app
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(alignment: .leading, spacing: Space.l) {
             Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
                 .textStyle(.preview, color: .mutedText)
-            HStack(spacing: 10) {
-                Picker("Area", selection: $app.area.animation(.snappy)) {
-                    ForEach(Area.allCases, id: \.self) { Text($0.label).tag($0) }
+            // Side by side; stacked when the text is set very large.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Space.m) {
+                    areaPicker.frame(width: Size.areaSwitch)
+                    layoutPicker
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 140)
-                Picker("Layout", selection: $layout.animation(.snappy)) {
-                    Label("Today", systemImage: "list.bullet").tag("list")
-                    Label("Board", systemImage: "square.split.2x1").tag("board")
+                VStack(spacing: Space.s) {
+                    areaPicker
+                    layoutPicker
                 }
-                .pickerStyle(.segmented)
             }
             .onChange(of: layout) { _, new in
                 Task { await Repo.change("set_dashboard_view", ["layout": .string(new)]) }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, inList ? 2 : 20)
-        .padding(.top, 4)
-        .padding(.bottom, 6)
+        .padding(.horizontal, inList ? Space.xs : Space.page)
+        .padding(.top, Space.xs)
+        .padding(.bottom, Space.xs)
     }
 
     // MARK: Today
@@ -136,7 +151,7 @@ struct DashboardScreen: View {
             if let pad = home.data?.scratchPad {
                 Section {
                     ScratchPadEditor(noteId: pad.id, initial: pad.content)
-                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 10, trailing: 16))
+                        .listRowInsets(EdgeInsets(top: 6, leading: Space.inset, bottom: 14, trailing: Space.inset))
                 } header: {
                     Text("Scratch pad").textStyle(.heading, medium: true, color: .ink).textCase(nil)
                         .padding(.leading, -4)
@@ -144,11 +159,10 @@ struct DashboardScreen: View {
                 .listRowBackground(Color.card)
             }
 
-            Color.clear.frame(height: 60).listRowBackground(Color.clear)
+            Color.clear.frame(height: Size.fab).listRowBackground(Color.clear)
         }
         .listStyle(.insetGrouped)
-        .listSectionSpacing(18)
-        .environment(\.defaultMinListRowHeight, 44)
+        .listSectionSpacing(Space.section)
         .contentMargins(.top, 0, for: .scrollContent)
     }
 
@@ -157,13 +171,13 @@ struct DashboardScreen: View {
             adding = true
         } label: {
             Image(systemName: "plus")
-                .font(.system(size: 22, weight: .regular))
+                .font(.icon(.transport, weight: .regular))
                 .foregroundStyle(Color.ink)
-                .frame(width: 56, height: 56)
+                .frame(width: Size.fab, height: Size.fab)
         }
         .glassEffect(.regular.interactive(), in: .circle)
-        .padding(.trailing, 20)
-        .padding(.bottom, 16)
+        .padding(.trailing, Space.xl)
+        .padding(.bottom, Space.l)
         .accessibilityLabel("New task")
     }
 }
@@ -182,7 +196,7 @@ struct TaskCardSection: View {
         Section {
             ForEach(tasks) { task in
                 TaskRow(task: task, onOpen: { onOpen(task) })
-                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+                    .taskRowInsets()
                     .taskRowActions(task, onOpen: { onOpen(task) })
                     .draggable(task.id)
             }
@@ -191,10 +205,10 @@ struct TaskCardSection: View {
             }
             QuickAddRow(placeholder: "Add to \(title)", base: newTask)
         } header: {
-            HStack(spacing: 8) {
-                Image(systemName: symbol).font(.system(size: 14)).foregroundStyle(Color.icon)
+            HStack(spacing: Space.s) {
+                Image(systemName: symbol).font(.icon(.row)).foregroundStyle(Color.icon)
                 Text(title).textStyle(.heading, medium: true, color: .ink)
-                Text("\(tasks.count)").textStyle(.meta, color: .mutedText).monospacedDigit()
+                Text("\(tasks.count)").textStyle(.preview, color: .mutedText).monospacedDigit()
             }
             .textCase(nil)
             .padding(.leading, -4)

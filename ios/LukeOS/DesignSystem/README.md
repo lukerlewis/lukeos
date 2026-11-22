@@ -17,10 +17,14 @@ colours, fonts, sizes or radii of their own. Change a token or component here an
 | `Color.unread` | Blue 8 pt unread dots only |
 | `Color.project(name)` | A project's colour (dots and chips only) |
 | `Color.swipePrimary`, `.swipeSecondary` | Swipe action backgrounds |
-| `LukeType` (`.tag` 12, `.meta` 13, `.preview` 14, `.control` 15, `.body` 16, `.heading` 17, `.section` 22, `.title` 26, `.display` 40) | The type scale; sizes above 16 get -4% tracking; scales with Dynamic Type |
+| `LukeType` (`.tag` 13, `.meta` 14, `.preview` 15, `.control` 16 base, `.body` 16, `.heading` 18, `.section` 22, `.title` 28, `.display` 40) | The type scale (Luke, 22 Nov 2026: base 16); sizes above 16 get -4% tracking; scales with Dynamic Type |
+| `Space` (`xs` 4, `s` 8, `m` 12, `l` 16, `xl` 20, `xxl` 24, `section` 32, plus `line` 6, `row` 14, `inset` 16, `page` 20) | Every gap and padding |
+| `Size` (`tick` 24, `tap` 44, `chip` 26, `rowMin` 52, `artworkRow` 54, `transportMain` 76, `transportSide` 52, `fab` 60, `focusRing` 260, `focusTime` 60, `iconColumn` 28, …) | Fixed sizes of components |
+| `IconSize` / `Font.icon(_:)` (`meta` 15, `row` 19, `bar` 21, `transport` 24, `hero` 32) | SF Symbol sizes; nothing smaller than 15 beside text |
+| `.cardRow()`, `.taskRowInsets()` | Row padding in lists (12 or 14 above and below, 16 at the sides) |
 | `Font.geist(_:medium:)`, `Font.geistMono(size:)` | Geist Regular and Medium only |
 | `.textStyle(_:medium:color:)` | Applies a type step, its tracking and a colour |
-| `Radius.tag` 6, `.tile` 8, `.control` 10, `.container` 14, `.card` 22 | Corner radii |
+| `Radius.tag` 7, `.tile` 8, `.control` 10, `.container` 14, `.field` 16, `.bubble` 20, `.card` 22 | Corner radii |
 
 `Appearance.swift` puts Geist into the system's navigation titles, segmented controls and tab bar.
 

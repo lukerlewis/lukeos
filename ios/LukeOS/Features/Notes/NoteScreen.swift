@@ -26,7 +26,7 @@ struct NoteScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: Space.row) {
                 if let note {
                     if editable {
                         TextField("Title", text: $title, axis: .vertical)
@@ -65,12 +65,12 @@ struct NoteScreen: View {
                 } else if failed {
                     EmptyNote(text: "Couldn't open this note.", symbol: "exclamationmark.triangle")
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.section * 2)
                 }
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 8)
-            .padding(.bottom, 120)
+            .padding(.horizontal, Space.xxl)
+            .padding(.top, Space.s)
+            .padding(.bottom, Size.bottomClearance)
         }
         .scrollDismissesKeyboard(.interactively)
         .background(Color.card.ignoresSafeArea())
@@ -93,7 +93,7 @@ struct NoteScreen: View {
         }
         .sheet(isPresented: $showComments) {
             NavigationStack {
-                ScrollView { CommentThreads(targetType: "note", targetId: noteId).padding(20) }
+                ScrollView { CommentThreads(targetType: "note", targetId: noteId).padding(Space.xl) }
                     .background(Color.page)
                     .navigationTitle("Comments")
                     .navigationBarTitleDisplayMode(.inline)
@@ -108,7 +108,7 @@ struct NoteScreen: View {
     }
 
     private func meta(_ note: Note) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.s) {
             if let p = note.project { ProjectChip(name: p.name, color: p.color) }
             if let f = note.folder { Tag(f.name, symbol: "folder") }
             ClaudeMark(madeBy: note.madeBy)

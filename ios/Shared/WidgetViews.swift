@@ -39,9 +39,9 @@ struct TodayWidgetView: View {
     }
 
     private var small: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Space.xs) {
             Text("Today").font(.geist(.meta, medium: true)).foregroundStyle(Color.mutedText)
-            Text("\(tasks.count)").font(.geist(size: 40, medium: true)).foregroundStyle(Color.ink)
+            Text("\(tasks.count)").font(.geist(.display, medium: true)).foregroundStyle(Color.ink)
             Spacer(minLength: 0)
             if let next = tasks.first {
                 Text(next.title).font(.geist(.preview)).foregroundStyle(Color.text).lineLimit(2)
@@ -54,9 +54,9 @@ struct TodayWidgetView: View {
     }
 
     private var rectangular: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text("Today · \(tasks.count)").font(.geist(size: 13, medium: true))
-            ForEach(tasks.prefix(2)) { t in Text(t.title).font(.geist(size: 13)).lineLimit(1) }
+        VStack(alignment: .leading, spacing: Space.xs) {
+            Text("Today · \(tasks.count)").font(.geist(.tag, medium: true))
+            ForEach(tasks.prefix(2)) { t in Text(t.title).font(.geist(.tag)).lineLimit(1) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -68,29 +68,29 @@ struct TodayWidgetView: View {
                 Text("\(tasks.count)").font(.geist(.meta)).foregroundStyle(Color.mutedText)
                 Spacer()
                 Link(destination: URL(string: "lukeos://add-task")!) {
-                    Image(systemName: "plus").font(.system(size: 14)).foregroundStyle(Color.ink)
-                        .frame(width: 28, height: 28).background(Color.muted, in: .circle)
+                    Image(systemName: "plus").font(.icon(.meta)).foregroundStyle(Color.ink)
+                        .frame(width: Size.iconColumn, height: Size.iconColumn).background(Color.muted, in: .circle)
                 }
             }
-            .padding(.bottom, 6)
+            .padding(.bottom, Space.line)
             if tasks.isEmpty {
                 Spacer()
                 Text("All done").font(.geist(.preview)).foregroundStyle(Color.mutedText).frame(maxWidth: .infinity)
                 Spacer()
             }
             ForEach(tasks.prefix(limit)) { t in
-                HStack(spacing: 10) {
+                HStack(spacing: Space.m) {
                     Button(intent: TickTaskIntent(taskId: t.id)) {
-                        Circle().strokeBorder(Color.icon, lineWidth: 1.5).frame(width: 18, height: 18)
+                        Circle().strokeBorder(Color.icon, lineWidth: 1.5).frame(width: Size.tick - 4, height: Size.tick - 4)
                     }
                     .buttonStyle(.plain)
                     Link(destination: URL(string: "lukeos://open?path=/?task=\(t.id)")!) {
                         Text(t.title).font(.geist(.preview)).foregroundStyle(Color.text).lineLimit(1)
                     }
                     Spacer(minLength: 0)
-                    if let c = t.projectColor { Circle().fill(Color.project(c)).frame(width: 6, height: 6) }
+                    if let c = t.projectColor { Circle().fill(Color.project(c)).frame(width: Size.dotSmall, height: Size.dotSmall) }
                 }
-                .frame(height: 30)
+                .frame(height: Size.smallButton - 4)
             }
             Spacer(minLength: 0)
         }
@@ -121,7 +121,7 @@ struct FocusActivityView: View {
     var state: FocusActivityAttributes.ContentState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Space.m) {
             HStack(alignment: .firstTextBaseline) {
                 Text(state.label).font(.geist(.control, medium: true)).foregroundStyle(Color.mutedText)
                 Spacer()
@@ -130,7 +130,7 @@ struct FocusActivityView: View {
                     else if let start = state.startedAt { Text(start, style: .timer) }
                     else { Text(state.pausedText ?? "") }
                 }
-                .font(.geist(size: 40, medium: true))
+                .font(.geist(.display, medium: true))
                 .monospacedDigit()
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(Color.ink)

@@ -34,8 +34,8 @@ struct MoreScreen: View {
                 Section {
                     ForEach(store.projects) { p in
                         NavigationLink(value: MoreRoute.project(p.id)) {
-                            HStack(spacing: 12) {
-                                ProjectDot(color: p.color, size: 10).frame(width: 24)
+                            HStack(spacing: Space.row) {
+                                ProjectDot(color: p.color, size: Size.projectDot + 2).frame(width: Size.iconColumn)
                                 Text(p.name).textStyle(.control, color: .text)
                                 ClaudeMark(madeBy: p.madeBy)
                                 Spacer()
@@ -98,8 +98,8 @@ struct MoreScreen: View {
 
     private func row(_ title: String, _ symbol: String, _ route: MoreRoute, badge: Int = 0, count: Int = 0) -> some View {
         NavigationLink(value: route) {
-            HStack(spacing: 12) {
-                Image(systemName: symbol).foregroundStyle(Color.icon).frame(width: 24)
+            HStack(spacing: Space.row) {
+                Image(systemName: symbol).font(.icon(.row)).foregroundStyle(Color.icon).frame(width: Size.iconColumn)
                 Text(title).textStyle(.control, color: .text)
                 Spacer()
                 if count > 0 { UnreadDot() }

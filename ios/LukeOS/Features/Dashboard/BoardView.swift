@@ -12,7 +12,7 @@ struct BoardView: View {
 
     var body: some View {
         ScrollView(.horizontal) {
-            LazyHStack(alignment: .top, spacing: 12) {
+            LazyHStack(alignment: .top, spacing: Space.m) {
                 ForEach(columns, id: \.id) { column in
                     let here = store.sorted(tasks.filter { (byStatus ? $0.status.rawValue : $0.bucket.rawValue) == column.id })
                     BoardColumnView(
@@ -39,8 +39,8 @@ struct BoardView: View {
                 }
             }
             .scrollTargetLayout()
-            .padding(.horizontal, 20)
-            .padding(.bottom, 90)
+            .padding(.horizontal, Space.xl)
+            .padding(.bottom, Size.bottomClearance)
         }
         .scrollTargetBehavior(.viewAligned)
         .scrollIndicators(.hidden)
@@ -56,35 +56,35 @@ struct BoardColumnView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: Space.s) {
                 Text(title).textStyle(.heading, medium: true, color: .ink)
                 Text("\(tasks.count)").textStyle(.meta, color: .mutedText).monospacedDigit()
                 Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, Space.inset)
+            .padding(.vertical, Space.l)
             Divider().overlay(Color.hairline)
             if tasks.isEmpty {
                 Text("Nothing here.").textStyle(.preview, color: .mutedText)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
+                    .padding(Space.l)
             }
             ForEach(tasks) { task in
                 TaskRow(task: task, onOpen: { onOpen(task) })
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, Space.inset)
+                    .padding(.vertical, Space.row)
                     .background(Color.card)
                     .draggable(task.id) {
                         Text(task.title).textStyle(.control, medium: true, color: .ink)
-                            .padding(.horizontal, 16).padding(.vertical, 12)
-                            .background(Color.card, in: .rect(cornerRadius: 14))
+                            .padding(.horizontal, Space.l).padding(.vertical, Space.m)
+                            .background(Color.card, in: .rect(cornerRadius: Radius.container))
                     }
                     .contextMenu { TaskMenu(task: task, onOpen: { onOpen(task) }) }
-                Divider().overlay(Color.hairline).padding(.leading, 58)
+                Divider().overlay(Color.hairline).padding(.leading, Space.inset + Size.tickColumn + Space.row)
             }
             QuickAddRow(placeholder: "Add a task", base: newTask)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
+                .padding(.horizontal, Space.inset)
+                .padding(.vertical, Space.m)
         }
         .background(highlighted ? Color.muted : Color.card, in: .rect(cornerRadius: Radius.card))
         .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(highlighted ? Color.strokeStrong : Color.hairline, lineWidth: 1))

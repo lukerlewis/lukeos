@@ -43,7 +43,7 @@ struct FocusLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: FocusActivityAttributes.self) { context in
             FocusActivityView(state: context.state)
-                .padding(18)
+                .padding(Space.l)
                 .activityBackgroundTint(Color.card)
                 .activitySystemActionForegroundColor(Color.ink)
                 .widgetURL(URL(string: "lukeos://open?path=/focus"))
@@ -52,7 +52,7 @@ struct FocusLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     Text(context.state.label).font(.geist(.preview, medium: true))
                 }
-                DynamicIslandExpandedRegion(.trailing) { time(context.state).font(.geist(size: 22, medium: true)).monospacedDigit() }
+                DynamicIslandExpandedRegion(.trailing) { time(context.state).font(.geist(.section, medium: true)).monospacedDigit() }
             } compactLeading: {
                 Image(systemName: "timer")
             } compactTrailing: {

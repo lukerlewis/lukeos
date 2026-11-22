@@ -142,12 +142,12 @@ struct MessagesScreen: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 2) {
+                LazyVStack(spacing: Space.xs) {
                     if !notificationsAsked { notificationBanner }
                     ForEach(Array(model.messages.enumerated()), id: \.element.id) { i, m in
                         if i == 0 || gap(model.messages[i - 1], m) {
                             Text(stamp(m.createdAt)).textStyle(.tag, medium: true, color: .mutedText)
-                                .padding(.top, 14).padding(.bottom, 6)
+                                .padding(.top, Space.row).padding(.bottom, Space.line)
                         }
                         MessageBubble(message: m, grouped: i > 0 && model.messages[i - 1].from == m.from && !gap(model.messages[i - 1], m),
                                       onAttachment: open, onReplyTap: { id in withAnimation { proxy.scrollTo(id, anchor: .center) } })
@@ -156,12 +156,12 @@ struct MessagesScreen: View {
                         if m.id == lastUnanswered?.id {
                             Text(deliveredLine).textStyle(.tag, color: .mutedText)
                                 .frame(maxWidth: .infinity, alignment: .trailing)
-                                .padding(.trailing, 6).padding(.top, 2)
+                                .padding(.trailing, Space.line).padding(.top, Space.xs)
                         }
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+                .padding(.horizontal, Space.m)
+                .padding(.bottom, Space.s)
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
@@ -205,7 +205,7 @@ struct MessagesScreen: View {
     }
 
     private var notificationBanner: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Space.m) {
             Image(systemName: "bell.badge").foregroundStyle(Color.ink)
             Text("Get a notification when Claude replies.").textStyle(.preview, color: .text)
             Spacer()
@@ -218,9 +218,9 @@ struct MessagesScreen: View {
             .font(.geist(.preview, medium: true))
             .buttonStyle(.bordered).tint(.ink)
         }
-        .padding(14)
+        .padding(Space.row)
         .background(Color.raised, in: .rect(cornerRadius: Radius.container))
-        .padding(.vertical, 8)
+        .padding(.vertical, Space.s)
     }
 
     @ViewBuilder
@@ -238,11 +238,11 @@ struct MessagesScreen: View {
     }
 
     private var composer: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Space.s) {
             if let r = replyingTo ?? editing {
-                HStack(spacing: 8) {
-                    Rectangle().fill(Color.strokeStrong).frame(width: 2, height: 28)
-                    VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: Space.s) {
+                    Rectangle().fill(Color.strokeStrong).frame(width: 2, height: Size.smallButton - Space.s)
+                    VStack(alignment: .leading, spacing: Space.xs) {
                         Text(editing != nil ? "Editing" : "Replying to \(r.mine ? "yourself" : "Claude")").textStyle(.tag, medium: true, color: .mutedText)
                         Text(r.text.isEmpty ? "Attachment" : r.text).textStyle(.meta, color: .subtleText).lineLimit(1)
                     }
@@ -251,17 +251,17 @@ struct MessagesScreen: View {
                         .foregroundStyle(Color.icon)
                         .accessibilityLabel("Cancel")
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, Space.s)
             }
             if !pending.isEmpty || uploading {
                 ScrollView(.horizontal) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Space.s) {
                         ForEach(pending) { a in
                             ZStack(alignment: .topTrailing) {
                                 if a.kind == "image" {
                                     RemoteImage(path: a.thumb ?? a.url, contentMode: .fill).frame(width: 64, height: 64).clipShape(.rect(cornerRadius: 12))
                                 } else {
-                                    FileChip(name: a.name).frame(height: 64)
+                                    FileChip(name: a.name).frame(height: Size.attachmentThumb)
                                 }
                                 Button { pending.removeAll { $0.id == a.id } } label: {
                                     Image(systemName: "xmark.circle.fill").symbolRenderingMode(.palette).foregroundStyle(Color.onSolid, Color.ink)
@@ -269,18 +269,18 @@ struct MessagesScreen: View {
                                 .offset(x: 6, y: -6)
                             }
                         }
-                        if uploading { ProgressView().frame(width: 64, height: 64) }
+                        if uploading { ProgressView().frame(width: Size.attachmentThumb, height: Size.attachmentThumb) }
                     }
-                    .padding(.horizontal, 8).padding(.top, 6)
+                    .padding(.horizontal, Space.s).padding(.top, Space.line)
                 }
                 .scrollIndicators(.hidden)
             }
-            HStack(alignment: .bottom, spacing: 8) {
+            HStack(alignment: .bottom, spacing: Space.s) {
                 Menu {
                     Button("Photos", systemImage: "photo.on.rectangle") { pickingPhotos = true }
                     Button("Files", systemImage: "folder") { pickingFile = true }
                 } label: {
-                    Image(systemName: "plus").font(.system(size: 18)).frame(width: 40, height: 40)
+                    Image(systemName: "plus").font(.icon(.row)).frame(width: Size.composerButton, height: Size.composerButton)
                 }
                 .buttonStyle(.glass)
                 .buttonBorderShape(.circle)
@@ -292,26 +292,26 @@ struct MessagesScreen: View {
                         .font(.geist(.body))
                         .lineLimit(1...6)
                         .focused($focused)
-                        .padding(.vertical, 9)
-                        .padding(.leading, 14)
+                        .padding(.vertical, Space.s)
+                        .padding(.leading, Space.row)
                     if canSend {
                         Button(action: send) {
-                            Image(systemName: "arrow.up").font(.system(size: 15, weight: .medium))
+                            Image(systemName: "arrow.up").font(.icon(.meta, weight: .medium))
                                 .foregroundStyle(Color.onSolid)
-                                .frame(width: 30, height: 30)
+                                .frame(width: Size.sendButton, height: Size.sendButton)
                                 .background(Color.ink, in: .circle)
                         }
-                        .padding(5)
+                        .padding(Space.xs)
                         .transition(.scale.combined(with: .opacity))
                         .accessibilityLabel("Send")
                     }
                 }
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 20))
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: Radius.bubble))
                 .animation(.snappy, value: canSend)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 8)
+        .padding(.horizontal, Space.m)
+        .padding(.bottom, Space.s)
     }
 
     private var canSend: Bool { !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !pending.isEmpty }
@@ -396,11 +396,11 @@ struct MessageBubble: View {
 
     var body: some View {
         let mine = message.mine
-        VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
+        VStack(alignment: mine ? .trailing : .leading, spacing: Space.xs) {
             if message.unsent == true {
                 Text(mine ? "You unsent a message" : "Claude unsent a message")
                     .textStyle(.meta, color: .mutedText).italic()
-                    .padding(.vertical, 6)
+                    .padding(.vertical, Space.line)
                     .frame(maxWidth: .infinity)
             } else {
                 if let r = message.replyTo {
@@ -408,18 +408,18 @@ struct MessageBubble: View {
                         Text(r.unavailable == true ? "Original message unavailable" : (r.snippet ?? ""))
                             .textStyle(.meta, color: .mutedText)
                             .lineLimit(2)
-                            .padding(.horizontal, 12).padding(.vertical, 7)
-                            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stroke, lineWidth: 1))
+                            .padding(.horizontal, Space.m).padding(.vertical, Space.s)
+                            .overlay(RoundedRectangle(cornerRadius: Radius.field).strokeBorder(Color.stroke, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 6)
+                    .padding(.top, Space.line)
                 }
                 ForEach(message.attachments) { a in
                     if a.kind == "image" {
                         Button { onAttachment(a) } label: {
                             RemoteImage(path: a.thumb ?? a.url, contentMode: .fill)
-                                .frame(width: 220, height: 220 * CGFloat((a.height ?? 3) / max(a.width ?? 4, 1)))
-                                .clipShape(.rect(cornerRadius: 18))
+                                .frame(width: Size.imageBubble, height: Size.imageBubble * CGFloat((a.height ?? 3) / max(a.width ?? 4, 1)))
+                                .clipShape(.rect(cornerRadius: Radius.bubble))
                         }
                         .buttonStyle(.plain)
                     } else {
@@ -431,38 +431,38 @@ struct MessageBubble: View {
                         .font(.geist(.body))
                         .foregroundStyle(mine ? Color.onSolid : Color.text)
                         .tint(mine ? Color.onSolid : Color.ink)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 9)
-                        .background(mine ? Color.ink : Color.muted, in: .rect(cornerRadius: 20))
+                        .padding(.horizontal, Space.row)
+                        .padding(.vertical, Space.s)
+                        .background(mine ? Color.ink : Color.muted, in: .rect(cornerRadius: Radius.bubble))
                         .opacity(message.sending == true ? 0.6 : 1)
                         .textSelection(.enabled)
                 }
                 if let link = message.link {
                     Button { app.open(path(link)) } label: {
-                        HStack(spacing: 10) {
+                        HStack(spacing: Space.m) {
                             Image(systemName: symbol(link.type)).foregroundStyle(Color.icon).frame(width: 22)
-                            VStack(alignment: .leading, spacing: 1) {
+                            VStack(alignment: .leading, spacing: Space.xs) {
                                 Text(link.title ?? link.type.capitalized).textStyle(.preview, medium: true, color: .ink).lineLimit(1)
                                 Text(link.type.capitalized).textStyle(.tag, color: .mutedText)
                             }
                             Spacer(minLength: 0)
-                            Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(Color.icon)
+                            Image(systemName: "chevron.right").font(.icon(.meta)).foregroundStyle(Color.icon)
                         }
-                        .padding(12)
-                        .frame(width: 240)
-                        .background(Color.card, in: .rect(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stroke, lineWidth: 1))
+                        .padding(Space.m)
+                        .frame(maxWidth: 260, alignment: .leading)
+                        .background(Color.card, in: .rect(cornerRadius: Radius.field))
+                        .overlay(RoundedRectangle(cornerRadius: Radius.field).strokeBorder(Color.stroke, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                 }
                 if message.editedAt != nil {
-                    Text("Edited").textStyle(.tag, color: .mutedText).padding(.horizontal, 6)
+                    Text("Edited").textStyle(.tag, color: .mutedText).padding(.horizontal, Space.line)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: mine ? .trailing : .leading)
-        .padding(mine ? .leading : .trailing, 54)
-        .padding(.top, grouped ? 0 : 6)
+        .padding(mine ? .leading : .trailing, Size.bubbleGutter)
+        .padding(.top, grouped ? 0 : Space.m)
     }
 
     private func path(_ l: Message.Link) -> String {
@@ -494,17 +494,17 @@ struct FileChip: View {
     var name: String
     var bytes: Int?
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: name.lowercased().hasSuffix(".pdf") ? "doc.richtext" : "doc").font(.system(size: 20)).foregroundStyle(Color.icon)
-            VStack(alignment: .leading, spacing: 1) {
+        HStack(spacing: Space.m) {
+            Image(systemName: name.lowercased().hasSuffix(".pdf") ? "doc.richtext" : "doc").font(.icon(.bar)).foregroundStyle(Color.icon)
+            VStack(alignment: .leading, spacing: Space.xs) {
                 Text(name).textStyle(.preview, medium: true, color: .ink).lineLimit(1)
                 if let bytes { Text(ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)).textStyle(.tag, color: .mutedText) }
             }
         }
-        .padding(12)
+        .padding(Space.m)
         .frame(maxWidth: 240, alignment: .leading)
-        .background(Color.card, in: .rect(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stroke, lineWidth: 1))
+        .background(Color.card, in: .rect(cornerRadius: Radius.field))
+        .overlay(RoundedRectangle(cornerRadius: Radius.field).strokeBorder(Color.stroke, lineWidth: 1))
     }
 }
 

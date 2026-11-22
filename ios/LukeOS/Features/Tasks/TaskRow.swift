@@ -10,18 +10,18 @@ struct TaskRow: View {
     private var today: String { AppModel.shared.today }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: Space.row) {
             Button {
                 store.toggle(task)
             } label: {
-                StatusCircle(status: task.status)
-                    .frame(width: 30, height: 24, alignment: .topLeading)
+                StatusCircle(status: task.status, size: Size.tick)
+                    .frame(width: Size.tickColumn, height: Size.tick + 2, alignment: .topLeading)
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(task.status == .done ? "Mark not done" : "Mark done")
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Space.line) {
                 Text(task.title)
                     .textStyle(.control, color: task.status == .done ? .mutedText : .text)
                     .strikethrough(task.status == .done, color: .mutedText)
@@ -30,7 +30,7 @@ struct TaskRow: View {
                 if hasMeta { meta }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 1)
+            .padding(.top, Space.xs)
         }
         .contentShape(.rect)
         .onTapGesture(perform: onOpen)
@@ -42,19 +42,19 @@ struct TaskRow: View {
     }
 
     private var meta: some View {
-        FlowRow(spacing: 6) {
+        FlowRow(spacing: Space.line) {
             if showProject, let p = task.project { ProjectChip(name: p.name, color: p.color) }
             if let p = task.priority { PriorityChip(priority: p) }
             if task.area == .work, let e = task.effort { FocusChip(effort: e) }
-            if let due = task.dueDate { DueLabel(due: due, today: today).frame(height: 22) }
+            if let due = task.dueDate { DueLabel(due: due, today: today).frame(minHeight: Space.chip) }
             if let r = task.repeat {
-                Image(systemName: "repeat").font(.system(size: 11)).foregroundStyle(Color.mutedText)
-                    .frame(height: 22).accessibilityLabel(Repeats.name(r))
+                Image(systemName: "repeat").font(.icon(.meta)).foregroundStyle(Color.mutedText)
+                    .frame(minHeight: Space.chip).accessibilityLabel(Repeats.name(r))
             }
             if task.notes?.isEmpty == false {
-                Image(systemName: "text.alignleft").font(.system(size: 11)).foregroundStyle(Color.mutedText).frame(height: 22)
+                Image(systemName: "text.alignleft").font(.icon(.meta)).foregroundStyle(Color.mutedText).frame(minHeight: Space.chip)
             }
-            ClaudeMark(madeBy: task.madeBy).frame(height: 22)
+            ClaudeMark(madeBy: task.madeBy).frame(minHeight: Space.chip)
         }
     }
 }

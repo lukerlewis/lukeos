@@ -13,16 +13,16 @@ struct SignInView: View {
             Spacer()
             Image("Logo")
                 .resizable()
-                .frame(width: 88, height: 88)
-                .clipShape(.rect(cornerRadius: 20))
-                .padding(.bottom, 22)
+                .frame(width: Size.logo, height: Size.logo)
+                .clipShape(.rect(cornerRadius: Radius.logo))
+                .padding(.bottom, Space.xxl)
             Text("LukeOS").textStyle(.title, medium: true, color: .ink)
             Text("Enter the code from Settings › Devices.")
                 .textStyle(.preview, color: .mutedText)
-                .padding(.top, 6)
+                .padding(.top, Space.line)
 
             TextField("", text: $code, prompt: Text("ABCDE-23456").foregroundStyle(Color.disabled))
-                .font(.geistMono(size: 22))
+                .font(.geistMono(.section))
                 .multilineTextAlignment(.center)
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
@@ -30,10 +30,10 @@ struct SignInView: View {
                 .submitLabel(.return)
                 .focused($focused)
                 .onSubmit(submit)
-                .padding(.vertical, 14)
-                .background(Color.card, in: .rect(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.strokeStrong, lineWidth: 1))
-                .padding(.top, 28)
+                .padding(.vertical, Space.row)
+                .background(Color.card, in: .rect(cornerRadius: Radius.field))
+                .overlay(RoundedRectangle(cornerRadius: Radius.field).strokeBorder(Color.strokeStrong, lineWidth: 1))
+                .padding(.top, Space.section)
                 .onChange(of: code) { _, new in
                     error = nil
                     let f = format(new.contains("/") ? String(new.split(separator: "/").last ?? "") : new)
@@ -49,10 +49,10 @@ struct SignInView: View {
             }
             .buttonBorderShape(.capsule)
             .labelStyle(.titleAndIcon)
-            .padding(.top, 14)
+            .padding(.top, Space.row)
 
             if let error {
-                Text(error).textStyle(.meta, color: .notification).padding(.top, 10)
+                Text(error).textStyle(.meta, color: .notification).padding(.top, Space.m)
             }
 
             Spacer()
@@ -62,9 +62,9 @@ struct SignInView: View {
             }
             .buttonStyle(.solid)
             .disabled(code.filter(\.isLetter).count + code.filter(\.isNumber).count < 6 || busy)
-            .padding(.bottom, 8)
+            .padding(.bottom, Space.s)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, Space.xxl)
         .frame(maxWidth: .infinity)
         .background(Color.page.ignoresSafeArea())
         .onAppear { focused = true }

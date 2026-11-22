@@ -47,13 +47,13 @@ struct InspirationScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 14) {
+            VStack(spacing: Space.row) {
                 if !tags.isEmpty { tagBar }
                 masonry
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, Space.m)
                 if items.isEmpty { EmptyNote(text: "Nothing saved yet.", symbol: "lightbulb") }
             }
-            .padding(.bottom, 100)
+            .padding(.bottom, Size.bottomClearance)
         }
         .pageBackground()
         .navigationTitle("Inspiration")
@@ -86,13 +86,13 @@ struct InspirationScreen: View {
 
     private var tagBar: some View {
         ScrollView(.horizontal) {
-            HStack(spacing: 8) {
+            HStack(spacing: Space.s) {
                 ChipToggle(label: "All", on: tag == nil) { tag = nil }
                 ForEach(tags, id: \.tag) { (t: TagCount) in
                     tagChip(t)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, Space.l)
         }
         .scrollIndicators(.hidden)
     }
@@ -105,14 +105,14 @@ struct InspirationScreen: View {
 
     private var masonry: some View {
         let columns = split(shown)
-        return HStack(alignment: .top, spacing: 10) {
+        return HStack(alignment: .top, spacing: Space.m) {
             column(columns[0])
             column(columns[1])
         }
     }
 
     private func column(_ list: [InspirationItem]) -> some View {
-        LazyVStack(spacing: 10) {
+        LazyVStack(spacing: Space.m) {
             ForEach(list) { item in
                 NavigationLink(value: MoreRoute.inspirationItem(item.id)) { InspirationCard(item: item) }
                     .buttonStyle(.plain)
@@ -181,14 +181,14 @@ struct InspirationCard: View {
                     .clipped()
             }
             if item.kind == "text", let body = item.body {
-                Text(body).textStyle(.preview, color: .text).padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                Text(body).textStyle(.preview, color: .text).padding(Space.row).frame(maxWidth: .infinity, alignment: .leading)
             } else if item.image == nil {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: Space.xs) {
                     Image(systemName: item.kind == "link" ? "link" : item.kind == "video" ? "play.rectangle" : "doc").foregroundStyle(Color.icon)
                     Text(item.title ?? item.url ?? "").textStyle(.preview, medium: true, color: .ink).lineLimit(3)
                     if let site = item.site { Text(site).textStyle(.tag, color: .mutedText) }
                 }
-                .padding(14)
+                .padding(Space.row)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
@@ -207,7 +207,7 @@ struct InspirationDetail: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: Space.row) {
                 if let item {
                     if let image = item.image {
                         RemoteImage(path: image).clipShape(.rect(cornerRadius: Radius.container))
@@ -221,8 +221,8 @@ struct InspirationDetail: View {
                             .font(.geist(.preview, medium: true)).foregroundStyle(Color.subtleText)
                     }
                     if let s = item.summary, !s.isEmpty {
-                        HStack(alignment: .top, spacing: 6) {
-                            Image(systemName: "sparkle").font(.system(size: 11)).foregroundStyle(Color.mutedText)
+                        HStack(alignment: .top, spacing: Space.line) {
+                            Image(systemName: "sparkle").font(.icon(.meta)).foregroundStyle(Color.mutedText)
                             Text(s).textStyle(.preview, color: .mutedText)
                         }
                     }
@@ -231,15 +231,15 @@ struct InspirationDetail: View {
                     }
                     TextField("Note", text: $note, axis: .vertical)
                         .font(.geist(.body))
-                        .padding(12)
+                        .padding(Space.m)
                         .background(Color.card, in: .rect(cornerRadius: Radius.control))
                         .onSubmit { save() }
                 } else {
-                    ProgressView().frame(maxWidth: .infinity).padding(.top, 80)
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, Space.section * 2)
                 }
             }
-            .padding(16)
-            .padding(.bottom, 100)
+            .padding(Space.l)
+            .padding(.bottom, Size.bottomClearance)
         }
         .pageBackground()
         .navigationBarTitleDisplayMode(.inline)

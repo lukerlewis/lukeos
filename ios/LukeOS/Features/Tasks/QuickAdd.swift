@@ -12,12 +12,12 @@ struct QuickAddRow: View {
     private var entry: SmartEntry { SmartEntry.parse(text, today: AppModel.shared.today, ignore: ignored) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: Space.s) {
+            HStack(spacing: Space.m) {
                 Image(systemName: "plus")
-                    .font(.system(size: 15))
+                    .font(.icon(.row))
                     .foregroundStyle(Color.icon)
-                    .frame(width: 30)
+                    .frame(width: Size.tickColumn)
                 TextField(placeholder, text: $text)
                     .font(.geist(.control))
                     .foregroundStyle(Color.text)
@@ -27,10 +27,10 @@ struct QuickAddRow: View {
             }
             if focused, !entry.matches.isEmpty {
                 SmartChips(entry: entry) { ignored.insert($0.lowercased()) }
-                    .padding(.leading, 42)
+                    .padding(.leading, Size.tickColumn + Space.row)
             }
         }
-        .frame(minHeight: 36)
+        .frame(minHeight: Size.tap)
         .animation(.snappy, value: entry.matches.count)
     }
 
@@ -58,21 +58,21 @@ struct SmartChips: View {
     var onIgnore: (String) -> Void
 
     var body: some View {
-        FlowRow(spacing: 6) {
+        FlowRow(spacing: Space.line) {
             ForEach(entry.matches, id: \.text) { m in
                 Button {
                     onIgnore(m.text)
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Space.xs) {
                         Image(systemName: m.kind == .repeat ? "repeat" : m.kind == .list ? "tray" : "calendar")
-                            .font(.system(size: 10.5))
+                            .font(.icon(.meta))
                         Text(label(m))
-                        Image(systemName: "xmark").font(.system(size: 8.5, weight: .medium)).foregroundStyle(Color.mutedText)
+                        Image(systemName: "xmark").font(.icon(.meta, weight: .medium)).foregroundStyle(Color.mutedText)
                     }
                     .font(.geist(.tag, medium: true))
                     .foregroundStyle(Color.subtleText)
-                    .padding(.horizontal, 7)
-                    .frame(height: 24)
+                    .padding(.horizontal, Space.s)
+                    .frame(minHeight: Space.chip + 2)
                     .background(Color.raised, in: .rect(cornerRadius: Radius.tag))
                 }
                 .buttonStyle(.plain)

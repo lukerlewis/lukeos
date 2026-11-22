@@ -21,9 +21,10 @@ struct TaskEditor: View {
             Form {
                 Section {
                     TextField("Task name", text: $title, axis: .vertical)
-                        .font(.geist(.section, medium: true))
-                        .tracking(-0.88)
+                        .font(.geist(.heading, medium: true))
+                        .tracking(LukeType.heading.tracking)
                         .foregroundStyle(Color.ink)
+                        .padding(.vertical, Space.xs)
                         .onSubmit(saveTitle)
                         .submitLabel(.done)
                         .onChange(of: title) { _, new in
@@ -35,61 +36,46 @@ struct TaskEditor: View {
                     }
                 }
 
-                Section("Status") {
+                // The two things changed most, as switches; everything else as menus in one compact list.
+                Section {
                     segmented(TaskStatus.allCases, task.status, \.label) { set(["status": .string($0.rawValue)]) }
-                }
-                Section("List") {
                     segmented(Bucket.allCases, task.bucket, \.label) { set(["bucket": .string($0.rawValue)]) }
                 }
-                Section("Due") { dueControls }
+                Section { dueControls }
                 Section {
-                    Picker("Repeat", selection: Binding(get: { task.repeat ?? "" }, set: { set(["repeat": $0.isEmpty ? .null : .string($0)]) })) {
+                    menuRow("Repeat", "repeat", Binding(get: { task.repeat ?? "" }, set: { set(["repeat": $0.isEmpty ? .null : .string($0)]) })) {
                         Text("Never").tag("")
                         ForEach(Repeats.named, id: \.0) { Text($0.1).tag($0.0) }
                         Divider()
-                        ForEach(["every_2_days", "every_3_days", "every_2_weeks", "every_3_weeks", "every_3_months", "every_6_months"], id: \.self) {
-                            Text(Repeats.name($0)).tag($0)
-                        }
-                        if let r = task.repeat, !Repeats.named.contains(where: { $0.0 == r }),
-                           !["every_2_days", "every_3_days", "every_2_weeks", "every_3_weeks", "every_3_months", "every_6_months"].contains(r) {
+                        ForEach(Self.gaps, id: \.self) { Text(Repeats.name($0)).tag($0) }
+                        if let r = task.repeat, !Repeats.named.contains(where: { $0.0 == r }), !Self.gaps.contains(r) {
                             Text(Repeats.name(r)).tag(r)
                         }
                     }
-                    .font(.geist(.control))
-                }
-                Section("Priority") {
-                    segmented([Priority?.none] + Priority.allCases.map(Optional.some), task.priority, { $0?.label ?? "None" }) {
-                        set(["priority": .optional($0?.rawValue)])
+                    menuRow("Priority", "flame", Binding(get: { task.priority?.rawValue ?? "" }, set: { set(["priority": $0.isEmpty ? .null : .string($0)]) })) {
+                        Text("None").tag("")
+                        ForEach(Priority.allCases.reversed(), id: \.self) { Text($0.label).tag($0.rawValue) }
                     }
-                }
-                if task.area == .work {
-                    Section("Focus type") {
-                        segmented([Effort?.none] + Effort.allCases.map(Optional.some), task.effort, { $0?.label ?? "None" }) {
-                            set(["effort": .optional($0?.rawValue)])
-                        }
-                    }
-                    Section("Signal or noise") {
-                        segmented(Lane.allCases, task.lane, \.label) { set(["lane": .string($0.rawValue)]) }
-                    }
-                    Section {
-                        Picker("Project", selection: Binding(get: { task.project?.id ?? "" }, set: { set(["projectId": $0.isEmpty ? .null : .string($0)]) })) {
+                    if task.area == .work {
+                        menuRow("Focus type", "scope", Binding(get: { task.effort?.rawValue ?? "" }, set: { set(["effort": $0.isEmpty ? .null : .string($0)]) })) {
                             Text("None").tag("")
-                            ForEach(store.projects(in: .work)) { p in
-                                Label { Text(p.name) } icon: { Image(systemName: "circle.fill").foregroundStyle(Color.project(p.color)) }.tag(p.id)
-                            }
+                            ForEach(Effort.allCases, id: \.self) { Text($0.label).tag($0.rawValue) }
                         }
-                        .font(.geist(.control))
+                        menuRow("Signal or noise", "dot.radiowaves.left.and.right", Binding(get: { task.lane.rawValue }, set: { set(["lane": .string($0)]) })) {
+                            ForEach(Lane.allCases, id: \.self) { Text($0.label).tag($0.rawValue) }
+                        }
+                        menuRow("Project", "circle.grid.2x1", Binding(get: { task.project?.id ?? "" }, set: { set(["projectId": $0.isEmpty ? .null : .string($0)]) })) {
+                            Text("None").tag("")
+                            ForEach(store.projects(in: .work)) { p in Text(p.name).tag(p.id) }
+                        }
+                    } else {
+                        menuRow("Time of day", "sun.max", Binding(get: { task.timeOfDay.rawValue }, set: { set(["timeOfDay": .string($0)]) })) {
+                            ForEach(TimeOfDay.allCases, id: \.self) { Text($0.label).tag($0.rawValue) }
+                        }
                     }
-                } else {
-                    Section("Time of day") {
-                        segmented(TimeOfDay.allCases, task.timeOfDay, \.label) { set(["timeOfDay": .string($0.rawValue)]) }
+                    menuRow("Area", "square.split.2x1", Binding(get: { task.area.rawValue }, set: { set(["area": .string($0)]) })) {
+                        ForEach(Area.allCases, id: \.self) { Text($0.label).tag($0.rawValue) }
                     }
-                }
-                Section {
-                    Picker("Area", selection: Binding(get: { task.area }, set: { set(["area": .string($0.rawValue)]) })) {
-                        ForEach(Area.allCases, id: \.self) { Text($0.label).tag($0) }
-                    }
-                    .font(.geist(.control))
                 }
 
                 Section("Notes") {
@@ -101,7 +87,7 @@ struct TaskEditor: View {
 
                 Section("Comments") {
                     CommentThreads(targetType: "task", targetId: taskId)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, Space.line)
                 }
 
                 Section {
@@ -113,7 +99,7 @@ struct TaskEditor: View {
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
             .background(Color.page)
-            .listSectionSpacing(14)
+            .listSectionSpacing(Space.xxl)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -145,18 +131,37 @@ struct TaskEditor: View {
 
     // MARK: Pieces
 
+    static let gaps = ["every_2_days", "every_3_days", "every_2_weeks", "every_3_weeks", "every_3_months", "every_6_months"]
+
+    /// A settings-style row: icon, name, and the choice on the right as a menu.
+    private func menuRow<C: View>(_ title: String, _ symbol: String, _ selection: Binding<String>, @ViewBuilder options: () -> C) -> some View {
+        Picker(selection: Binding(get: { selection.wrappedValue }, set: { Haptics.select(); selection.wrappedValue = $0 })) {
+            options()
+        } label: {
+            Label {
+                Text(title).textStyle(.control, color: .text)
+            } icon: {
+                Image(systemName: symbol).font(.icon(.row)).foregroundStyle(Color.icon)
+            }
+        }
+        .pickerStyle(.menu)
+        .tint(.mutedText)
+        .frame(minHeight: Size.tap)
+    }
+
     private func segmented<T: Hashable>(_ options: [T], _ value: T, _ label: @escaping (T) -> String, onPick: @escaping (T) -> Void) -> some View {
         Picker("", selection: Binding(get: { value }, set: { Haptics.select(); onPick($0) })) {
             ForEach(options, id: \.self) { Text(label($0)).tag($0) }
         }
         .pickerStyle(.segmented)
         .labelsHidden()
-        .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+        .listRowInsets(EdgeInsets(top: Space.m, leading: Space.m, bottom: Space.m, trailing: Space.m))
     }
 
     private var dueControls: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
+        VStack(alignment: .leading, spacing: Space.m) {
+            HStack(spacing: Space.m) {
+                Image(systemName: "calendar").font(.icon(.row)).foregroundStyle(Color.icon)
                 if let due = task.dueDate {
                     Text(Day.friendly(due, today: today)).textStyle(.control, medium: due < today, color: due < today ? .ink : .text)
                 } else {
@@ -170,7 +175,7 @@ struct TaskEditor: View {
                 .labelsHidden()
             }
             ScrollView(.horizontal) {
-                HStack(spacing: 8) {
+                HStack(spacing: Space.s) {
                     quick("Today", today)
                     quick("Tomorrow", Day.add(today, days: 1))
                     quick("This weekend", Day.endOfWeek(today) == today ? today : Day.add(Day.endOfWeek(today), days: -1))
@@ -183,6 +188,7 @@ struct TaskEditor: View {
             }
             .scrollIndicators(.hidden)
         }
+        .padding(.vertical, Space.xs)
     }
 
     private func quick(_ label: String, _ day: String) -> some View {
@@ -252,7 +258,7 @@ struct NewTaskSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: Space.l) {
                 TextField("New task", text: $text, axis: .vertical)
                     .font(.geist(.section, medium: true))
                     .tracking(-0.88)
@@ -286,7 +292,7 @@ struct NewTaskSheet: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(20)
+            .padding(Space.xl)
             .background(Color.page)
             .navigationTitle("New task")
             .navigationBarTitleDisplayMode(.inline)

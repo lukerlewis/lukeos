@@ -12,10 +12,10 @@ enum Appearance {
         if let title = UIFont(name: "Geist-Medium", size: 17) {
             nav.titleTextAttributes = [.font: UIFontMetrics(forTextStyle: .headline).scaledFont(for: title), .foregroundColor: ink, .kern: -0.4]
         }
-        if let seg = UIFont(name: "Geist-Medium", size: 14) {
+        if let seg = UIFont(name: "Geist-Medium", size: 15) {
             UISegmentedControl.appearance().setTitleTextAttributes([.font: UIFontMetrics(forTextStyle: .subheadline).scaledFont(for: seg)], for: .normal)
         }
-        if let tab = UIFont(name: "Geist-Medium", size: 10) {
+        if let tab = UIFont(name: "Geist-Medium", size: 11) {
             UITabBarItem.appearance().setTitleTextAttributes([.font: tab], for: .normal)
         }
     }

@@ -52,8 +52,8 @@ struct SearchScreen: View {
 
     @ViewBuilder
     private func hitRow(_ h: SearchHit) -> some View {
-        let label = VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 6) {
+        let label = VStack(alignment: .leading, spacing: Space.xs) {
+            HStack(spacing: Space.line) {
                 if h.type == "task" { StatusCircle(status: TaskStatus(rawValue: h.status ?? "") ?? .todo, size: 16) }
                 Text(h.title.isEmpty ? "Untitled" : h.title).textStyle(.control, medium: true, color: .ink).lineLimit(1)
                 ClaudeMark(madeBy: h.madeBy)
@@ -92,7 +92,7 @@ struct TrashScreen: View {
         List {
             if loaded && items.isEmpty { EmptyNote(text: "Trash is empty.", symbol: "trash").listRowBackground(Color.clear) }
             ForEach(items) { i in
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xs) {
                     Text((i.title ?? "").isEmpty ? "Untitled" : i.title!).textStyle(.control, color: .text).lineLimit(1)
                     Text("\(i.type.capitalized) · deleted \(Stamp.relative(i.deletedAt))").textStyle(.meta, color: .mutedText)
                 }

@@ -10,7 +10,7 @@ struct ScratchPadEditor: View {
     @State private var started = false
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 4) {
+        VStack(alignment: .trailing, spacing: Space.xs) {
             TextField("Jot things down…", text: $text, axis: .vertical)
                 .font(.geist(.body))
                 .foregroundStyle(Color.text)
@@ -23,7 +23,7 @@ struct ScratchPadEditor: View {
                 }
             Text(state).textStyle(.meta, color: .mutedText).contentTransition(.opacity)
         }
-        .padding(.top, 6)
+        .padding(.top, Space.line)
         .onAppear {
             text = initial
             DispatchQueue.main.async { started = true }
