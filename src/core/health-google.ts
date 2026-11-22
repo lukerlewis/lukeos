@@ -48,7 +48,23 @@ const TOKENS_KEY = "health_google_tokens";
 const STATE_KEY = "health_status";
 
 type Client = { clientId: string; clientSecret: string };
-type Tokens = { refreshToken: string; accessToken: string; expiresAt: number; scope: string; connectedAt: string };
+/**
+ * Google Health refuses a token that also carries cloud-platform, so each kind of call gets its own
+ * narrower token from the one refresh token: `accessToken` for health data, `cloud` for the webhook setup.
+ */
+type Tokens = {
+  refreshToken: string;
+  accessToken: string;
+  expiresAt: number;
+  scope: string;
+  connectedAt: string;
+  cloud?: { accessToken: string; expiresAt: number };
+  /** Set once `accessToken` has been narrowed to the health scopes (older saved tokens weren't). */
+  healthOnly?: boolean;
+};
+type TokenKind = "health" | "cloud";
+const DATA_SCOPES = HEALTH_SCOPES.filter((s) => s.includes("googlehealth"));
+const CLOUD_SCOPES = HEALTH_SCOPES.filter((s) => !s.includes("googlehealth"));
 type Status = {
   lastSyncAt?: string | null;
   /** The last thing that went wrong, in plain words, or null. */
@@ -174,10 +190,12 @@ export async function finishAuthorize(origin: string, code: string, state: strin
   if (!body.refresh_token) throw new HealthError("Google didn't send a lasting sign-in. Remove LukeOS from your Google account's connected apps, then Connect again.");
   await write(TOKENS_KEY, {
     refreshToken: body.refresh_token,
-    accessToken: body.access_token,
-    expiresAt: Date.now() + (body.expires_in ?? 3600) * 1000,
+    // This first token carries every scope, which Google Health refuses; the health token comes from the next refresh.
+    accessToken: "",
+    expiresAt: 0,
     scope: body.scope ?? "",
     connectedAt: new Date().toISOString(),
+    cloud: { accessToken: body.access_token, expiresAt: Date.now() + (body.expires_in ?? 3600) * 1000 },
   } satisfies Tokens);
 
   // A Fitbit account has to be linked to Google Health before any data shows up.
@@ -190,10 +208,11 @@ export async function finishAuthorize(origin: string, code: string, state: strin
   await syncHealth({ days: 90 });
 }
 
-async function accessToken(): Promise<string> {
+async function accessToken(kind: TokenKind): Promise<string> {
   const tokens = await read<Tokens>(TOKENS_KEY);
   if (!tokens) throw new HealthError("Fitbit isn't connected.");
-  if (tokens.expiresAt - Date.now() > 60_000) return tokens.accessToken;
+  const current = kind === "health" ? (tokens.healthOnly ? tokens : null) : tokens.cloud;
+  if (current && current.expiresAt - Date.now() > 60_000) return current.accessToken;
   const client = await read<Client>(CLIENT_KEY);
   if (!client) throw new HealthError("The Google client ID is missing.");
   const res = await fetch(TOKEN_URL, {
@@ -204,6 +223,7 @@ async function accessToken(): Promise<string> {
       client_secret: client.clientSecret,
       refresh_token: tokens.refreshToken,
       grant_type: "refresh_token",
+      scope: (kind === "health" ? DATA_SCOPES : CLOUD_SCOPES).join(" "),
     }),
   });
   const body = (await res.json().catch(() => ({}))) as { access_token?: string; expires_in?: number; error?: string };
@@ -216,14 +236,15 @@ async function accessToken(): Promise<string> {
     }
     throw new HealthError(`Couldn't refresh the Google sign-in (${body.error ?? res.status}).`);
   }
-  await write(TOKENS_KEY, { ...tokens, accessToken: body.access_token, expiresAt: Date.now() + (body.expires_in ?? 3600) * 1000 });
+  const fresh = { accessToken: body.access_token, expiresAt: Date.now() + (body.expires_in ?? 3600) * 1000 };
+  await write(TOKENS_KEY, kind === "health" ? { ...tokens, ...fresh, healthOnly: true } : { ...tokens, cloud: fresh });
   return body.access_token;
 }
 
 /* ---------- Calling Google ---------- */
 
 async function api<T = unknown>(method: "GET" | "POST" | "PATCH", path: string, body?: unknown, attempt = 0): Promise<T> {
-  const token = await accessToken();
+  const token = await accessToken(path.startsWith("/projects/") ? "cloud" : "health");
   const res = await fetch(`${API}${path}`, {
     method,
     headers: { authorization: `Bearer ${token}`, ...(body ? { "content-type": "application/json" } : {}) },
@@ -454,6 +475,12 @@ export async function syncHealth({ days }: { days: number }) {
 
 async function doSync(days: number) {
   if (!(await read<Tokens>(TOKENS_KEY))) throw new HealthError("Fitbit isn't connected.");
+  const before = await read<Status>(STATE_KEY);
+  // The first sync after connecting brings in the last 90 days.
+  if (!before?.lastSyncAt) days = Math.max(days, 90);
+  // Live updates never set up (e.g. the first sign-in stopped early): try once more.
+  const site = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (!before?.webhook && site) await registerWebhook(`https://${site}`).catch(() => {});
   const today = todayIn(await getTimeZone());
   const first = addDays(today, -(days - 1));
   const end = addDays(today, 1);
