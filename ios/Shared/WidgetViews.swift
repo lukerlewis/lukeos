@@ -105,8 +105,11 @@ struct TodayWidgetView: View {
 /// The large widget: Life's Today list in its Morning, Day and Evening cards, each task tickable.
 struct DayPlanWidgetView: View {
     var entry: TodayEntry
-    /// Rows that fit under the three headings on a large widget (more push the top off the edge).
-    var rowBudget = 7
+    /// Points under the header for the parts on a large widget (more push the top off the edge).
+    var partsHeight: CGFloat = 296
+    static let rowHeight: CGFloat = 28
+    static let headingHeight: CGFloat = 20
+    static let partGap: CGFloat = Space.xl
 
     private var tasks: [WidgetSnapshot.Item] {
         (entry.snapshot?.tasks ?? []).filter { $0.area == .life && $0.status != .done }
@@ -115,19 +118,22 @@ struct DayPlanWidgetView: View {
         tasks.filter { ($0.timeOfDay ?? .day) == time }
     }
 
-    /// How many rows each part gets: turn about, so a long Morning never hides Evening.
-    private var allotment: [TimeOfDay: Int] {
-        var left = rowBudget
-        var n: [TimeOfDay: Int] = [:]
-        let totals = Dictionary(uniqueKeysWithValues: TimeOfDay.allCases.map { ($0, tasks($0).count) })
-        while left > 0 {
-            var gave = false
-            for t in TimeOfDay.allCases where left > 0 && n[t, default: 0] < totals[t]! {
-                n[t, default: 0] += 1; left -= 1; gave = true
-            }
-            if !gave { break }
+    /// Rows per part, filled in time-of-day order: all of Morning first, then Day, then Evening,
+    /// until the widget is full. Parts with nothing (or no room) are left off.
+    private var allotment: [(TimeOfDay, Int)] {
+        var left = partsHeight
+        var out: [(TimeOfDay, Int)] = []
+        for time in TimeOfDay.allCases {
+            let count = tasks(time).count
+            guard count > 0 else { continue }
+            let gap = out.isEmpty ? 0 : Self.partGap
+            let room = Int(((left - gap - Self.headingHeight) / Self.rowHeight).rounded(.down))
+            guard room > 0 else { break }
+            let rows = min(count, room)
+            out.append((time, rows))
+            left -= gap + Self.headingHeight + CGFloat(rows) * Self.rowHeight
         }
-        return n
+        return out
     }
 
     var body: some View {
@@ -148,8 +154,8 @@ struct DayPlanWidgetView: View {
                 Spacer()
             } else {
                 VStack(alignment: .leading, spacing: Space.xl) {
-                    ForEach(TimeOfDay.allCases, id: \.self) { time in
-                        part(time, limit: allot[time] ?? 0)
+                    ForEach(allot, id: \.0) { time, rows in
+                        part(time, limit: rows)
                     }
                 }
                 Spacer(minLength: 0)
@@ -171,8 +177,9 @@ struct DayPlanWidgetView: View {
                     }
                     Spacer(minLength: 0)
                 }
+                .frame(height: Self.headingHeight - 2)
             }
-            .padding(.bottom, all.isEmpty ? 0 : 2)
+            .padding(.bottom, 2)
             ForEach(all.prefix(limit)) { t in
                 HStack(spacing: Space.m) {
                     Button(intent: TickTaskIntent(taskId: t.id)) {
@@ -185,7 +192,7 @@ struct DayPlanWidgetView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .frame(height: 28)
+                .frame(height: Self.rowHeight)
                 .transition(.opacity)
             }
         }
