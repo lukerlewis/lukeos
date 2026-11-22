@@ -276,11 +276,12 @@ const num = (v: unknown) => {
 const seconds = (v: unknown) => (typeof v === "string" && /^[\d.]+s$/.test(v) ? Number(v.slice(0, -1)) : null);
 
 /** Every data point of a type whose filter matches, all pages. */
-async function listPoints(dataType: string, filter: string, pageSize: number) {
+async function listPoints(dataType: string, filter: string, pageSize: number, maxPages = 40) {
   const points: Record<string, unknown>[] = [];
   let pageToken: string | undefined;
-  for (let page = 0; page < 40; page++) {
-    const q = new URLSearchParams({ filter, pageSize: String(pageSize) });
+  for (let page = 0; page < maxPages; page++) {
+    const q = new URLSearchParams({ pageSize: String(pageSize) });
+    if (filter) q.set("filter", filter);
     if (pageToken) q.set("pageToken", pageToken);
     const res = await api<{ dataPoints?: Record<string, unknown>[]; nextPageToken?: string }>("GET", `/users/me/dataTypes/${dataType}/dataPoints?${q}`);
     points.push(...(res.dataPoints ?? []));
@@ -401,8 +402,11 @@ const sources: Source[] = [
     type: "sleep",
     // Sleep can only be filtered by when it ended; a night counts towards the morning he woke up.
     // The civil-time filter came back empty for Luke's account, so this asks by UTC with a day to spare each side.
-    fetch: (first, end) =>
-      listPoints("sleep", `sleep.interval.end_time >= "${addDays(first, -1)}T00:00:00Z" AND sleep.interval.end_time < "${addDays(end, 1)}T00:00:00Z"`, 25),
+    fetch: async (first, end) => {
+      const found = await listPoints("sleep", `sleep.interval.end_time >= "${addDays(first, -1)}T00:00:00Z" AND sleep.interval.end_time < "${addDays(end, 1)}T00:00:00Z"`, 25);
+      // Filtered asks came back empty for Luke's account; the newest nights unfiltered (newest first) as a fallback.
+      return found.length ? found : listPoints("sleep", "", 25, 4);
+    },
     dayOf: (p) => ymd((field(p, "sleep").interval as { civilEndTime?: CivilDateTime } | undefined)?.civilEndTime?.date),
     apply: (s, points) => {
       const sleeps = points.map((p) => field(p, "sleep"));
