@@ -103,7 +103,10 @@ final class TaskStore {
         }
     }
 
-    func shows(_ t: LukeTask) -> Bool { view.show.contains(t.status) }
+    /// Tasks just ticked stay on screen a moment (as on the web) so the filled circle is seen.
+    var lingering: Set<String> = []
+
+    func shows(_ t: LukeTask) -> Bool { view.show.contains(t.status) || lingering.contains(t.id) }
 
     // MARK: Changes
 
@@ -138,7 +141,17 @@ final class TaskStore {
     }
 
     func toggle(_ task: LukeTask) {
-        setStatus(task, task.status == .done ? .todo : .done)
+        if task.status == .done {
+            setStatus(task, .todo)
+            return
+        }
+        lingering.insert(task.id)
+        setStatus(task, .done)
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            _ = withAnimation(.snappy) { lingering.remove(task.id) }
+        }
+        Toasts.shared.show("Done") { [weak self] in self?.setStatus(task, task.status) }
     }
 
     /// Puts a task back as it was (Undo).
@@ -180,26 +193,23 @@ final class TaskStore {
         if changes["status"] != nil { t.completedAt = t.status == .done ? ISO8601DateFormatter.withFractional.string(from: .now) : nil }
     }
 
-    /// Adds a task. It shows straight away and gets its real id when the server answers.
-    func create(_ input: Input) async -> LukeTask? {
-        var draft = LukeTask(title: input["title"]?.stringValue ?? "")
+    /// Adds a task. Its id is made here, so it's real from the first moment and works offline.
+    @discardableResult
+    func create(_ input: Input) async -> LukeTask {
+        var input = input
+        let id = UUID().uuidString.lowercased()
+        input["id"] = .string(id)
+        var draft = LukeTask(id: id, title: input["title"]?.stringValue ?? "")
         apply(input, to: &draft)
         if input["bucket"] == nil { draft.bucket = Day.bucket(for: draft.dueDate, today: today) }
-        let tempId = draft.id
         withAnimation(.snappy) { tasks.append(draft) }
-        do {
-            let created = try await Repo.create("create_task", input, as: LukeTask.self)
-            if let i = tasks.firstIndex(where: { $0.id == tempId }) { tasks[i] = created }
-            saveForWidget()
-            return created
-        } catch APIError.offline {
-            await Outbox.shared.add("create_task", input)
-            return draft
-        } catch {
-            tasks.removeAll { $0.id == tempId }
-            Toasts.shared.show(error.localizedDescription)
-            return nil
+        saveForWidget()
+        if let data = await Repo.change("create_task", input),
+           let created = try? LukeAPI.decoder.decode(LukeTask.self, from: data),
+           let i = tasks.firstIndex(where: { $0.id == id }) {
+            tasks[i] = created
         }
+        return draft
     }
 
     func delete(_ task: LukeTask) {

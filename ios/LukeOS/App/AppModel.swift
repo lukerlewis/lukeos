@@ -26,6 +26,20 @@ final class AppModel {
             Task { @MainActor in AppModel.shared.handleSignedOut() }
         }
         if signedIn { LukeAPI.shared.installCookie() }
+        applyLaunchArguments()
+    }
+
+    /// `-area work`, `-layout board`, `-link /notes/<id>`: open the app in a given state (demo screenshots, UI checks).
+    private func applyLaunchArguments() {
+        let args = ProcessInfo.processInfo.arguments
+        func value(_ key: String) -> String? {
+            guard let i = args.firstIndex(of: key), i + 1 < args.count else { return nil }
+            return args[i + 1]
+        }
+        if let a = value("-area").flatMap(Area.init(rawValue:)) { area = a }
+        if let l = value("-layout") { SharedConfig.defaults.set(l, forKey: "dashboardLayout") }
+        if let link = value("-link") { open(link) }
+        if let t = value("-tab").flatMap(AppTab.init(rawValue:)) { tab = t }
     }
 
     func handleSignedOut() {

@@ -15,8 +15,11 @@
 		0E5B7EBBBA4FE3B1C3BFBD05 /* brown-noise.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 3F44FAC64420145C46F8B100 /* brown-noise.mp3 */; };
 		108EE03E4D1843B714921C25 /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9306D2188BBAD189C914BE0B /* BoardView.swift */; };
 		112F5DF9970715D0A4B7CA93 /* GeistMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C49E3F806D7DC7EB411FCC4E /* GeistMono-Regular.ttf */; };
+		1525F3F9F8E187D7AB1A991C /* Chips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C2F1CD486AF3CD3DE9EF4E /* Chips.swift */; };
 		15E29D4E8DAEF33C50665BED /* LukeOSWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		17F485B4711B1F3360E36862 /* Appearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC534031F9B58133C59F899B /* Appearance.swift */; };
+		18B190CD6341EC4C49B062F4 /* WebSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1E0575AC231ABBAAF1CF076 /* WebSheet.swift */; };
+		196376AC30392F010178CB3B /* NoteScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F23E9334AB3A4E13541405 /* NoteScreen.swift */; };
 		1EA1B27D82AD2C8DC2A6FD93 /* MainTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46DD2C51661DA1C32EA29038 /* MainTabs.swift */; };
 		210E60E9514C828693991990 /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
 		22D543FD3689BF05D2EE8827 /* Fixtures in Resources */ = {isa = PBXBuildFile; fileRef = 3D3ADA9E4A56803A6F4A42C8 /* Fixtures */; };
@@ -53,20 +56,24 @@
 		A565AD31B8B2638946247E8E /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A20B11686A184AEF6AF3D9E /* TaskStore.swift */; };
 		AA971DEEDEC6896831479D1D /* Widgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFA2030A6359127F50C4901 /* Widgets.swift */; };
 		ABE582FC2026C5822F34402D /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7224A97F06EDA2C071E93974 /* ShareViewController.swift */; };
+		B198BD097D0212901A8C9D14 /* NotesModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73FA9D0A65B898B6C40A645 /* NotesModels.swift */; };
 		B80A014D581F2ABDFAAA45B8 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */; };
 		C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
 		C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */; };
 		C3F30431D8DE808B8E179635 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1ED780373C71F795D1499F59 /* Assets.xcassets */; };
 		C9AEB8725C1104EB8FBC3B34 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CFCBA190398A4E3D994D93 /* SignInView.swift */; };
 		CA95ECD27518E4B40C6393E6 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
+		CC1C270197956507A3B8566E /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */; };
 		D0E23CB0783A41CA8C3F1448 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
 		D3E4035A665C6DAE59035FF8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
 		D3F0BD333A4E0A8869A01994 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
+		D977791D5DD29F28BA34D5B5 /* MarkdownEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90D157E9AF283347F38DDE4 /* MarkdownEditor.swift */; };
 		DB7091FDC6C0D73AE635ABF4 /* LukeAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */; };
 		DE8850984052BA4FBF917843 /* Geist-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5B95D1E6DB58612D5C5FB9F /* Geist-MediumItalic.ttf */; };
 		E08CE4D2B53807E7DADBA355 /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
 		E99D3E61ED06BD3EBD4EE4CE /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
 		ECAD8123915B37929BA23CC1 /* DashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */; };
+		ED194374EA744BABF0B037A1 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0583F8BFA35C668F3A8206D /* MarkdownView.swift */; };
 		F174C81EEEEEA95C303BB284 /* Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73CADE5D302CDEDEECC713F7 /* Push.swift */; };
 		F98F60E63DFFD314E5C7F302 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
 		FADA218B56BBB17D0F277F8F /* DecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */; };
@@ -118,6 +125,7 @@
 		192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Medium.ttf"; sourceTree = "<group>"; };
 		1ED780373C71F795D1499F59 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		20DF58E356A09ABE4B9F3681 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		27C2F1CD486AF3CD3DE9EF4E /* Chips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chips.swift; sourceTree = "<group>"; };
 		2C0FA8D266700812C1D276B3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2CCBD17FDF3E3BDA17B4D3A5 /* LukeAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LukeAPI.swift; sourceTree = "<group>"; };
 		2F7A6BD04903E1695F8113DD /* Geist-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Italic.ttf"; sourceTree = "<group>"; };
@@ -135,6 +143,7 @@
 		7224A97F06EDA2C071E93974 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		73CADE5D302CDEDEECC713F7 /* Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Push.swift; sourceTree = "<group>"; };
 		744FE808E024262F48C42255 /* Day.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
+		76F23E9334AB3A4E13541405 /* NoteScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteScreen.swift; sourceTree = "<group>"; };
 		78ACA799969DF6A6325E2CA3 /* Geist-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Regular.ttf"; sourceTree = "<group>"; };
 		7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreScreen.swift; sourceTree = "<group>"; };
 		80BCBEDC20CE452FE00C6522 /* LukeOSWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LukeOSWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -147,10 +156,15 @@
 		9A6A09186897DD3063034BD7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LukeOSApp.swift; sourceTree = "<group>"; };
 		AABE02CA05ECDA1E61BCFFA4 /* Repo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repo.swift; sourceTree = "<group>"; };
+		B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImage.swift; sourceTree = "<group>"; };
+		B73FA9D0A65B898B6C40A645 /* NotesModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesModels.swift; sourceTree = "<group>"; };
 		C0271259A5BD4781955040F4 /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
+		C0583F8BFA35C668F3A8206D /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
 		C0C494A94181D94768D93744 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskChips.swift; sourceTree = "<group>"; };
+		C1E0575AC231ABBAAF1CF076 /* WebSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSheet.swift; sourceTree = "<group>"; };
 		C49E3F806D7DC7EB411FCC4E /* GeistMono-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GeistMono-Regular.ttf"; sourceTree = "<group>"; };
+		C90D157E9AF283347F38DDE4 /* MarkdownEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownEditor.swift; sourceTree = "<group>"; };
 		CBF34330E3F762A7E0822166 /* TaskModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskModels.swift; sourceTree = "<group>"; };
 		CC3C898E975252A9D2C39553 /* ScratchPadEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScratchPadEditor.swift; sourceTree = "<group>"; };
 		CEFBE04E50D3C45C95E15B06 /* DecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecodingTests.swift; sourceTree = "<group>"; };
@@ -253,7 +267,11 @@
 			isa = PBXGroup;
 			children = (
 				DC534031F9B58133C59F899B /* Appearance.swift */,
+				27C2F1CD486AF3CD3DE9EF4E /* Chips.swift */,
 				5C9F429D8FCD80C44BC95E2A /* Components.swift */,
+				C90D157E9AF283347F38DDE4 /* MarkdownEditor.swift */,
+				C0583F8BFA35C668F3A8206D /* MarkdownView.swift */,
+				B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */,
 				C1DD5EF40C54ADDC79163A90 /* TaskChips.swift */,
 			);
 			path = DesignSystem;
@@ -341,6 +359,7 @@
 				ED62D3DC669FCDDBBC443602 /* Home.swift */,
 				73CADE5D302CDEDEECC713F7 /* Push.swift */,
 				AABE02CA05ECDA1E61BCFFA4 /* Repo.swift */,
+				C1E0575AC231ABBAAF1CF076 /* WebSheet.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -390,6 +409,8 @@
 		FA136FDAEB8D60B978496C5E /* Notes */ = {
 			isa = PBXGroup;
 			children = (
+				76F23E9334AB3A4E13541405 /* NoteScreen.swift */,
+				B73FA9D0A65B898B6C40A645 /* NotesModels.swift */,
 				D4F6D9064445EA0B033C63DD /* NotesScreen.swift */,
 			);
 			path = Notes;
@@ -547,6 +568,7 @@
 				3362AB0A775BEB2DFE987116 /* AppModel.swift in Sources */,
 				17F485B4711B1F3360E36862 /* Appearance.swift in Sources */,
 				108EE03E4D1843B714921C25 /* BoardView.swift in Sources */,
+				1525F3F9F8E187D7AB1A991C /* Chips.swift in Sources */,
 				3255AAE332A0814CD453B793 /* Comments.swift in Sources */,
 				9AFCB62D7AFA686DE2C84D4F /* Components.swift in Sources */,
 				ECAD8123915B37929BA23CC1 /* DashboardScreen.swift in Sources */,
@@ -558,11 +580,16 @@
 				5BEFAC1F62ED73DE2C943D31 /* LukeAPI.swift in Sources */,
 				A4965AB914917049173B5600 /* LukeOSApp.swift in Sources */,
 				1EA1B27D82AD2C8DC2A6FD93 /* MainTabs.swift in Sources */,
+				D977791D5DD29F28BA34D5B5 /* MarkdownEditor.swift in Sources */,
+				ED194374EA744BABF0B037A1 /* MarkdownView.swift in Sources */,
 				35A3D050653345C50ED841BA /* MoreScreen.swift in Sources */,
 				C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */,
+				196376AC30392F010178CB3B /* NoteScreen.swift in Sources */,
+				B198BD097D0212901A8C9D14 /* NotesModels.swift in Sources */,
 				8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */,
 				F174C81EEEEEA95C303BB284 /* Push.swift in Sources */,
 				3688E35338B11F6B29A7893E /* QuickAdd.swift in Sources */,
+				CC1C270197956507A3B8566E /* RemoteImage.swift in Sources */,
 				96B9F6CBE1BEB87879C1067B /* Repo.swift in Sources */,
 				316AF9BAC5E14D61596FF29D /* ScratchPadEditor.swift in Sources */,
 				C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */,
@@ -574,6 +601,7 @@
 				7364E735007D69FC462C90F4 /* TaskRow.swift in Sources */,
 				A565AD31B8B2638946247E8E /* TaskStore.swift in Sources */,
 				D3E4035A665C6DAE59035FF8 /* Theme.swift in Sources */,
+				18B190CD6341EC4C49B062F4 /* WebSheet.swift in Sources */,
 				D0E23CB0783A41CA8C3F1448 /* WidgetSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

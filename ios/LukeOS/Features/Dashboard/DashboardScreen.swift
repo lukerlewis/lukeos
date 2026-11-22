@@ -28,7 +28,6 @@ struct DashboardScreen: View {
                 ToolbarItem(placement: .topBarTrailing) { FiltersMenu() }
             }
             .navigationTitle(greeting)
-            .navigationSubtitle(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
             .toolbarTitleDisplayMode(.large)
             .refreshable { await reload() }
             .overlay(alignment: .bottomTrailing) { addButton }
@@ -73,7 +72,9 @@ struct DashboardScreen: View {
 
     private var header: some View {
         @Bindable var app = app
-        return VStack(alignment: .leading, spacing: 14) {
+        return VStack(alignment: .leading, spacing: 12) {
+            Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
+                .textStyle(.preview, color: .mutedText)
             HStack(spacing: 10) {
                 Picker("Area", selection: $app.area.animation(.snappy)) {
                     ForEach(Area.allCases, id: \.self) { Text($0.label).tag($0) }
@@ -180,6 +181,7 @@ struct TaskCardSection: View {
         Section {
             ForEach(tasks) { task in
                 TaskRow(task: task, onOpen: { onOpen(task) })
+                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
                     .taskRowActions(task, onOpen: { onOpen(task) })
                     .draggable(task.id)
             }

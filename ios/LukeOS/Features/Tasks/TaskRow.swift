@@ -15,14 +15,13 @@ struct TaskRow: View {
                 store.toggle(task)
             } label: {
                 StatusCircle(status: task.status)
-                    .padding(.top, 1)
-                    .frame(width: 30, height: 30, alignment: .topLeading)
+                    .frame(width: 30, height: 24, alignment: .topLeading)
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(task.status == .done ? "Mark not done" : "Mark done")
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(task.title)
                     .textStyle(.control, color: task.status == .done ? .mutedText : .text)
                     .strikethrough(task.status == .done, color: .mutedText)
@@ -31,9 +30,8 @@ struct TaskRow: View {
                 if hasMeta { meta }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 3)
+            .padding(.top, 1)
         }
-        .padding(.vertical, 2)
         .contentShape(.rect)
         .onTapGesture(perform: onOpen)
     }

@@ -68,7 +68,7 @@ struct TaskEditor: View {
                             set(["effort": .optional($0?.rawValue)])
                         }
                     }
-                    Section("Today") {
+                    Section("Signal or noise") {
                         segmented(Lane.allCases, task.lane, \.label) { set(["lane": .string($0.rawValue)]) }
                     }
                     Section {
