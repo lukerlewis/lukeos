@@ -9,7 +9,7 @@ struct TaskEditor: View {
     @State private var loaded: LukeTask?
     @State private var title = ""
     @State private var notes = ""
-    @State private var showDate = false
+    @State private var pickingDate = false
     @State private var confirmDelete = false
     @State private var notesTask: Task<Void, Never>?
 
@@ -39,9 +39,19 @@ struct TaskEditor: View {
                 // The two things changed most, as switches; everything else as menus in one compact list.
                 Section {
                     segmented(TaskStatus.allCases, task.status, \.label) { set(["status": .string($0.rawValue)]) }
-                    segmented(Bucket.allCases, task.bucket, \.label) { set(["bucket": .string($0.rawValue)]) }
+                    labeled("List") {
+                        segmented(Bucket.allCases, task.bucket, \.label) { set(["bucket": .string($0.rawValue)]) }
+                    }
+                    dueRow
+                    if pickingDate {
+                        DatePicker("", selection: Binding(
+                            get: { Day.toLocal(task.dueDate ?? today) },
+                            set: { set(["dueDate": .string(Day.fromLocal($0))]); withAnimation(.snappy) { pickingDate = false } }
+                        ), displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                        .tint(.ink)
+                    }
                 }
-                Section { dueControls }
                 Section {
                     menuRow("Repeat", "repeat", Binding(get: { task.repeat ?? "" }, set: { set(["repeat": $0.isEmpty ? .null : .string($0)]) })) {
                         Text("Never").tag("")
@@ -113,7 +123,7 @@ struct TaskEditor: View {
                 }
             }
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onAppear {
             title = task.title
@@ -162,44 +172,44 @@ struct TaskEditor: View {
         .listRowInsets(EdgeInsets(top: Space.m, leading: Space.m, bottom: Space.m, trailing: Space.m))
     }
 
-    private var dueControls: some View {
-        VStack(alignment: .leading, spacing: Space.m) {
-            HStack(spacing: Space.m) {
-                Image(systemName: "calendar").font(.icon(.row)).foregroundStyle(Color.icon)
-                if let due = task.dueDate {
-                    Text(Day.friendly(due, today: today)).textStyle(.control, medium: due < today, color: due < today ? .ink : .text)
-                } else {
-                    Text("No date").textStyle(.control, color: .mutedText)
-                }
-                Spacer()
-                DatePicker("", selection: Binding(
-                    get: { Day.toLocal(task.dueDate ?? today) },
-                    set: { set(["dueDate": .string(Day.fromLocal($0))]) }
-                ), displayedComponents: .date)
-                .labelsHidden()
-            }
-            ScrollView(.horizontal) {
-                HStack(spacing: Space.s) {
-                    quick("Today", today)
-                    quick("Tomorrow", Day.add(today, days: 1))
-                    quick("This weekend", Day.endOfWeek(today) == today ? today : Day.add(Day.endOfWeek(today), days: -1))
-                    quick("Next week", Day.add(Day.endOfWeek(today), days: 1))
-                    Button("No date") { set(["dueDate": .null]) }
-                        .buttonStyle(.bordered)
-                        .disabled(task.dueDate == nil)
-                }
-                .font(.geist(.preview, medium: true))
-            }
-            .scrollIndicators(.hidden)
+    /// A label beside a control, for rows that need naming ("List").
+    private func labeled<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
+        HStack(spacing: Space.m) {
+            Text(title).textStyle(.control, color: .text).fixedSize()
+            content()
         }
-        .padding(.vertical, Space.xs)
     }
 
-    private func quick(_ label: String, _ day: String) -> some View {
-        Button(label) { set(["dueDate": .string(day)]) }
-            .buttonStyle(.bordered)
-            .tint(task.dueDate == day ? .ink : .subtleText)
+    /// "Due": the date on the right; tap for Today, Tomorrow, This weekend, Next week, a calendar or no date.
+    private var dueRow: some View {
+        Menu {
+            Button("Today") { set(["dueDate": .string(today)]) }
+            Button("Tomorrow") { set(["dueDate": .string(Day.add(today, days: 1))]) }
+            Button("This weekend") { set(["dueDate": .string(Day.endOfWeek(today) == today ? today : Day.add(Day.endOfWeek(today), days: -1))]) }
+            Button("Next week") { set(["dueDate": .string(Day.add(Day.endOfWeek(today), days: 1))]) }
+            Divider()
+            Button("Pick a date…", systemImage: "calendar") { withAnimation(.snappy) { pickingDate = true } }
+            if task.dueDate != nil {
+                Button("No date", systemImage: "xmark", role: .destructive) { set(["dueDate": .null]) }
+            }
+        } label: {
+            HStack(spacing: Space.m) {
+                Text("Due").textStyle(.control, color: .text)
+                Spacer()
+                if let due = task.dueDate {
+                    Text(Day.friendly(due, today: today))
+                        .textStyle(.control, medium: due < today, color: due < today ? .ink : .mutedText)
+                } else {
+                    Text("None").textStyle(.control, color: .mutedText)
+                }
+                Image(systemName: "chevron.up.chevron.down").font(.icon(.meta)).foregroundStyle(Color.mutedText)
+            }
+            .frame(minHeight: Size.tap)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
     }
+
 
     // MARK: Saving
 
