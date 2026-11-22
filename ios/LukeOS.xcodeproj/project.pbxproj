@@ -27,8 +27,10 @@
 		316AF9BAC5E14D61596FF29D /* ScratchPadEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3C898E975252A9D2C39553 /* ScratchPadEditor.swift */; };
 		3255AAE332A0814CD453B793 /* Comments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 614355A0BF4CA86EB170F69E /* Comments.swift */; };
 		3362AB0A775BEB2DFE987116 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3307F9A29573A3AC37BC9BBC /* AppModel.swift */; };
+		354C7F3CB290CEA782C8C782 /* SearchTrashSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F65869C3314162FEC36A3D5 /* SearchTrashSettings.swift */; };
 		35A3D050653345C50ED841BA /* MoreScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */; };
 		3688E35338B11F6B29A7893E /* QuickAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0998E467A272C3FA9FE577E9 /* QuickAdd.swift */; };
+		3B879C20D7609DB6E593C280 /* DocumentsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486301A741FFD0760B961706 /* DocumentsScreen.swift */; };
 		45E615CA688F9311C03454EA /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF34330E3F762A7E0822166 /* TaskModels.swift */; };
 		46455338D24BA377E4833B62 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
 		4CAE7A26BC6AD9DFEA3428BB /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0271259A5BD4781955040F4 /* JSON.swift */; };
@@ -54,6 +56,7 @@
 		9AFCB62D7AFA686DE2C84D4F /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9F429D8FCD80C44BC95E2A /* Components.swift */; };
 		9BAB1809D09B783C8EA64032 /* SmartEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098058FF06B81882280685AE /* SmartEntry.swift */; };
 		9C2495C994D29770A3DDBE2F /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744FE808E024262F48C42255 /* Day.swift */; };
+		A34332821F1B1714A9160FFA /* InspirationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E9C0D3FA1B38DF347D0649 /* InspirationScreen.swift */; };
 		A3E986A4836151972D673C9A /* LukeOSShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E4132CBAEC848204B8501F91 /* LukeOSShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A4965AB914917049173B5600 /* LukeOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */; };
 		A565AD31B8B2638946247E8E /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A20B11686A184AEF6AF3D9E /* TaskStore.swift */; };
@@ -64,10 +67,12 @@
 		B80A014D581F2ABDFAAA45B8 /* Geist-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */; };
 		C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
 		C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD82A25604D2DFD9B4CE2946 /* MusicScreen.swift */; };
+		C3A32E9422EF835236D5419C /* ProjectScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C2BD9EE1BCF23629CCF015 /* ProjectScreen.swift */; };
 		C3F30431D8DE808B8E179635 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1ED780373C71F795D1499F59 /* Assets.xcassets */; };
 		C9AEB8725C1104EB8FBC3B34 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CFCBA190398A4E3D994D93 /* SignInView.swift */; };
 		CA95ECD27518E4B40C6393E6 /* SharedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E606137670B14EB4A31BF2 /* SharedConfig.swift */; };
 		CC1C270197956507A3B8566E /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B300B4F339318AB5CBD8FD31 /* RemoteImage.swift */; };
+		CFDF5655DE675284CDC56DEB /* MessagesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A8EC3AA2EB8960E29672F39 /* MessagesScreen.swift */; };
 		D0E23CB0783A41CA8C3F1448 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBFBD621F5E5EF694B5645B /* WidgetSnapshot.swift */; };
 		D3E4035A665C6DAE59035FF8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
 		D3F0BD333A4E0A8869A01994 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7789F731BF7BE97BD41BE4 /* Theme.swift */; };
@@ -128,8 +133,10 @@
 		098058FF06B81882280685AE /* SmartEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartEntry.swift; sourceTree = "<group>"; };
 		0998E467A272C3FA9FE577E9 /* QuickAdd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAdd.swift; sourceTree = "<group>"; };
 		0CFD7570694FA1A70725C11E /* FocusScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusScreen.swift; sourceTree = "<group>"; };
+		14E9C0D3FA1B38DF347D0649 /* InspirationScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspirationScreen.swift; sourceTree = "<group>"; };
 		192B6E1D37DE1D591E8DC396 /* Geist-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Medium.ttf"; sourceTree = "<group>"; };
 		1ED780373C71F795D1499F59 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1F65869C3314162FEC36A3D5 /* SearchTrashSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTrashSettings.swift; sourceTree = "<group>"; };
 		20DF58E356A09ABE4B9F3681 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		27C2F1CD486AF3CD3DE9EF4E /* Chips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chips.swift; sourceTree = "<group>"; };
 		2C0FA8D266700812C1D276B3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -142,11 +149,13 @@
 		3D3ADA9E4A56803A6F4A42C8 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fixtures; sourceTree = SOURCE_ROOT; };
 		3F44FAC64420145C46F8B100 /* brown-noise.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "brown-noise.mp3"; sourceTree = "<group>"; };
 		46DD2C51661DA1C32EA29038 /* MainTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabs.swift; sourceTree = "<group>"; };
+		486301A741FFD0760B961706 /* DocumentsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsScreen.swift; sourceTree = "<group>"; };
 		51E606137670B14EB4A31BF2 /* SharedConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedConfig.swift; sourceTree = "<group>"; };
 		5851D0E22377F21FFE031CD9 /* LukeOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LukeOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5C9F429D8FCD80C44BC95E2A /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		5D08DBAE03515569A32C97F5 /* DashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardScreen.swift; sourceTree = "<group>"; };
 		614355A0BF4CA86EB170F69E /* Comments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Comments.swift; sourceTree = "<group>"; };
+		6A8EC3AA2EB8960E29672F39 /* MessagesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesScreen.swift; sourceTree = "<group>"; };
 		7224A97F06EDA2C071E93974 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		73CADE5D302CDEDEECC713F7 /* Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Push.swift; sourceTree = "<group>"; };
 		744FE808E024262F48C42255 /* Day.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
@@ -161,6 +170,7 @@
 		8FFA2030A6359127F50C4901 /* Widgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widgets.swift; sourceTree = "<group>"; };
 		909E79DA6EF9590C9C1CD9FD /* TaskRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRow.swift; sourceTree = "<group>"; };
 		9306D2188BBAD189C914BE0B /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
+		97C2BD9EE1BCF23629CCF015 /* ProjectScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectScreen.swift; sourceTree = "<group>"; };
 		99ADE5FF7FD5F237CA013E70 /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		9A6A09186897DD3063034BD7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9C335D81D61F36E8FA7BC7AD /* LukeOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LukeOSApp.swift; sourceTree = "<group>"; };
@@ -325,7 +335,11 @@
 		84D2F8811D8063C2F91F32B4 /* More */ = {
 			isa = PBXGroup;
 			children = (
+				486301A741FFD0760B961706 /* DocumentsScreen.swift */,
+				14E9C0D3FA1B38DF347D0649 /* InspirationScreen.swift */,
 				7F812E7DFB0B1DAA89D988C4 /* MoreScreen.swift */,
+				97C2BD9EE1BCF23629CCF015 /* ProjectScreen.swift */,
+				1F65869C3314162FEC36A3D5 /* SearchTrashSettings.swift */,
 			);
 			path = More;
 			sourceTree = "<group>";
@@ -382,6 +396,7 @@
 				46BD6778096EDDF4526C6D7B /* Comments */,
 				9800E98078E891B2E31944F9 /* Dashboard */,
 				49C7E2381D3D41295E04E5E3 /* Focus */,
+				E4DE43E86133D4D540AAC9F9 /* Messages */,
 				84D2F8811D8063C2F91F32B4 /* More */,
 				C4DB6249A329CDA9BB651D72 /* Music */,
 				FA136FDAEB8D60B978496C5E /* Notes */,
@@ -408,6 +423,14 @@
 				7224A97F06EDA2C071E93974 /* ShareViewController.swift */,
 			);
 			path = Share;
+			sourceTree = "<group>";
+		};
+		E4DE43E86133D4D540AAC9F9 /* Messages */ = {
+			isa = PBXGroup;
+			children = (
+				6A8EC3AA2EB8960E29672F39 /* MessagesScreen.swift */,
+			);
+			path = Messages;
 			sourceTree = "<group>";
 		};
 		E7920085BD2788AFEC85B2EE /* Widgets */ = {
@@ -589,27 +612,32 @@
 				ECAD8123915B37929BA23CC1 /* DashboardScreen.swift in Sources */,
 				F98F60E63DFFD314E5C7F302 /* Day.swift in Sources */,
 				8A9BE1E5B9C26A63708AD64C /* DemoServer.swift in Sources */,
+				3B879C20D7609DB6E593C280 /* DocumentsScreen.swift in Sources */,
 				FA59E5A4A66A2005FC7C5F02 /* FocusActivity.swift in Sources */,
 				09913344B2BFE017C10F4379 /* FocusScreen.swift in Sources */,
 				97D12FE3EC6DB71CDD221E0C /* FocusTimer.swift in Sources */,
 				29D6690D0165537C3AA425B5 /* Home.swift in Sources */,
+				A34332821F1B1714A9160FFA /* InspirationScreen.swift in Sources */,
 				4CAE7A26BC6AD9DFEA3428BB /* JSON.swift in Sources */,
 				5BEFAC1F62ED73DE2C943D31 /* LukeAPI.swift in Sources */,
 				A4965AB914917049173B5600 /* LukeOSApp.swift in Sources */,
 				1EA1B27D82AD2C8DC2A6FD93 /* MainTabs.swift in Sources */,
 				D977791D5DD29F28BA34D5B5 /* MarkdownEditor.swift in Sources */,
 				ED194374EA744BABF0B037A1 /* MarkdownView.swift in Sources */,
+				CFDF5655DE675284CDC56DEB /* MessagesScreen.swift in Sources */,
 				35A3D050653345C50ED841BA /* MoreScreen.swift in Sources */,
 				C2C34D52BA2AC9CEAEA0F078 /* MusicScreen.swift in Sources */,
 				196376AC30392F010178CB3B /* NoteScreen.swift in Sources */,
 				B198BD097D0212901A8C9D14 /* NotesModels.swift in Sources */,
 				8D57CE96CA98141B1CAA857E /* NotesScreen.swift in Sources */,
 				819A2BCF2F877EB70B99FC8F /* NowPlaying.swift in Sources */,
+				C3A32E9422EF835236D5419C /* ProjectScreen.swift in Sources */,
 				F174C81EEEEEA95C303BB284 /* Push.swift in Sources */,
 				3688E35338B11F6B29A7893E /* QuickAdd.swift in Sources */,
 				CC1C270197956507A3B8566E /* RemoteImage.swift in Sources */,
 				96B9F6CBE1BEB87879C1067B /* Repo.swift in Sources */,
 				316AF9BAC5E14D61596FF29D /* ScratchPadEditor.swift in Sources */,
+				354C7F3CB290CEA782C8C782 /* SearchTrashSettings.swift in Sources */,
 				C1D34C5FC915B24FD97D3B63 /* SharedConfig.swift in Sources */,
 				C9AEB8725C1104EB8FBC3B34 /* SignInView.swift in Sources */,
 				00DF40CB7AE24091088A66F9 /* SmartEntry.swift in Sources */,
