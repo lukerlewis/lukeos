@@ -296,6 +296,13 @@
   }
  },
  {
+  "file": "get_health_day.json",
+  "op": "get_health_day",
+  "input": {
+   "date": "2026-11-21"
+  }
+ },
+ {
   "file": "sync_health.json",
   "op": "sync_health",
   "input": {}

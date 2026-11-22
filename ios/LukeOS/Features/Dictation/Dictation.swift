@@ -135,6 +135,7 @@ final class Dictation {
         guard !listening else { return }
         listening = true
         publish()
+        DictationHistory.shared.prune()
         DictationLink.listen(for: [.start, .stop, .cancel, .ping])
         let center = NotificationCenter.default
         func on(_ name: Notification.Name, _ action: @escaping @Sendable @MainActor (Dictation) async -> Void) {
@@ -307,6 +308,13 @@ final class Dictation {
             } catch {
                 failure = error.localizedDescription
             }
+            // Keep it for a week in case typing it into the app goes wrong. If Whisper failed,
+            // keep the recording instead so it can be tried again.
+            if !text.isEmpty {
+                DictationHistory.shared.add(text: text)
+            } else if failure != nil {
+                DictationHistory.shared.addFailed(samples: samples)
+            }
         }
         lastTook = Date().timeIntervalSince(began)
         lastText = text
@@ -319,6 +327,22 @@ final class Dictation {
         // The mic may have been turned off while Whisper was working.
         if phase == .transcribing { phase = .ready }
         publish()
+    }
+
+    /// Tries a kept recording again (Whisper failed the first time).
+    func retry(_ entry: DictationEntry) async {
+        guard let samples = DictationHistory.shared.samples(for: entry) else { return }
+        await loadModel()
+        do {
+            let text = Self.tidy(try await transcriber.transcribe(samples))
+            if text.isEmpty {
+                DictationHistory.shared.remove(entry.id)
+            } else {
+                DictationHistory.shared.resolve(entry.id, text: text)
+            }
+        } catch {
+            Toasts.shared.show(error.localizedDescription)
+        }
     }
 
     /// Too short or too quiet to be speech. Whisper makes words up when it is given silence.

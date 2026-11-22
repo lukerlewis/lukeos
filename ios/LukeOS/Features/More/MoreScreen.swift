@@ -7,6 +7,9 @@ enum MoreRoute: Hashable {
     case note(String)
     case inspirationItem(String)
     case web(path: String, title: String)
+    /// A Health section's page (`HealthSection` raw value), optionally opened on a day.
+    case healthSection(String, date: String? = nil)
+    case workout(HealthWorkoutRef)
 }
 
 /// More: Messages, Search, All tasks, Documents, Inspiration, Health, Screen Time, Dictation, Trash, Settings,
@@ -100,6 +103,9 @@ struct MoreScreen: View {
         case .note(let id): NoteScreen(noteId: id)
         case .inspirationItem(let id): InspirationDetail(itemId: id)
         case .web(let p, let t): WebScreen(path: p, title: t)
+        case .healthSection(let id, let date):
+            if let section = HealthSection(rawValue: id) { HealthSectionScreen(section: section, askedDate: date) } else { HealthScreen() }
+        case .workout(let ref): WorkoutScreen(ref: ref)
         }
     }
 
@@ -129,7 +135,14 @@ struct MoreScreen: View {
         case "projects": path.append(id.map(MoreRoute.project) ?? .tasks)
         case "inspiration": path.append(id.map(MoreRoute.inspirationItem) ?? .inspiration)
         case "search": path.append(MoreRoute.search)
-        case "health": path.append(MoreRoute.health)
+        case "health":
+            // "/health/sleep?date=2026-11-21" opens the section on that day, with Health under it.
+            path.append(MoreRoute.health)
+            if let id, HealthSection(rawValue: id) != nil {
+                let date = link.split(separator: "?").dropFirst().first?.split(separator: "&")
+                    .first { $0.hasPrefix("date=") }.map { String($0.dropFirst(5)) }
+                path.append(MoreRoute.healthSection(id, date: date))
+            }
         case "settings": path.append(MoreRoute.settings)
         case "dictation": if path.isEmpty { path.append(MoreRoute.dictation) }
         case "screen-time": path.append(MoreRoute.screenTime)
