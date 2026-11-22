@@ -192,7 +192,7 @@ struct MarkdownView: View {
                                 Text(Markdown.inline(cell))
                                     .textStyle(.preview, medium: r == 0, color: r == 0 ? .ink : .subtleText)
                                     .padding(.horizontal, 12).padding(.vertical, 9)
-                                    .frame(minWidth: 80, alignment: .leading)
+                                    .frame(minWidth: 80, maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                                     .background(r == 0 ? Color.muted : Color.clear)
                                     .overlay { Rectangle().strokeBorder(Color.hairline, lineWidth: 0.5) }
                             }

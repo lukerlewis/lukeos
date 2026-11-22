@@ -46,6 +46,8 @@ targets:
     sources:
       - path: Widgets
       - path: Shared
+      - path: LukeOS/Resources/Fonts
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lewisdesign.lukeos.widgets
@@ -65,6 +67,9 @@ targets:
         PRODUCT_NAME: LukeOSShare
         INFOPLIST_FILE: Share/Info.plist
         CODE_SIGN_ENTITLEMENTS: Share/Share.entitlements
+        # NSItemProvider isn't Sendable; the extension runs one short task, so Swift 5 checking is enough.
+        SWIFT_VERSION: "5.0"
+        SWIFT_STRICT_CONCURRENCY: minimal
   LukeOSTests:
     type: bundle.unit-test
     platform: iOS

@@ -36,6 +36,7 @@ final class LukeAPI: Sendable {
 
     /// Runs an operation and returns the raw JSON answer.
     func opData(_ name: String, _ input: Input = [:]) async throws -> Data {
+        WriteRecorder.record(name, input)
         if SharedConfig.isDemo { return try await DemoServer.shared.run(name, input) }
         var req = request("api/ops/\(name)")
         req.httpMethod = "POST"
@@ -157,5 +158,28 @@ final class LukeAPI: Sendable {
 
     func installCookie() {
         if let c = sessionCookie { HTTPCookieStorage.shared.setCookie(c) }
+    }
+}
+
+/// Debug check: launched with `-recordWrites`, every change the app sends is appended to
+/// `Documents/recorded-writes.jsonl` as {"op": ..., "input": ...}, so it can be replayed against the server's rules.
+enum WriteRecorder {
+    static let on = ProcessInfo.processInfo.arguments.contains("-recordWrites")
+    private static let lock = NSLock()
+
+    static func record(_ name: String, _ input: Input) {
+        guard on, !(name.hasPrefix("get_") || name.hasPrefix("list_") || name == "search") else { return }
+        let enc = JSONEncoder()
+        enc.outputFormatting = .sortedKeys
+        guard let data = try? enc.encode(JSON.object(["op": .string(name), "input": .object(input)])) else { return }
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appending(path: "recorded-writes.jsonl")
+        lock.lock()
+        defer { lock.unlock() }
+        if !FileManager.default.fileExists(atPath: url.path()) { FileManager.default.createFile(atPath: url.path(), contents: nil) }
+        if let h = try? FileHandle(forWritingTo: url) {
+            h.seekToEndOfFile()
+            h.write(data + Data("\n".utf8))
+            try? h.close()
+        }
     }
 }

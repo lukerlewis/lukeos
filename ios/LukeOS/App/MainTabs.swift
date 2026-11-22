@@ -40,6 +40,9 @@ struct MainTabs: View {
         .task {
             await Home.shared.refresh()
             // Demo checks: `-autoplay` starts the library, `-player` opens the full player.
+            #if DEBUG
+            await WriteExercise.runIfAsked()
+            #endif
             let args = ProcessInfo.processInfo.arguments
             if args.contains("-autoplay") {
                 await MusicModel.shared.load()

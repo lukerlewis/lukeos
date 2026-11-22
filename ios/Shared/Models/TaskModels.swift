@@ -12,7 +12,7 @@ struct MadeBy: Codable, Hashable, Sendable {
 struct ProjectRef: Codable, Hashable, Sendable, Identifiable {
     var id: String
     var name: String
-    var color: String
+    var color: String?
     var hex: String?
 }
 
