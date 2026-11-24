@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock, ExternalLink, Filter, MessageCircle, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clock, ExternalLink, Filter, Play, MessageCircle, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { showToast } from "@/components/shell/toast";
@@ -135,14 +135,101 @@ function Avatar({ src, name }: { src: string | null; name: string }) {
   return <img ref={check} src={src} alt="" referrerPolicy="no-referrer" onError={() => setBroken(true)} className="size-10 shrink-0 rounded-full bg-muted object-cover" />;
 }
 
+/** X's video and GIF thumbnails live under these folders on its picture server. */
+export const isVideoThumb = (u: string) => /\/(ext_tw_video_thumb|amplify_video_thumb|tweet_video_thumb)\//.test(u);
+/** The biggest copy X has of a picture. */
+const large = (u: string) => (/name=\w+/.test(u) ? u.replace(/name=\w+/, "name=large") : u);
+
+/** Pictures open full screen; videos open on X, where they play. */
 function Media({ urls, href }: { urls: string[]; href: string }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const photos = urls.filter((u) => !isVideoThumb(u));
   return (
-    <a href={href} target="_blank" rel="noreferrer" className={cn("grid gap-0.5 overflow-hidden rounded-xl border border-stroke", urls.length > 1 && "grid-cols-2")}>
-      {urls.map((u) => (
-        // eslint-disable-next-line @next/next/no-img-element -- pictures stay on X's servers
-        <img key={u} src={u} alt="" loading="lazy" referrerPolicy="no-referrer" className={cn("w-full bg-muted object-cover", urls.length > 1 ? "aspect-square" : "max-h-[28rem]")} />
-      ))}
-    </a>
+    <>
+      <div className={cn("grid gap-0.5 overflow-hidden rounded-xl border border-stroke", urls.length > 1 && "grid-cols-2")}>
+        {urls.map((u) => {
+          const img = (
+            // eslint-disable-next-line @next/next/no-img-element -- pictures stay on X's servers
+            <img src={u} alt="" loading="lazy" referrerPolicy="no-referrer" className={cn("w-full bg-muted object-cover", urls.length > 1 ? "aspect-square" : "max-h-[28rem]")} />
+          );
+          return isVideoThumb(u) ? (
+            <a key={u} href={href} target="_blank" rel="noreferrer" aria-label="Play video on X" className="relative block">
+              {img}
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="flex size-14 items-center justify-center rounded-full bg-black/60 text-white">
+                  <Play className="size-6 fill-current" aria-hidden />
+                </span>
+              </span>
+            </a>
+          ) : (
+            <button key={u} type="button" onClick={() => setOpen(photos.indexOf(u))} aria-label="View picture" className="block cursor-zoom-in">
+              {img}
+            </button>
+          );
+        })}
+      </div>
+      {open !== null && <Viewer photos={photos} start={open} href={href} onClose={() => setOpen(null)} />}
+    </>
+  );
+}
+
+/** A post's pictures full screen: arrows or swipe between them, Escape or a tap outside closes. */
+function Viewer({ photos, start, href, onClose }: { photos: string[]; start: number; href: string; onClose: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [i, setI] = useState(start);
+  const touch = useRef<number | null>(null);
+  const go = (d: number) => setI((n) => (n + d + photos.length) % photos.length);
+
+  useEffect(() => {
+    const dialog = ref.current;
+    dialog?.showModal();
+    return () => dialog?.close();
+  }, []);
+
+  const round = "flex size-11 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25";
+  return (
+    <dialog
+      ref={ref}
+      aria-label="Picture"
+      onClose={onClose}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowRight") go(1);
+        if (e.key === "ArrowLeft") go(-1);
+      }}
+      onTouchStart={(e) => (touch.current = e.touches[0].clientX)}
+      onTouchEnd={(e) => {
+        if (touch.current === null) return;
+        const dx = e.changedTouches[0].clientX - touch.current;
+        if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+        touch.current = null;
+      }}
+      className="m-0 h-dvh max-h-none w-screen max-w-none bg-black/95 p-0 backdrop:bg-black/80"
+    >
+      <div className="pointer-events-none flex h-full items-center justify-center p-4 pt-16 pb-[max(env(safe-area-inset-bottom),1rem)]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- pictures stay on X's servers */}
+        <img src={large(photos[i])} alt="" referrerPolicy="no-referrer" className="pointer-events-auto max-h-full max-w-full object-contain" />
+      </div>
+      <div className="absolute inset-x-0 top-0 flex items-center gap-2 p-3 pt-[max(env(safe-area-inset-top),0.75rem)]">
+        <button type="button" onClick={onClose} aria-label="Close" className={round}>
+          <X className="size-5" aria-hidden />
+        </button>
+        <span className="grow text-center text-meta text-white/70">{photos.length > 1 ? `${i + 1} of ${photos.length}` : ""}</span>
+        <a href={href} target="_blank" rel="noreferrer" aria-label="Open on X" className={round}>
+          <ExternalLink className="size-5" aria-hidden />
+        </a>
+      </div>
+      {photos.length > 1 && (
+        <>
+          <button type="button" onClick={() => go(-1)} aria-label="Previous picture" className={cn(round, "absolute top-1/2 left-3 -translate-y-1/2 max-sm:hidden")}>
+            <ChevronLeft className="size-5" aria-hidden />
+          </button>
+          <button type="button" onClick={() => go(1)} aria-label="Next picture" className={cn(round, "absolute top-1/2 right-3 -translate-y-1/2 max-sm:hidden")}>
+            <ChevronRight className="size-5" aria-hidden />
+          </button>
+        </>
+      )}
+    </dialog>
   );
 }
 

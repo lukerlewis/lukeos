@@ -223,6 +223,8 @@ struct XPostRow: View {
     var onReply: () -> Void
     var onEdit: (XReply) -> Void
     var onChanged: () -> Void
+    @State private var viewing: Int?
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         HStack(alignment: .top, spacing: Space.m) {
@@ -249,17 +251,10 @@ struct XPostRow: View {
                         .tint(Color.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if let first = post.media.first {
-                    // The picture fills a fixed box so a wide one can't push the card past the screen edge.
-                    Color.muted
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 220)
-                        .overlay { RemoteImage(path: first, contentMode: .fill) }
-                        .clipShape(.rect(cornerRadius: Radius.card))
-                        .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(Color.hairline, lineWidth: 1))
-                        .overlay(alignment: .bottomTrailing) {
-                            if post.media.count > 1 { Tag("+\(post.media.count - 1)").padding(Space.s) }
-                        }
+                if !post.media.isEmpty {
+                    XMediaGrid(urls: post.media) { i in viewing = i } onVideo: {
+                        if let url = URL(string: post.url) { openURL(url) }
+                    }
                 }
                 if post.kind == "quote", let q = post.context, q.text != nil || q.author != nil {
                     VStack(alignment: .leading, spacing: Space.xs) {
@@ -280,6 +275,9 @@ struct XPostRow: View {
                 .buttonStyle(.borderless)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .fullScreenCover(item: Binding(get: { viewing.map { XPhotoStart(index: $0) } }, set: { viewing = $0?.index })) { start in
+            XPhotoViewer(photos: post.media.filter { !XMedia.isVideo($0) }, start: start.index, postURL: post.url)
         }
     }
 
@@ -533,5 +531,99 @@ extension Binding where Value == String {
     /// A text field for an optional string: empty text stands for nil.
     init(_ source: Binding<String?>, replacingNilWith empty: String) {
         self.init(get: { source.wrappedValue ?? empty }, set: { source.wrappedValue = $0.isEmpty ? nil : $0 })
+    }
+}
+
+enum XMedia {
+    /// X keeps video and GIF thumbnails under these folders.
+    static func isVideo(_ url: String) -> Bool {
+        ["/ext_tw_video_thumb/", "/amplify_video_thumb/", "/tweet_video_thumb/"].contains { url.contains($0) }
+    }
+
+    /// The biggest copy X has of a picture.
+    static func large(_ url: String) -> String {
+        url.replacingOccurrences(of: #"name=\w+"#, with: "name=large", options: .regularExpression)
+    }
+}
+
+struct XPhotoStart: Identifiable { var index: Int; var id: Int { index } }
+
+/// A post's pictures and video thumbnails. Pictures open full screen; videos open on X, where they play.
+struct XMediaGrid: View {
+    var urls: [String]
+    var onPhoto: (Int) -> Void
+    var onVideo: () -> Void
+
+    var body: some View {
+        let rows = stride(from: 0, to: urls.count, by: 2).map { Array(urls[$0 ..< min($0 + 2, urls.count)]) }
+        VStack(spacing: 2) {
+            ForEach(rows.indices, id: \.self) { r in
+                HStack(spacing: 2) {
+                    ForEach(rows[r], id: \.self) { url in cell(url, height: urls.count == 1 ? 220 : 140) }
+                }
+            }
+        }
+        .clipShape(.rect(cornerRadius: Radius.card))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(Color.hairline, lineWidth: 1))
+    }
+
+    private func cell(_ url: String, height: CGFloat) -> some View {
+        let video = XMedia.isVideo(url)
+        return Button {
+            if video { onVideo() } else if let i = urls.filter({ !XMedia.isVideo($0) }).firstIndex(of: url) { onPhoto(i) }
+        } label: {
+            // The picture fills a fixed box so a wide one can't push the card past the screen edge.
+            Color.muted
+                .frame(maxWidth: .infinity)
+                .frame(height: height)
+                .overlay { RemoteImage(path: url, contentMode: .fill) }
+                .overlay {
+                    if video {
+                        Image(systemName: "play.fill").font(.system(size: 22)).foregroundStyle(.white)
+                            .frame(width: 56, height: 56)
+                            .background(.black.opacity(0.6), in: .circle)
+                    }
+                }
+                .clipped()
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(video ? "Play video on X" : "View picture")
+    }
+}
+
+/// A post's pictures full screen: swipe between them, pinch to zoom, swipe down or Close to leave.
+struct XPhotoViewer: View {
+    var photos: [String]
+    @State var start: Int
+    var postURL: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var scale: CGFloat = 1
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                TabView(selection: $start) {
+                    ForEach(photos.indices, id: \.self) { i in
+                        RemoteImage(path: XMedia.large(photos[i]))
+                            .scaleEffect(i == start ? scale : 1)
+                            .gesture(MagnifyGesture().onChanged { scale = max(1, $0.magnification) }.onEnded { _ in withAnimation { scale = 1 } })
+                            .tag(i)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: photos.count > 1 ? .always : .never))
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { Button(role: .close) { dismiss() } }
+                ToolbarItem(placement: .topBarTrailing) {
+                    if let url = URL(string: postURL) {
+                        Link(destination: url) { Image(systemName: "arrow.up.right.square") }
+                            .accessibilityLabel("Open on X")
+                    }
+                }
+            }
+        }
+        .gesture(DragGesture().onEnded { if $0.translation.height > 120 { dismiss() } })
     }
 }
