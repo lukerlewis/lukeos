@@ -15,6 +15,21 @@ const { xPeople, xPosts, xReplies, appSettings } = schema;
 
 const SEEN_KEY = "x_feed_seen_at";
 
+/** Luke only wants recent posts: anything posted more than 2 days ago drops out of the feed. */
+const KEEP_MS = 2 * 24 * 60 * 60 * 1000;
+const keepFrom = () => new Date(Date.now() - KEEP_MS);
+/** A post with one of Luke's replies still waiting to go out stays, so the reply isn't lost. */
+const pendingReply = sql`exists (select 1 from ${xReplies} where ${xReplies.postId} = ${xPosts.id} and ${xReplies.status} <> 'sent')`;
+
+/** Deletes posts older than 2 days (keeping any with a reply still to post). */
+async function clearOldPosts() {
+  const gone = await db
+    .delete(xPosts)
+    .where(and(lt(xPosts.postedAt, keepFrom()), sql`not ${pendingReply}`))
+    .returning({ id: xPosts.id });
+  return gone.length;
+}
+
 export type XPerson = {
   id: string;
   handle: string;
@@ -147,6 +162,7 @@ export async function getFeed(filter: FeedFilter = {}) {
     ? people.filter((p) => p.company?.toLowerCase() === filter.company!.toLowerCase()).map((p) => p.id)
     : null;
   const conditions = [
+    sql`(${xPosts.postedAt} >= ${keepFrom()} or ${pendingReply})`,
     filter.personId ? eq(xPosts.personId, filter.personId) : undefined,
     atCompany ? (atCompany.length ? inArray(xPosts.personId, atCompany) : sql`false`) : undefined,
     filter.view === "day" ? gt(xPosts.postedAt, new Date(now.getTime() - 24 * 60 * 60 * 1000)) : undefined,
@@ -245,7 +261,7 @@ const postInput = z.object({
     .nullable()
     .optional()
     .describe("For a quote or reply: the other post (author's @handle, its text, its address), when it's shown."),
-  media: z.array(z.url().max(2000)).max(4).default([]).describe("Addresses of the post's pictures (pbs.twimg.com), up to 4."),
+  media: z.array(z.url().max(2000)).max(4).default([]).describe("Addresses of the post's pictures (pbs.twimg.com), up to 4. For a video or GIF, its thumbnail (the <video> poster, under ext_tw_video_thumb, amplify_video_thumb or tweet_video_thumb): the app shows a play button that opens the post on X."),
 });
 
 export const xFeedOperations = {
@@ -317,7 +333,7 @@ export const xFeedOperations = {
   get_x_feed: defineOperation({
     name: "get_x_feed",
     description:
-      "Luke's X feed, newest first: posts from the people he follows, each with his replies and their state (draft: written by Claude, waits for Luke; queued: waiting to be posted on X; sent; failed). Also when Claude last checked X.",
+      "Luke's X feed, newest first (the last 2 days): posts from the people he follows, each with his replies and their state (draft: written by Claude, waits for Luke; queued: waiting to be posted on X; sent; failed). Also when Claude last checked X.",
     input: z.object({
       personId: personId.optional().describe("Only this person's posts."),
       company: z.string().trim().max(100).optional().describe("Only posts from people at this company."),
@@ -334,7 +350,7 @@ export const xFeedOperations = {
   save_x_posts: defineOperation({
     name: "save_x_posts",
     description:
-      "For the X feed routine: save posts read from a followed person's profile on X. Posts already saved are skipped (matched by xId), so it's safe to pass everything visible. Also records that their profile was checked, and can update their name and picture. Copy text exactly; never summarise or rewrite it.",
+      "For the X feed routine: save posts read from a followed person's profile on X. Posts already saved, and posts more than 2 days old, are skipped (the feed keeps only the last 2 days; older posts are deleted unless Luke has a reply waiting on them), so it's safe to pass everything visible. Also records that their profile was checked, and can update their name and picture. Copy text exactly; never summarise or rewrite it.",
     input: z.object({
       personId,
       name: z.string().trim().max(200).optional().describe("Their display name as shown on X."),
@@ -348,11 +364,14 @@ export const xFeedOperations = {
         .update(xPeople)
         .set({ checkedAt: now, ...(name && { name }), ...(avatarUrl && { avatarUrl }), updatedAt: now })
         .where(eq(xPeople.id, id));
-      if (posts.length === 0) return { added: 0, skipped: 0 };
+      const cleared = await clearOldPosts();
+      const since = keepFrom();
+      const fresh = posts.filter((p) => new Date(p.postedAt) >= since);
+      if (fresh.length === 0) return { added: 0, skipped: posts.length, cleared };
       const inserted = await db
         .insert(xPosts)
         .values(
-          posts.map((p) => ({
+          fresh.map((p) => ({
             personId: id,
             xId: p.xId,
             url: `https://x.com/${person.handle}/status/${p.xId}`,
@@ -364,9 +383,11 @@ export const xFeedOperations = {
             ...madeByColumns(actor),
           })),
         )
-        .onConflictDoNothing({ target: xPosts.xId })
-        .returning({ id: xPosts.id });
-      return { added: inserted.length, skipped: posts.length - inserted.length };
+        // A post seen again picks up pictures and video thumbnails an older read missed.
+        .onConflictDoUpdate({ target: xPosts.xId, set: { media: sql`excluded.media` }, setWhere: sql`jsonb_array_length(excluded.media) > jsonb_array_length(${xPosts.media})` })
+        .returning({ id: xPosts.id, isNew: sql<boolean>`xmax = 0` });
+      const added = inserted.filter((r) => r.isNew).length;
+      return { added, updated: inserted.length - added, skipped: posts.length - added, cleared };
     },
   }),
 
