@@ -38,6 +38,8 @@ export type XPerson = {
   avatarUrl: string | null;
   url: string;
   checkedAt: Date | null;
+  /** Following them on X (pending until Claude does it at the next check-in). */
+  follow: XActionState;
   createdAt: Date;
 };
 
@@ -72,7 +74,7 @@ export type XPost = {
   postedAt: Date;
   /** Saved since Luke last opened the feed. */
   isNew: boolean;
-  person: Pick<XPerson, "id" | "handle" | "name" | "company" | "avatarUrl">;
+  person: Pick<XPerson, "id" | "handle" | "name" | "company" | "avatarUrl" | "follow">;
   replies: XReply[];
   actions: Record<XActionKind, XActionState>;
 };
@@ -86,8 +88,15 @@ function toPerson(row: typeof xPeople.$inferSelect): XPerson {
     avatarUrl: row.avatarUrl,
     url: `https://x.com/${row.handle}`,
     checkedAt: row.checkedAt,
+    follow: followState(row),
     createdAt: row.createdAt,
   };
+}
+
+function followState(row: typeof xPeople.$inferSelect): XActionState {
+  const done = row.following ?? false;
+  const on = row.followWant ?? done;
+  return { on, pending: row.followWant !== null && row.followWant !== done, error: row.followError, done };
 }
 
 function toReply(row: typeof xReplies.$inferSelect): XReply {
@@ -204,7 +213,7 @@ export async function getFeed(filter: FeedFilter = {}) {
       media: row.media,
       postedAt: row.postedAt,
       isNew: row.createdAt > seen,
-      person: { id: p.id, handle: p.handle, name: p.name, company: p.company, avatarUrl: p.avatarUrl },
+      person: { id: p.id, handle: p.handle, name: p.name, company: p.company, avatarUrl: p.avatarUrl, follow: p.follow },
       replies: replies.filter((r) => r.postId === row.id).map(toReply),
       actions: Object.fromEntries(
         actionKinds.map((kind) => {
@@ -371,14 +380,23 @@ export const xFeedOperations = {
       personId,
       name: z.string().trim().max(200).optional().describe("Their display name as shown on X."),
       avatarUrl: z.url().max(2000).optional().describe("Their profile picture address."),
+      following: z.boolean().optional().describe("Whether Luke follows them on X, from the Follow / Following button on their profile."),
       posts: z.array(postInput).max(100).describe("Their posts, as shown on their profile. Leave out reposts of other people's posts."),
     }),
-    run: async ({ personId: id, name, avatarUrl, posts }, { actor }) => {
+    run: async ({ personId: id, name, avatarUrl, following, posts }, { actor }) => {
       const person = await getPerson(id);
       const now = new Date();
       await db
         .update(xPeople)
-        .set({ checkedAt: now, ...(name && { name }), ...(avatarUrl && { avatarUrl }), updatedAt: now })
+        .set({
+          checkedAt: now,
+          ...(name && { name }),
+          ...(avatarUrl && { avatarUrl }),
+          ...(following !== undefined && { following }),
+          // Already as Luke wants on X: nothing left to do.
+          ...(following !== undefined && following === person.follow.on && { followWant: null, followError: null }),
+          updatedAt: now,
+        })
         .where(eq(xPeople.id, id));
       const cleared = await clearOldPosts();
       const since = keepFrom();
@@ -578,6 +596,59 @@ export const xFeedOperations = {
       const [row] = await db.update(xActions).set({ error, updatedAt: new Date() }).where(eq(xActions.id, id)).returning();
       if (!row) throw new OperationError("That action doesn't exist.", 404);
       return { id, error };
+    },
+  }),
+
+  set_x_follow: defineOperation({
+    name: "set_x_follow",
+    description: "Luke only, from the app: follow someone in his X feed on X (on: true), or unfollow them (on: false). The X feed routine does it on X at the next check-in.",
+    input: z.object({ personId, on: z.boolean() }),
+    run: async ({ personId: id, on }, { actor }) => {
+      assertLuke(actor, "follow people on X");
+      const person = await getPerson(id);
+      await db
+        .update(xPeople)
+        // Back to how it already is on X: nothing left to do.
+        .set({ followWant: on === person.follow.done ? null : on, followError: null, updatedAt: new Date() })
+        .where(eq(xPeople.id, id));
+      return (await getPerson(id)).follow;
+    },
+  }),
+
+  list_x_follows_to_do: defineOperation({
+    name: "list_x_follows_to_do",
+    description:
+      "For the X feed routine: people Luke asked to follow (on: true) or unfollow (on: false) on X, each with their profile address. Then call mark_x_follow_done (or mark_x_follow_failed).",
+    input: z.object({}),
+    run: async () => {
+      const rows = await db
+        .select()
+        .from(xPeople)
+        .where(sql`${xPeople.followWant} is not null and ${xPeople.followWant} is distinct from coalesce(${xPeople.following}, false)`)
+        .orderBy(xPeople.updatedAt);
+      return rows.map((r) => ({ personId: r.id, handle: r.handle, on: r.followWant!, url: `https://x.com/${r.handle}`, error: r.followError }));
+    },
+  }),
+
+  mark_x_follow_done: defineOperation({
+    name: "mark_x_follow_done",
+    description: "For the X feed routine: record whether Luke now follows this person on X (following: true or false, as the button on their profile shows).",
+    input: z.object({ personId, following: z.boolean() }),
+    run: async ({ personId: id, following }) => {
+      await getPerson(id);
+      await db.update(xPeople).set({ following, followWant: null, followError: null, updatedAt: new Date() }).where(eq(xPeople.id, id));
+      return (await getPerson(id)).follow;
+    },
+  }),
+
+  mark_x_follow_failed: defineOperation({
+    name: "mark_x_follow_failed",
+    description: "For the X feed routine: record that following or unfollowing someone on X didn't work, and why in a few plain words. It stays waiting, so the next run tries again.",
+    input: z.object({ personId, error: z.string().trim().min(1).max(500) }),
+    run: async ({ personId: id, error }) => {
+      await getPerson(id);
+      await db.update(xPeople).set({ followError: error, updatedAt: new Date() }).where(eq(xPeople.id, id));
+      return { personId: id, error };
     },
   }),
 
