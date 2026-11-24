@@ -48,6 +48,14 @@ struct XPost: Codable, Hashable, Sendable, Identifiable {
     var isNew: Bool
     var person: XPersonRef
     var replies: [XReply]
+    var actions: [String: XActionState]?
+}
+
+/// A like, repost or bookmark: on is what Luke wants; pending until Claude does it on X at the next check-in.
+struct XActionState: Codable, Hashable, Sendable {
+    var on: Bool
+    var pending: Bool
+    var error: String?
 }
 
 struct XFeed: Codable, Hashable, Sendable {
@@ -268,11 +276,7 @@ struct XPostRow: View {
                 ForEach(post.replies) { r in
                     XReplyBox(reply: r, onEdit: { onEdit(r) }, onChanged: onChanged)
                 }
-                Button(action: onReply) {
-                    Label("Reply", systemImage: "bubble.left").textStyle(.meta, color: .subtleText)
-                        .frame(minHeight: Size.tap)
-                }
-                .buttonStyle(.borderless)
+                XActionBar(post: post, onReply: onReply)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -625,5 +629,60 @@ struct XPhotoViewer: View {
             }
         }
         .gesture(DragGesture().onEnded { if $0.translation.height > 120 { dismiss() } })
+    }
+}
+
+/// Reply, repost, like and bookmark under a post. Claude does the last three on X at the next check-in.
+struct XActionBar: View {
+    var post: XPost
+    var onReply: () -> Void
+    @State private var state: [String: XActionState] = [:]
+
+    private static let kinds: [(kind: String, off: String, on: String, label: String)] = [
+        ("repost", "arrow.2.squarepath", "arrow.2.squarepath", "Repost"),
+        ("like", "heart", "heart.fill", "Like"),
+        ("bookmark", "bookmark", "bookmark.fill", "Bookmark"),
+    ]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Button(action: onReply) {
+                Label("Reply", systemImage: "bubble.left").textStyle(.meta, color: .subtleText)
+                    .frame(minHeight: Size.tap)
+                    .padding(.trailing, Space.m)
+            }
+            .buttonStyle(.borderless)
+            ForEach(Self.kinds, id: \.kind) { k in
+                let a = state[k.kind] ?? post.actions?[k.kind] ?? XActionState(on: false, pending: false)
+                Button { toggle(k.kind, a) } label: {
+                    Image(systemName: a.on ? k.on : k.off)
+                        .font(.icon(.row))
+                        .foregroundStyle(a.on ? Color.ink : Color.icon)
+                        .opacity(a.pending ? 0.55 : 1)
+                        .frame(width: Size.tap, height: Size.tap)
+                        .overlay(alignment: .topTrailing) {
+                            if a.error != nil {
+                                Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 9)).foregroundStyle(Color.notification).padding(8)
+                            } else if a.pending {
+                                Image(systemName: "clock").font(.system(size: 9)).foregroundStyle(Color.mutedText).padding(8)
+                            }
+                        }
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(a.on ? "\(k.label), on" : k.label)
+                .accessibilityHint(a.pending ? "Happens on X at the next check-in" : "")
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func toggle(_ kind: String, _ was: XActionState) {
+        let on = !was.on
+        Haptics.select()
+        withAnimation(Motion.snappy) { state[kind] = XActionState(on: on, pending: true) }
+        Task {
+            await Repo.change("set_x_post_action", ["postId": .string(post.id), "kind": .string(kind), "on": .bool(on)])
+        }
     }
 }

@@ -938,3 +938,25 @@ export const xReplies = pgTable(
   },
   (t) => [index("x_replies_post_idx").on(t.postId), index("x_replies_status_idx").on(t.status)],
 );
+
+/** Luke's likes, reposts and bookmarks on X feed posts. Claude does them on X at the next check-in. */
+export const xActions = pgTable(
+  "x_actions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => xPosts.id, { onDelete: "cascade" }),
+    /** "like", "repost" or "bookmark". */
+    kind: text("kind").notNull(),
+    /** What Luke wants: on (liked) or off. */
+    want: boolean("want").notNull().default(true),
+    /** What it is on X right now, as far as LukeOS knows. */
+    done: boolean("done").notNull().default(false),
+    /** Why the last try didn't work. */
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("x_actions_post_kind_idx").on(t.postId, t.kind)],
+);

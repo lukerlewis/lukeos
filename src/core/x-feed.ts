@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, type MadeBy } from "./define";
 
-const { xPeople, xPosts, xReplies, appSettings } = schema;
+const { xPeople, xPosts, xReplies, xActions, appSettings } = schema;
 
 /**
  * Luke's X feed: posts from the people he picks, and his replies to them.
@@ -56,6 +56,11 @@ export type XReply = {
   updatedAt: Date;
 };
 
+export const actionKinds = ["like", "repost", "bookmark"] as const;
+export type XActionKind = (typeof actionKinds)[number];
+/** on: what Luke wants. pending: not done on X yet (Claude does it at the next check-in). */
+export type XActionState = { on: boolean; pending: boolean; error: string | null };
+
 export type XPost = {
   id: string;
   xId: string;
@@ -69,6 +74,7 @@ export type XPost = {
   isNew: boolean;
   person: Pick<XPerson, "id" | "handle" | "name" | "company" | "avatarUrl">;
   replies: XReply[];
+  actions: Record<XActionKind, XActionState>;
 };
 
 function toPerson(row: typeof xPeople.$inferSelect): XPerson {
@@ -178,9 +184,13 @@ export async function getFeed(filter: FeedFilter = {}) {
     .orderBy(desc(xPosts.postedAt))
     .limit(limit + 1);
   const page = rows.slice(0, limit);
-  const replies = page.length
-    ? await db.select().from(xReplies).where(inArray(xReplies.postId, page.map((p) => p.id))).orderBy(xReplies.createdAt)
-    : [];
+  const ids = page.map((p) => p.id);
+  const [replies, actions] = page.length
+    ? await Promise.all([
+        db.select().from(xReplies).where(inArray(xReplies.postId, ids)).orderBy(xReplies.createdAt),
+        db.select().from(xActions).where(inArray(xActions.postId, ids)),
+      ])
+    : [[], []];
   const byId = new Map(people.map((p) => [p.id, p]));
   const posts: XPost[] = page.map((row) => {
     const p = byId.get(row.personId)!;
@@ -196,6 +206,12 @@ export async function getFeed(filter: FeedFilter = {}) {
       isNew: row.createdAt > seen,
       person: { id: p.id, handle: p.handle, name: p.name, company: p.company, avatarUrl: p.avatarUrl },
       replies: replies.filter((r) => r.postId === row.id).map(toReply),
+      actions: Object.fromEntries(
+        actionKinds.map((kind) => {
+          const a = actions.find((x) => x.postId === row.id && x.kind === kind);
+          return [kind, { on: a?.want ?? false, pending: !!a && a.want !== a.done, error: a?.error ?? null }];
+        }),
+      ) as Record<XActionKind, XActionState>,
     };
   });
   const checks = people.map((p) => p.checkedAt?.getTime() ?? 0);
@@ -499,6 +515,69 @@ export const xFeedOperations = {
       if (reply.status !== "queued") throw new OperationError(`That reply is ${reply.status}, not waiting to be posted.`);
       await db.update(xReplies).set({ status: "failed", error, updatedAt: new Date() }).where(eq(xReplies.id, id));
       return getReply(id);
+    },
+  }),
+
+  set_x_post_action: defineOperation({
+    name: "set_x_post_action",
+    description:
+      "Luke only, from the app: like, repost or bookmark a post in his X feed (on: true), or undo it (on: false). The X feed routine does it on X at the next check-in.",
+    input: z.object({
+      postId: z.uuid().describe("The post's id in LukeOS."),
+      kind: z.enum(actionKinds),
+      on: z.boolean(),
+    }),
+    run: async ({ postId, kind, on }, { actor }) => {
+      assertLuke(actor, `${kind} posts on X`);
+      await assertPost(postId);
+      const [row] = await db
+        .insert(xActions)
+        .values({ postId, kind, want: on, done: false })
+        .onConflictDoUpdate({ target: [xActions.postId, xActions.kind], set: { want: on, error: null, updatedAt: new Date() } })
+        .returning();
+      return { id: row.id, postId, kind, on: row.want, pending: row.want !== row.done };
+    },
+  }),
+
+  list_x_actions_to_do: defineOperation({
+    name: "list_x_actions_to_do",
+    description:
+      "For the X feed routine: Luke's likes, reposts and bookmarks (and undos) waiting to be done on X, oldest first, each with the post's address. on: true means like / repost / bookmark it; on: false means undo it. Then call mark_x_action_done (or mark_x_action_failed).",
+    input: z.object({}),
+    run: async () => {
+      const rows = await db
+        .select({ action: xActions, post: xPosts })
+        .from(xActions)
+        .innerJoin(xPosts, eq(xActions.postId, xPosts.id))
+        .where(sql`${xActions.want} <> ${xActions.done}`)
+        .orderBy(xActions.updatedAt);
+      return rows.map(({ action, post }) => ({ id: action.id, kind: action.kind, on: action.want, url: post.url, error: action.error }));
+    },
+  }),
+
+  mark_x_action_done: defineOperation({
+    name: "mark_x_action_done",
+    description: "For the X feed routine: record that a like, repost or bookmark (or its undo) is now done on X.",
+    input: z.object({ id: z.uuid().describe("The action's id, from list_x_actions_to_do.") }),
+    run: async ({ id }) => {
+      const [row] = await db
+        .update(xActions)
+        .set({ done: sql`${xActions.want}`, error: null, updatedAt: new Date() })
+        .where(eq(xActions.id, id))
+        .returning();
+      if (!row) throw new OperationError("That action doesn't exist.", 404);
+      return { id, kind: row.kind, on: row.done };
+    },
+  }),
+
+  mark_x_action_failed: defineOperation({
+    name: "mark_x_action_failed",
+    description: "For the X feed routine: record that a like, repost or bookmark couldn't be done on X, and why in a few plain words. It stays waiting, so the next run tries again.",
+    input: z.object({ id: z.uuid(), error: z.string().trim().min(1).max(500) }),
+    run: async ({ id, error }) => {
+      const [row] = await db.update(xActions).set({ error, updatedAt: new Date() }).where(eq(xActions.id, id)).returning();
+      if (!row) throw new OperationError("That action doesn't exist.", 404);
+      return { id, error };
     },
   }),
 
