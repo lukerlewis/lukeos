@@ -4,6 +4,7 @@ struct XPersonRef: Codable, Hashable, Sendable {
     var id: String
     var handle: String
     var name: String?
+    var company: String?
     var avatarUrl: String?
     var display: String { name?.isEmpty == false ? name! : handle }
 }
@@ -12,9 +13,11 @@ struct XPerson: Codable, Hashable, Sendable, Identifiable {
     var id: String
     var handle: String
     var name: String?
+    var company: String?
     var avatarUrl: String?
     var url: String
     var checkedAt: String?
+    var display: String { name?.isEmpty == false ? name! : "@\(handle)" }
 }
 
 struct XReply: Codable, Hashable, Sendable, Identifiable {
@@ -52,12 +55,15 @@ struct XFeed: Codable, Hashable, Sendable {
     var posts: [XPost]
     var more: String?
     var checkedAt: String?
+    var companies: [String]?
 }
 
 /// X feed: posts from the people Luke picks on X, and his replies to them.
 /// Claude posts the replies on X at the next check-in, exactly as he wrote them.
 struct XFeedScreen: View {
     @State private var feed: XFeed?
+    @State private var view: String?
+    @State private var company: String?
     @State private var person: String?
     @State private var composing: Composer?
     @State private var showingPeople = false
@@ -70,33 +76,57 @@ struct XFeedScreen: View {
         var reply: XReply?
     }
 
-    private var input: Input { person.map { ["personId": .string($0)] } ?? [:] }
+    /// The filters at the top: day (last 24 hours), unreplied, replied, pictures.
+    private static let views: [(id: String?, label: String)] = [
+        (nil, "All"), ("day", "Last 24 hours"), ("unreplied", "Not replied"), ("replied", "Replied"), ("pictures", "With pictures"),
+    ]
+
+    private var input: Input {
+        var i: Input = [:]
+        if let view { i["view"] = .string(view) }
+        if let company { i["company"] = .string(company) }
+        if let person { i["personId"] = .string(person) }
+        return i
+    }
+
+    private var filtered: Bool { view != nil || company != nil || person != nil }
 
     var body: some View {
         List {
-            if let feed, feed.people.count > 1 {
+            if let feed, !feed.people.isEmpty {
                 Section {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: Space.s) {
-                            ChipToggle(label: "Everyone", on: person == nil) { pick(nil) }
-                            ForEach(feed.people) { p in
-                                ChipToggle(label: p.name?.isEmpty == false ? p.name! : "@\(p.handle)", on: person == p.id) { pick(p.id) }
+                    chips {
+                        ForEach(Self.views, id: \.label) { v in
+                            ChipToggle(label: v.label, on: view == v.id) { pick { view = v.id } }
+                        }
+                    }
+                    .controlRow()
+                    let companies = feed.companies ?? []
+                    let picked = person.flatMap { id in feed.people.first { $0.id == id } }
+                    if companies.count > 1 || picked != nil {
+                        chips {
+                            if let picked {
+                                ChipToggle(label: "\(picked.display)  ✕", on: true) { pick { person = nil } }
+                            }
+                            ForEach(companies, id: \.self) { c in
+                                ChipToggle(label: c, on: company == c) { pick { company = company == c ? nil : c } }
                             }
                         }
-                        .padding(.horizontal, Space.xl)
+                        .controlRow()
                     }
-                    .scrollIndicators(.hidden)
-                    .controlRow()
+                } footer: {
+                    if let at = feed.checkedAt { Text("Checked \(Stamp.relative(at))").textStyle(.meta, color: .mutedText).padding(.horizontal, Space.xl) }
                 }
             }
-            Section {
-                if let feed {
-                    if feed.people.isEmpty {
-                        EmptyNote(text: "Add people to follow.", symbol: "at").listRowBackground(Color.clear)
-                    } else if feed.posts.isEmpty {
-                        EmptyNote(text: "No posts yet.", symbol: "at").listRowBackground(Color.clear)
-                    }
-                    ForEach(feed.posts) { post in
+            if let feed {
+                if feed.people.isEmpty {
+                    EmptyNote(text: "Add people to follow.", symbol: "at").listRowBackground(Color.clear)
+                } else if feed.posts.isEmpty {
+                    EmptyNote(text: filtered ? "No posts here." : "No posts yet.", symbol: "at").listRowBackground(Color.clear)
+                }
+                // Each post is its own card.
+                ForEach(feed.posts) { post in
+                    Section {
                         XPostRow(post: post, onReply: { composing = Composer(post: post) },
                                  onEdit: { composing = Composer(post: post, reply: $0) },
                                  onChanged: { Task { await load() } })
@@ -104,21 +134,23 @@ struct XFeedScreen: View {
                             .contextMenu {
                                 Button("Reply", systemImage: "bubble.left") { composing = Composer(post: post) }
                                 if let url = URL(string: post.url) { Link(destination: url) { Label("Open on X", systemImage: "arrow.up.right.square") } }
+                                Button("Only \(post.person.display)", systemImage: "line.3.horizontal.decrease") { pick { person = post.person.id } }
                                 Button("Remove from feed", systemImage: "trash", role: .destructive) { remove(post) }
                             }
                     }
-                    if feed.more != nil {
+                    .listSectionSpacing(Space.m)
+                }
+                if feed.more != nil {
+                    Section {
                         Button { Task { await loadMore() } } label: {
                             Text("Older posts").textStyle(.control, color: .subtleText).frame(maxWidth: .infinity)
                         }
                         .disabled(loadingMore)
                         .cardRow()
                     }
-                } else {
-                    DelayedSpinner().listRowBackground(Color.clear)
                 }
-            } header: {
-                if let at = feed?.checkedAt { SectionTitle(text: "Checked \(Stamp.relative(at))") }
+            } else {
+                DelayedSpinner().listRowBackground(Color.clear)
             }
         }
         .listStyle(.insetGrouped)
@@ -143,9 +175,19 @@ struct XFeedScreen: View {
         }
     }
 
-    private func pick(_ id: String?) {
-        person = id
+    /// A sideways-scrolling row of chips, edge to edge.
+    private func chips<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: Space.s) { content() }
+                .padding(.horizontal, Space.xl)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    private func pick(_ change: () -> Void) {
+        change()
         feed?.posts = []
+        feed?.more = nil
         Task { await load(cachedFirst: true) }
     }
 
@@ -188,7 +230,17 @@ struct XPostRow: View {
             VStack(alignment: .leading, spacing: Space.s) {
                 HStack(spacing: Space.xs) {
                     Text(post.person.display).textStyle(.meta, medium: true, color: .ink).lineLimit(1)
-                    Text("@\(post.person.handle) · \(Stamp.relative(post.postedAt))").textStyle(.meta, color: .mutedText).lineLimit(1)
+                        .layoutPriority(2)
+                    if let company = post.person.company, !company.isEmpty {
+                        Tag(company).fixedSize().layoutPriority(3)
+                    }
+                    // The @username shows only when it fits whole; otherwise it drops out instead of becoming a sliver.
+                    ViewThatFits(in: .horizontal) {
+                        Text("@\(post.person.handle)").textStyle(.meta, color: .mutedText).lineLimit(1).fixedSize()
+                        Color.clear.frame(width: 0, height: 0)
+                    }
+                    Text("· \(Stamp.relative(post.postedAt))").textStyle(.meta, color: .mutedText).lineLimit(1)
+                        .fixedSize().layoutPriority(3)
                     Spacer(minLength: 0)
                     if post.isNew { UnreadDot() }
                 }
@@ -198,9 +250,11 @@ struct XPostRow: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let first = post.media.first {
-                    RemoteImage(path: first, contentMode: .fill)
+                    // The picture fills a fixed box so a wide one can't push the card past the screen edge.
+                    Color.muted
                         .frame(maxWidth: .infinity)
                         .frame(height: 220)
+                        .overlay { RemoteImage(path: first, contentMode: .fill) }
                         .clipShape(.rect(cornerRadius: Radius.card))
                         .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(Color.hairline, lineWidth: 1))
                         .overlay(alignment: .bottomTrailing) {
@@ -225,6 +279,7 @@ struct XPostRow: View {
                 }
                 .buttonStyle(.borderless)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -387,6 +442,7 @@ struct XPeopleSheet: View {
     @State var people: [XPerson]
     @Environment(\.dismiss) private var dismiss
     @State private var handle = ""
+    @State private var company = ""
     @State private var adding = false
     @State private var error: String?
 
@@ -394,10 +450,14 @@ struct XPeopleSheet: View {
         NavigationStack {
             List {
                 Section {
+                    TextField("@username", text: $handle)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .submitLabel(.next)
+                        .font(.geist(.control))
+                        .cardRow()
                     HStack(spacing: Space.m) {
-                        TextField("@username", text: $handle)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                        TextField("Company", text: $company)
                             .submitLabel(.done)
                             .onSubmit(add)
                             .font(.geist(.control))
@@ -408,13 +468,21 @@ struct XPeopleSheet: View {
                     if let error { Text(error).textStyle(.meta, color: .notification) }
                 }
                 Section {
-                    ForEach(people) { p in
+                    ForEach($people) { $p in
                         HStack(spacing: Space.m) {
                             XAvatar(url: p.avatarUrl, name: p.name ?? p.handle)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(p.name?.isEmpty == false ? p.name! : "@\(p.handle)").textStyle(.control, color: .text)
-                                if p.name?.isEmpty == false { Text("@\(p.handle)").textStyle(.meta, color: .mutedText) }
+                                Text(p.display).textStyle(.control, color: .text).lineLimit(1)
+                                if p.name?.isEmpty == false { Text("@\(p.handle)").textStyle(.meta, color: .mutedText).lineLimit(1) }
                             }
+                            Spacer(minLength: Space.s)
+                            TextField("Company", text: Binding($p.company, replacingNilWith: ""))
+                                .multilineTextAlignment(.trailing)
+                                .font(.geist(.control))
+                                .foregroundStyle(Color.subtleText)
+                                .frame(maxWidth: 120)
+                                .submitLabel(.done)
+                                .onSubmit { saveCompany(p) }
                         }
                         .cardRow()
                         .swipeActions {
@@ -434,6 +502,11 @@ struct XPeopleSheet: View {
         }
     }
 
+    private func saveCompany(_ p: XPerson) {
+        let c = (p.company ?? "").trimmingCharacters(in: .whitespaces)
+        Task { await Repo.change("update_x_person", ["id": .string(p.id), "company": c.isEmpty ? .null : .string(c)]) }
+    }
+
     private func add() {
         let h = handle.trimmingCharacters(in: .whitespaces)
         guard !h.isEmpty else { return }
@@ -442,12 +515,23 @@ struct XPeopleSheet: View {
         Task {
             defer { adding = false }
             do {
-                let p = try await Repo.create("follow_x_person", ["handle": .string(h)], as: XPerson.self)
+                var input: Input = ["handle": .string(h)]
+                let c = company.trimmingCharacters(in: .whitespaces)
+                if !c.isEmpty { input["company"] = .string(c) }
+                let p = try await Repo.create("follow_x_person", input, as: XPerson.self)
                 if !people.contains(where: { $0.id == p.id }) { people.insert(p, at: 0) }
                 handle = ""
+                company = ""
             } catch {
                 self.error = error.localizedDescription
             }
         }
+    }
+}
+
+extension Binding where Value == String {
+    /// A text field for an optional string: empty text stands for nil.
+    init(_ source: Binding<String?>, replacingNilWith empty: String) {
+        self.init(get: { source.wrappedValue ?? empty }, set: { source.wrappedValue = $0.isEmpty ? nil : $0 })
     }
 }

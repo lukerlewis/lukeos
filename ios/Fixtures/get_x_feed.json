@@ -1,0 +1,187 @@
+{
+ "people": [
+  {
+   "id": "0b8c1a52-1111-4a6e-9d1e-000000000001",
+   "handle": "ada_designs",
+   "name": "Ada Morales",
+   "company": "Linear",
+   "avatarUrl": null,
+   "url": "https://x.com/ada_designs",
+   "checkedAt": "2026-11-21T14:00:00.000Z",
+   "createdAt": "2026-11-17T11:00:00.000Z"
+  },
+  {
+   "id": "0b8c1a52-1111-4a6e-9d1e-000000000002",
+   "handle": "maximilian_rosenthal_ux",
+   "name": "Maximilian Rosenthal-Okonkwo",
+   "company": "Perplexity",
+   "avatarUrl": null,
+   "url": "https://x.com/maximilian_rosenthal_ux",
+   "checkedAt": "2026-11-21T14:00:00.000Z",
+   "createdAt": "2026-11-17T11:00:00.000Z"
+  },
+  {
+   "id": "0b8c1a52-1111-4a6e-9d1e-000000000003",
+   "handle": "june",
+   "name": "June Park",
+   "company": "Figma",
+   "avatarUrl": null,
+   "url": "https://x.com/june",
+   "checkedAt": "2026-11-21T14:00:00.000Z",
+   "createdAt": "2026-11-17T11:00:00.000Z"
+  },
+  {
+   "id": "0b8c1a52-1111-4a6e-9d1e-000000000004",
+   "handle": "t0m",
+   "name": null,
+   "company": null,
+   "avatarUrl": null,
+   "url": "https://x.com/t0m",
+   "checkedAt": "2026-11-21T14:00:00.000Z",
+   "createdAt": "2026-11-17T11:00:00.000Z"
+  }
+ ],
+ "posts": [
+  {
+   "id": "5e1f0c3a-2222-4b7c-8d2e-000000000001",
+   "xId": "1990000000000000001",
+   "url": "https://x.com/maximilian_rosenthal_ux/status/1990000000000000001",
+   "text": "Shipped a new way to read sources side by side. Long write-up on how we got here: https://www.perplexity.ai/hub/blog/a-really-long-address-that-keeps-going-and-going-without-spaces",
+   "kind": "post",
+   "context": null,
+   "media": [
+    "/api/stored/30ac86f1-7a44-4d48-95b8-68afdc0e0411"
+   ],
+   "postedAt": "2026-11-21T14:30:00.000Z",
+   "isNew": true,
+   "person": {
+    "id": "0b8c1a52-1111-4a6e-9d1e-000000000002",
+    "handle": "maximilian_rosenthal_ux",
+    "name": "Maximilian Rosenthal-Okonkwo",
+    "company": "Perplexity",
+    "avatarUrl": null
+   },
+   "replies": []
+  },
+  {
+   "id": "5e1f0c3a-2222-4b7c-8d2e-000000000002",
+   "xId": "1990000000000000002",
+   "url": "https://x.com/ada_designs/status/1990000000000000002",
+   "text": "Small details matter. We spent two weeks on the hover state of one button and it was worth it.",
+   "kind": "post",
+   "context": null,
+   "media": [],
+   "postedAt": "2026-11-21T12:00:00.000Z",
+   "isNew": false,
+   "person": {
+    "id": "0b8c1a52-1111-4a6e-9d1e-000000000001",
+    "handle": "ada_designs",
+    "name": "Ada Morales",
+    "company": "Linear",
+    "avatarUrl": null
+   },
+   "replies": [
+    {
+     "id": "7a2b9d4e-3333-4c8d-9e3f-000000000001",
+     "postId": "5e1f0c3a-2222-4b7c-8d2e-000000000002",
+     "text": "Two weeks well spent. That hover feels great.",
+     "status": "queued",
+     "error": null,
+     "replyUrl": null,
+     "sentAt": null,
+     "madeBy": {
+      "kind": "user",
+      "name": "Luke"
+     },
+     "createdAt": "2026-11-21T14:00:00.000Z",
+     "updatedAt": "2026-11-21T14:00:00.000Z"
+    }
+   ]
+  },
+  {
+   "id": "5e1f0c3a-2222-4b7c-8d2e-000000000003",
+   "xId": "1990000000000000003",
+   "url": "https://x.com/june/status/1990000000000000003",
+   "text": "New plugin API is out 🎉 @figma",
+   "kind": "quote",
+   "context": {
+    "author": "@figma",
+    "text": "Plugins can now read variables and styles across files. Here is everything that changed in this release.",
+    "url": "https://x.com/figma/status/1"
+   },
+   "media": [],
+   "postedAt": "2026-11-20T19:00:00.000Z",
+   "isNew": false,
+   "person": {
+    "id": "0b8c1a52-1111-4a6e-9d1e-000000000003",
+    "handle": "june",
+    "name": "June Park",
+    "company": "Figma",
+    "avatarUrl": null
+   },
+   "replies": [
+    {
+     "id": "7a2b9d4e-3333-4c8d-9e3f-000000000002",
+     "postId": "5e1f0c3a-2222-4b7c-8d2e-000000000003",
+     "text": "Love this. Been waiting for cross-file variables for ages.",
+     "status": "failed",
+     "error": "The post was deleted.",
+     "replyUrl": null,
+     "sentAt": null,
+     "madeBy": {
+      "kind": "user",
+      "name": "Luke"
+     },
+     "createdAt": "2026-11-21T14:00:00.000Z",
+     "updatedAt": "2026-11-21T14:00:00.000Z"
+    },
+    {
+     "id": "7a2b9d4e-3333-4c8d-9e3f-000000000003",
+     "postId": "5e1f0c3a-2222-4b7c-8d2e-000000000003",
+     "text": "Congrats on the launch!",
+     "status": "draft",
+     "error": null,
+     "replyUrl": null,
+     "sentAt": null,
+     "madeBy": {
+      "kind": "user",
+      "name": "Luke"
+     },
+     "createdAt": "2026-11-21T14:00:00.000Z",
+     "updatedAt": "2026-11-21T14:00:00.000Z"
+    }
+   ]
+  },
+  {
+   "id": "5e1f0c3a-2222-4b7c-8d2e-000000000004",
+   "xId": "1990000000000000004",
+   "url": "https://x.com/t0m/status/1990000000000000004",
+   "text": "no caption",
+   "kind": "post",
+   "context": null,
+   "media": [
+    "/api/stored/65102f4c-eac3-461f-9ebe-673a27dfb836",
+    "/api/stored/745d671b-a73b-48c4-a112-0be46a115648"
+   ],
+   "postedAt": "2026-11-20T09:00:00.000Z",
+   "isNew": false,
+   "person": {
+    "id": "0b8c1a52-1111-4a6e-9d1e-000000000004",
+    "handle": "t0m",
+    "name": null,
+    "company": null,
+    "avatarUrl": null
+   },
+   "replies": []
+  }
+ ],
+ "more": "2026-11-19T23:00:00.000Z",
+ "checkedAt": "2026-11-21T14:00:00.000Z",
+ "seenAt": "2026-11-21T13:00:00.000Z",
+ "companies": [
+  "Figma",
+  "Linear",
+  "Perplexity"
+ ],
+ "now": "2026-11-21T15:00:00.000Z"
+}

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, type MadeBy } from "./define";
@@ -19,6 +19,7 @@ export type XPerson = {
   id: string;
   handle: string;
   name: string | null;
+  company: string | null;
   avatarUrl: string | null;
   url: string;
   checkedAt: Date | null;
@@ -51,7 +52,7 @@ export type XPost = {
   postedAt: Date;
   /** Saved since Luke last opened the feed. */
   isNew: boolean;
-  person: Pick<XPerson, "id" | "handle" | "name" | "avatarUrl">;
+  person: Pick<XPerson, "id" | "handle" | "name" | "company" | "avatarUrl">;
   replies: XReply[];
 };
 
@@ -60,6 +61,7 @@ function toPerson(row: typeof xPeople.$inferSelect): XPerson {
     id: row.id,
     handle: row.handle,
     name: row.name,
+    company: row.company,
     avatarUrl: row.avatarUrl,
     url: `https://x.com/${row.handle}`,
     checkedAt: row.checkedAt,
@@ -122,12 +124,35 @@ async function personByHandle(handle: string) {
   return row ? toPerson(row) : null;
 }
 
-/** The feed, newest first: everyone's posts, or one person's, each with Luke's replies. */
-export async function getFeed(filter: { personId?: string; before?: string; limit?: number } = {}) {
+export const feedViews = ["day", "unreplied", "replied", "pictures"] as const;
+export type FeedView = (typeof feedViews)[number];
+
+export type FeedFilter = {
+  personId?: string;
+  /** Only people at this company. */
+  company?: string;
+  /** day: posted in the last 24 hours. unreplied / replied: whether Luke has replied. pictures: posts with pictures. */
+  view?: FeedView;
+  before?: string;
+  limit?: number;
+};
+
+/** The feed, newest first, each post with Luke's replies. */
+export async function getFeed(filter: FeedFilter = {}) {
   const limit = filter.limit ?? 50;
   const [seen, people] = await Promise.all([seenAt(), listPeople()]);
+  const now = new Date();
+  const hasReply = sql`exists (select 1 from ${xReplies} where ${xReplies.postId} = ${xPosts.id})`;
+  const atCompany = filter.company
+    ? people.filter((p) => p.company?.toLowerCase() === filter.company!.toLowerCase()).map((p) => p.id)
+    : null;
   const conditions = [
     filter.personId ? eq(xPosts.personId, filter.personId) : undefined,
+    atCompany ? (atCompany.length ? inArray(xPosts.personId, atCompany) : sql`false`) : undefined,
+    filter.view === "day" ? gt(xPosts.postedAt, new Date(now.getTime() - 24 * 60 * 60 * 1000)) : undefined,
+    filter.view === "replied" ? hasReply : undefined,
+    filter.view === "unreplied" ? sql`not ${hasReply}` : undefined,
+    filter.view === "pictures" ? sql`jsonb_array_length(${xPosts.media}) > 0` : undefined,
     filter.before ? lt(xPosts.postedAt, new Date(filter.before)) : undefined,
   ].filter((c) => c !== undefined);
   const rows = await db
@@ -153,7 +178,7 @@ export async function getFeed(filter: { personId?: string; before?: string; limi
       media: row.media,
       postedAt: row.postedAt,
       isNew: row.createdAt > seen,
-      person: { id: p.id, handle: p.handle, name: p.name, avatarUrl: p.avatarUrl },
+      person: { id: p.id, handle: p.handle, name: p.name, company: p.company, avatarUrl: p.avatarUrl },
       replies: replies.filter((r) => r.postId === row.id).map(toReply),
     };
   });
@@ -166,8 +191,10 @@ export async function getFeed(filter: { personId?: string; before?: string; limi
     /** When Claude last checked X for new posts. */
     checkedAt: checks.length && Math.max(...checks) > 0 ? new Date(Math.max(...checks)) : null,
     seenAt: seen,
+    /** The companies people work at, for filtering. */
+    companies: [...new Set(people.map((p) => p.company).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b)),
     /** When this was read, for showing how long ago things happened. */
-    now: new Date(),
+    now,
   };
 }
 
@@ -224,7 +251,7 @@ const postInput = z.object({
 export const xFeedOperations = {
   list_x_people: defineOperation({
     name: "list_x_people",
-    description: "List the people Luke follows in his X feed (handle, name, picture, and when Claude last checked their profile on X).",
+    description: "List the people Luke follows in his X feed (handle, name, company, picture, and when Claude last checked their profile on X).",
     input: z.object({}),
     run: async () => listPeople(),
   }),
@@ -236,14 +263,15 @@ export const xFeedOperations = {
     input: z.object({
       handle: z.string().trim().min(1, "Add a username.").max(200).describe("Their X username, e.g. @AnthropicAI, or their profile address."),
       name: z.string().trim().max(200).optional().describe("Their display name, if known."),
+      company: z.string().trim().max(100).optional().describe("Where they work, shown next to their name."),
     }),
-    run: async ({ handle: raw, name }, { actor }) => {
+    run: async ({ handle: raw, name, company }, { actor }) => {
       const handle = cleanHandle(raw);
       const existing = await personByHandle(handle);
       if (existing) return existing;
       const [row] = await db
         .insert(xPeople)
-        .values({ handle, name: name || null, ...madeByColumns(actor) })
+        .values({ handle, name: name || null, company: company || null, ...madeByColumns(actor) })
         .returning();
       return toPerson(row);
     },
@@ -251,20 +279,22 @@ export const xFeedOperations = {
 
   update_x_person: defineOperation({
     name: "update_x_person",
-    description: "Change a followed person's handle, display name or profile picture address (e.g. when they've changed it on X). Fields left out stay as they are.",
+    description: "Change a followed person's handle, display name, company or profile picture address. Fields left out stay as they are.",
     input: z.object({
       id: personId,
       handle: z.string().trim().min(1).max(200).optional(),
       name: z.string().trim().max(200).nullable().optional(),
+      company: z.string().trim().max(100).nullable().optional().describe("Where they work. Empty or null clears it."),
       avatarUrl: z.url().max(2000).nullable().optional(),
     }),
-    run: async ({ id, handle, name, avatarUrl }) => {
+    run: async ({ id, handle, name, company, avatarUrl }) => {
       await getPerson(id);
       await db
         .update(xPeople)
         .set({
           ...(handle !== undefined && { handle: cleanHandle(handle) }),
           ...(name !== undefined && { name: name || null }),
+          ...(company !== undefined && { company: company || null }),
           ...(avatarUrl !== undefined && { avatarUrl }),
           updatedAt: new Date(),
         })
@@ -290,6 +320,11 @@ export const xFeedOperations = {
       "Luke's X feed, newest first: posts from the people he follows, each with his replies and their state (draft: written by Claude, waits for Luke; queued: waiting to be posted on X; sent; failed). Also when Claude last checked X.",
     input: z.object({
       personId: personId.optional().describe("Only this person's posts."),
+      company: z.string().trim().max(100).optional().describe("Only posts from people at this company."),
+      view: z
+        .enum(feedViews)
+        .optional()
+        .describe("day: posted in the last 24 hours. unreplied: Luke hasn't replied. replied: Luke has replied. pictures: posts with pictures."),
       before: z.iso.datetime({ offset: true }).optional().describe("Only posts older than this (the 'more' value from the previous page)."),
       limit: z.number().int().min(1).max(200).optional(),
     }),

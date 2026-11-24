@@ -870,6 +870,8 @@ export const xPeople = pgTable(
     /** Their X username, without the @. */
     handle: text("handle").notNull(),
     name: text("name"),
+    /** Where they work, shown next to their name. */
+    company: text("company"),
     avatarUrl: text("avatar_url"),
     /** When Claude last looked at their profile. */
     checkedAt: timestamp("checked_at", { withTimezone: true }),
