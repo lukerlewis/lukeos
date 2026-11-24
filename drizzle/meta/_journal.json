@@ -337,6 +337,13 @@
       "when": 1795528435387,
       "tag": "0047_x_actions",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1795531735761,
+      "tag": "0048_x_follow",
+      "breakpoints": true
     }
   ]
 }

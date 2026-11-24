@@ -585,6 +585,14 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Did a like, repost or bookmark on X" };
     case "mark_x_action_failed":
       return { summary: "Couldn't do a like, repost or bookmark on X" };
+    case "list_x_follows_to_do":
+      return null;
+    case "set_x_follow":
+      return { summary: input.on ? "Followed someone on X (happens at the next check-in)" : "Unfollowed someone on X (happens at the next check-in)" };
+    case "mark_x_follow_done":
+      return { summary: input.following ? "Followed someone on X" : "Unfollowed someone on X" };
+    case "mark_x_follow_failed":
+      return { summary: "Couldn't follow or unfollow someone on X" };
     case "send_test_notification":
       return { summary: "Sent a test notification" };
     case "update_whiteboard_settings":

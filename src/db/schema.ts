@@ -875,6 +875,12 @@ export const xPeople = pgTable(
     avatarUrl: text("avatar_url"),
     /** When Claude last looked at their profile. */
     checkedAt: timestamp("checked_at", { withTimezone: true }),
+    /** Whether Luke follows them on X, as last seen there (null: not known yet). */
+    following: boolean("following"),
+    /** Luke asked to follow (true) or unfollow (false) them on X; Claude does it at the next check-in. */
+    followWant: boolean("follow_want"),
+    /** Why the last try to follow or unfollow didn't work. */
+    followError: text("follow_error"),
     createdByKind: madeBy.createdByKind,
     createdByName: madeBy.createdByName,
     createdByRoutine: madeBy.createdByRoutine,

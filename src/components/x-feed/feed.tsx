@@ -1,8 +1,8 @@
 "use client";
 
-import { Bookmark, Check, ChevronLeft, Heart, ChevronRight, Clock, ExternalLink, Filter, Play, MessageCircle, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
+import { Bookmark, Check, ChevronLeft, Heart, ChevronRight, Clock, ExternalLink, Filter, Play, MessageCircle, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, UserCheck, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { showToast } from "@/components/shell/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -234,10 +234,42 @@ const actionButtons: { kind: XActionKind; icon: typeof Heart; on: string; off: s
   { kind: "bookmark", icon: Bookmark, on: "Remove bookmark", off: "Bookmark" },
 ];
 
-/** Reply, repost, like and bookmark. Claude does the last three on X at the next check-in. */
+/**
+ * Follow taps made on this page, by person, so every card of theirs shows the same state at once.
+ * A tap counts only until the server's copy changes (then the server knows better).
+ */
+const followTaps = new Map<string, { state: XActionState; base: string }>();
+const followListeners = new Set<() => void>();
+const key = (s: XActionState) => `${s.on}${s.pending}${s.done}${s.error}`;
+function setFollowTap(person: XPost["person"], state: XActionState) {
+  followTaps.set(person.id, { state, base: key(person.follow) });
+  followListeners.forEach((l) => l());
+}
+function useFollow(person: XPost["person"]): XActionState {
+  const tap = useSyncExternalStore(
+    (l) => (followListeners.add(l), () => followListeners.delete(l)),
+    () => followTaps.get(person.id),
+    () => undefined,
+  );
+  return tap && tap.base === key(person.follow) ? tap.state : person.follow;
+}
+
+/** Reply, repost, like, bookmark and follow. Claude does all but Reply on X at the next check-in. */
 function Actions({ post, onReply }: { post: XPost; onReply: () => void }) {
   const router = useRouter();
   const [state, setState] = useState(post.actions);
+  const follow = useFollow(post.person);
+
+  function toggleFollow() {
+    const was = follow;
+    const on = !was.on;
+    setFollowTap(post.person, { on, pending: on !== was.done, error: null, done: was.done });
+    void inBackground(() => op("set_x_follow", { personId: post.person.id, on }), {
+      then: () => router.refresh(),
+      failed: () => setFollowTap(post.person, was),
+      failure: "Couldn't save that.",
+    });
+  }
 
   function toggle(kind: XActionKind) {
     const was = state[kind];
@@ -277,6 +309,25 @@ function Actions({ post, onReply }: { post: XPost; onReply: () => void }) {
           </button>
         );
       })}
+      {(() => {
+        const name = post.person.name || `@${post.person.handle}`;
+        const label = follow.on ? `Unfollow ${name}` : `Follow ${name}`;
+        const Icon = follow.on ? UserCheck : UserPlus;
+        return (
+          <button
+            type="button"
+            onClick={toggleFollow}
+            aria-pressed={follow.on}
+            aria-label={follow.pending ? `${label} (at the next check-in)` : label}
+            title={follow.error ?? (follow.pending ? "Happens on X at the next check-in" : label)}
+            className={cn(button, follow.on && "text-ink", follow.pending && "opacity-60")}
+          >
+            <Icon className="size-4" aria-hidden />
+            {follow.pending && <Clock className="absolute top-1 right-1 size-2.5" aria-hidden />}
+            {follow.error && <TriangleAlert className="absolute top-1 right-1 size-2.5 text-danger" aria-hidden />}
+          </button>
+        );
+      })()}
     </div>
   );
 }
