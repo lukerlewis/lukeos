@@ -34,6 +34,7 @@ import { contextOperations } from "./context";
 import { taskOperations } from "./tasks";
 import { trashOperations } from "./trash";
 import { whiteboardOperations } from "./whiteboards";
+import { xFeedOperations } from "./x-feed";
 
 export type { Actor, Operation } from "./define";
 
@@ -94,6 +95,7 @@ export const operations = {
   ...focusOperations,
   ...listenOperations,
   ...healthOperations,
+  ...xFeedOperations,
   ...bulkOperations,
   ...fromClaudeOperations,
   ...skillOperations,

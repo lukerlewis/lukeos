@@ -153,15 +153,16 @@ async function skillTitles(ids: string[]) {
 }
 
 /** The next time a routine is due, after now. */
-function nextDue(r: Row, timeZone: string, now: Date) {
+function nextDue(r: Row, timeZone: string, checkIns: CheckIns, now: Date) {
   if (!r.enabled) return null;
   const today = todayIn(timeZone, now);
-  return dueTimes(scheduleOf(r), today, addDays(today, 62), timeZone).find((t) => t > now) ?? null;
+  return dueTimes(scheduleOf(r), today, addDays(today, 62), timeZone, checkIns).find((t) => t > now) ?? null;
 }
 
 async function summaries(rows: Row[]): Promise<RoutineSummary[]> {
-  const [timeZone, last, titles] = await Promise.all([
+  const [timeZone, checkIns, last, titles] = await Promise.all([
     getTimeZone(),
+    getCheckIns(),
     runsFor(
       rows.map((r) => r.id),
       "latest",
@@ -178,7 +179,7 @@ async function summaries(rows: Row[]): Promise<RoutineSummary[]> {
       ...s,
       scheduleLabel: scheduleLabel(s),
       skill: r.skillId && titles.has(r.skillId) ? { id: r.skillId, title: titles.get(r.skillId)! } : null,
-      nextDueAt: nextDue(r, timeZone, now),
+      nextDueAt: nextDue(r, timeZone, checkIns, now),
       lastRun: last.find((l) => l.routineId === r.id)?.run ?? null,
       madeBy: madeByOf(r),
       createdAt: r.createdAt,
@@ -237,7 +238,7 @@ async function dueState(now = new Date()) {
   const slots = checkInTimes(checkIns, from, addDays(today, 8), timeZone);
   // A routine with nothing written yet (one Luke is just making) isn't due.
   const candidates = rows.filter((r) => r.title.trim() || r.instructions.trim()).flatMap((routine) =>
-    dueTimes(scheduleOf(routine), from, addDays(today, 1), timeZone)
+    dueTimes(scheduleOf(routine), from, addDays(today, 1), timeZone, checkIns)
       .filter((t) => t >= routine.scheduledFrom && t.getTime() <= now.getTime() + EARLY_MS)
       .map((dueAt) => ({ routine, dueAt, until: pickUpWindow(dueAt, slots).until })),
   );
@@ -306,7 +307,7 @@ function whenLabel(at: Date, timeZone: string, now = new Date()) {
 // Operations
 
 const id = z.uuid().describe("The routine's id, from list_routines or get_inbox.");
-const frequency = z.enum(frequencies).describe('"daily" (every day), "weekly" (on the days given) or "monthly" (on dayOfMonth).');
+const frequency = z.enum(frequencies).describe('"check_in" (at every check-in; time is ignored), "daily" (every day), "weekly" (on the days given) or "monthly" (on dayOfMonth).');
 const time = z
   .string()
   .regex(timeOfDay, 'A time like "20:00".')

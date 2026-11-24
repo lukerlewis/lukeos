@@ -44,7 +44,7 @@ type Change = {
   description?: string;
   body?: string;
   instructions?: string;
-  frequency?: "daily" | "weekly" | "monthly";
+  frequency?: "check_in" | "daily" | "weekly" | "monthly";
   time?: string;
   days?: number[];
   dayOfMonth?: number;
