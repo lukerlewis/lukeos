@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Check, ChevronLeft, Heart, ChevronRight, Clock, ExternalLink, Filter, Play, MessageCircle, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, UserCheck, UserPlus, X } from "lucide-react";
+import { Bookmark, Check, ChevronLeft, Heart, ChevronRight, Clock, ExternalLink, Filter, Play, MessageCircle, MessageCircleReply, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, UserCheck, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { showToast } from "@/components/shell/toast";
@@ -68,6 +68,19 @@ function PostRow({ post, now }: { post: XPost; now: number }) {
           <a href={`https://x.com/${post.person.handle}`} target="_blank" rel="noreferrer" className="min-w-0 truncate font-medium text-ink hover:underline">
             {name}
           </a>
+          {post.person.engaged && (
+            <a
+              href={post.person.engaged.lastUrl}
+              target="_blank"
+              rel="noreferrer"
+              title={`Replied to you${post.person.engaged.count > 1 ? ` ${post.person.engaged.count} times lately` : ""}: ${post.person.engaged.lastText}`}
+              aria-label="Replied to you"
+              className="flex shrink-0 items-center gap-1 self-center rounded-md bg-selected px-1.5 text-meta font-medium text-ink hover:bg-muted"
+            >
+              <MessageCircleReply className="size-3.5" aria-hidden />
+              <span className="hidden sm:inline">Replied to you</span>
+            </a>
+          )}
           {post.person.company && (
             <span className="shrink-0 rounded-md bg-muted px-1.5 text-meta text-subtle-foreground">{post.person.company}</span>
           )}

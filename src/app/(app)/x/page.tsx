@@ -17,6 +17,7 @@ const row = "-mx-5 flex gap-1.5 overflow-x-auto px-5 md:mx-0 md:flex-wrap md:px-
 const views: { view: FeedView | undefined; label: string }[] = [
   { view: undefined, label: "All" },
   { view: "day", label: "Last 24 hours" },
+  { view: "engaged", label: "Replied to you" },
   { view: "unreplied", label: "Not replied" },
   { view: "replied", label: "Replied" },
   { view: "pictures", label: "With pictures" },

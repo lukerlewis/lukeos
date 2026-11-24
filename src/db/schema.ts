@@ -945,6 +945,27 @@ export const xReplies = pgTable(
   (t) => [index("x_replies_post_idx").on(t.postId), index("x_replies_status_idx").on(t.status)],
 );
 
+/**
+ * A reply or mention from someone in Luke's X feed to Luke himself, read from
+ * his X notifications. Shows who is talking with him, so he can keep it going.
+ */
+export const xEngagements = pgTable(
+  "x_engagements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => xPeople.id, { onDelete: "cascade" }),
+    /** X's own id for their reply, so it's never saved twice. */
+    xId: text("x_id").notNull().unique(),
+    url: text("url").notNull(),
+    text: text("text").notNull().default(""),
+    at: timestamp("at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("x_engagements_person_idx").on(t.personId, t.at)],
+);
+
 /** Luke's likes, reposts and bookmarks on X feed posts. Claude does them on X at the next check-in. */
 export const xActions = pgTable(
   "x_actions",

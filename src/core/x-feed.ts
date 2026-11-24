@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, type MadeBy } from "./define";
 
-const { xPeople, xPosts, xReplies, xActions, appSettings } = schema;
+const { xPeople, xPosts, xReplies, xActions, xEngagements, appSettings } = schema;
 
 /**
  * Luke's X feed: posts from the people he picks, and his replies to them.
@@ -40,8 +40,15 @@ export type XPerson = {
   checkedAt: Date | null;
   /** Following them on X (pending until Claude does it at the next check-in). */
   follow: XActionState;
+  /** They've replied to or mentioned Luke on X: how often, and the latest. Null if never. */
+  engaged: XEngaged | null;
   createdAt: Date;
 };
+
+export type XEngaged = { count: number; lastAt: Date; lastUrl: string; lastText: string };
+
+/** How long a reply to Luke keeps someone marked as talking with him. */
+const ENGAGED_DAYS = 30;
 
 export type XReplyStatus = "draft" | "queued" | "sent" | "failed";
 
@@ -74,12 +81,12 @@ export type XPost = {
   postedAt: Date;
   /** Saved since Luke last opened the feed. */
   isNew: boolean;
-  person: Pick<XPerson, "id" | "handle" | "name" | "company" | "avatarUrl" | "follow">;
+  person: Pick<XPerson, "id" | "handle" | "name" | "company" | "avatarUrl" | "follow" | "engaged">;
   replies: XReply[];
   actions: Record<XActionKind, XActionState>;
 };
 
-function toPerson(row: typeof xPeople.$inferSelect): XPerson {
+function toPerson(row: typeof xPeople.$inferSelect, engaged: XEngaged | null = null): XPerson {
   return {
     id: row.id,
     handle: row.handle,
@@ -89,6 +96,7 @@ function toPerson(row: typeof xPeople.$inferSelect): XPerson {
     url: `https://x.com/${row.handle}`,
     checkedAt: row.checkedAt,
     follow: followState(row),
+    engaged,
     createdAt: row.createdAt,
   };
 }
@@ -134,15 +142,35 @@ async function markSeen() {
   return { seenAt: now };
 }
 
+/** Who has replied to or mentioned Luke lately, by person id. */
+async function engagedByPerson(personId?: string) {
+  const since = new Date(Date.now() - ENGAGED_DAYS * 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select()
+    .from(xEngagements)
+    .where(and(gt(xEngagements.at, since), personId ? eq(xEngagements.personId, personId) : undefined))
+    .orderBy(desc(xEngagements.at));
+  const out = new Map<string, XEngaged>();
+  for (const r of rows) {
+    const e = out.get(r.personId);
+    if (e) e.count++;
+    else out.set(r.personId, { count: 1, lastAt: r.at, lastUrl: r.url, lastText: r.text });
+  }
+  return out;
+}
+
 export async function listPeople(): Promise<XPerson[]> {
-  const rows = await db.select().from(xPeople).orderBy(sql`lower(coalesce(${xPeople.name}, ${xPeople.handle}))`);
-  return rows.map(toPerson);
+  const [rows, engaged] = await Promise.all([
+    db.select().from(xPeople).orderBy(sql`lower(coalesce(${xPeople.name}, ${xPeople.handle}))`),
+    engagedByPerson(),
+  ]);
+  return rows.map((r) => toPerson(r, engaged.get(r.id) ?? null));
 }
 
 async function getPerson(id: string) {
   const [row] = await db.select().from(xPeople).where(eq(xPeople.id, id)).limit(1);
   if (!row) throw new OperationError("Luke doesn't follow that person in his X feed.", 404);
-  return toPerson(row);
+  return toPerson(row, (await engagedByPerson(id)).get(id) ?? null);
 }
 
 async function personByHandle(handle: string) {
@@ -154,14 +182,14 @@ async function personByHandle(handle: string) {
   return row ? toPerson(row) : null;
 }
 
-export const feedViews = ["day", "unreplied", "replied", "pictures"] as const;
+export const feedViews = ["day", "engaged", "unreplied", "replied", "pictures"] as const;
 export type FeedView = (typeof feedViews)[number];
 
 export type FeedFilter = {
   personId?: string;
   /** Only people at this company. */
   company?: string;
-  /** day: posted in the last 24 hours. unreplied / replied: whether Luke has replied. pictures: posts with pictures. */
+  /** day: posted in the last 24 hours. engaged: people who replied to Luke lately. unreplied / replied: whether Luke has replied. pictures: posts with pictures. */
   view?: FeedView;
   before?: string;
   limit?: number;
@@ -176,11 +204,13 @@ export async function getFeed(filter: FeedFilter = {}) {
   const atCompany = filter.company
     ? people.filter((p) => p.company?.toLowerCase() === filter.company!.toLowerCase()).map((p) => p.id)
     : null;
+  const talking = people.filter((p) => p.engaged).map((p) => p.id);
   const conditions = [
     sql`(${xPosts.postedAt} >= ${keepFrom()} or ${pendingReply})`,
     filter.personId ? eq(xPosts.personId, filter.personId) : undefined,
     atCompany ? (atCompany.length ? inArray(xPosts.personId, atCompany) : sql`false`) : undefined,
     filter.view === "day" ? gt(xPosts.postedAt, new Date(now.getTime() - 24 * 60 * 60 * 1000)) : undefined,
+    filter.view === "engaged" ? (talking.length ? inArray(xPosts.personId, talking) : sql`false`) : undefined,
     filter.view === "replied" ? hasReply : undefined,
     filter.view === "unreplied" ? sql`not ${hasReply}` : undefined,
     filter.view === "pictures" ? sql`jsonb_array_length(${xPosts.media}) > 0` : undefined,
@@ -213,7 +243,7 @@ export async function getFeed(filter: FeedFilter = {}) {
       media: row.media,
       postedAt: row.postedAt,
       isNew: row.createdAt > seen,
-      person: { id: p.id, handle: p.handle, name: p.name, company: p.company, avatarUrl: p.avatarUrl, follow: p.follow },
+      person: { id: p.id, handle: p.handle, name: p.name, company: p.company, avatarUrl: p.avatarUrl, follow: p.follow, engaged: p.engaged },
       replies: replies.filter((r) => r.postId === row.id).map(toReply),
       actions: Object.fromEntries(
         actionKinds.map((kind) => {
@@ -365,7 +395,7 @@ export const xFeedOperations = {
       view: z
         .enum(feedViews)
         .optional()
-        .describe("day: posted in the last 24 hours. unreplied: Luke hasn't replied. replied: Luke has replied. pictures: posts with pictures."),
+        .describe("day: posted in the last 24 hours. engaged: from people who replied to or mentioned Luke on X in the last 30 days. unreplied: Luke hasn't replied. replied: Luke has replied. pictures: posts with pictures."),
       before: z.iso.datetime({ offset: true }).optional().describe("Only posts older than this (the 'more' value from the previous page)."),
       limit: z.number().int().min(1).max(200).optional(),
     }),
@@ -649,6 +679,35 @@ export const xFeedOperations = {
       await getPerson(id);
       await db.update(xPeople).set({ followError: error, updatedAt: new Date() }).where(eq(xPeople.id, id));
       return { personId: id, error };
+    },
+  }),
+
+  save_x_engagements: defineOperation({
+    name: "save_x_engagements",
+    description:
+      "For the X feed routine: save replies and mentions to Luke (@lukerlewis) from people in his X feed, read from his X notifications (Mentions tab). People not in his feed are skipped, and ones already saved are skipped. Marks those people as talking with Luke for 30 days, so he can keep the conversation going. Copy text exactly.",
+    input: z.object({
+      items: z
+        .array(
+          z.object({
+            handle: z.string().trim().min(1).max(100).describe("Who replied, their X username."),
+            xId: z.string().trim().regex(/^\d{1,25}$/).describe("Their reply's id (the number in its address)."),
+            text: z.string().max(5000).default(""),
+            at: z.iso.datetime({ offset: true }).describe("When they posted it."),
+          }),
+        )
+        .max(200),
+    }),
+    run: async ({ items }) => {
+      const people = await db.select().from(xPeople);
+      const byHandle = new Map(people.map((p) => [p.handle.toLowerCase(), p]));
+      const rows = items.flatMap((i) => {
+        const p = byHandle.get(i.handle.replace(/^@/, "").toLowerCase());
+        return p ? [{ personId: p.id, xId: i.xId, url: `https://x.com/${p.handle}/status/${i.xId}`, text: i.text, at: new Date(i.at) }] : [];
+      });
+      const added = rows.length ? await db.insert(xEngagements).values(rows).onConflictDoNothing().returning({ personId: xEngagements.personId }) : [];
+      const names = [...new Set(added.map((a) => a.personId))].map((id) => people.find((p) => p.id === id)!.handle);
+      return { added: added.length, skipped: items.length - added.length, people: names };
     },
   }),
 
