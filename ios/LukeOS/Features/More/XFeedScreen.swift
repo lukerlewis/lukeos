@@ -56,6 +56,8 @@ struct XActionState: Codable, Hashable, Sendable {
     var on: Bool
     var pending: Bool
     var error: String?
+    /// What it is on X now.
+    var done: Bool?
 }
 
 struct XFeed: Codable, Hashable, Sendable {
@@ -680,7 +682,9 @@ struct XActionBar: View {
     private func toggle(_ kind: String, _ was: XActionState) {
         let on = !was.on
         Haptics.select()
-        withAnimation(Motion.snappy) { state[kind] = XActionState(on: on, pending: true) }
+        // Undoing something not yet done on X just cancels it: nothing left to wait for.
+        let done = was.done ?? false
+        withAnimation(Motion.snappy) { state[kind] = XActionState(on: on, pending: on != done, done: done) }
         Task {
             await Repo.change("set_x_post_action", ["postId": .string(post.id), "kind": .string(kind), "on": .bool(on)])
         }
