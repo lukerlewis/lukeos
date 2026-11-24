@@ -193,6 +193,7 @@ export function RoutineEditor({
               void saveSchedule({ frequency: v });
             }}
             options={[
+              { value: "check_in", label: "Every check-in" },
               { value: "daily", label: "Daily" },
               { value: "weekly", label: "Weekly" },
               { value: "monthly", label: "Monthly" },
@@ -246,31 +247,35 @@ export function RoutineEditor({
           )}
         </div>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-meta font-medium">Time</span>
-          <select
-            value={time}
-            onChange={(e) => {
-              setTime(e.target.value);
-              void saveSchedule({ time: e.target.value });
-            }}
-            aria-label="Time"
-            className="h-9 w-full rounded-lg border bg-card px-2.5 text-body border-stroke-strong sm:w-auto sm:min-w-40 sm:self-start md:text-meta"
-          >
-            {times.map((t) => (
-              <option key={t} value={t}>
-                {timeLabel(t)}
-                {checkIns.times.includes(t) ? "" : "(not a check-in time)"}
-              </option>
-            ))}
-          </select>
-          <span className="text-meta text-muted-foreground">
-            Claude checks in at {checkInsLabel(checkIns)}, and does whatever&apos;s due. If a check-in doesn&apos;t happen,
-            that run is skipped.
-            {offDays.length > 0 &&
-              `${offDays.map((d) => dayNames[d]).join("and ")} ${offDays.length === 1 ? "isn't a check-in day": "aren't check-in days"}, so ${offDays.length === 1 ? "that run happens": "those runs happen"} at the next check-in.`}
-          </span>
-        </label>
+        {frequency === "check_in" ? (
+          <span className="-mt-2 text-meta text-muted-foreground">Claude checks in at {checkInsLabel(checkIns)}.</span>
+        ) : (
+          <label className="flex flex-col gap-1.5">
+            <span className="text-meta font-medium">Time</span>
+            <select
+              value={time}
+              onChange={(e) => {
+                setTime(e.target.value);
+                void saveSchedule({ time: e.target.value });
+              }}
+              aria-label="Time"
+              className="h-9 w-full rounded-lg border bg-card px-2.5 text-body border-stroke-strong sm:w-auto sm:min-w-40 sm:self-start md:text-meta"
+            >
+              {times.map((t) => (
+                <option key={t} value={t}>
+                  {timeLabel(t)}
+                  {checkIns.times.includes(t) ? "" : "(not a check-in time)"}
+                </option>
+              ))}
+            </select>
+            <span className="text-meta text-muted-foreground">
+              Claude checks in at {checkInsLabel(checkIns)}, and does whatever&apos;s due. If a check-in doesn&apos;t happen,
+              that run is skipped.
+              {offDays.length > 0 &&
+                `${offDays.map((d) => dayNames[d]).join("and ")} ${offDays.length === 1 ? "isn't a check-in day": "aren't check-in days"}, so ${offDays.length === 1 ? "that run happens": "those runs happen"} at the next check-in.`}
+            </span>
+          </label>
+        )}
 
         <label className="flex flex-col gap-1.5">
           <span className="text-meta font-medium">Follow a skill</span>

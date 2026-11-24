@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Item as WhiteboardItem } from "@/lib/whiteboard";
-import { boolean, customType, date, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { boolean, customType, date, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
@@ -379,7 +379,7 @@ export const routines = pgTable("routines", {
   instructions: text("instructions").notNull().default(""),
   /** A skill to follow while doing it, if any. */
   skillId: uuid("sop_id"),
-  frequency: text("frequency").notNull().default("daily"), // "daily" | "weekly" | "monthly"
+  frequency: text("frequency").notNull().default("daily"), // "check_in" | "daily" | "weekly" | "monthly"
   /** Time of day in Luke's time zone, "HH:MM". */
   time: text("time").notNull().default("20:00"),
   /** Weekly only: which days, 0 = Sunday ... 6 = Saturday. */
@@ -858,3 +858,81 @@ export const healthDays = pgTable("health_days", {
   raw: jsonb("raw").$type<Record<string, unknown[]>>().notNull().default({}),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Someone Luke follows in his X feed. Claude checks their profile on X in
+ * Luke's own browser a few times a day and saves their new posts.
+ */
+export const xPeople = pgTable(
+  "x_people",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Their X username, without the @. */
+    handle: text("handle").notNull(),
+    name: text("name"),
+    avatarUrl: text("avatar_url"),
+    /** When Claude last looked at their profile. */
+    checkedAt: timestamp("checked_at", { withTimezone: true }),
+    createdByKind: madeBy.createdByKind,
+    createdByName: madeBy.createdByName,
+    createdByRoutine: madeBy.createdByRoutine,
+    createdAt: madeBy.createdAt,
+    updatedAt: madeBy.updatedAt,
+  },
+  (t) => [uniqueIndex("x_people_handle_idx").on(sql`lower(${t.handle})`)],
+);
+
+/** A post on X by someone Luke follows, as Claude read it from X. */
+export const xPosts = pgTable(
+  "x_posts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => xPeople.id, { onDelete: "cascade" }),
+    /** X's own id for the post (the number in its address), so it's never saved twice. */
+    xId: text("x_id").notNull().unique(),
+    url: text("url").notNull(),
+    text: text("text").notNull().default(""),
+    /** "post", "quote" (quoting someone else's post) or "reply" (to someone else). */
+    kind: text("kind").notNull().default("post"),
+    /** The post it quotes or replies to, when there is one. */
+    context: jsonb("context").$type<{ author: string | null; text: string | null; url: string | null }>(),
+    /** Picture addresses on X's servers. */
+    media: jsonb("media").$type<string[]>().notNull().default([]),
+    postedAt: timestamp("posted_at", { withTimezone: true }).notNull(),
+    createdByKind: madeBy.createdByKind,
+    createdByName: madeBy.createdByName,
+    createdByRoutine: madeBy.createdByRoutine,
+    createdAt: madeBy.createdAt,
+  },
+  (t) => [index("x_posts_posted_idx").on(t.postedAt), index("x_posts_person_idx").on(t.personId)],
+);
+
+/**
+ * A reply Luke wrote to a post in his X feed. "queued" waits for Claude to
+ * post it on X exactly as written; "draft" is one Claude wrote, which never
+ * goes out until Luke sends it himself.
+ */
+export const xReplies = pgTable(
+  "x_replies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => xPosts.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    status: text("status").notNull().default("queued"), // "draft" | "queued" | "sent" | "failed"
+    /** Why it couldn't be posted. */
+    error: text("error"),
+    /** The reply's own address on X, once posted. */
+    replyUrl: text("reply_url"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdByKind: madeBy.createdByKind,
+    createdByName: madeBy.createdByName,
+    createdByRoutine: madeBy.createdByRoutine,
+    createdAt: madeBy.createdAt,
+    updatedAt: madeBy.updatedAt,
+  },
+  (t) => [index("x_replies_post_idx").on(t.postId), index("x_replies_status_idx").on(t.status)],
+);

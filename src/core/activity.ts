@@ -551,6 +551,30 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
       return { summary: "Synced Fitbit health data" };
     case "disconnect_health":
       return { summary: "Disconnected Fitbit from Health" };
+    case "follow_x_person":
+      return { summary: `Followed @${(r as { handle?: string }).handle} in the X feed` };
+    case "update_x_person":
+      return { summary: `Updated @${(r as { handle?: string }).handle} in the X feed` };
+    case "unfollow_x_person":
+      return { summary: `Unfollowed @${(r as { handle?: string }).handle} in the X feed` };
+    case "save_x_posts": {
+      const n = (r as { added?: number }).added ?? 0;
+      return n ? { summary: `Saved ${n} new X ${n === 1 ? "post" : "posts"}` } : null;
+    }
+    case "delete_x_post":
+      return { summary: "Removed a post from the X feed" };
+    case "write_x_reply":
+      return { summary: "Drafted an X reply" };
+    case "update_x_reply":
+      return { summary: "Edited a drafted X reply" };
+    case "delete_x_reply":
+      return { summary: "Cancelled an X reply" };
+    case "mark_x_reply_sent":
+      return { summary: "Posted a reply on X" };
+    case "mark_x_reply_failed":
+      return { summary: "Couldn't post a reply on X" };
+    case "mark_x_feed_seen":
+      return null;
     case "send_test_notification":
       return { summary: "Sent a test notification" };
     case "update_whiteboard_settings":

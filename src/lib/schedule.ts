@@ -6,7 +6,8 @@ import { addDays } from "./dates";
  * same routine runs at 8pm whether it's summer or winter time.
  */
 
-export const frequencies = ["daily", "weekly", "monthly"] as const;
+/** "check_in" runs at every check-in (its time is ignored). */
+export const frequencies = ["check_in", "daily", "weekly", "monthly"] as const;
 export type Frequency = (typeof frequencies)[number];
 
 export type Schedule = {
@@ -61,6 +62,7 @@ export function daysLabel(days: number[]) {
 
 /** "Every day at 8pm", "Mon to Fri at 5pm", "Monthly on the 1st at 8am". */
 export function scheduleLabel(s: Schedule) {
+  if (s.frequency === "check_in") return "Every check-in";
   const at = `at ${timeLabel(s.time)}`;
   if (s.frequency === "daily") return `Every day ${at}`;
   if (s.frequency === "weekly") {
@@ -82,7 +84,7 @@ const weekdayOf = (day: string) => new Date(`${day}T00:00:00Z`).getUTCDay();
 
 /** Does the routine run on this calendar day? */
 export function runsOn(s: Schedule, day: string) {
-  if (s.frequency === "daily") return true;
+  if (s.frequency === "daily" || s.frequency === "check_in") return true;
   if (s.frequency === "weekly") return s.days.includes(weekdayOf(day));
   const d = new Date(`${day}T00:00:00Z`);
   const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
@@ -121,7 +123,8 @@ export function atLocal(day: string, time: string, timeZone: string) {
 }
 
 /** A routine's due times between two calendar days (inclusive), oldest first. */
-export function dueTimes(s: Schedule, fromDay: string, toDay: string, timeZone: string) {
+export function dueTimes(s: Schedule, fromDay: string, toDay: string, timeZone: string, checkIns: CheckIns) {
+  if (s.frequency === "check_in") return checkInTimes(checkIns, fromDay, toDay, timeZone);
   const out: Date[] = [];
   for (let day = fromDay; day <= toDay; day = addDays(day, 1)) if (runsOn(s, day)) out.push(atLocal(day, s.time, timeZone));
   return out;
