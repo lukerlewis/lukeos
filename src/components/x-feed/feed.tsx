@@ -242,7 +242,8 @@ function Actions({ post, onReply }: { post: XPost; onReply: () => void }) {
   function toggle(kind: XActionKind) {
     const was = state[kind];
     const on = !was.on;
-    setState((s) => ({ ...s, [kind]: { on, pending: true, error: null } }));
+    // Undoing something not yet done on X just cancels it: nothing left to wait for.
+    setState((s) => ({ ...s, [kind]: { on, pending: on !== was.done, error: null, done: was.done } }));
     void inBackground(() => op("set_x_post_action", { postId: post.id, kind, on }), {
       then: () => router.refresh(),
       failed: () => setState((s) => ({ ...s, [kind]: was })),

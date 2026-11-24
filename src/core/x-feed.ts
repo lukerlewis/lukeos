@@ -59,7 +59,7 @@ export type XReply = {
 export const actionKinds = ["like", "repost", "bookmark"] as const;
 export type XActionKind = (typeof actionKinds)[number];
 /** on: what Luke wants. pending: not done on X yet (Claude does it at the next check-in). */
-export type XActionState = { on: boolean; pending: boolean; error: string | null };
+export type XActionState = { on: boolean; pending: boolean; error: string | null; /** What it is on X now. */ done: boolean };
 
 export type XPost = {
   id: string;
@@ -209,7 +209,7 @@ export async function getFeed(filter: FeedFilter = {}) {
       actions: Object.fromEntries(
         actionKinds.map((kind) => {
           const a = actions.find((x) => x.postId === row.id && x.kind === kind);
-          return [kind, { on: a?.want ?? false, pending: !!a && a.want !== a.done, error: a?.error ?? null }];
+          return [kind, { on: a?.want ?? false, pending: !!a && a.want !== a.done, error: a?.error ?? null, done: a?.done ?? false }];
         }),
       ) as Record<XActionKind, XActionState>,
     };
