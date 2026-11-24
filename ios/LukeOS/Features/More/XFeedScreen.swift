@@ -234,7 +234,11 @@ struct XPostRow: View {
                     if let company = post.person.company, !company.isEmpty {
                         Tag(company).fixedSize().layoutPriority(3)
                     }
-                    Text("@\(post.person.handle)").textStyle(.meta, color: .mutedText).lineLimit(1)
+                    // The @username shows only when it fits whole; otherwise it drops out instead of becoming a sliver.
+                    ViewThatFits(in: .horizontal) {
+                        Text("@\(post.person.handle)").textStyle(.meta, color: .mutedText).lineLimit(1).fixedSize()
+                        Color.clear.frame(width: 0, height: 0)
+                    }
                     Text("· \(Stamp.relative(post.postedAt))").textStyle(.meta, color: .mutedText).lineLimit(1)
                         .fixedSize().layoutPriority(3)
                     Spacer(minLength: 0)
