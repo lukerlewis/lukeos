@@ -751,6 +751,29 @@ export const xFeedOperations = {
     },
   }),
 
+  list_x_engagement_totals: defineOperation({
+    name: "list_x_engagement_totals",
+    description:
+      "Everyone in Luke's X feed who has ever engaged with him on X (replied, mentioned, liked, messaged), with all-time counts of each and when they last did anything. For keeping the Referral Hub's \"Engaged with you\" and \"Last engaged\" columns up to date.",
+    input: z.object({}),
+    run: async () => {
+      const [people, { totals }] = await Promise.all([db.select().from(xPeople), engagedByPerson()]);
+      return people
+        .filter((p) => totals.has(p.id))
+        .map((p) => {
+          const t = totals.get(p.id)!;
+          const parts = [
+            t.replies && `${t.replies} ${t.replies === 1 ? "reply" : "replies"}`,
+            t.mentions && `${t.mentions} ${t.mentions === 1 ? "mention" : "mentions"}`,
+            t.likes && `${t.likes} ${t.likes === 1 ? "like" : "likes"}`,
+            t.dms && `${t.dms} ${t.dms === 1 ? "DM" : "DMs"}`,
+          ].filter(Boolean);
+          return { handle: p.handle, name: p.name, ...t, summary: parts.join(", ") };
+        })
+        .sort((a, b) => b.lastAnyAt.getTime() - a.lastAnyAt.getTime());
+    },
+  }),
+
   mark_x_feed_seen: defineOperation({
     name: "mark_x_feed_seen",
     description: "Clear the New markers on X feed posts, as if Luke had opened the feed.",
