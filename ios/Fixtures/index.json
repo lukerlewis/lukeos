@@ -306,5 +306,10 @@
   "file": "sync_health.json",
   "op": "sync_health",
   "input": {}
+ },
+ {
+  "file": "get_x_feed.json",
+  "op": "get_x_feed",
+  "input": {}
  }
 ]

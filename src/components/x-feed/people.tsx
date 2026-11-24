@@ -27,6 +27,7 @@ function PeopleDialog({ people, onClose }: { people: XPerson[]; onClose: () => v
   const router = useRouter();
   const shown = useWithoutHidden(people);
   const [handle, setHandle] = useState("");
+  const [company, setCompany] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Removing takes their saved posts with it, so it asks for a second tap.
@@ -38,8 +39,9 @@ function PeopleDialog({ people, onClose }: { people: XPerson[]; onClose: () => v
     setBusy(true);
     setError(null);
     try {
-      await op("follow_x_person", { handle: handle.trim() });
+      await op("follow_x_person", { handle: handle.trim(), ...(company.trim() && { company: company.trim() }) });
       setHandle("");
+      setCompany("");
       router.refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -57,11 +59,20 @@ function PeopleDialog({ people, onClose }: { people: XPerson[]; onClose: () => v
     });
   }
 
+  function saveCompany(p: XPerson, value: string) {
+    const next = value.trim();
+    if (next === (p.company ?? "")) return;
+    void inBackground(() => op("update_x_person", { id: p.id, company: next || null }), {
+      then: () => router.refresh(),
+      failure: "Couldn't save the company.",
+    });
+  }
+
   return (
     <Dialog label="People" onClose={onClose}>
       <div className="flex flex-col gap-4 px-5 pt-5">
         <h2 className="text-lg font-medium">People</h2>
-        <form onSubmit={add} className="flex gap-2">
+        <form onSubmit={add} className="flex flex-wrap gap-2">
           <input
             autoFocus
             value={handle}
@@ -71,7 +82,14 @@ function PeopleDialog({ people, onClose }: { people: XPerson[]; onClose: () => v
             spellCheck={false}
             placeholder="@username"
             aria-label="X username"
-            className="h-11 min-w-0 grow rounded-lg border border-stroke-strong bg-card px-3 text-body outline-none focus-visible:border-ring md:text-control"
+            className="h-11 min-w-0 grow basis-32 rounded-lg border border-stroke-strong bg-card px-3 text-body outline-none focus-visible:border-ring md:text-control"
+          />
+          <input
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            placeholder="Company"
+            aria-label="Company"
+            className="h-11 min-w-0 grow basis-28 rounded-lg border border-stroke-strong bg-card px-3 text-body outline-none focus-visible:border-ring md:text-control"
           />
           <Button type="submit" disabled={busy || !handle.trim()}>
             Add
@@ -90,6 +108,14 @@ function PeopleDialog({ people, onClose }: { people: XPerson[]; onClose: () => v
                   <span className="truncate text-control font-medium">{p.name || `@${p.handle}`}</span>
                   {p.name && <span className="truncate text-meta text-muted-foreground">@{p.handle}</span>}
                 </a>
+                <input
+                  defaultValue={p.company ?? ""}
+                  onBlur={(e) => saveCompany(p, e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                  placeholder="Company"
+                  aria-label={`Where ${p.name || p.handle} works`}
+                  className="h-9 w-28 shrink-0 rounded-lg bg-transparent px-2 text-right text-body text-subtle-foreground outline-none placeholder:text-muted-foreground hover:bg-muted focus-visible:bg-muted md:text-control"
+                />
                 {confirming === p.id ? (
                   <Button size="sm" variant="outline" onClick={() => remove(p)}>
                     Remove

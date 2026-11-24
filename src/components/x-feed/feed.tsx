@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock, ExternalLink, MessageCircle, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
+import { Check, Clock, ExternalLink, Filter, MessageCircle, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { showToast } from "@/components/shell/toast";
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 /** X's own limit for accounts without Premium. Longer replies may not post. */
 const LIMIT = 280;
 
-export function XFeed({ posts, now, hasPeople }: { posts: XPost[]; now: number; hasPeople: boolean }) {
+export function XFeed({ posts, now, hasPeople, filtered }: { posts: XPost[]; now: number; hasPeople: boolean; filtered: boolean }) {
   const shown = useWithoutHidden(posts);
   const anyNew = posts.some((p) => p.isNew);
   // Opening the feed clears the New dots for next time; they stay up while it's open.
@@ -24,15 +24,14 @@ export function XFeed({ posts, now, hasPeople }: { posts: XPost[]; now: number; 
   }, [anyNew]);
 
   if (!hasPeople) return <Card className="px-6 py-10 text-center text-control text-muted-foreground">Add people to follow.</Card>;
-  if (shown.length === 0) return <Card className="px-6 py-10 text-center text-control text-muted-foreground">No posts yet.</Card>;
+  if (shown.length === 0)
+    return <Card className="px-6 py-10 text-center text-control text-muted-foreground">{filtered ? "No posts here." : "No posts yet."}</Card>;
   return (
-    <Card>
-      <ul>
-        {shown.map((p) => (
-          <PostRow key={p.id} post={p} now={now} />
-        ))}
-      </ul>
-    </Card>
+    <ul className="flex flex-col gap-3">
+      {shown.map((p) => (
+        <PostRow key={p.id} post={p} now={now} />
+      ))}
+    </ul>
   );
 }
 
@@ -54,6 +53,7 @@ function PostRow({ post, now }: { post: XPost; now: number }) {
     () => [
       { label: "Reply", icon: MessageCircle, onSelect: () => setReplying(true) },
       { label: "Open on X", icon: ExternalLink, onSelect: () => window.open(post.url, "_blank", "noreferrer") },
+      { label: `Only ${name}`, icon: Filter, onSelect: () => router.push(`/x?person=${post.person.id}`, { scroll: false }) },
       "-",
       { label: "Remove from feed", icon: Trash2, onSelect: remove },
     ],
@@ -61,14 +61,17 @@ function PostRow({ post, now }: { post: XPost; now: number }) {
   );
 
   return (
-    <li className="flex gap-3 border-b px-4 py-4 last:border-b-0" {...menu}>
+    <li className="flex min-w-0 gap-3 overflow-hidden rounded-xl border border-stroke bg-card px-4 py-4" {...menu}>
       <Avatar src={post.person.avatarUrl} name={name} />
       <div className="flex min-w-0 grow flex-col gap-2">
         <div className="flex min-w-0 items-baseline gap-1.5 text-meta">
           <a href={`https://x.com/${post.person.handle}`} target="_blank" rel="noreferrer" className="min-w-0 truncate font-medium text-ink hover:underline">
             {name}
           </a>
-          <span className="truncate text-muted-foreground">@{post.person.handle}</span>
+          {post.person.company && (
+            <span className="shrink-0 rounded-md bg-muted px-1.5 text-meta text-subtle-foreground">{post.person.company}</span>
+          )}
+          <span className="min-w-0 truncate text-muted-foreground">@{post.person.handle}</span>
           <span className="text-muted-foreground" aria-hidden>
             ·
           </span>
