@@ -574,7 +574,17 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "mark_x_reply_failed":
       return { summary: "Couldn't post a reply on X" };
     case "mark_x_feed_seen":
+    case "list_x_actions_to_do":
       return null;
+    case "set_x_post_action": {
+      const a = r as { kind?: string; on?: boolean };
+      const verb = { like: "Liked", repost: "Reposted", bookmark: "Bookmarked" }[a.kind ?? ""] ?? "Changed";
+      return { summary: a.on ? `${verb} an X post (posts at the next check-in)` : `Undid a ${a.kind} on an X post` };
+    }
+    case "mark_x_action_done":
+      return { summary: "Did a like, repost or bookmark on X" };
+    case "mark_x_action_failed":
+      return { summary: "Couldn't do a like, repost or bookmark on X" };
     case "send_test_notification":
       return { summary: "Sent a test notification" };
     case "update_whiteboard_settings":

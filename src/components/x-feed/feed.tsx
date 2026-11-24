@@ -1,13 +1,13 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Clock, ExternalLink, Filter, Play, MessageCircle, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
+import { Bookmark, Check, ChevronLeft, Heart, ChevronRight, Clock, ExternalLink, Filter, Play, MessageCircle, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { showToast } from "@/components/shell/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { contextMenu } from "@/components/ui/context-menu";
-import type { XPost, XReply } from "@/core/x-feed";
+import type { XActionKind, XActionState, XPost, XReply } from "@/core/x-feed";
 import { hide, inBackground, unhide, useHidden, useWithoutHidden } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
@@ -107,12 +107,7 @@ function PostRow({ post, now }: { post: XPost; now: number }) {
         {replying ? (
           <Composer postId={post.id} onDone={() => setReplying(false)} />
         ) : (
-          <div className="-ml-2 flex">
-            <Button variant="ghost" size="sm" onClick={() => setReplying(true)}>
-              <MessageCircle aria-hidden />
-              Reply
-            </Button>
-          </div>
+          <Actions post={post} onReply={() => setReplying(true)} />
         )}
       </div>
     </li>
@@ -230,6 +225,58 @@ function Viewer({ photos, start, href, onClose }: { photos: string[]; start: num
         </>
       )}
     </dialog>
+  );
+}
+
+const actionButtons: { kind: XActionKind; icon: typeof Heart; on: string; off: string }[] = [
+  { kind: "repost", icon: Repeat2, on: "Undo repost", off: "Repost" },
+  { kind: "like", icon: Heart, on: "Unlike", off: "Like" },
+  { kind: "bookmark", icon: Bookmark, on: "Remove bookmark", off: "Bookmark" },
+];
+
+/** Reply, repost, like and bookmark. Claude does the last three on X at the next check-in. */
+function Actions({ post, onReply }: { post: XPost; onReply: () => void }) {
+  const router = useRouter();
+  const [state, setState] = useState(post.actions);
+
+  function toggle(kind: XActionKind) {
+    const was = state[kind];
+    const on = !was.on;
+    setState((s) => ({ ...s, [kind]: { on, pending: true, error: null } }));
+    void inBackground(() => op("set_x_post_action", { postId: post.id, kind, on }), {
+      then: () => router.refresh(),
+      failed: () => setState((s) => ({ ...s, [kind]: was })),
+      failure: "Couldn't save that.",
+    });
+  }
+
+  const button = "relative flex h-9 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2 text-meta text-muted-foreground hover:bg-muted hover:text-foreground";
+  return (
+    <div className="-ml-2 flex items-center gap-1">
+      <button type="button" onClick={onReply} className={button}>
+        <MessageCircle className="size-4" aria-hidden />
+        Reply
+      </button>
+      {actionButtons.map(({ kind, icon: Icon, on, off }) => {
+        const a: XActionState = state[kind];
+        const label = a.on ? on : off;
+        return (
+          <button
+            key={kind}
+            type="button"
+            onClick={() => toggle(kind)}
+            aria-pressed={a.on}
+            aria-label={a.pending ? `${label} (at the next check-in)` : label}
+            title={a.error ?? (a.pending ? "Happens on X at the next check-in" : label)}
+            className={cn(button, a.on && "text-ink", a.pending && "opacity-60")}
+          >
+            <Icon className={cn("size-4", a.on && "fill-current")} aria-hidden />
+            {a.pending && <Clock className="absolute top-1 right-1 size-2.5" aria-hidden />}
+            {a.error && <TriangleAlert className="absolute top-1 right-1 size-2.5 text-danger" aria-hidden />}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
