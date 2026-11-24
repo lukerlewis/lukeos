@@ -9,7 +9,8 @@ struct FocusScreen: View {
 
     var body: some View {
         @Bindable var timer = timer
-        NavigationStack {
+        // Opened from More, inside its navigation.
+        Group {
             ScrollView {
                 VStack(spacing: Space.xxl) {
                     Picker("Mode", selection: $timer.state.mode) {

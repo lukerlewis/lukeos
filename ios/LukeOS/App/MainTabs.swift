@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// The tab bar: Dashboard, Notes, Focus, Music, More. Liquid Glass, shrinking as you scroll,
+/// The tab bar: Dashboard, Notes, X feed, Music, More (Focus lives in More). Liquid Glass, shrinking as you scroll,
 /// with the music mini player sitting on it while something is playing.
 struct MainTabs: View {
     @Environment(AppModel.self) private var app
     @State private var player = AudioPlayer.shared
-    @State private var focus = FocusTimer.shared
     @State private var showPlayer = false
     @Namespace private var zoom
 
@@ -18,10 +17,8 @@ struct MainTabs: View {
             Tab("Notes", systemImage: "note.text", value: AppTab.notes) {
                 NotesScreen()
             }
-            Tab(value: AppTab.focus) {
-                FocusScreen()
-            } label: {
-                Label(focus.isRunning ? focus.tabText : "Focus", systemImage: "timer")
+            Tab("X feed", systemImage: "at", value: AppTab.x) {
+                NavigationStack { XFeedScreen() }
             }
             Tab("Music", systemImage: "music.note", value: AppTab.music) {
                 MusicScreen()

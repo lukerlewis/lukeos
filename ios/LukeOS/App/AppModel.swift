@@ -2,7 +2,7 @@ import SwiftUI
 import Observation
 
 enum AppTab: String, Hashable, CaseIterable {
-    case dashboard, notes, focus, music, more
+    case dashboard, notes, x, music, more
 }
 
 /// App-wide state: signed in or not, the open tab, Work or Life, and where a notification should go.
@@ -60,7 +60,7 @@ final class AppModel {
     func open(_ path: String) {
         pendingLink = path
         if path.hasPrefix("/notes") { tab = .notes }
-        else if path.hasPrefix("/focus") { tab = .focus }
+        else if path == "/x" || path.hasPrefix("/x?") { tab = .x }
         else if path.hasPrefix("/listen") { tab = .music }
         else if path == "/" || path.hasPrefix("/?") { tab = .dashboard }
         else { tab = .more }
