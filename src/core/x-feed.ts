@@ -45,7 +45,24 @@ export type XPerson = {
   createdAt: Date;
 };
 
-export type XEngaged = { count: number; lastAt: Date; lastUrl: string; lastText: string };
+/**
+ * How someone engages with Luke on X. The badge and filter count replies, mentions and messages
+ * in the last 30 days (count, last*); likes and the all-time totals are for his records.
+ */
+export type XEngaged = {
+  count: number;
+  lastAt: Date;
+  lastUrl: string;
+  lastText: string;
+  replies: number;
+  mentions: number;
+  likes: number;
+  dms: number;
+  /** The latest anything, likes included. */
+  lastAnyAt: Date;
+};
+
+export const engagementKinds = ["reply", "mention", "like", "dm"] as const;
 
 /** How long a reply to Luke keeps someone marked as talking with him. */
 const ENGAGED_DAYS = 30;
@@ -142,21 +159,32 @@ async function markSeen() {
   return { seenAt: now };
 }
 
-/** Who has replied to or mentioned Luke lately, by person id. */
+/** How each person has engaged with Luke, by person id. Only people who replied, mentioned or messaged him in the last 30 days. */
 async function engagedByPerson(personId?: string) {
   const since = new Date(Date.now() - ENGAGED_DAYS * 24 * 60 * 60 * 1000);
   const rows = await db
     .select()
     .from(xEngagements)
-    .where(and(gt(xEngagements.at, since), personId ? eq(xEngagements.personId, personId) : undefined))
+    .where(personId ? eq(xEngagements.personId, personId) : undefined)
     .orderBy(desc(xEngagements.at));
-  const out = new Map<string, XEngaged>();
+  const totals = new Map<string, Pick<XEngaged, "replies" | "mentions" | "likes" | "dms" | "lastAnyAt">>();
+  const recent = new Map<string, Pick<XEngaged, "count" | "lastAt" | "lastUrl" | "lastText">>();
   for (const r of rows) {
-    const e = out.get(r.personId);
-    if (e) e.count++;
-    else out.set(r.personId, { count: 1, lastAt: r.at, lastUrl: r.url, lastText: r.text });
+    const t = totals.get(r.personId) ?? { replies: 0, mentions: 0, likes: 0, dms: 0, lastAnyAt: r.at };
+    if (r.kind === "reply") t.replies++;
+    else if (r.kind === "mention") t.mentions++;
+    else if (r.kind === "like") t.likes++;
+    else if (r.kind === "dm") t.dms++;
+    totals.set(r.personId, t);
+    if (r.kind !== "like" && r.at > since) {
+      const e = recent.get(r.personId);
+      if (e) e.count++;
+      else recent.set(r.personId, { count: 1, lastAt: r.at, lastUrl: r.url ?? `https://x.com/messages`, lastText: r.text });
+    }
   }
-  return out;
+  const out = new Map<string, XEngaged>();
+  for (const [id, e] of recent) out.set(id, { ...e, ...totals.get(id)! });
+  return { engaged: out, totals };
 }
 
 export async function listPeople(): Promise<XPerson[]> {
@@ -164,13 +192,13 @@ export async function listPeople(): Promise<XPerson[]> {
     db.select().from(xPeople).orderBy(sql`lower(coalesce(${xPeople.name}, ${xPeople.handle}))`),
     engagedByPerson(),
   ]);
-  return rows.map((r) => toPerson(r, engaged.get(r.id) ?? null));
+  return rows.map((r) => toPerson(r, engaged.engaged.get(r.id) ?? null));
 }
 
 async function getPerson(id: string) {
   const [row] = await db.select().from(xPeople).where(eq(xPeople.id, id)).limit(1);
   if (!row) throw new OperationError("Luke doesn't follow that person in his X feed.", 404);
-  return toPerson(row, (await engagedByPerson(id)).get(id) ?? null);
+  return toPerson(row, (await engagedByPerson(id)).engaged.get(id) ?? null);
 }
 
 async function personByHandle(handle: string) {
@@ -685,15 +713,21 @@ export const xFeedOperations = {
   save_x_engagements: defineOperation({
     name: "save_x_engagements",
     description:
-      "For the X feed routine: save replies and mentions to Luke (@lukerlewis) from people in his X feed, read from his X notifications (Mentions tab). People not in his feed are skipped, and ones already saved are skipped. Marks those people as talking with Luke for 30 days, so he can keep the conversation going. Copy text exactly.",
+      "For the X feed routine: save what people in Luke's X feed did with Luke (@lukerlewis): replies and mentions (from the Mentions tab of his X notifications), likes of his posts and replies (from the All tab), and messages (from his X messages list: that they messaged, never what). People not in his feed, and ones already saved, are skipped. A reply, mention or message marks them as talking with Luke for 30 days. Copy text exactly.",
     input: z.object({
       items: z
         .array(
           z.object({
-            handle: z.string().trim().min(1).max(100).describe("Who replied, their X username."),
-            xId: z.string().trim().regex(/^\d{1,25}$/).describe("Their reply's id (the number in its address)."),
-            text: z.string().max(5000).default(""),
-            at: z.iso.datetime({ offset: true }).describe("When they posted it."),
+            handle: z.string().trim().min(1).max(100).describe("Who, their X username."),
+            kind: z.enum(engagementKinds).default("reply"),
+            xId: z
+              .string()
+              .trim()
+              .regex(/^\d{1,25}$/)
+              .optional()
+              .describe("reply / mention: their post's id. like: the id of Luke's post they liked. Not for dm."),
+            text: z.string().max(5000).default("").describe("reply / mention: their text. Leave empty for like and dm."),
+            at: z.iso.datetime({ offset: true }).describe("When it happened (for a dm, the conversation's latest message)."),
           }),
         )
         .max(200),
@@ -703,7 +737,13 @@ export const xFeedOperations = {
       const byHandle = new Map(people.map((p) => [p.handle.toLowerCase(), p]));
       const rows = items.flatMap((i) => {
         const p = byHandle.get(i.handle.replace(/^@/, "").toLowerCase());
-        return p ? [{ personId: p.id, xId: i.xId, url: `https://x.com/${p.handle}/status/${i.xId}`, text: i.text, at: new Date(i.at) }] : [];
+        if (!p) return [];
+        if (i.kind !== "dm" && !i.xId) throw new OperationError(`A ${i.kind} needs xId.`);
+        const at = new Date(i.at);
+        const key =
+          i.kind === "like" ? `like:${i.xId}:${p.handle.toLowerCase()}` : i.kind === "dm" ? `dm:${p.handle.toLowerCase()}:${at.toISOString().slice(0, 10)}` : i.xId!;
+        const url = i.kind === "like" ? `https://x.com/lukerlewis/status/${i.xId}` : i.kind === "dm" ? null : `https://x.com/${p.handle}/status/${i.xId}`;
+        return [{ personId: p.id, kind: i.kind, key, url, text: i.kind === "like" || i.kind === "dm" ? "" : i.text, at }];
       });
       const added = rows.length ? await db.insert(xEngagements).values(rows).onConflictDoNothing().returning({ personId: xEngagements.personId }) : [];
       const names = [...new Set(added.map((a) => a.personId))].map((id) => people.find((p) => p.id === id)!.handle);

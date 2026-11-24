@@ -1,5 +1,5 @@
 {
-  "id": "619b8d1b-212e-482a-8e68-46845e4d62dc",
+  "id": "be0fe370-4aa3-4dce-be79-f5950439fb78",
   "prevId": "4b20f42a-79f7-4f13-96cf-61a2526fe63e",
   "version": "7",
   "dialect": "postgresql",
@@ -4286,8 +4286,15 @@
           "primaryKey": false,
           "notNull": true
         },
-        "x_id": {
-          "name": "x_id",
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'reply'"
+        },
+        "key": {
+          "name": "key",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -4296,7 +4303,7 @@
           "name": "url",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "text": {
           "name": "text",
@@ -4359,11 +4366,11 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "x_engagements_x_id_unique": {
-          "name": "x_engagements_x_id_unique",
+        "x_engagements_key_unique": {
+          "name": "x_engagements_key_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "x_id"
+            "key"
           ]
         }
       },
