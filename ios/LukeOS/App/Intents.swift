@@ -40,7 +40,7 @@ struct StartFocusIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         FocusTimer.shared.state.mode = .pomodoro
         if FocusTimer.shared.state.pomodoro.endsAt == nil { FocusTimer.shared.startPomodoro() }
-        AppModel.shared.tab = .focus
+        AppModel.shared.open("/focus")
         return .result()
     }
 }

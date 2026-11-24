@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum MoreRoute: Hashable {
-    case messages, search, tasks, documents, inspiration, health, xFeed, screenTime, dictation, trash, settings
+    case messages, search, tasks, documents, inspiration, health, focus, screenTime, dictation, trash, settings
     case project(String)
     case document(String)
     case note(String)
@@ -12,7 +12,7 @@ enum MoreRoute: Hashable {
     case workout(HealthWorkoutRef)
 }
 
-/// More: Messages, Search, All tasks, Documents, Inspiration, Health, X feed, Screen Time, Dictation, Trash, Settings,
+/// More: Messages, Search, All tasks, Documents, Inspiration, Health, Focus, Screen Time, Dictation, Trash, Settings,
 /// then Projects,
 /// then the parts that live on the web.
 struct MoreScreen: View {
@@ -20,6 +20,7 @@ struct MoreScreen: View {
     @State private var path = NavigationPath()
     @State private var store = TaskStore.shared
     @State private var home = Home.shared
+    @State private var focus = FocusTimer.shared
     @State private var naming = false
     @State private var newName = ""
 
@@ -33,7 +34,7 @@ struct MoreScreen: View {
                     row("Documents", "doc.text", .documents, count: home.newFromClaude)
                     row("Inspiration", "lightbulb", .inspiration)
                     row("Health", "heart.text.square", .health)
-                    row("X feed", "at", .xFeed)
+                    row(focus.isRunning ? "Focus · \(focus.tabText)" : "Focus", "timer", .focus)
                     row("Screen Time", "hourglass", .screenTime)
                     row("Dictation", "mic", .dictation)
                     row("Trash", "trash", .trash)
@@ -96,7 +97,7 @@ struct MoreScreen: View {
         case .inspiration: InspirationScreen()
         case .dictation: DictationScreen()
         case .health: HealthScreen()
-        case .xFeed: XFeedScreen()
+        case .focus: FocusScreen()
         case .screenTime: ScreenTimeScreen()
         case .trash: TrashScreen()
         case .settings: SettingsScreen()
@@ -145,7 +146,7 @@ struct MoreScreen: View {
                     .first { $0.hasPrefix("date=") }.map { String($0.dropFirst(5)) }
                 path.append(MoreRoute.healthSection(id, date: date))
             }
-        case "x": path.append(MoreRoute.xFeed)
+        case "focus": path.append(MoreRoute.focus)
         case "settings": path.append(MoreRoute.settings)
         case "dictation": if path.isEmpty { path.append(MoreRoute.dictation) }
         case "screen-time": path.append(MoreRoute.screenTime)
