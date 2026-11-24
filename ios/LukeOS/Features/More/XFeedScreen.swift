@@ -8,6 +8,8 @@ struct XPersonRef: Codable, Hashable, Sendable {
     var avatarUrl: String?
     /// Following them on X: pending until Claude does it at the next check-in.
     var follow: XActionState?
+    /// They replied to or mentioned Luke on X lately.
+    var engaged: XEngaged?
     var display: String { name?.isEmpty == false ? name! : handle }
 }
 
@@ -79,6 +81,14 @@ struct XActionState: Codable, Hashable, Sendable {
     var done: Bool?
 }
 
+/// Someone replying to or mentioning Luke on X in the last 30 days: how often, and the latest.
+struct XEngaged: Codable, Hashable, Sendable {
+    var count: Int
+    var lastAt: String
+    var lastUrl: String
+    var lastText: String
+}
+
 struct XFeed: Codable, Hashable, Sendable {
     var people: [XPerson]
     var posts: [XPost]
@@ -107,7 +117,7 @@ struct XFeedScreen: View {
 
     /// The filters at the top: day (last 24 hours), unreplied, replied, pictures.
     private static let views: [(id: String?, label: String)] = [
-        (nil, "All"), ("day", "Last 24 hours"), ("unreplied", "Not replied"), ("replied", "Replied"), ("pictures", "With pictures"),
+        (nil, "All"), ("day", "Last 24 hours"), ("engaged", "Replied to you"), ("unreplied", "Not replied"), ("replied", "Replied"), ("pictures", "With pictures"),
     ]
 
     private var input: Input {
@@ -262,6 +272,20 @@ struct XPostRow: View {
                 HStack(spacing: Space.xs) {
                     Text(post.person.display).textStyle(.meta, medium: true, color: .ink).lineLimit(1)
                         .layoutPriority(2)
+                    if let engaged = post.person.engaged {
+                        Button {
+                            if let url = URL(string: engaged.lastUrl) { openURL(url) }
+                        } label: {
+                            Image(systemName: "arrowshape.turn.up.left.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.ink)
+                                .padding(.horizontal, 6).padding(.vertical, 3)
+                                .background(Color.ink.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                        }
+                        .buttonStyle(.borderless)
+                        .fixedSize().layoutPriority(3)
+                        .accessibilityLabel("Replied to you. Open their reply")
+                    }
                     if let company = post.person.company, !company.isEmpty {
                         Tag(company).fixedSize().layoutPriority(3)
                     }

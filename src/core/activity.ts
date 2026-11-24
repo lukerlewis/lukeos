@@ -586,7 +586,12 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "mark_x_action_failed":
       return { summary: "Couldn't do a like, repost or bookmark on X" };
     case "list_x_follows_to_do":
+    case "list_x_engagement_totals":
       return null;
+    case "save_x_engagements": {
+      const a = r as { added?: number; people?: string[] };
+      return a.added ? { summary: `Noted ${a.added} ${a.added === 1 ? "reply" : "replies"} to Luke on X from ${a.people?.map((h) => "@" + h).join(", ")}` } : null;
+    }
     case "set_x_follow":
       return { summary: input.on ? "Followed someone on X (happens at the next check-in)" : "Unfollowed someone on X (happens at the next check-in)" };
     case "mark_x_follow_done":
