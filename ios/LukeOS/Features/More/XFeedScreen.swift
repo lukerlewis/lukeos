@@ -302,6 +302,7 @@ struct XPostRow: View {
                         .fixedSize().layoutPriority(3)
                     Spacer(minLength: 0)
                     if post.isNew { UnreadDot() }
+                    XFollowButton(person: post.person)
                 }
                 if !post.text.isEmpty {
                     Text(linked(post.text)).textStyle(.body, color: .subtleText)
@@ -685,7 +686,7 @@ struct XPhotoViewer: View {
     }
 }
 
-/// Reply, quote, repost, like, bookmark and follow under a post. Claude does them on X at the next check-in.
+/// Reply, quote, repost, like and bookmark under a post. Claude does them on X at the next check-in.
 struct XActionBar: View {
     var post: XPost
     var onWrite: (String) -> Void
@@ -734,37 +735,7 @@ struct XActionBar: View {
                 .accessibilityLabel(a.on ? "\(k.label), on" : k.label)
                 .accessibilityHint(a.pending ? "Happens on X at the next check-in" : "")
             }
-            let f = XFollowTaps.shared.state(for: post.person)
-            Button { toggleFollow(f) } label: {
-                Image(systemName: f.on ? "person.crop.circle.badge.checkmark" : "person.crop.circle.badge.plus")
-                    .font(.icon(.row))
-                    .foregroundStyle(f.on ? Color.ink : Color.icon)
-                    .opacity(f.pending ? 0.55 : 1)
-                    .frame(width: Size.tap, height: Size.tap)
-                    .overlay(alignment: .topTrailing) {
-                        if f.error != nil {
-                            Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 9)).foregroundStyle(Color.notification).padding(8)
-                        } else if f.pending {
-                            Image(systemName: "clock").font(.system(size: 9)).foregroundStyle(Color.mutedText).padding(8)
-                        }
-                    }
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(f.on ? "Following \(post.person.display)" : "Follow \(post.person.display)")
-            .accessibilityHint(f.pending ? "Happens on X at the next check-in" : "")
             Spacer(minLength: 0)
-        }
-    }
-
-    private func toggleFollow(_ was: XActionState) {
-        let on = !was.on
-        Haptics.select()
-        // Undoing a follow not yet done on X just cancels it.
-        let done = was.done ?? false
-        withAnimation(Motion.snappy) { XFollowTaps.shared.set(post.person, XActionState(on: on, pending: on != done, done: done)) }
-        Task {
-            await Repo.change("set_x_follow", ["personId": .string(post.person.id), "on": .bool(on)])
         }
     }
 
@@ -776,6 +747,46 @@ struct XActionBar: View {
         withAnimation(Motion.snappy) { state[kind] = XActionState(on: on, pending: on != done, done: done) }
         Task {
             await Repo.change("set_x_post_action", ["postId": .string(post.id), "kind": .string(kind), "on": .bool(on)])
+        }
+    }
+}
+
+/// Follow or unfollow the post's author, top right of the card beside their name. Claude does it on X at the next check-in.
+struct XFollowButton: View {
+    var person: XPersonRef
+
+    var body: some View {
+        let f = XFollowTaps.shared.state(for: person)
+        Button { toggle(f) } label: {
+            Image(systemName: f.on ? "person.crop.circle.badge.checkmark" : "person.crop.circle.badge.plus")
+                .font(.system(size: 17))
+                .foregroundStyle(f.on ? Color.ink : Color.icon)
+                .opacity(f.pending ? 0.55 : 1)
+                .overlay(alignment: .topTrailing) {
+                    if f.error != nil {
+                        Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 8)).foregroundStyle(Color.notification).offset(x: 5, y: -4)
+                    } else if f.pending {
+                        Image(systemName: "clock").font(.system(size: 8)).foregroundStyle(Color.mutedText).offset(x: 5, y: -4)
+                    }
+                }
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 28, height: 20)
+                .contentShape(Rectangle().inset(by: -12))
+        }
+        .buttonStyle(.borderless)
+        .fixedSize().layoutPriority(3)
+        .accessibilityLabel(f.on ? "Following \(person.display)" : "Follow \(person.display)")
+        .accessibilityHint(f.pending ? "Happens on X at the next check-in" : "")
+    }
+
+    private func toggle(_ was: XActionState) {
+        let on = !was.on
+        Haptics.select()
+        // Undoing a follow not yet done on X just cancels it.
+        let done = was.done ?? false
+        withAnimation(Motion.snappy) { XFollowTaps.shared.set(person, XActionState(on: on, pending: on != done, done: done)) }
+        Task {
+            await Repo.change("set_x_follow", ["personId": .string(person.id), "on": .bool(on)])
         }
     }
 }
