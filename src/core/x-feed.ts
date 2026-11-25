@@ -68,10 +68,13 @@ export const engagementKinds = ["reply", "mention", "like", "dm"] as const;
 const ENGAGED_DAYS = 30;
 
 export type XReplyStatus = "draft" | "queued" | "sent" | "failed";
+/** reply: under their post. quote: Luke's own post quoting theirs. */
+export type XReplyKind = "reply" | "quote";
 
 export type XReply = {
   id: string;
   postId: string;
+  kind: XReplyKind;
   text: string;
   status: XReplyStatus;
   error: string | null;
@@ -128,6 +131,7 @@ function toReply(row: typeof xReplies.$inferSelect): XReply {
   return {
     id: row.id,
     postId: row.postId,
+    kind: row.kind === "quote" ? "quote" : "reply",
     text: row.text,
     status: row.status as XReplyStatus,
     error: row.error,
@@ -497,13 +501,17 @@ export const xFeedOperations = {
   write_x_reply: defineOperation({
     name: "write_x_reply",
     description:
-      "Write a reply to a post in Luke's X feed. When Luke writes one it's queued, and the X feed routine posts it on X exactly as written. When Claude writes one it's only a draft: it shows in the app for Luke to edit and send, and is never posted until he does.",
-    input: z.object({ postId: z.uuid().describe("The post's id in LukeOS."), text: replyText }),
-    run: async ({ postId, text }, { actor }) => {
+      "Write a reply to a post in Luke's X feed, or a quote post of it (kind: quote, Luke's own post with theirs embedded). When Luke writes one it's queued, and the X feed routine posts it on X exactly as written. When Claude writes one it's only a draft: it shows in the app for Luke to edit and send, and is never posted until he does.",
+    input: z.object({
+      postId: z.uuid().describe("The post's id in LukeOS."),
+      text: replyText,
+      kind: z.enum(["reply", "quote"]).default("reply").describe("reply: under their post. quote: a quote post of it."),
+    }),
+    run: async ({ postId, text, kind }, { actor }) => {
       await assertPost(postId);
       const [row] = await db
         .insert(xReplies)
-        .values({ postId, text, status: actor.kind === "user" ? "queued" : "draft", ...madeByColumns(actor) })
+        .values({ postId, text, kind, status: actor.kind === "user" ? "queued" : "draft", ...madeByColumns(actor) })
         .returning();
       return toReply(row);
     },
@@ -548,7 +556,7 @@ export const xFeedOperations = {
   list_x_replies_to_send: defineOperation({
     name: "list_x_replies_to_send",
     description:
-      "For the X feed routine: Luke's replies waiting to be posted on X, oldest first, each with the post to reply to. Post each one's text exactly as given, character for character, then call mark_x_reply_sent (or mark_x_reply_failed).",
+      "For the X feed routine: Luke's replies and quote posts waiting to be posted on X, oldest first, each with the post it's about (kind reply: reply under it; kind quote: quote it). Post each one's text exactly as given, character for character, then call mark_x_reply_sent (or mark_x_reply_failed).",
     input: z.object({}),
     run: async () => {
       const rows = await db
@@ -560,6 +568,7 @@ export const xFeedOperations = {
         .orderBy(xReplies.createdAt);
       return rows.map(({ reply, post, person }) => ({
         id: reply.id,
+        kind: reply.kind === "quote" ? "quote" : "reply",
         text: reply.text,
         replyTo: { url: post.url, handle: person.handle, text: post.text, postedAt: post.postedAt },
         queuedAt: reply.updatedAt,

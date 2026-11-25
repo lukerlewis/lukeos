@@ -44,6 +44,8 @@ struct XPerson: Codable, Hashable, Sendable, Identifiable {
 struct XReply: Codable, Hashable, Sendable, Identifiable {
     var id: String
     var postId: String
+    /// reply: under their post. quote: Luke's own post quoting theirs.
+    var kind: String?
     var text: String
     /// draft (written by Claude, waits for Luke), queued, sent, failed.
     var status: String
@@ -110,9 +112,10 @@ struct XFeedScreen: View {
     @State private var loadingMore = false
 
     struct Composer: Identifiable {
-        var id: String { reply?.id ?? post.id }
+        var id: String { reply?.id ?? "\(post.id)-\(kind)" }
         var post: XPost
         var reply: XReply?
+        var kind = "reply"
     }
 
     /// The filters at the top: day (last 24 hours), unreplied, replied, pictures.
@@ -166,12 +169,13 @@ struct XFeedScreen: View {
                 // Each post is its own card.
                 ForEach(feed.posts) { post in
                     Section {
-                        XPostRow(post: post, onReply: { composing = Composer(post: post) },
-                                 onEdit: { composing = Composer(post: post, reply: $0) },
+                        XPostRow(post: post, onWrite: { composing = Composer(post: post, kind: $0) },
+                                 onEdit: { composing = Composer(post: post, reply: $0, kind: $0.kind ?? "reply") },
                                  onChanged: { Task { await load() } })
                             .cardRow()
                             .contextMenu {
                                 Button("Reply", systemImage: "bubble.left") { composing = Composer(post: post) }
+                                Button("Quote", systemImage: "quote.bubble") { composing = Composer(post: post, kind: "quote") }
                                 if let url = URL(string: post.url) { Link(destination: url) { Label("Open on X", systemImage: "arrow.up.right.square") } }
                                 Button("Only \(post.person.display)", systemImage: "line.3.horizontal.decrease") { pick { person = post.person.id } }
                                 Button("Remove from feed", systemImage: "trash", role: .destructive) { remove(post) }
@@ -202,7 +206,7 @@ struct XFeedScreen: View {
             }
         }
         .sheet(item: $composing) { c in
-            XReplySheet(post: c.post, reply: c.reply) { Task { await load() } }
+            XReplySheet(post: c.post, reply: c.reply, kind: c.kind) { Task { await load() } }
         }
         .sheet(isPresented: $showingPeople, onDismiss: { Task { await load() } }) {
             XPeopleSheet(people: feed?.people ?? [])
@@ -259,7 +263,7 @@ struct XFeedScreen: View {
 /// One post: who, when, the text, pictures, a quoted post, then Luke's replies and a Reply button.
 struct XPostRow: View {
     var post: XPost
-    var onReply: () -> Void
+    var onWrite: (String) -> Void
     var onEdit: (XReply) -> Void
     var onChanged: () -> Void
     @State private var viewing: Int?
@@ -321,7 +325,7 @@ struct XPostRow: View {
                 ForEach(post.replies) { r in
                     XReplyBox(reply: r, onEdit: { onEdit(r) }, onChanged: onChanged)
                 }
-                XActionBar(post: post, onReply: onReply)
+                XActionBar(post: post, onWrite: onWrite)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -377,6 +381,9 @@ struct XReplyBox: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s) {
+            if reply.kind == "quote" {
+                Label("Quote post", systemImage: "quote.bubble").textStyle(.meta, color: .mutedText)
+            }
             Text(reply.text).textStyle(.preview, color: .text).fixedSize(horizontal: false, vertical: true)
             if reply.status == "failed", let e = reply.error { Text(e).textStyle(.meta, color: .notification) }
             HStack(spacing: Space.s) {
@@ -390,7 +397,7 @@ struct XReplyBox: View {
                 if reply.status != "sent" {
                     Menu {
                         Button("Edit", systemImage: "pencil", action: onEdit)
-                        Button("Cancel reply", systemImage: "trash", role: .destructive) {
+                        Button(reply.kind == "quote" ? "Cancel quote" : "Cancel reply", systemImage: "trash", role: .destructive) {
                             Task { await Repo.change("delete_x_reply", ["id": .string(reply.id)]); onChanged() }
                         }
                     } label: {
@@ -419,10 +426,11 @@ struct XReplyBox: View {
     }
 }
 
-/// Writing a reply, or changing one that hasn't gone out yet.
+/// Writing a reply or quote post, or changing one that hasn't gone out yet.
 struct XReplySheet: View {
     var post: XPost
     var reply: XReply?
+    var kind = "reply"
     var onDone: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
@@ -451,12 +459,12 @@ struct XReplySheet: View {
             .padding(.horizontal, Space.xl)
             .padding(.top, Space.s)
             .background(Color.card)
-            .navigationTitle(reply == nil ? "Reply to \(post.person.display)" : "Edit reply")
+            .navigationTitle(reply == nil ? (kind == "quote" ? "Quote \(post.person.display)" : "Reply to \(post.person.display)") : (kind == "quote" ? "Edit quote" : "Edit reply"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel", role: .cancel) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(reply == nil ? "Reply" : "Save") { save() }
+                    Button(reply == nil ? (kind == "quote" ? "Quote" : "Reply") : "Save") { save() }
                         .disabled(trimmed.isEmpty)
                 }
             }
@@ -475,7 +483,7 @@ struct XReplySheet: View {
             if let reply {
                 if words != reply.text { await Repo.change("update_x_reply", ["id": .string(reply.id), "text": .string(words)]) }
             } else {
-                await Repo.change("write_x_reply", ["postId": .string(post.id), "text": .string(words)])
+                await Repo.change("write_x_reply", ["postId": .string(post.id), "text": .string(words), "kind": .string(kind)])
                 Haptics.success()
                 Toasts.shared.show("Posts at the next check-in")
             }
@@ -677,10 +685,10 @@ struct XPhotoViewer: View {
     }
 }
 
-/// Reply, repost, like, bookmark and follow under a post. Claude does all but Reply on X at the next check-in.
+/// Reply, quote, repost, like, bookmark and follow under a post. Claude does them on X at the next check-in.
 struct XActionBar: View {
     var post: XPost
-    var onReply: () -> Void
+    var onWrite: (String) -> Void
     @State private var state: [String: XActionState] = [:]
 
     private static let kinds: [(kind: String, off: String, on: String, label: String)] = [
@@ -691,12 +699,20 @@ struct XActionBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            Button(action: onReply) {
+            Button { onWrite("reply") } label: {
                 Label("Reply", systemImage: "bubble.left").textStyle(.meta, color: .subtleText)
                     .frame(minHeight: Size.tap)
                     .padding(.trailing, Space.m)
             }
             .buttonStyle(.borderless)
+            Button { onWrite("quote") } label: {
+                Image(systemName: "quote.bubble")
+                    .font(.icon(.row))
+                    .foregroundStyle(Color.icon)
+                    .frame(width: Size.tap, height: Size.tap)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Quote")
             ForEach(Self.kinds, id: \.kind) { k in
                 let a = state[k.kind] ?? post.actions?[k.kind] ?? XActionState(on: false, pending: false)
                 Button { toggle(k.kind, a) } label: {
