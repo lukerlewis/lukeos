@@ -930,6 +930,8 @@ export const xReplies = pgTable(
       .notNull()
       .references(() => xPosts.id, { onDelete: "cascade" }),
     text: text("text").notNull(),
+    /** "reply": a reply under the post. "quote": a quote post of it (Luke's own post with theirs embedded). */
+    kind: text("kind").notNull().default("reply"),
     status: text("status").notNull().default("queued"), // "draft" | "queued" | "sent" | "failed"
     /** Why it couldn't be posted. */
     error: text("error"),

@@ -1,13 +1,13 @@
 "use client";
 
-import { Bookmark, Check, ChevronLeft, Heart, ChevronRight, Clock, ExternalLink, Filter, Play, MessageCircle, MessageCircleReply, Pencil, Repeat2, Send, Sparkles, Trash2, TriangleAlert, UserCheck, UserPlus, X } from "lucide-react";
+import { Bookmark, Check, ChevronLeft, Heart, ChevronRight, Clock, ExternalLink, Filter, Play, MessageCircle, MessageCircleReply, Pencil, Quote, Repeat2, Send, Sparkles, Trash2, TriangleAlert, UserCheck, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { showToast } from "@/components/shell/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { contextMenu } from "@/components/ui/context-menu";
-import type { XActionKind, XActionState, XPost, XReply } from "@/core/x-feed";
+import type { XActionKind, XActionState, XPost, XReply, XReplyKind } from "@/core/x-feed";
 import { hide, inBackground, unhide, useHidden, useWithoutHidden } from "@/lib/background";
 import { op } from "@/lib/ops-client";
 import { cn } from "@/lib/utils";
@@ -37,7 +37,7 @@ export function XFeed({ posts, now, hasPeople, filtered }: { posts: XPost[]; now
 
 function PostRow({ post, now }: { post: XPost; now: number }) {
   const router = useRouter();
-  const [replying, setReplying] = useState(false);
+  const [writing, setWriting] = useState<XReplyKind | null>(null);
   const name = post.person.name || post.person.handle;
 
   function remove() {
@@ -51,7 +51,8 @@ function PostRow({ post, now }: { post: XPost; now: number }) {
 
   const menu = contextMenu(
     () => [
-      { label: "Reply", icon: MessageCircle, onSelect: () => setReplying(true) },
+      { label: "Reply", icon: MessageCircle, onSelect: () => setWriting("reply") },
+      { label: "Quote", icon: Quote, onSelect: () => setWriting("quote") },
       { label: "Open on X", icon: ExternalLink, onSelect: () => window.open(post.url, "_blank", "noreferrer") },
       { label: `Only ${name}`, icon: Filter, onSelect: () => router.push(`/x?person=${post.person.id}`, { scroll: false }) },
       "-",
@@ -117,10 +118,10 @@ function PostRow({ post, now }: { post: XPost; now: number }) {
         {post.replies.map((r) => (
           <ReplyRow key={r.id} reply={r} />
         ))}
-        {replying ? (
-          <Composer postId={post.id} onDone={() => setReplying(false)} />
+        {writing ? (
+          <Composer postId={post.id} kind={writing} onDone={() => setWriting(null)} />
         ) : (
-          <Actions post={post} onReply={() => setReplying(true)} />
+          <Actions post={post} onWrite={setWriting} />
         )}
       </div>
     </li>
@@ -267,8 +268,8 @@ function useFollow(person: XPost["person"]): XActionState {
   return tap && tap.base === key(person.follow) ? tap.state : person.follow;
 }
 
-/** Reply, repost, like, bookmark and follow. Claude does all but Reply on X at the next check-in. */
-function Actions({ post, onReply }: { post: XPost; onReply: () => void }) {
+/** Reply, quote, repost, like, bookmark and follow. Claude does them all on X at the next check-in. */
+function Actions({ post, onWrite }: { post: XPost; onWrite: (kind: XReplyKind) => void }) {
   const router = useRouter();
   const [state, setState] = useState(post.actions);
   const follow = useFollow(post.person);
@@ -299,9 +300,12 @@ function Actions({ post, onReply }: { post: XPost; onReply: () => void }) {
   const button = "relative flex h-9 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2 text-meta text-muted-foreground hover:bg-muted hover:text-foreground";
   return (
     <div className="-ml-2 flex items-center gap-1">
-      <button type="button" onClick={onReply} className={button}>
+      <button type="button" onClick={() => onWrite("reply")} className={button}>
         <MessageCircle className="size-4" aria-hidden />
         Reply
+      </button>
+      <button type="button" onClick={() => onWrite("quote")} aria-label="Quote" title="Quote" className={button}>
+        <Quote className="size-4" aria-hidden />
       </button>
       {actionButtons.map(({ kind, icon: Icon, on, off }) => {
         const a: XActionState = state[kind];
@@ -357,16 +361,17 @@ function ReplyRow({ reply }: { reply: XReply }) {
   const [editing, setEditing] = useState(false);
   const gone = useHidden(reply.id);
   if (gone) return null;
-  if (editing) return <Composer postId={reply.postId} reply={reply} onDone={() => setEditing(false)} />;
+  if (editing) return <Composer postId={reply.postId} kind={reply.kind} reply={reply} onDone={() => setEditing(false)} />;
   const { icon: Icon, label } = statusLine[reply.status];
+  const noun = reply.kind === "quote" ? "Quote" : "Reply";
 
   function send() {
     void inBackground(() => op("update_x_reply", { id: reply.id, send: true }), {
       then: () => {
-        showToast("Reply will post on the next check");
+        showToast(`${noun} will post on the next check`);
         router.refresh();
       },
-      failure: "Couldn't send the reply.",
+      failure: `Couldn't send the ${noun.toLowerCase()}.`,
     });
   }
 
@@ -375,12 +380,18 @@ function ReplyRow({ reply }: { reply: XReply }) {
     void inBackground(() => op("delete_x_reply", { id: reply.id }), {
       then: () => router.refresh(),
       failed: () => unhide(reply.id),
-      failure: "Couldn't cancel the reply.",
+      failure: `Couldn't cancel the ${noun.toLowerCase()}.`,
     });
   }
 
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-muted px-3 py-2.5">
+      {reply.kind === "quote" && (
+        <span className="flex items-center gap-1 text-meta text-muted-foreground">
+          <Quote className="size-3.5" aria-hidden />
+          Quote post
+        </span>
+      )}
       <p className="text-preview break-words whitespace-pre-wrap text-foreground">{reply.text}</p>
       {reply.status === "failed" && reply.error && <p className="text-meta text-danger">{reply.error}</p>}
       <div className="flex min-h-9 items-center gap-1.5 text-meta text-muted-foreground">
@@ -398,7 +409,7 @@ function ReplyRow({ reply }: { reply: XReply }) {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              aria-label="Edit reply"
+              aria-label={`Edit ${noun.toLowerCase()}`}
               className="flex size-9 items-center justify-center rounded-lg hover:bg-selected hover:text-foreground"
             >
               <Pencil className="size-4" aria-hidden />
@@ -406,7 +417,7 @@ function ReplyRow({ reply }: { reply: XReply }) {
             <button
               type="button"
               onClick={cancel}
-              aria-label="Cancel reply"
+              aria-label={`Cancel ${noun.toLowerCase()}`}
               className="flex size-9 items-center justify-center rounded-lg hover:bg-selected hover:text-foreground"
             >
               <Trash2 className="size-4" aria-hidden />
@@ -424,9 +435,10 @@ function ReplyRow({ reply }: { reply: XReply }) {
   );
 }
 
-/** Writing a new reply, or changing one that hasn't gone out yet. */
-function Composer({ postId, reply, onDone }: { postId: string; reply?: XReply; onDone: () => void }) {
+/** Writing a new reply or quote post, or changing one that hasn't gone out yet. */
+function Composer({ postId, kind, reply, onDone }: { postId: string; kind: XReplyKind; reply?: XReply; onDone: () => void }) {
   const router = useRouter();
+  const noun = kind === "quote" ? "Quote" : "Reply";
   const [text, setText] = useState(reply?.text ?? "");
   const ref = useRef<HTMLTextAreaElement>(null);
   const length = [...text.trim()].length;
@@ -453,14 +465,14 @@ function Composer({ postId, reply, onDone }: { postId: string; reply?: XReply; o
     onDone();
     if (reply) {
       if (clean === reply.text) return;
-      void inBackground(() => op("update_x_reply", { id: reply.id, text: clean }), { then: () => router.refresh(), failure: "Couldn't save the reply." });
+      void inBackground(() => op("update_x_reply", { id: reply.id, text: clean }), { then: () => router.refresh(), failure: `Couldn't save the ${noun.toLowerCase()}.` });
     } else {
-      void inBackground(() => op("write_x_reply", { postId, text: clean }), {
+      void inBackground(() => op("write_x_reply", { postId, text: clean, kind }), {
         then: () => {
-          showToast("Reply will post on the next check");
+          showToast(`${noun} will post on the next check`);
           router.refresh();
         },
-        failure: "Couldn't save the reply.",
+        failure: `Couldn't save the ${noun.toLowerCase()}.`,
       });
     }
   }
@@ -477,7 +489,8 @@ function Composer({ postId, reply, onDone }: { postId: string; reply?: XReply; o
         }}
         rows={2}
         maxLength={4000}
-        aria-label="Reply"
+        aria-label={noun}
+        placeholder={kind === "quote" ? "Add a comment" : undefined}
         className="min-h-20 resize-none rounded-lg border border-stroke-strong bg-card px-3 py-2 text-body outline-none focus-visible:border-ring md:text-control"
       />
       <div className="flex items-center gap-2">
@@ -487,7 +500,7 @@ function Composer({ postId, reply, onDone }: { postId: string; reply?: XReply; o
           <X aria-hidden />
         </Button>
         <Button type="submit" size="sm" disabled={!text.trim()}>
-          {reply ? "Save" : "Reply"}
+          {reply ? "Save" : kind === "quote" ? "Quote" : "Reply"}
         </Button>
       </div>
     </form>

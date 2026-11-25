@@ -564,13 +564,13 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "delete_x_post":
       return { summary: "Removed a post from the X feed" };
     case "write_x_reply":
-      return { summary: "Drafted an X reply" };
+      return { summary: (r as { kind?: string }).kind === "quote" ? "Drafted an X quote post" : "Drafted an X reply" };
     case "update_x_reply":
       return { summary: "Edited a drafted X reply" };
     case "delete_x_reply":
       return { summary: "Cancelled an X reply" };
     case "mark_x_reply_sent":
-      return { summary: "Posted a reply on X" };
+      return { summary: (r as { kind?: string }).kind === "quote" ? "Posted a quote post on X" : "Posted a reply on X" };
     case "mark_x_reply_failed":
       return { summary: "Couldn't post a reply on X" };
     case "mark_x_feed_seen":

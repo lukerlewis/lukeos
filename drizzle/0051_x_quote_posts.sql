@@ -1,0 +1,1 @@
+ALTER TABLE "x_replies" ADD COLUMN "kind" text DEFAULT 'reply' NOT NULL;
