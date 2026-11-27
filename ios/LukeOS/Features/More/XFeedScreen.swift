@@ -58,6 +58,8 @@ struct XContext: Codable, Hashable, Sendable {
     var author: String?
     var text: String?
     var url: String?
+    /// The other post's pictures (and video thumbnails).
+    var media: [String]?
 }
 
 struct XPost: Codable, Hashable, Sendable, Identifiable {
@@ -314,10 +316,24 @@ struct XPostRow: View {
                         if let url = URL(string: post.url) { openURL(url) }
                     }
                 }
-                if post.kind == "quote", let q = post.context, q.text != nil || q.author != nil {
+                if let q = post.context, q.text != nil || q.author != nil || !(q.media ?? []).isEmpty {
                     VStack(alignment: .leading, spacing: Space.xs) {
-                        if let a = q.author { Label(a, systemImage: "arrow.2.squarepath").textStyle(.meta, medium: true, color: .text) }
-                        if let t = q.text { Text(t).textStyle(.preview, color: .subtleText).lineLimit(6) }
+                        Button {
+                            if let url = URL(string: q.url ?? post.url) { openURL(url) }
+                        } label: {
+                            Label(post.kind == "reply" ? "Replying to \(q.author ?? "")" : (q.author ?? "Quoted post"),
+                                  systemImage: post.kind == "reply" ? "bubble.left" : "arrow.2.squarepath")
+                                .textStyle(.meta, medium: true, color: .text)
+                        }
+                        .buttonStyle(.borderless)
+                        if let t = q.text { Text(t).textStyle(.preview, color: .subtleText).lineLimit(6).fixedSize(horizontal: false, vertical: true) }
+                        if let m = q.media, !m.isEmpty {
+                            XMediaGrid(urls: m) { _ in
+                                if let url = URL(string: q.url ?? post.url) { openURL(url) }
+                            } onVideo: {
+                                if let url = URL(string: q.url ?? post.url) { openURL(url) }
+                            }
+                        }
                     }
                     .padding(Space.m)
                     .frame(maxWidth: .infinity, alignment: .leading)
