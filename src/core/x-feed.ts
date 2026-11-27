@@ -85,6 +85,8 @@ export type XReply = {
   updatedAt: Date;
 };
 
+export type XContext = { author: string | null; text: string | null; url: string | null; media?: string[] };
+
 export const actionKinds = ["like", "repost", "bookmark"] as const;
 export type XActionKind = (typeof actionKinds)[number];
 /** on: what Luke wants. pending: not done on X yet (Claude does it at the next check-in). */
@@ -96,7 +98,8 @@ export type XPost = {
   url: string;
   text: string;
   kind: "post" | "quote" | "reply";
-  context: { author: string | null; text: string | null; url: string | null } | null;
+  /** The post it quotes or replies to: who wrote it, its text, its address, its pictures. */
+  context: XContext | null;
   media: string[];
   postedAt: Date;
   /** Saved since Luke last opened the feed. */
@@ -344,10 +347,11 @@ const postInput = z.object({
       author: z.string().max(200).nullable().optional(),
       text: z.string().max(5000).nullable().optional(),
       url: z.string().max(2000).nullable().optional(),
+      media: z.array(z.url().max(2000)).max(4).optional().describe("The other post's pictures (and video thumbnails)."),
     })
     .nullable()
     .optional()
-    .describe("For a quote or reply: the other post (author's @handle, its text, its address), when it's shown."),
+    .describe("For a quote or reply: the other post (author's @handle, its text, its address, its pictures), when it's shown."),
   media: z.array(z.url().max(2000)).max(4).default([]).describe("Addresses of the post's pictures (pbs.twimg.com), up to 4. For a video or GIF, its thumbnail (the <video> poster, under ext_tw_video_thumb, amplify_video_thumb or tweet_video_thumb): the app shows a play button that opens the post on X."),
 });
 
@@ -473,14 +477,24 @@ export const xFeedOperations = {
             url: `https://x.com/${person.handle}/status/${p.xId}`,
             text: p.text,
             kind: p.kind,
-            context: p.context ? { author: p.context.author ?? null, text: p.context.text ?? null, url: p.context.url ?? null } : null,
+            context: p.context
+              ? { author: p.context.author ?? null, text: p.context.text ?? null, url: p.context.url ?? null, media: p.context.media ?? [] }
+              : null,
             media: p.media,
             postedAt: new Date(p.postedAt),
             ...madeByColumns(actor),
           })),
         )
-        // A post seen again picks up pictures and video thumbnails an older read missed.
-        .onConflictDoUpdate({ target: xPosts.xId, set: { media: sql`excluded.media` }, setWhere: sql`jsonb_array_length(excluded.media) > jsonb_array_length(${xPosts.media})` })
+        // A post seen again picks up pictures and video thumbnails an older read missed, and the
+        // post it quotes (older reads could miss it, or mistake a plain post for a quote).
+        .onConflictDoUpdate({
+          target: xPosts.xId,
+          set: {
+            media: sql`case when jsonb_array_length(excluded.media) > jsonb_array_length(${xPosts.media}) then excluded.media else ${xPosts.media} end`,
+            context: sql`coalesce(excluded.context, ${xPosts.context})`,
+            kind: sql`case when excluded.context is null and ${xPosts.context} is not null then ${xPosts.kind} else excluded.kind end`,
+          },
+        })
         .returning({ id: xPosts.id, isNew: sql<boolean>`xmax = 0` });
       const added = inserted.filter((r) => r.isNew).length;
       return { added, updated: inserted.length - added, skipped: posts.length - added, cleared };

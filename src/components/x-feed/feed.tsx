@@ -94,26 +94,26 @@ function PostRow({ post, now }: { post: XPost; now: number }) {
           </a>
           {post.isNew && <span className="ml-auto size-2 shrink-0 self-center rounded-full bg-unread" aria-label="New" />}
         </div>
-        {post.kind === "reply" && post.context?.author && (
-          <span className="-mt-1.5 text-meta text-muted-foreground">Replying to {post.context.author}</span>
-        )}
         {post.text && <p className="text-body break-words whitespace-pre-wrap text-subtle-foreground">{linkify(post.text)}</p>}
         {post.media.length > 0 && <Media urls={post.media} href={post.url} />}
-        {post.kind === "quote" && post.context && (post.context.text || post.context.author) && (
-          <a
-            href={post.context.url ?? post.url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex flex-col gap-1 rounded-lg border border-stroke px-3 py-2.5 hover:bg-muted/50"
-          >
-            {post.context.author && (
-              <span className="flex items-center gap-1.5 text-meta font-medium text-foreground">
+        {!!(post.context && (post.context.text || post.context.author || post.context.media?.length)) && post.context && (
+          <div className="flex flex-col gap-1.5 rounded-lg border border-stroke px-3 py-2.5">
+            <a
+              href={post.context.url ?? post.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-meta font-medium text-foreground hover:underline"
+            >
+              {post.kind === "reply" ? (
+                <MessageCircle className="size-3.5 text-muted-foreground" aria-hidden />
+              ) : (
                 <Repeat2 className="size-3.5 text-muted-foreground" aria-hidden />
-                {post.context.author}
-              </span>
-            )}
-            {post.context.text && <span className="line-clamp-6 text-preview whitespace-pre-wrap text-subtle-foreground">{post.context.text}</span>}
-          </a>
+              )}
+              {post.kind === "reply" ? `Replying to ${post.context.author ?? ""}`.trim() : (post.context.author ?? "Quoted post")}
+            </a>
+            {post.context.text && <p className="line-clamp-6 text-preview break-words whitespace-pre-wrap text-subtle-foreground">{linkify(post.context.text)}</p>}
+            {!!post.context.media?.length && <Media urls={post.context.media} href={post.context.url ?? post.url} />}
+          </div>
         )}
         {post.replies.map((r) => (
           <ReplyRow key={r.id} reply={r} />

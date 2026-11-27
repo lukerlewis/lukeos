@@ -905,7 +905,7 @@ export const xPosts = pgTable(
     /** "post", "quote" (quoting someone else's post) or "reply" (to someone else). */
     kind: text("kind").notNull().default("post"),
     /** The post it quotes or replies to, when there is one. */
-    context: jsonb("context").$type<{ author: string | null; text: string | null; url: string | null }>(),
+    context: jsonb("context").$type<{ author: string | null; text: string | null; url: string | null; media?: string[] }>(),
     /** Picture addresses on X's servers. */
     media: jsonb("media").$type<string[]>().notNull().default([]),
     postedAt: timestamp("posted_at", { withTimezone: true }).notNull(),
