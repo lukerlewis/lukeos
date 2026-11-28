@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, gt, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { defineOperation, madeByColumns, madeByOf, OperationError, type Actor, type MadeBy } from "./define";
@@ -104,6 +104,8 @@ export type XPost = {
   postedAt: Date;
   /** Saved since Luke last opened the feed. */
   isNew: boolean;
+  /** Luke has swiped it off his catch-up pile (the card stack on his phone). */
+  caughtUp: boolean;
   person: Pick<XPerson, "id" | "handle" | "name" | "company" | "avatarUrl" | "follow" | "engaged">;
   replies: XReply[];
   actions: Record<XActionKind, XActionState>;
@@ -217,14 +219,14 @@ async function personByHandle(handle: string) {
   return row ? toPerson(row) : null;
 }
 
-export const feedViews = ["day", "engaged", "unreplied", "replied", "pictures"] as const;
+export const feedViews = ["day", "engaged", "unreplied", "replied", "pictures", "catch_up"] as const;
 export type FeedView = (typeof feedViews)[number];
 
 export type FeedFilter = {
   personId?: string;
   /** Only people at this company. */
   company?: string;
-  /** day: posted in the last 24 hours. engaged: people who replied to Luke lately. unreplied / replied: whether Luke has replied. pictures: posts with pictures. */
+  /** day: posted in the last 24 hours. engaged: people who replied to Luke lately. unreplied / replied: whether Luke has replied. pictures: posts with pictures. catch_up: posts still in Luke's catch-up pile. */
   view?: FeedView;
   before?: string;
   limit?: number;
@@ -249,6 +251,7 @@ export async function getFeed(filter: FeedFilter = {}) {
     filter.view === "replied" ? hasReply : undefined,
     filter.view === "unreplied" ? sql`not ${hasReply}` : undefined,
     filter.view === "pictures" ? sql`jsonb_array_length(${xPosts.media}) > 0` : undefined,
+    filter.view === "catch_up" ? isNull(xPosts.caughtUpAt) : undefined,
     filter.before ? lt(xPosts.postedAt, new Date(filter.before)) : undefined,
   ].filter((c) => c !== undefined);
   const rows = await db
@@ -259,12 +262,14 @@ export async function getFeed(filter: FeedFilter = {}) {
     .limit(limit + 1);
   const page = rows.slice(0, limit);
   const ids = page.map((p) => p.id);
-  const [replies, actions] = page.length
-    ? await Promise.all([
-        db.select().from(xReplies).where(inArray(xReplies.postId, ids)).orderBy(xReplies.createdAt),
-        db.select().from(xActions).where(inArray(xActions.postId, ids)),
-      ])
-    : [[], []];
+  const [replies, actions, [pile]] = await Promise.all([
+    page.length ? db.select().from(xReplies).where(inArray(xReplies.postId, ids)).orderBy(xReplies.createdAt) : [],
+    page.length ? db.select().from(xActions).where(inArray(xActions.postId, ids)) : [],
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(xPosts)
+      .where(and(isNull(xPosts.caughtUpAt), sql`(${xPosts.postedAt} >= ${keepFrom()} or ${pendingReply})`)),
+  ]);
   const byId = new Map(people.map((p) => [p.id, p]));
   const posts: XPost[] = page.map((row) => {
     const p = byId.get(row.personId)!;
@@ -278,6 +283,7 @@ export async function getFeed(filter: FeedFilter = {}) {
       media: row.media,
       postedAt: row.postedAt,
       isNew: row.createdAt > seen,
+      caughtUp: row.caughtUpAt !== null,
       person: { id: p.id, handle: p.handle, name: p.name, company: p.company, avatarUrl: p.avatarUrl, follow: p.follow, engaged: p.engaged },
       replies: replies.filter((r) => r.postId === row.id).map(toReply),
       actions: Object.fromEntries(
@@ -297,6 +303,8 @@ export async function getFeed(filter: FeedFilter = {}) {
     /** When Claude last checked X for new posts. */
     checkedAt: checks.length && Math.max(...checks) > 0 ? new Date(Math.max(...checks)) : null,
     seenAt: seen,
+    /** How many posts are still in Luke's catch-up pile (view: catch_up lists them). */
+    toCatchUp: pile?.n ?? 0,
     /** The companies people work at, for filtering. */
     companies: [...new Set(people.map((p) => p.company).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b)),
     /** When this was read, for showing how long ago things happened. */
@@ -431,7 +439,7 @@ export const xFeedOperations = {
       view: z
         .enum(feedViews)
         .optional()
-        .describe("day: posted in the last 24 hours. engaged: from people who replied to or mentioned Luke on X in the last 30 days. unreplied: Luke hasn't replied. replied: Luke has replied. pictures: posts with pictures."),
+        .describe("day: posted in the last 24 hours. engaged: from people who replied to or mentioned Luke on X in the last 30 days. unreplied: Luke hasn't replied. replied: Luke has replied. pictures: posts with pictures. catch_up: posts still in Luke's catch-up pile, the card stack on his phone."),
       before: z.iso.datetime({ offset: true }).optional().describe("Only posts older than this (the 'more' value from the previous page)."),
       limit: z.number().int().min(1).max(200).optional(),
     }),
@@ -794,6 +802,21 @@ export const xFeedOperations = {
           return { handle: p.handle, name: p.name, ...t, summary: parts.join(", ") };
         })
         .sort((a, b) => b.lastAnyAt.getTime() - a.lastAnyAt.getTime());
+    },
+  }),
+
+  set_x_post_caught_up: defineOperation({
+    name: "set_x_post_caught_up",
+    description:
+      "Take a post off Luke's X catch-up pile, the stack of cards he swipes through on his phone (caughtUp: true), or put it back (caughtUp: false). The post stays in the feed either way. Only when Luke asks.",
+    input: z.object({
+      postId: z.uuid().describe("The post's id in LukeOS."),
+      caughtUp: z.boolean().default(true),
+    }),
+    run: async ({ postId, caughtUp }) => {
+      await assertPost(postId);
+      await db.update(xPosts).set({ caughtUpAt: caughtUp ? new Date() : null }).where(eq(xPosts.id, postId));
+      return { postId, caughtUp };
     },
   }),
 

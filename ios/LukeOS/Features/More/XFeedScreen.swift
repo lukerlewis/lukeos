@@ -99,9 +99,12 @@ struct XFeed: Codable, Hashable, Sendable {
     var more: String?
     var checkedAt: String?
     var companies: [String]?
+    /// How many posts are still on the catch-up pile.
+    var toCatchUp: Int?
 }
 
 /// X feed: posts from the people Luke picks on X, and his replies to them.
+/// Opens on the catch-up pile (`XCatchUp`): new posts as cards to swipe through. The list button shows every post.
 /// Claude posts the replies on X at the next check-in, exactly as he wrote them.
 struct XFeedScreen: View {
     @State private var feed: XFeed?
@@ -112,6 +115,10 @@ struct XFeedScreen: View {
     @State private var showingPeople = false
     @State private var sawNew = false
     @State private var loadingMore = false
+    /// Cards to swipe through (the catch-up pile), or the full list.
+    @AppStorage("xFeedCards") private var cards = true
+    /// Goes up each time the People sheet closes, so the pile loads again.
+    @State private var peopleChanges = 0
 
     struct Composer: Identifiable {
         var id: String { reply?.id ?? "\(post.id)-\(kind)" }
@@ -136,6 +143,36 @@ struct XFeedScreen: View {
     private var filtered: Bool { view != nil || company != nil || person != nil }
 
     var body: some View {
+        Group {
+            if cards {
+                XCatchUp(peopleChanges: peopleChanges, onShowAll: { withAnimation(Motion.snappy) { cards = false } })
+                    // The People sheet needs the list of people even while only the pile is showing.
+                    .task { if feed == nil { await load(cachedFirst: true) } }
+            } else {
+                list
+            }
+        }
+        .navigationTitle("X feed")
+        .navigationBarTitleDisplayMode(cards ? .inline : .automatic)
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button { withAnimation(Motion.snappy) { cards.toggle() } } label: {
+                    Image(systemName: cards ? "list.bullet" : "rectangle.stack")
+                }
+                .accessibilityLabel(cards ? "Show all posts" : "Catch up")
+                Button { showingPeople = true } label: { Image(systemName: "person.2") }
+                    .accessibilityLabel("People")
+            }
+        }
+        .sheet(isPresented: $showingPeople, onDismiss: {
+            peopleChanges += 1
+            Task { await load() }
+        }) {
+            XPeopleSheet(people: feed?.people ?? [])
+        }
+    }
+
+    private var list: some View {
         List {
             if let feed, !feed.people.isEmpty {
                 Section {
@@ -200,18 +237,8 @@ struct XFeedScreen: View {
         }
         .listStyle(.insetGrouped)
         .pageBackground()
-        .navigationTitle("X feed")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { showingPeople = true } label: { Image(systemName: "person.2") }
-                    .accessibilityLabel("People")
-            }
-        }
         .sheet(item: $composing) { c in
             XReplySheet(post: c.post, reply: c.reply, kind: c.kind) { Task { await load() } }
-        }
-        .sheet(isPresented: $showingPeople, onDismiss: { Task { await load() } }) {
-            XPeopleSheet(people: feed?.people ?? [])
         }
         .task { await load(cachedFirst: true) }
         .refreshable { await load() }
@@ -448,6 +475,8 @@ struct XReplySheet: View {
     var post: XPost
     var reply: XReply?
     var kind = "reply"
+    /// The moment Reply, Quote or Save is tapped, before anything is sent.
+    var onSave: (() -> Void)?
     var onDone: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
@@ -495,6 +524,7 @@ struct XReplySheet: View {
 
     private func save() {
         let words = trimmed
+        onSave?()
         dismiss()
         Task {
             if let reply {

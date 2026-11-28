@@ -1,0 +1,1 @@
+ALTER TABLE "x_posts" ADD COLUMN "caught_up_at" timestamp with time zone;
