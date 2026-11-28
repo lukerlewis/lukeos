@@ -8,6 +8,28 @@ import WidgetKit
 struct TodayEntry: TimelineEntry {
     var date: Date
     var snapshot: WidgetSnapshot?
+    /// Tasks just ticked on the widget: they stay put with a filled tick until the next entry.
+    var ticked: Set<String> = []
+}
+
+/// The widget's tick button circle: empty, ringed in ink for Doing, or solid with a tick once ticked.
+struct WidgetTick: View {
+    var status: TaskStatus
+    var size: CGFloat = Size.tick - 4
+
+    var body: some View {
+        ZStack {
+            if status == .done {
+                Circle().fill(Color.ink)
+                Image(systemName: "checkmark")
+                    .font(.system(size: size * 0.45, weight: .medium))
+                    .foregroundStyle(Color.onSolid)
+            } else {
+                Circle().strokeBorder(status == .doing ? Color.ink : Color.icon, lineWidth: 1.5)
+            }
+        }
+        .frame(width: size, height: size)
+    }
 }
 
 extension WidgetSnapshot {
@@ -30,7 +52,7 @@ struct TodayWidgetView: View {
 
     private var tasks: [WidgetSnapshot.Item] {
         guard let s = entry.snapshot else { return [] }
-        return s.tasks.filter { $0.area == s.area && $0.status != .done }
+        return s.tasks.filter { $0.area == s.area && ($0.status != .done || entry.ticked.contains($0.id)) }
     }
 
     var body: some View {
@@ -84,7 +106,7 @@ struct TodayWidgetView: View {
             ForEach(tasks.prefix(limit)) { t in
                 HStack(spacing: Space.m) {
                     Button(intent: TickTaskIntent(taskId: t.id)) {
-                        Circle().strokeBorder(Color.icon, lineWidth: 1.5).frame(width: Size.tick - 4, height: Size.tick - 4)
+                        WidgetTick(status: t.status == .done ? .done : .todo)
                     }
                     .buttonStyle(.plain)
                     Link(destination: URL(string: "lukeos://open?path=/?task=\(t.id)")!) {
@@ -108,11 +130,13 @@ struct DayPlanWidgetView: View {
     /// Points under the header for the parts on a large widget (more push the top off the edge).
     var partsHeight: CGFloat = 296
     static let rowHeight: CGFloat = 28
-    static let headingHeight: CGFloat = 20
+    static let headingHeight: CGFloat = 24
     static let partGap: CGFloat = Space.xl
+    /// Space between a Morning, Day or Evening heading and its first task.
+    static let headingGap: CGFloat = 6
 
     private var tasks: [WidgetSnapshot.Item] {
-        (entry.snapshot?.tasks ?? []).filter { $0.area == .life && $0.status != .done }
+        (entry.snapshot?.tasks ?? []).filter { $0.area == .life && ($0.status != .done || entry.ticked.contains($0.id)) }
     }
     private func tasks(_ time: TimeOfDay) -> [WidgetSnapshot.Item] {
         tasks.filter { ($0.timeOfDay ?? .day) == time }
@@ -177,14 +201,13 @@ struct DayPlanWidgetView: View {
                     }
                     Spacer(minLength: 0)
                 }
-                .frame(height: Self.headingHeight - 2)
+                .frame(height: Self.headingHeight - Self.headingGap)
             }
-            .padding(.bottom, 2)
+            .padding(.bottom, Self.headingGap)
             ForEach(all.prefix(limit)) { t in
                 HStack(spacing: Space.m) {
                     Button(intent: TickTaskIntent(taskId: t.id)) {
-                        Circle().strokeBorder(t.status == .doing ? Color.ink : Color.icon, lineWidth: 1.5)
-                            .frame(width: Size.tick - 4, height: Size.tick - 4)
+                        WidgetTick(status: t.status)
                     }
                     .buttonStyle(.plain)
                     Link(destination: URL(string: "lukeos://open?path=/?task=\(t.id)")!) {
@@ -246,7 +269,8 @@ struct QuickAddWidgetView: View {
     }
 }
 
-/// Ticks a task from the widget: saves it to LukeOS and takes it off the widget straight away.
+/// Ticks a task from the widget: shows it ticked straight away, saves it to LukeOS, and the widget's
+/// timeline takes it off a moment later.
 struct TickTaskIntent: AppIntent {
     static let title: LocalizedStringResource = "Tick a task"
     static let isDiscoverable = false
@@ -257,9 +281,13 @@ struct TickTaskIntent: AppIntent {
     init(taskId: String) { self.taskId = taskId }
 
     func perform() async throws -> some IntentResult {
-        if var snap = WidgetSnapshot.load() {
-            snap.tasks.removeAll { $0.id == taskId }
+        if var snap = WidgetSnapshot.load(), let i = snap.tasks.firstIndex(where: { $0.id == taskId }) {
+            snap.tasks[i].status = .done
+            snap.tasks[i].tickedAt = .now
             snap.save()
+            // Redraw now so the filled tick shows while the save goes through.
+            WidgetCenter.shared.reloadTimelines(ofKind: "TodayTasks")
+            WidgetCenter.shared.reloadTimelines(ofKind: "DayPlan")
         }
         _ = try? await LukeAPI.shared.opData("update_task", ["id": .string(taskId), "status": "done"])
         return .result()
