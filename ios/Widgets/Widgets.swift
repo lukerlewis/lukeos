@@ -23,7 +23,14 @@ struct TodayProvider: TimelineProvider {
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<TodayEntry>) -> Void) {
         // The app refreshes this whenever it syncs; otherwise check back in half an hour.
-        completion(Timeline(entries: [TodayEntry(date: .now, snapshot: WidgetSnapshot.load())], policy: .after(.now.addingTimeInterval(1800))))
+        let snap = WidgetSnapshot.load()
+        let now = Date.now
+        var entries = [TodayEntry(date: now, snapshot: snap, ticked: snap?.freshlyTicked(at: now) ?? [])]
+        // A task just ticked on the widget shows its filled tick, then leaves in the next entry.
+        if !entries[0].ticked.isEmpty {
+            entries.append(TodayEntry(date: now.addingTimeInterval(WidgetSnapshot.tickHold), snapshot: snap))
+        }
+        completion(Timeline(entries: entries, policy: .after(now.addingTimeInterval(1800))))
     }
 }
 
