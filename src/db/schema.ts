@@ -909,6 +909,8 @@ export const xPosts = pgTable(
     /** Picture addresses on X's servers. */
     media: jsonb("media").$type<string[]>().notNull().default([]),
     postedAt: timestamp("posted_at", { withTimezone: true }).notNull(),
+    /** When Luke swiped it off his catch-up pile on the phone. Null: still in the pile. */
+    caughtUpAt: timestamp("caught_up_at", { withTimezone: true }),
     createdByKind: madeBy.createdByKind,
     createdByName: madeBy.createdByName,
     createdByRoutine: madeBy.createdByRoutine,

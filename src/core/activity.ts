@@ -574,6 +574,7 @@ export function describe(tool: string, input: Record<string, unknown>, result: u
     case "mark_x_reply_failed":
       return { summary: "Couldn't post a reply on X" };
     case "mark_x_feed_seen":
+    case "set_x_post_caught_up":
     case "list_x_actions_to_do":
       return null;
     case "set_x_post_action": {
