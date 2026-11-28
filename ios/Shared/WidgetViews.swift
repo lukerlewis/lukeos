@@ -12,7 +12,25 @@ struct TodayEntry: TimelineEntry {
     var ticked: Set<String> = []
 }
 
-/// The widget's tick button circle: empty, ringed in ink for Doing, or solid with a tick once ticked.
+/// The widget's tick button. A Toggle, not a Button: iOS flips a widget toggle the instant it's tapped,
+/// before the intent runs, so the filled tick shows straight away instead of after the save and redraw.
+struct WidgetTickToggle: View {
+    var task: WidgetSnapshot.Item
+    var body: some View {
+        Toggle(isOn: task.status == .done, intent: TickTaskIntent(taskId: task.id)) { EmptyView() }
+            .toggleStyle(WidgetTickStyle(doing: task.status == .doing))
+    }
+}
+
+struct WidgetTickStyle: ToggleStyle {
+    var doing = false
+    func makeBody(configuration: Configuration) -> some View {
+        WidgetTick(status: configuration.isOn ? .done : doing ? .doing : .todo)
+            .contentShape(.circle)
+    }
+}
+
+/// The widget's tick circle: empty, ringed in ink for Doing, or solid with a tick once ticked.
 struct WidgetTick: View {
     var status: TaskStatus
     var size: CGFloat = Size.tick - 4
@@ -105,10 +123,7 @@ struct TodayWidgetView: View {
             }
             ForEach(tasks.prefix(limit)) { t in
                 HStack(spacing: Space.m) {
-                    Button(intent: TickTaskIntent(taskId: t.id)) {
-                        WidgetTick(status: t.status == .done ? .done : .todo)
-                    }
-                    .buttonStyle(.plain)
+                    WidgetTickToggle(task: t.status == .doing ? { var c = t; c.status = .todo; return c }() : t)
                     Link(destination: URL(string: "lukeos://open?path=/?task=\(t.id)")!) {
                         Text(t.title).font(.geist(.preview)).foregroundStyle(Color.text).lineLimit(1)
                     }
@@ -206,10 +221,7 @@ struct DayPlanWidgetView: View {
             .padding(.bottom, Self.headingGap)
             ForEach(all.prefix(limit)) { t in
                 HStack(spacing: Space.m) {
-                    Button(intent: TickTaskIntent(taskId: t.id)) {
-                        WidgetTick(status: t.status)
-                    }
-                    .buttonStyle(.plain)
+                    WidgetTickToggle(task: t)
                     Link(destination: URL(string: "lukeos://open?path=/?task=\(t.id)")!) {
                         Text(t.title).font(.geist(.preview)).foregroundStyle(Color.text).lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)

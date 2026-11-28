@@ -19,7 +19,7 @@ struct WidgetSnapshot: Codable, Sendable {
     /// Tasks ticked on the widget this recently still show (ticked) on a fresh timeline.
     static let tickGrace: TimeInterval = 8
     /// How long a ticked task stays on the widget, showing its filled tick, before it goes.
-    static let tickHold: TimeInterval = 1.2
+    static let tickHold: TimeInterval = 0.8
 
     /// The ids of tasks ticked on the widget in the last few seconds.
     func freshlyTicked(at date: Date = .now) -> Set<String> {
